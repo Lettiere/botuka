@@ -1,0 +1,832 @@
+{% extends "_layout/platform/platform_home.html" %}
+{% load static %}
+
+{% block content %}
+
+<style>
+    .showcase-section{padding:22px 0}
+    .showcase-card{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:var(--radius-lg);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      transition:.18s ease;
+      height:100%;
+      display: flex;
+      flex-direction: column;
+    }
+    .showcase-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover)}
+    .showcase-img{
+      height:170px;
+      background-size:cover;
+      background-position:center;
+      position:relative;
+      width: 100%;
+    }
+    .showcase-body{padding:16px; flex: 1 1 auto; display:flex; flex-direction:column;}
+    .showcase-title{font-weight:850;font-size:1.05rem;margin-bottom:6px}
+    .showcase-text{color:var(--muted);font-size:.9rem;margin-bottom:10px}
+  
+    /* Responsive Grid for Category */
+    .category-grid{
+      display:grid;
+      grid-template-columns:repeat(7,1fr);
+      gap:12px;
+    }
+    @media(max-width:1200px){
+      .category-grid{grid-template-columns:repeat(5,1fr);}
+    }
+    @media(max-width:992px){
+      .category-grid{grid-template-columns:repeat(4,1fr);}
+    }
+    @media(max-width:768px){
+      .category-grid{grid-template-columns:repeat(3,1fr);}
+    }
+    @media(max-width:576px){
+      .category-grid{grid-template-columns:repeat(2,1fr);}
+      .carousel-banner-content{padding:28px 20px}
+    }
+  
+    .category-card{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:16px 10px;
+      text-align:center;
+      box-shadow:var(--shadow);
+      font-weight:850;
+      transition:.18s ease;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+    .category-card:hover{background:var(--surface-2);transform:translateY(-2px)}
+    .category-card i{
+      display:block;
+      font-size:1.6rem;
+      color:var(--botuka-earth);
+      margin-bottom:8px;
+    }
+  
+    /* Responsive for Carousel Banner */
+    .carousel-banner{
+      min-height:330px;
+      border-radius:var(--radius-lg);
+      overflow:hidden;
+      background:linear-gradient(135deg,var(--botuka-blue),var(--botuka-earth));
+      color:#fff;
+      position:relative;
+      display: flex;
+      align-items: center;
+    }
+    .carousel-banner-content{
+      padding:42px;
+      max-width:620px;
+      position:relative;
+      z-index:2;
+    }
+    .carousel-banner h2{
+      font-size:clamp(2rem,4vw,3.4rem);
+      font-weight:800;
+      line-height:.95;
+      margin-bottom:14px;
+    }
+    .carousel-banner p{color:rgba(255,255,255,.82);font-size:1.05rem}
+    .carousel-banner::after{
+      content:"";
+      position:absolute;
+      width:360px;
+      height:360px;
+      right:-90px;
+      top:-80px;
+      border-radius:50%;
+      background:rgba(255,183,3,.22);
+      z-index:1;
+    }
+    .banner-event{background:linear-gradient(135deg,#13293D,#2E8B57)}
+    .banner-culture{background:linear-gradient(135deg,#1E3A54,#C1642F)}
+    .banner-products{background:linear-gradient(135deg,#C1642F,#FFB703)}
+    .banner-tour{background:linear-gradient(135deg,#236941,#13293D)}
+    .mini-tag{
+      display:inline-flex;
+      align-items:center;
+      gap:6px;
+      background:rgba(255,255,255,.18);
+      color:#fff;
+      border-radius:999px;
+      padding:7px 12px;
+      font-size:.8rem;
+      font-weight:850;
+      margin-bottom:12px;
+    }
+  
+    /* Responsive hero grid */
+    .hero-grid{
+      display: flex;
+      gap: 30px;
+      align-items: stretch;
+    }
+    .hero-main {
+      flex: 2 1 350px;
+      min-width: 0;
+    }
+    .today-panel {
+      flex: 1 1 270px;
+      max-width: 360px;
+      min-width: 220px;
+    }
+    @media(max-width:992px) {
+      .hero-grid {
+        flex-direction: column;
+        gap: 18px;
+      }
+      .today-panel {
+        max-width: 100%;
+        min-width: 0;
+      }
+    }
+  
+    /* Responsive main-layout for side-by-side sections */
+    .main-layout {
+      display: flex;
+      gap: 30px;
+      align-items: flex-start;
+    }
+    .main-layout > section,
+    .main-layout > aside {
+      flex: 1 1 0;
+      min-width: 0;
+    }
+    .main-layout > section {
+      max-width: 56%;
+    }
+    .main-layout > aside {
+      max-width: 44%;
+    }
+    @media (max-width: 992px) {
+      .main-layout {
+        flex-direction: column;
+        gap: 24px;
+      }
+      .main-layout > section,
+      .main-layout > aside {
+        max-width: 100%;
+        min-width: 0;
+      }
+    }
+  
+    /* Responsive fake map */
+    .fake-map {
+      position: relative;
+      min-height: 220px;
+      background: #e9ecef;
+      border-radius: var(--radius);
+      margin-bottom: 16px;
+      overflow: hidden;
+    }
+    @media (max-width: 576px) {
+      .fake-map {
+        min-height: 160px;
+      }
+      .carousel-banner{
+        min-height: 220px;
+        flex-direction: column;
+      }
+    }
+  
+    .cta-city{
+      background:
+        radial-gradient(380px 180px at 80% 0%, rgba(255,183,3,.22), transparent 70%),
+        var(--botuka-blue);
+      color:#fff;
+      border-radius:var(--radius-lg);
+      padding:34px;
+      box-shadow:var(--shadow-hover);
+    }
+    .cta-city p{color:rgba(255,255,255,.76)}
+    @media (max-width: 768px) {
+      .cta-city {
+        padding: 18px 12px;
+      }
+      .cta-city .row {
+        flex-direction: column;
+        gap: 14px;
+        text-align: left;
+      }
+      .cta-city .col-lg-4 {
+        text-align: left !important;
+      }
+    }
+  
+    /* Ensure feed-lists stack well on small screens */
+    .feed-list, .row.g-3 {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+    .feed-list > * {
+      flex: 1 1 260px;
+      min-width: 220px;
+      max-width: 100%;
+    }
+    @media (max-width: 768px) {
+      .feed-list, .row.g-3 {
+        flex-direction: column;
+        gap: 10px;
+      }
+      .feed-list > * {
+        width: 100%;
+        min-width: 0;
+        max-width: 100%;
+      }
+    }
+  
+    /* Utility responsive tweaks for grid columns */
+    .col-md-4, .col-md-3, .col-6 {
+      min-width: 0;
+      max-width: 100%;
+      flex: 1 1 0;
+    }
+    @media (max-width: 768px) {
+      .col-md-4, .col-md-3, .col-6 {
+        flex-basis: 100%;
+      }
+    }
+  </style>
+
+<div id="inicio">
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="container-botuka">
+      <div class="hero-grid">
+        <div class="hero-main reveal">
+          <div class="hero-kicker">
+            <i class="bi bi-broadcast-pin"></i>
+            Botucatu e região ao vivo
+          </div>
+
+          <h1>Sua cidade <span>em uma vitrine viva.</span></h1>
+
+          <p class="hero-subtitle">
+            Encontre eventos, cultura, produtos, empresas, serviços, vagas, turismo e avisos importantes da região.
+          </p>
+
+          <form class="search-hero" id="mainSearch">
+            <input type="search" placeholder="O que você procura na cidade?" aria-label="Buscar">
+            <button class="btn-botuka btn-yellow" type="submit">
+              <i class="bi bi-search"></i>
+              Buscar
+            </button>
+          </form>
+
+          <div class="quick-chips">
+            <a href="#eventos" class="quick-chip"><i class="bi bi-calendar-event-fill"></i> Eventos</a>
+            <a href="#cultura" class="quick-chip"><i class="bi bi-music-note-beamed"></i> Cultura</a>
+            <a href="#produtos" class="quick-chip"><i class="bi bi-bag-fill"></i> Produtos</a>
+            <a href="#empresas" class="quick-chip"><i class="bi bi-shop"></i> Empresas</a>
+            <a href="#servicos" class="quick-chip"><i class="bi bi-tools"></i> Serviços</a>
+            <a href="#vagas" class="quick-chip"><i class="bi bi-briefcase-fill"></i> Vagas</a>
+            <a href="#turismo" class="quick-chip"><i class="bi bi-binoculars-fill"></i> Turismo</a>
+          </div>
+        </div>
+
+        <aside class="today-panel reveal">
+          <div class="weather-card">
+            <div class="weather-top">
+              <div>
+                <div class="weather-city">Hoje em Botucatu</div>
+                <div class="weather-desc">Cidade em movimento</div>
+              </div>
+              <i class="bi bi-sun-fill fs-1" style="color:var(--botuka-yellow);position:relative;z-index:2"></i>
+            </div>
+            <div class="weather-temp mt-4">28°C</div>
+            <div class="weather-desc">Bom dia para descobrir o que está acontecendo.</div>
+          </div>
+          <div class="city-status" style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px;">
+            <div class="status-item" style="flex:1 1 100px; min-width:90px;">
+              <div class="status-value">12</div>
+              <div class="status-label">eventos</div>
+            </div>
+            <div class="status-item" style="flex:1 1 100px; min-width:90px;">
+              <div class="status-value">34</div>
+              <div class="status-label">vagas</div>
+            </div>
+            <div class="status-item" style="flex:1 1 100px; min-width:90px;">
+              <div class="status-value">87</div>
+              <div class="status-label">serviços</div>
+            </div>
+            <div class="status-item" style="flex:1 1 100px; min-width:90px;">
+              <div class="status-value">5</div>
+              <div class="status-label">avisos</div>
+            </div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <!-- CARROSSEL DESTAQUES -->
+  <section class="showcase-section">
+    <div class="container-botuka">
+      <div class="section-title">
+        <div>
+          <h2>Destaques da cidade</h2>
+          <small>Eventos, cultura, produtos e experiências em evidência</small>
+        </div>
+      </div>
+
+      <div id="homeShowcaseCarousel" class="carousel slide reveal" data-bs-ride="carousel">
+        <div class="carousel-inner">
+
+          <div class="carousel-item active">
+            <div class="carousel-banner banner-event">
+              <div class="carousel-banner-content">
+                <div class="mini-tag"><i class="bi bi-calendar-event-fill"></i> Evento da semana</div>
+                <h2>Feira, música e gastronomia local</h2>
+                <p>Uma vitrine para produtores, artistas e moradores encontrarem o melhor da região.</p>
+                <a href="#eventos" class="btn-botuka btn-yellow">Ver eventos</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="carousel-item">
+            <div class="carousel-banner banner-culture">
+              <div class="carousel-banner-content">
+                <div class="mini-tag"><i class="bi bi-music-note-beamed"></i> Cultura e lazer</div>
+                <h2>Shows, oficinas, teatro e encontros</h2>
+                <p>O BOTUKA organiza a agenda cultural da cidade em uma tela simples.</p>
+                <a href="#cultura" class="btn-botuka btn-yellow">Explorar cultura</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="carousel-item">
+            <div class="carousel-banner banner-products">
+              <div class="carousel-banner-content">
+                <div class="mini-tag"><i class="bi bi-bag-fill"></i> Comércio local</div>
+                <h2>Produtos e ofertas de empresas da região</h2>
+                <p>Compre de quem está perto, fortaleça o comércio local e descubra novidades.</p>
+                <a href="#produtos" class="btn-botuka btn-yellow">Ver produtos</a>
+              </div>
+            </div>
+          </div>
+
+          <div class="carousel-item">
+            <div class="carousel-banner banner-tour">
+              <div class="carousel-banner-content">
+                <div class="mini-tag"><i class="bi bi-binoculars-fill"></i> Turismo regional</div>
+                <h2>Cuesta, trilhas, cafés e experiências</h2>
+                <p>Moradores e visitantes descobrindo a região com mais facilidade.</p>
+                <a href="#turismo" class="btn-botuka btn-yellow">Ver turismo</a>
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <button class="carousel-control-prev" type="button" data-bs-target="#homeShowcaseCarousel" data-bs-slide="prev">
+          <span class="carousel-control-prev-icon"></span>
+        </button>
+
+        <button class="carousel-control-next" type="button" data-bs-target="#homeShowcaseCarousel" data-bs-slide="next">
+          <span class="carousel-control-next-icon"></span>
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- CATEGORIAS -->
+  <section class="showcase-section">
+    <div class="container-botuka">
+      <div class="section-title">
+        <div>
+          <h2>Explore por categoria</h2>
+          <small>A cidade organizada por assunto</small>
+        </div>
+      </div>
+
+      <div class="category-grid reveal">
+        <a href="#servicos" class="category-card"><i class="bi bi-tools"></i> Serviços</a>
+        <a href="#vagas" class="category-card"><i class="bi bi-briefcase-fill"></i> Vagas</a>
+        <a href="#eventos" class="category-card"><i class="bi bi-calendar-event-fill"></i> Eventos</a>
+        <a href="#cultura" class="category-card"><i class="bi bi-music-note-beamed"></i> Cultura</a>
+        <a href="#produtos" class="category-card"><i class="bi bi-bag-fill"></i> Produtos</a>
+        <a href="#turismo" class="category-card"><i class="bi bi-binoculars-fill"></i> Turismo</a>
+        <a href="#avisos" class="category-card"><i class="bi bi-megaphone-fill"></i> Avisos</a>
+      </div>
+    </div>
+  </section>
+
+  <!-- EVENTOS -->
+  <section class="showcase-section" id="eventos">
+    <div class="container-botuka">
+      <div class="section-title">
+        <div>
+          <h2>Eventos em destaque</h2>
+          <small>O que vai acontecer na cidade</small>
+        </div>
+        <a href="#" class="feed-link">Ver agenda</a>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-4 col-12">
+          <article class="showcase-card reveal">
+            <div class="showcase-img photo-event"></div>
+            <div class="showcase-body">
+              <div class="feed-type">Hoje · 17h</div>
+              <div class="showcase-title">Feira do Produtor</div>
+              <p class="showcase-text">Comida, música e produtos regionais no centro.</p>
+              <a href="#" class="feed-link">Ver detalhes <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </article>
+        </div>
+        <div class="col-md-4 col-12">
+          <article class="showcase-card reveal">
+            <div class="showcase-img" style="background:linear-gradient(135deg,#13293D,#C1642F)"></div>
+            <div class="showcase-body">
+              <div class="feed-type">Sábado · 20h</div>
+              <div class="showcase-title">Noite musical na praça</div>
+              <p class="showcase-text">Artistas locais se apresentam em evento aberto.</p>
+              <a href="#" class="feed-link">Participar <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </article>
+        </div>
+        <div class="col-md-4 col-12">
+          <article class="showcase-card reveal">
+            <div class="showcase-img" style="background:linear-gradient(135deg,#2E8B57,#FFB703)"></div>
+            <div class="showcase-body">
+              <div class="feed-type">Domingo · 8h</div>
+              <div class="showcase-title">Encontro de famílias</div>
+              <p class="showcase-text">Lazer, recreação e atividades ao ar livre.</p>
+              <a href="#" class="feed-link">Ver programação <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+
+
+
+  <!-- CULTURA -->
+  <section class="showcase-section" id="cultura">
+    <div class="container-botuka">
+      <div class="section-title">
+        <div>
+          <h2>Cultura e lazer</h2>
+          <small>Shows, oficinas, arte, esporte e família</small>
+        </div>
+      </div>
+
+      <div class="feed-list">
+        <article class="feed-card compact-feed reveal">
+          <div class="feed-icon" style="background:var(--botuka-earth)">
+            <i class="bi bi-music-note-beamed"></i>
+          </div>
+          <div class="compact-main">
+            <div class="feed-type">Música</div>
+            <div class="compact-title">Roda de viola com artistas regionais</div>
+            <div class="compact-sub">Centro Cultural · sexta-feira às 19h</div>
+          </div>
+          <div class="price-pill">Ver</div>
+        </article>
+
+        <article class="feed-card compact-feed reveal">
+          <div class="feed-icon" style="background:var(--botuka-blue-2)">
+            <i class="bi bi-palette-fill"></i>
+          </div>
+          <div class="compact-main">
+            <div class="feed-type">Oficina</div>
+            <div class="compact-title">Oficina gratuita de desenho para jovens</div>
+            <div class="compact-sub">Inscrições abertas · vagas limitadas</div>
+          </div>
+          <div class="price-pill">Inscrever</div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- PRODUTOS E EMPRESAS -->
+  <section class="showcase-section" id="produtos">
+    <div class="container-botuka">
+      <div class="section-title">
+        <div>
+          <h2>Produtos e empresas locais</h2>
+          <small>Vitrine para lojas, negócios e produtores</small>
+        </div>
+        <a href="#" class="feed-link">Ver lojas</a>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-md-3 col-6">
+          <article class="showcase-card reveal">
+            <div class="showcase-img photo-offer"></div>
+            <div class="showcase-body">
+              <div class="feed-type">Mercado</div>
+              <div class="showcase-title">Combo feira da semana</div>
+              <p class="showcase-text">Hortifruti e cesta local.</p>
+              <a href="#" class="feed-link">Ver oferta</a>
+            </div>
+          </article>
+        </div>
+        <div class="col-md-3 col-6">
+          <article class="showcase-card reveal">
+            <div class="showcase-img" style="background:linear-gradient(135deg,#236941,#C1642F)"></div>
+            <div class="showcase-body">
+              <div class="feed-type">Padaria</div>
+              <div class="showcase-title">Café especial da manhã</div>
+              <p class="showcase-text">Produtos frescos da região.</p>
+              <a href="#" class="feed-link">Conhecer</a>
+            </div>
+          </article>
+        </div>
+        <div class="col-md-3 col-6">
+          <article class="showcase-card reveal">
+            <div class="showcase-img" style="background:linear-gradient(135deg,#13293D,#FFB703)"></div>
+            <div class="showcase-body">
+              <div class="feed-type">Loja</div>
+              <div class="showcase-title">Moda e presentes</div>
+              <p class="showcase-text">Novidades no comércio local.</p>
+              <a href="#" class="feed-link">Ver loja</a>
+            </div>
+          </article>
+        </div>
+        <div class="col-md-3 col-6">
+          <article class="showcase-card reveal">
+            <div class="showcase-img" style="background:linear-gradient(135deg,#C1642F,#1E3A54)"></div>
+            <div class="showcase-body">
+              <div class="feed-type">Produtor</div>
+              <div class="showcase-title">Queijos artesanais</div>
+              <p class="showcase-text">Direto do produtor.</p>
+              <a href="#" class="feed-link">Comprar</a>
+            </div>
+          </article>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- SERVIÇOS + VAGAS -->
+  <section class="showcase-section">
+    <div class="container-botuka">
+      <div class="main-layout">
+
+        <section id="servicos">
+          <div class="section-title">
+            <div>
+              <h2>Prestadores em destaque</h2>
+              <small>Serviços para resolver a vida</small>
+            </div>
+          </div>
+
+          <div class="feed-list">
+            <article class="feed-card compact-feed reveal">
+              <div class="avatar">JE</div>
+              <div class="compact-main">
+                <div class="feed-type">Eletricista</div>
+                <div class="compact-title">João Eletricista</div>
+                <div class="compact-sub">Residencial e comercial · ⭐ 4.9</div>
+              </div>
+              <div class="price-pill">Ver perfil</div>
+            </article>
+
+            <article class="feed-card compact-feed reveal">
+              <div class="avatar">MR</div>
+              <div class="compact-main">
+                <div class="feed-type">Reformas</div>
+                <div class="compact-title">M&R Reformas e Pinturas</div>
+                <div class="compact-sub">Orçamento rápido · atende região</div>
+              </div>
+              <div class="price-pill">Chamar</div>
+            </article>
+
+            <article class="feed-card compact-feed reveal">
+              <div class="avatar">DM</div>
+              <div class="compact-main">
+                <div class="feed-type">Diarista</div>
+                <div class="compact-title">Dona Maria Serviços</div>
+                <div class="compact-sub">Limpeza residencial · agenda aberta</div>
+              </div>
+              <div class="price-pill">Agendar</div>
+            </article>
+          </div>
+        </section>
+
+        <aside id="vagas">
+          <div class="section-title">
+            <div>
+              <h2>Vagas e currículos</h2>
+              <small>Empresas contratando na região</small>
+            </div>
+          </div>
+
+          <div class="publish-card reveal">
+            <h3>Cadastre seu currículo</h3>
+            <p>O BOTUKA pode conectar moradores com empresas locais.</p>
+            <a href="#" class="btn-botuka btn-yellow w-100 mb-3">
+              <i class="bi bi-file-earmark-person-fill"></i>
+              Cadastrar currículo
+            </a>
+
+            <div class="feed-list">
+              <article class="feed-card compact-feed">
+                <div class="feed-icon" style="background:var(--botuka-yellow);color:var(--botuka-blue)">
+                  <i class="bi bi-briefcase-fill"></i>
+                </div>
+                <div class="compact-main">
+                  <div class="feed-type">Vaga</div>
+                  <div class="compact-title">Auxiliar administrativo</div>
+                  <div class="compact-sub">Centro · publicado hoje</div>
+                </div>
+              </article>
+
+              <article class="feed-card compact-feed">
+                <div class="feed-icon" style="background:var(--botuka-green)">
+                  <i class="bi bi-shop"></i>
+                </div>
+                <div class="compact-main">
+                  <div class="feed-type">Comércio</div>
+                  <div class="compact-title">Atendente de loja</div>
+                  <div class="compact-sub">Vila dos Lavradores</div>
+                </div>
+              </article>
+            </div>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- TURISMO + AVISOS -->
+  <section class="showcase-section">
+    <div class="container-botuka">
+      <div class="main-layout">
+
+        <section id="turismo">
+          <div class="section-title">
+            <div>
+              <h2>Turismo regional</h2>
+              <small>Experiências para moradores e visitantes</small>
+            </div>
+          </div>
+
+          <article class="feed-card reveal">
+            <div class="feed-photo photo-tour">
+              <div class="photo-label">Trilha guiada domingo</div>
+            </div>
+            <div class="feed-inner">
+              <div class="feed-head">
+                <div class="feed-icon" style="background:var(--botuka-green-2)">
+                  <i class="bi bi-binoculars-fill"></i>
+                </div>
+                <div class="feed-meta">
+                  <div class="feed-type">Cuesta</div>
+                  <div class="feed-place">Domingo · 8h</div>
+                </div>
+              </div>
+              <h3 class="feed-title">Passeio no mirante com café rural incluso</h3>
+              <p class="feed-text">Experiência para família, visitantes e moradores redescobrirem a região.</p>
+              <a href="#" class="feed-link">Ver experiência <i class="bi bi-arrow-right"></i></a>
+            </div>
+          </article>
+        </section>
+
+        <aside id="avisos">
+          <div class="section-title">
+            <div>
+              <h2>Avisos úteis</h2>
+              <small>Informações públicas e campanhas</small>
+            </div>
+          </div>
+
+          <div class="feed-list">
+            <article class="feed-card reveal">
+              <div class="feed-inner">
+                <div class="feed-head">
+                  <div class="feed-icon" style="background:var(--botuka-earth)">
+                    <i class="bi bi-bank2"></i>
+                  </div>
+                  <div>
+                    <div class="feed-type">Utilidade pública</div>
+                    <div class="feed-place">Prefeitura · há 1h</div>
+                  </div>
+                </div>
+                <h3 class="feed-title">Cursos gratuitos com inscrições abertas</h3>
+                <p class="feed-text">Qualificação para moradores da região.</p>
+                <span class="badge-official"><i class="bi bi-shield-lock-fill"></i> Oficial</span>
+              </div>
+            </article>
+
+            <article class="feed-card reveal">
+              <div class="feed-inner">
+                <div class="feed-head">
+                  <div class="feed-icon" style="background:var(--botuka-blue-2)">
+                    <i class="bi bi-cone-striped"></i>
+                  </div>
+                  <div>
+                    <div class="feed-type">Trânsito</div>
+                    <div class="feed-place">Atualizado hoje</div>
+                  </div>
+                </div>
+                <h3 class="feed-title">Alteração temporária em via central</h3>
+                <p class="feed-text">Confira rotas alternativas e horários.</p>
+                <a href="#" class="feed-link">Saiba mais</a>
+              </div>
+            </article>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- MAPA + PUBLICAR -->
+  <section class="showcase-section">
+    <div class="container-botuka">
+      <div class="main-layout">
+
+        <section class="map-card reveal" id="mapa" style="min-width:0;">
+          <div class="section-title mb-2">
+            <div>
+              <h2>Mapa da cidade</h2>
+              <small>Encontre o que está perto de você</small>
+            </div>
+          </div>
+
+          <div class="fake-map">
+            <div class="map-road"></div>
+
+            <button class="map-pin pin-service" type="button"><i class="bi bi-tools"></i></button>
+            <button class="map-pin pin-event" type="button"><i class="bi bi-calendar-event-fill"></i></button>
+            <button class="map-pin pin-tour" type="button"><i class="bi bi-binoculars-fill"></i></button>
+            <button class="map-pin pin-job" type="button"><i class="bi bi-briefcase-fill"></i></button>
+            <button class="map-pin pin-shop" type="button"><i class="bi bi-shop"></i></button>
+
+            <div class="map-floating">
+              <strong><i class="bi bi-geo-alt-fill" style="color:var(--botuka-earth)"></i> Agora perto de você</strong>
+              <small>Serviços, eventos, vagas, empresas e avisos no mapa.</small>
+            </div>
+          </div>
+
+          <div class="map-filters">
+            <button class="map-filter active">Tudo</button>
+            <button class="map-filter">Serviços</button>
+            <button class="map-filter">Eventos</button>
+            <button class="map-filter">Vagas</button>
+            <button class="map-filter">Turismo</button>
+            <button class="map-filter">Empresas</button>
+          </div>
+        </section>
+
+        <aside class="publish-card reveal" id="publicar" style="min-width:0;">
+          <h3>Publique na vitrine da cidade</h3>
+          <p>Divulgue serviços, produtos, vagas, eventos, empresas e avisos regionais.</p>
+
+          <div class="publish-grid" style="display:flex;flex-wrap:wrap;gap:14px;">
+            <a href="#" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-tools"></i> Serviço</a>
+            <a href="#" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-tag-fill"></i> Produto</a>
+            <a href="#" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-briefcase-fill"></i> Vaga</a>
+            <a href="#" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-calendar-event-fill"></i> Evento</a>
+            <a href="#" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-shop"></i> Empresa</a>
+            <a href="#" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-megaphone-fill"></i> Aviso</a>
+          </div>
+        </aside>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- CTA FINAL -->
+  <section class="showcase-section">
+    <div class="container-botuka">
+      <div class="cta-city reveal">
+        <div class="row align-items-center g-3">
+          <div class="col-lg-8 col-12">
+            <h2 class="font-title fw-bold mb-2">Faça parte da cidade acontecendo agora.</h2>
+            <p class="mb-0">
+              O BOTUKA nasce para organizar a vida local: quem vende, quem contrata, quem presta serviço,
+              quem promove eventos e quem quer descobrir a região.
+            </p>
+          </div>
+          <div class="col-lg-4 col-12 text-lg-end" style="text-align: right;">
+            <a href="#publicar" class="btn-botuka btn-yellow me-2 mb-2">
+              <i class="bi bi-plus-circle-fill"></i>
+              Publicar
+            </a>
+            <a href="#" class="btn-botuka btn-soft mb-2" data-bs-toggle="modal" data-bs-target="#loginModal">
+              Criar conta
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+{% endblock %}

@@ -1,0 +1,19 @@
+{% extends "_layout/platform/platform_home.html" %}
+{% load static %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{% static 'home/css/style.css' %}">
+
+
+<div id="inicio">
+
+  {% include "home/partials/carousel_destaque.html" %}
+  {% include "home/partials/hero.html" %}
+  {% include "home/partials/cta.html" %}
+
+  
+
+</div>
+
+{% endblock %}

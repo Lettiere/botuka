@@ -1,0 +1,54 @@
+<!-- CTA FINAL -->
+<style>
+/* ====== CSS from style.css relevant to this section (.cta-city and responsive) ====== */
+.cta-city {
+  background:
+    radial-gradient(380px 180px at 80% 0%, rgba(255,183,3,.22), transparent 70%),
+    var(--botuka-blue);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: 34px;
+  box-shadow: var(--shadow-hover);
+}
+.cta-city p {
+  color: rgba(255,255,255,.76);
+}
+@media (max-width: 768px) {
+  .cta-city {
+    padding: 18px 12px;
+  }
+  .cta-city .row {
+    flex-direction: column;
+    gap: 14px;
+    text-align: left;
+  }
+  .cta-city .col-lg-4 {
+    text-align: left !important;
+  }
+}
+</style>
+
+<section class="showcase-section">
+  <div class="container-botuka">
+    <div class="cta-city reveal">
+      <div class="row align-items-center g-3">
+        <div class="col-lg-8 col-12">
+          <h2 class="font-title fw-bold mb-2">Faça parte da cidade acontecendo agora.</h2>
+          <p class="mb-0">
+            O BOTUKA nasce para organizar a vida local: quem vende, quem contrata, quem presta serviço,
+            quem promove eventos e quem quer descobrir a região.
+          </p>
+        </div>
+        <div class="col-lg-4 col-12 text-lg-end" style="text-align: right;">
+          <a href="#publicar" class="btn-botuka btn-yellow me-2 mb-2">
+            <i class="bi bi-plus-circle-fill"></i>
+            Publicar
+          </a>
+          <a href="#" class="btn-botuka btn-soft mb-2" data-bs-toggle="modal" data-bs-target="#loginModal">
+            Criar conta
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>

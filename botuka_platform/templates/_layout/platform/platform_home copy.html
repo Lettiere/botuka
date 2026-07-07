@@ -1,0 +1,1100 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-theme="light">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BOTUKA — Sua cidade acontecendo agora</title>
+<meta name="description" content="BOTUKA conecta serviços, vagas, eventos, comércios, turismo e avisos da região em um só lugar.">
+
+<!-- ============================================================
+    CDNs
+============================================================ -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+<style>
+/* ============================================================
+  BOTUKA — CIDADE AGORA
+  Ideia: app vivo da cidade, não dashboard, não SaaS.
+============================================================ */
+
+:root{
+  --botuka-yellow:#FFB703;
+  --botuka-yellow-2:#F2A000;
+  --botuka-blue:#13293D;
+  --botuka-blue-2:#1E3A54;
+  --botuka-green:#2E8B57;
+  --botuka-green-2:#236941;
+  --botuka-earth:#C1642F;
+  --botuka-earth-2:#A94F22;
+  --botuka-sky:#EAF6F7;
+
+  --bg:#F8F5ED;
+  --surface:#FFFFFF;
+  --surface-2:#FFF9EA;
+  --text:#20201D;
+  --muted:#746E60;
+  --border:#E8DECA;
+
+  --radius-xs:10px;
+  --radius:18px;
+  --radius-lg:28px;
+  --pill:999px;
+
+  --shadow:0 10px 28px -18px rgba(19,41,61,.28);
+  --shadow-hover:0 18px 46px -24px rgba(19,41,61,.35);
+
+  --font-title:'Baloo 2', system-ui, sans-serif;
+  --font-body:'Inter', system-ui, sans-serif;
+}
+
+[data-theme="dark"]{
+  --bg:#111820;
+  --surface:#18222C;
+  --surface-2:#202C37;
+  --text:#F3EEDF;
+  --muted:#B3AB98;
+  --border:#2A3440;
+  --botuka-sky:#172A32;
+}
+
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;
+  background:
+    radial-gradient(760px 340px at 14% -6%, rgba(255,183,3,.20), transparent 62%),
+    radial-gradient(560px 300px at 92% 6%, rgba(46,139,87,.14), transparent 60%),
+    var(--bg);
+  color:var(--text);
+  font-family:var(--font-body);
+  -webkit-font-smoothing:antialiased;
+}
+a{text-decoration:none;color:inherit}
+h1,h2,h3,h4,.brand,.font-title{font-family:var(--font-title)}
+.container-botuka{max-width:1220px;margin-inline:auto;padding-inline:18px}
+.text-muted-botuka{color:var(--muted)}
+::selection{background:var(--botuka-yellow);color:var(--botuka-blue)}
+
+/* ============================================================
+  HEADER
+============================================================ */
+.app-header{
+  position:sticky;
+  top:0;
+  z-index:1040;
+  background:rgba(255,255,255,.82);
+  backdrop-filter:blur(18px) saturate(140%);
+  border-bottom:1px solid rgba(232,222,202,.78);
+}
+[data-theme="dark"] .app-header{
+  background:rgba(17,24,32,.84);
+  border-bottom-color:var(--border);
+}
+.header-inner{
+  height:72px;
+  display:flex;
+  align-items:center;
+  gap:16px;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  font-size:1.75rem;
+  font-weight:800;
+  letter-spacing:-.04em;
+  color:var(--botuka-earth);
+  white-space:nowrap;
+}
+.brand-dot{
+  width:16px;
+  height:16px;
+  border-radius:50%;
+  background:linear-gradient(135deg,var(--botuka-yellow),var(--botuka-earth));
+  box-shadow:0 0 0 6px rgba(255,183,3,.16);
+}
+.location-pill{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--botuka-blue);
+  border-radius:var(--pill);
+  padding:8px 13px;
+  font-weight:700;
+  font-size:.9rem;
+}
+[data-theme="dark"] .location-pill{color:var(--text)}
+.header-search{
+  flex:1;
+  max-width:420px;
+  margin-left:auto;
+  position:relative;
+}
+.header-search input{
+  width:100%;
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text);
+  border-radius:var(--pill);
+  padding:11px 44px 11px 16px;
+  outline:none;
+  font-size:.94rem;
+}
+.header-search i{
+  position:absolute;
+  right:16px;
+  top:50%;
+  transform:translateY(-50%);
+  color:var(--muted);
+}
+.header-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.btn-botuka{
+  border:0;
+  border-radius:var(--pill);
+  padding:10px 18px;
+  font-weight:800;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  transition:.2s ease;
+  white-space:nowrap;
+}
+.btn-yellow{
+  background:var(--botuka-yellow);
+  color:var(--botuka-blue);
+  box-shadow:0 8px 18px -12px rgba(255,183,3,.65);
+}
+.btn-yellow:hover{background:var(--botuka-yellow-2);color:var(--botuka-blue);transform:translateY(-1px)}
+.btn-soft{
+  background:var(--surface);
+  border:1px solid var(--border);
+  color:var(--text);
+}
+.btn-soft:hover{background:var(--surface-2);color:var(--text);transform:translateY(-1px)}
+.btn-icon{
+  width:42px;
+  height:42px;
+  padding:0;
+  border-radius:50%;
+}
+
+/* ============================================================
+  HERO
+============================================================ */
+.hero{
+  padding:34px 0 22px;
+}
+.hero-grid{
+  display:grid;
+  grid-template-columns:1.06fr .94fr;
+  gap:28px;
+  align-items:stretch;
+}
+.hero-main{
+  background:
+    linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,249,234,.92)),
+    radial-gradient(400px 220px at 18% 0%, rgba(255,183,3,.18), transparent 70%);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+  padding:34px;
+  position:relative;
+  overflow:hidden;
+}
+[data-theme="dark"] .hero-main{background:var(--surface)}
+.hero-main::after{
+  content:"";
+  position:absolute;
+  right:-80px;
+  bottom:-110px;
+  width:260px;
+  height:260px;
+  border-radius:50%;
+  background:rgba(46,139,87,.12);
+}
+.hero-kicker{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  background:#EAF8EF;
+  color:var(--botuka-green-2);
+  border-radius:var(--pill);
+  padding:8px 13px;
+  font-size:.84rem;
+  font-weight:800;
+  margin-bottom:18px;
+}
+[data-theme="dark"] .hero-kicker{background:rgba(46,139,87,.14);color:#7DD6A5}
+.hero h1{
+  font-size:clamp(2.25rem,5.2vw,4.45rem);
+  line-height:.95;
+  letter-spacing:-.05em;
+  font-weight:800;
+  margin:0 0 14px;
+  color:var(--botuka-blue);
+}
+[data-theme="dark"] .hero h1{color:var(--text)}
+.hero h1 span{color:var(--botuka-earth)}
+.hero-subtitle{
+  color:var(--muted);
+  font-size:1.08rem;
+  max-width:660px;
+  margin-bottom:22px;
+}
+.search-hero{
+  position:relative;
+  z-index:2;
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:22px;
+  box-shadow:var(--shadow);
+  padding:10px;
+  display:grid;
+  grid-template-columns:1fr auto;
+  gap:8px;
+  margin-bottom:16px;
+}
+.search-hero input{
+  border:0;
+  outline:0;
+  background:transparent;
+  color:var(--text);
+  font-size:1.05rem;
+  padding:13px 14px;
+}
+.quick-chips{
+  display:flex;
+  gap:9px;
+  overflow-x:auto;
+  padding:2px 0 4px;
+  position:relative;
+  z-index:2;
+}
+.quick-chip{
+  border:1px solid var(--border);
+  background:var(--surface);
+  color:var(--text);
+  border-radius:var(--pill);
+  padding:8px 13px;
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  font-size:.88rem;
+  font-weight:750;
+  white-space:nowrap;
+  transition:.18s ease;
+}
+.quick-chip:hover{border-color:var(--botuka-yellow);background:var(--surface-2);transform:translateY(-1px)}
+.quick-chip i{color:var(--botuka-earth)}
+
+.today-panel{
+  display:grid;
+  grid-template-rows:auto 1fr;
+  gap:14px;
+}
+.weather-card{
+  min-height:190px;
+  background:
+    linear-gradient(145deg, rgba(19,41,61,.96), rgba(30,58,84,.92)),
+    radial-gradient(300px 200px at 80% 10%, rgba(255,183,3,.22), transparent 70%);
+  border-radius:var(--radius-lg);
+  color:#fff;
+  padding:24px;
+  position:relative;
+  overflow:hidden;
+  box-shadow:var(--shadow-hover);
+}
+.weather-card::after{
+  content:"";
+  position:absolute;
+  width:180px;height:180px;
+  border-radius:50%;
+  right:-42px;top:-48px;
+  background:rgba(255,183,3,.22);
+}
+.weather-top{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  position:relative;
+  z-index:2;
+}
+.weather-temp{
+  font-family:var(--font-title);
+  font-size:3.2rem;
+  font-weight:800;
+  line-height:.9;
+}
+.weather-city{font-weight:800;font-size:1.05rem}
+.weather-desc{color:rgba(255,255,255,.72);font-size:.9rem}
+.city-status{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:12px;
+}
+.status-item{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:16px;
+  box-shadow:var(--shadow);
+}
+.status-value{
+  font-family:var(--font-title);
+  font-size:1.72rem;
+  font-weight:800;
+  color:var(--botuka-earth);
+  line-height:1;
+}
+.status-label{
+  color:var(--muted);
+  font-size:.82rem;
+  font-weight:700;
+  margin-top:5px;
+}
+
+/* ============================================================
+  MAIN LAYOUT
+============================================================ */
+.main-section{
+  padding:22px 0 20px;
+}
+.main-layout{
+  display:grid;
+  grid-template-columns:minmax(0,1fr) 380px;
+  gap:24px;
+  align-items:start;
+}
+.section-title{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:14px;
+  margin-bottom:14px;
+}
+.section-title h2{
+  margin:0;
+  font-size:1.55rem;
+  font-weight:800;
+  color:var(--botuka-blue);
+  letter-spacing:-.02em;
+}
+[data-theme="dark"] .section-title h2{color:var(--text)}
+.section-title small{color:var(--muted);font-weight:700}
+
+/* ============================================================
+  FEED
+============================================================ */
+.feed-list{
+  display:flex;
+  flex-direction:column;
+  gap:14px;
+}
+.feed-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+  overflow:hidden;
+  transition:.18s ease;
+}
+.feed-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover)}
+.feed-inner{padding:18px}
+.feed-head{
+  display:flex;
+  align-items:center;
+  gap:12px;
+  margin-bottom:11px;
+}
+.feed-icon{
+  width:46px;height:46px;
+  border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.35rem;
+  color:#fff;
+  flex:0 0 auto;
+}
+.feed-meta{
+  min-width:0;
+}
+.feed-type{
+  font-size:.78rem;
+  font-weight:850;
+  text-transform:uppercase;
+  letter-spacing:.03em;
+  color:var(--botuka-earth);
+}
+.feed-place{
+  color:var(--muted);
+  font-size:.84rem;
+  font-weight:650;
+}
+.feed-title{
+  font-size:1.13rem;
+  font-weight:850;
+  line-height:1.25;
+  margin:0 0 7px;
+}
+.feed-text{
+  color:var(--muted);
+  margin:0 0 12px;
+  font-size:.94rem;
+}
+.feed-actions{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.feed-link{
+  color:var(--botuka-earth);
+  font-weight:850;
+  font-size:.9rem;
+}
+.feed-link:hover{color:var(--botuka-earth-2)}
+.badge-official,.badge-check,.badge-alert{
+  border-radius:var(--pill);
+  padding:5px 9px;
+  font-size:.72rem;
+  font-weight:850;
+  display:inline-flex;
+  align-items:center;
+  gap:5px;
+}
+.badge-official{background:#FBE8DF;color:var(--botuka-earth-2)}
+.badge-check{background:#E8F7EF;color:var(--botuka-green-2)}
+.badge-alert{background:#FFF2C9;color:#8A6100}
+.feed-photo{
+  height:220px;
+  border-radius:0;
+  background-size:cover;
+  background-position:center;
+  position:relative;
+}
+.photo-event{
+  background:
+    linear-gradient(180deg,transparent 42%,rgba(0,0,0,.62)),
+    radial-gradient(circle at 24% 20%,rgba(255,255,255,.24),transparent 26%),
+    linear-gradient(135deg,#2E8B57,#C1642F);
+}
+.photo-tour{
+  background:
+    linear-gradient(180deg,transparent 46%,rgba(0,0,0,.62)),
+    radial-gradient(circle at 70% 28%,rgba(255,183,3,.34),transparent 18%),
+    linear-gradient(135deg,#236941,#1E3A54 60%,#C1642F);
+}
+.photo-offer{
+  background:
+    linear-gradient(180deg,transparent 42%,rgba(0,0,0,.55)),
+    radial-gradient(circle at 30% 20%,rgba(255,255,255,.23),transparent 24%),
+    linear-gradient(135deg,#FFB703,#C1642F);
+}
+.photo-label{
+  position:absolute;
+  left:18px;
+  bottom:16px;
+  color:#fff;
+  font-weight:850;
+  font-size:1.2rem;
+  text-shadow:0 2px 8px rgba(0,0,0,.32);
+}
+.compact-feed{
+  display:grid;
+  grid-template-columns:auto 1fr auto;
+  gap:14px;
+  align-items:center;
+  padding:16px;
+}
+.avatar{
+  width:54px;height:54px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-weight:850;
+  color:#fff;
+  background:linear-gradient(135deg,var(--botuka-green),var(--botuka-earth));
+}
+.compact-main{min-width:0}
+.compact-title{
+  font-weight:850;
+  line-height:1.22;
+}
+.compact-sub{
+  color:var(--muted);
+  font-size:.86rem;
+  font-weight:650;
+  margin-top:3px;
+}
+.price-pill{
+  background:#EAF8EF;
+  color:var(--botuka-green-2);
+  border-radius:var(--pill);
+  padding:8px 11px;
+  font-weight:850;
+  white-space:nowrap;
+}
+[data-theme="dark"] .price-pill{background:rgba(46,139,87,.16);color:#8BE1AE}
+
+/* ============================================================
+  SIDEBAR / MAP
+============================================================ */
+.sidebar-sticky{
+  position:sticky;
+  top:92px;
+}
+.map-card{
+  background:var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+  padding:16px;
+  margin-bottom:16px;
+}
+.fake-map{
+  height:310px;
+  border-radius:22px;
+  overflow:hidden;
+  position:relative;
+  background:
+    linear-gradient(120deg,rgba(255,183,3,.12),transparent 42%),
+    linear-gradient(45deg,rgba(46,139,87,.13),transparent 48%),
+    #F1EBDD;
+  border:1px solid var(--border);
+}
+[data-theme="dark"] .fake-map{background:#111E28}
+.fake-map::before{
+  content:"";
+  position:absolute;inset:0;
+  background:
+    repeating-linear-gradient(22deg, transparent 0 30px, rgba(19,41,61,.06) 31px 32px),
+    repeating-linear-gradient(100deg, transparent 0 52px, rgba(19,41,61,.05) 53px 54px);
+}
+.map-road{
+  position:absolute;
+  width:120%;
+  height:54px;
+  left:-30px;
+  top:128px;
+  background:rgba(255,255,255,.55);
+  border:1px solid rgba(255,255,255,.7);
+  transform:rotate(-12deg);
+  border-radius:999px;
+}
+[data-theme="dark"] .map-road{background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.08)}
+.map-pin{
+  position:absolute;
+  width:38px;height:38px;
+  border-radius:50% 50% 50% 6px;
+  transform:rotate(-45deg);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 8px 18px -8px rgba(0,0,0,.45);
+  cursor:pointer;
+  transition:.18s ease;
+}
+.map-pin:hover{scale:1.08}
+.map-pin i{
+  transform:rotate(45deg);
+  color:#fff;
+  font-size:1.08rem;
+}
+.pin-service{left:62%;top:26%;background:var(--botuka-earth)}
+.pin-event{left:22%;top:38%;background:var(--botuka-yellow)}
+.pin-event i{color:var(--botuka-blue)}
+.pin-tour{left:73%;top:62%;background:var(--botuka-green)}
+.pin-job{left:42%;top:55%;background:var(--botuka-blue-2)}
+.pin-shop{left:28%;top:71%;background:var(--botuka-earth-2)}
+.map-floating{
+  position:absolute;
+  left:14px;
+  right:14px;
+  bottom:14px;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(12px);
+  border:1px solid rgba(255,255,255,.65);
+  border-radius:18px;
+  padding:13px;
+  box-shadow:var(--shadow);
+}
+[data-theme="dark"] .map-floating{background:rgba(24,34,44,.9);border-color:var(--border)}
+.map-floating strong{display:block;font-size:.96rem}
+.map-floating small{color:var(--muted);font-weight:650}
+.map-filters{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  margin-top:12px;
+  padding-bottom:3px;
+}
+.map-filter{
+  border:1px solid var(--border);
+  border-radius:var(--pill);
+  background:var(--surface);
+  color:var(--text);
+  padding:8px 11px;
+  font-size:.82rem;
+  font-weight:800;
+  white-space:nowrap;
+}
+.map-filter.active{background:var(--botuka-blue);color:#fff;border-color:var(--botuka-blue)}
+
+.publish-card{
+  background:
+    radial-gradient(260px 140px at 85% 0%, rgba(255,183,3,.18), transparent 70%),
+    var(--surface);
+  border:1px solid var(--border);
+  border-radius:var(--radius-lg);
+  box-shadow:var(--shadow);
+  padding:18px;
+}
+.publish-card h3{
+  font-size:1.25rem;
+  font-weight:800;
+  margin-bottom:4px;
+}
+.publish-card p{
+  color:var(--muted);
+  margin-bottom:14px;
+  font-size:.9rem;
+}
+.publish-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:9px;
+}
+.publish-option{
+  background:var(--bg);
+  border:1px solid var(--border);
+  border-radius:16px;
+  padding:12px;
+  display:flex;
+  align-items:center;
+  gap:9px;
+  font-weight:800;
+  font-size:.86rem;
+  transition:.18s ease;
+}
+.publish-option:hover{background:var(--surface-2);border-color:var(--botuka-yellow);transform:translateY(-1px)}
+.publish-option i{color:var(--botuka-earth);font-size:1.1rem}
+
+/* ============================================================
+  BOTTOM NAV MOBILE
+============================================================ */
+.mobile-nav{
+  display:none;
+  position:fixed;
+  left:12px;right:12px;bottom:12px;
+  z-index:1050;
+  background:rgba(255,255,255,.92);
+  backdrop-filter:blur(16px);
+  border:1px solid var(--border);
+  border-radius:24px;
+  box-shadow:0 18px 45px -22px rgba(19,41,61,.45);
+  padding:8px;
+}
+[data-theme="dark"] .mobile-nav{background:rgba(24,34,44,.92)}
+.mobile-nav a{
+  flex:1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:2px;
+  font-size:.7rem;
+  color:var(--muted);
+  font-weight:800;
+}
+.mobile-nav i{font-size:1.2rem;color:var(--botuka-earth)}
+.mobile-nav .publish-mobile{
+  margin-top:-22px;
+}
+.mobile-nav .publish-mobile i{
+  width:52px;height:52px;
+  border-radius:50%;
+  background:var(--botuka-yellow);
+  color:var(--botuka-blue);
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 10px 20px -12px rgba(255,183,3,.7);
+}
+
+/* ============================================================
+  MODAL LOGIN
+============================================================ */
+.modal-content{
+  border:0;
+  border-radius:28px;
+  background:var(--surface);
+  color:var(--text);
+}
+.login-modal-body{
+  padding:26px;
+}
+.login-logo{
+  justify-content:center;
+  margin-bottom:8px;
+}
+.login-copy{
+  text-align:center;
+  color:var(--muted);
+  font-weight:650;
+  margin-bottom:18px;
+}
+.login-input{
+  border:1px solid var(--border);
+  background:var(--bg);
+  color:var(--text);
+  border-radius:18px;
+  padding:13px 15px;
+}
+.login-input:focus{
+  border-color:var(--botuka-yellow);
+  box-shadow:0 0 0 4px rgba(255,183,3,.16);
+  background:var(--surface);
+  color:var(--text);
+}
+.btn-google{
+  border:1px solid var(--border);
+  border-radius:18px;
+  padding:12px;
+  background:var(--surface);
+  color:var(--text);
+  font-weight:800;
+  width:100%;
+}
+.divider{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  color:var(--muted);
+  font-size:.82rem;
+  font-weight:700;
+  margin:16px 0;
+}
+.divider::before,.divider::after{
+  content:"";
+  height:1px;
+  background:var(--border);
+  flex:1;
+}
+
+/* ============================================================
+  FOOTER
+============================================================ */
+.footer{
+  padding:34px 0 96px;
+  border-top:1px solid var(--border);
+  margin-top:20px;
+  background:var(--surface);
+}
+.footer-grid{
+  display:grid;
+  grid-template-columns:1.4fr repeat(3,1fr);
+  gap:20px;
+}
+.footer p{color:var(--muted);font-weight:600;font-size:.92rem}
+.footer h4{
+  font-size:1rem;
+  font-weight:800;
+  margin-bottom:10px;
+}
+.footer a{
+  display:block;
+  color:var(--muted);
+  font-weight:650;
+  font-size:.9rem;
+  margin-bottom:7px;
+}
+.footer a:hover{color:var(--botuka-earth)}
+
+/* ============================================================
+  INTERACTIONS
+============================================================ */
+.reveal{opacity:0;transform:translateY(16px);transition:.55s ease}
+.reveal.on{opacity:1;transform:translateY(0)}
+
+/* ============================================================
+  RESPONSIVE
+============================================================ */
+@media (max-width: 992px){
+  .hero-grid,.main-layout{grid-template-columns:1fr}
+  .sidebar-sticky{position:static}
+  .today-panel{grid-template-columns:1fr}
+  .weather-card{min-height:160px}
+  .header-search{display:none}
+}
+@media (max-width: 768px){
+  body{padding-bottom:80px}
+  .header-inner{height:64px}
+  .brand{font-size:1.5rem}
+  .location-pill{display:none}
+  .btn-login-text,.btn-publish-text{display:none}
+  .hero{padding-top:18px}
+  .hero-main{padding:24px 18px}
+  .search-hero{grid-template-columns:1fr}
+  .search-hero .btn-botuka{width:100%}
+  .city-status{grid-template-columns:repeat(2,1fr)}
+  .compact-feed{grid-template-columns:auto 1fr}
+  .compact-feed .price-pill{grid-column:2;margin-top:4px;justify-self:start}
+  .feed-photo{height:180px}
+  .publish-grid{grid-template-columns:1fr}
+  .footer-grid{grid-template-columns:1fr 1fr}
+  .mobile-nav{display:flex}
+}
+@media (max-width: 480px){
+  .container-botuka{padding-inline:14px}
+  .hero h1{font-size:2.35rem}
+  .weather-temp{font-size:2.65rem}
+  .city-status{gap:9px}
+  .status-item{padding:13px}
+  .status-value{font-size:1.42rem}
+  .footer-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+
+<body>
+
+<!-- ============================================================
+    HEADER
+============================================================ -->
+<header class="app-header">
+  <div class="container-botuka">
+    <div class="header-inner">
+      <a href="#inicio" class="brand" aria-label="BOTUKA início">
+        <span class="brand-dot"></span>
+        BOTUKA
+      </a>
+
+      <button class="location-pill" type="button">
+        <i class="bi bi-geo-alt-fill"></i>
+        Botucatu
+      </button>
+
+      <form class="header-search" id="headerSearch">
+        <input type="search" placeholder="Buscar na cidade..." aria-label="Buscar na cidade">
+        <i class="bi bi-search"></i>
+      </form>
+
+      <div class="header-actions">
+        <button class="btn-botuka btn-soft btn-icon" id="themeToggle" type="button" aria-label="Alternar tema">
+          <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+        </button>
+        <button class="btn-botuka btn-soft" data-bs-toggle="modal" data-bs-target="#loginModal" type="button">
+          <i class="bi bi-person-circle"></i>
+          <span class="btn-login-text">Entrar</span>
+        </button>
+        <a class="btn-botuka btn-yellow" href="#publicar">
+          <i class="bi bi-plus-circle-fill"></i>
+          <span class="btn-publish-text">Publicar</span>
+        </a>
+      </div>
+    </div>
+  </div>
+</header>
+
+<!-- ============================================================
+    HERO
+============================================================ -->
+{% block content %}
+
+  {% endblock %}
+
+
+<!-- ============================================================
+    FOOTER
+============================================================ -->
+<footer class="footer">
+  <div class="container-botuka">
+    <div class="footer-grid">
+      <div>
+        <div class="brand mb-2"><span class="brand-dot"></span> BOTUKA</div>
+        <p>Feito para conectar pessoas, oportunidades e acontecimentos da região.</p>
+      </div>
+      <div>
+        <h4>Descobrir</h4>
+        <a href="#feed">Feed regional</a>
+        <a href="#mapa">Mapa</a>
+        <a href="#publicar">Publicar</a>
+      </div>
+      <div>
+        <h4>Categorias</h4>
+        <a href="#">Serviços</a>
+        <a href="#">Vagas</a>
+        <a href="#">Eventos</a>
+      </div>
+      <div>
+        <h4>Ajuda</h4>
+        <a href="#">Segurança</a>
+        <a href="#">Contato</a>
+        <a href="#">Termos</a>
+      </div>
+    </div>
+    <div class="text-muted-botuka mt-4 small">
+      © <span id="year"></span> BOTUKA · Protótipo visual.
+    </div>
+  </div>
+</footer>
+
+<!-- ============================================================
+    MOBILE NAV
+============================================================ -->
+<nav class="mobile-nav" aria-label="Navegação mobile">
+  <a href="#inicio"><i class="bi bi-house-fill"></i> Início</a>
+  <a href="#feed"><i class="bi bi-lightning-charge-fill"></i> Agora</a>
+  <a href="#publicar" class="publish-mobile"><i class="bi bi-plus-lg"></i> Publicar</a>
+  <a href="#mapa"><i class="bi bi-map-fill"></i> Mapa</a>
+  <a href="#" data-bs-toggle="modal" data-bs-target="#loginModal"><i class="bi bi-person-fill"></i> Conta</a>
+</nav>
+
+<!-- ============================================================
+    LOGIN MODAL
+============================================================ -->
+<div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="login-modal-body">
+        <button type="button" class="btn-close float-end" data-bs-dismiss="modal" aria-label="Fechar"></button>
+
+        <div class="brand login-logo">
+          <span class="brand-dot"></span>
+          BOTUKA
+        </div>
+
+        <p class="login-copy">
+          Entre para publicar, favoritar, conversar e acompanhar o que acontece na região.
+        </p>
+
+        <form id="loginForm">
+          <input class="form-control login-input mb-3" type="email" placeholder="Seu e-mail" required>
+          <button class="btn-botuka btn-yellow w-100" type="submit">
+            Continuar com e-mail
+          </button>
+        </form>
+
+        <div class="divider">ou</div>
+
+        <button class="btn-google" type="button">
+          <i class="bi bi-google"></i>
+          Continuar com Google
+        </button>
+
+        <button class="btn-botuka btn-soft w-100 mt-3" type="button">
+          Criar conta grátis
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+    TOAST
+============================================================ -->
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080">
+  <div id="appToast" class="toast align-items-center text-bg-dark border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        <span id="toastText">Ação demonstrativa.</span>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
+    </div>
+  </div>
+</div>
+
+<!-- ============================================================
+    SCRIPTS
+============================================================ -->
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+(function(){
+  const root = document.documentElement;
+  const themeButton = document.getElementById('themeToggle');
+  const themeIcon = document.getElementById('themeIcon');
+  const storedTheme = localStorage.getItem('botuka-theme') || 'light';
+
+  function setTheme(theme){
+    root.setAttribute('data-theme', theme);
+    localStorage.setItem('botuka-theme', theme);
+    themeIcon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
+  }
+
+  setTheme(storedTheme);
+
+  themeButton.addEventListener('click', function(){
+    setTheme(root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+  });
+})();
+
+function showToast(message){
+  $('#toastText').text(message);
+  const toast = new bootstrap.Toast(document.getElementById('appToast'), { delay: 2800 });
+  toast.show();
+}
+
+$(function(){
+  $('#year').text(new Date().getFullYear());
+
+  $('a[href^="#"]').on('click', function(e){
+    const target = $(this.getAttribute('href'));
+    if(target.length){
+      e.preventDefault();
+      $('html, body').animate({ scrollTop: target.offset().top - 82 }, 520);
+    }
+  });
+
+  $('#mainSearch, #headerSearch').on('submit', function(e){
+    e.preventDefault();
+    const value = $(this).find('input').val().trim();
+    if(!value){
+      showToast('Digite o que você procura na cidade.');
+      return;
+    }
+    showToast('Buscando "' + value + '" na região — protótipo visual.');
+  });
+
+  $('#loginForm').on('submit', function(e){
+    e.preventDefault();
+    showToast('Login demonstrativo — sem backend conectado.');
+    bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
+  });
+
+  $('.feed-link, .price-pill, .publish-option, .map-pin, .map-filter, .quick-chip').on('click', function(e){
+    if(!$(this).attr('href') || $(this).attr('href') === '#'){
+      e.preventDefault();
+      showToast('Ação demonstrativa do protótipo.');
+    }
+  });
+
+  $('.map-filter').on('click', function(){
+    $('.map-filter').removeClass('active');
+    $(this).addClass('active');
+  });
+
+  const observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        entry.target.classList.add('on');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {threshold:.12});
+
+  document.querySelectorAll('.reveal').forEach(function(el){
+    observer.observe(el);
+  });
+});
+</script>
+
+</body>
+</html>
