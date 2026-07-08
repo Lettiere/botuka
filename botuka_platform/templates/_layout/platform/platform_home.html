@@ -47,10 +47,25 @@
         <button class="btn-botuka btn-soft btn-icon" id="themeToggle" type="button" aria-label="Alternar tema">
           <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
         </button>
-        <button class="btn-botuka btn-soft" data-bs-toggle="modal" data-bs-target="#loginModal" type="button">
-          <i class="bi bi-person-circle"></i>
-          <span class="btn-login-text">Entrar</span>
-        </button>
+        {% if user.is_authenticated %}
+          <div class="d-inline-flex align-items-center ms-2">
+            <span class="rounded-circle bg-secondary text-white fw-bold d-flex align-items-center justify-content-center me-2" style="width:38px;height:38px;font-size:1.3rem;">
+              {{ user.first_name|default:user.username|first|upper }}
+            </span>
+            <span class="me-2 d-none d-md-inline">
+              Olá, {{ user.first_name|default:user.username }}
+            </span>
+            <a href="{% url 'accounts:logout' %}" class="btn btn-botuka btn-soft btn-sm">
+              <i class="bi bi-box-arrow-right"></i>
+              <span class="d-none d-md-inline">Sair</span>
+            </a>
+          </div>
+        {% else %}
+          <button class="btn-botuka btn-soft" data-bs-toggle="modal" data-bs-target="#loginModal" type="button">
+            <i class="bi bi-person-circle"></i>
+            <span class="btn-login-text">Entrar</span>
+          </button>
+        {% endif %}
         <a class="btn-botuka btn-yellow" href="#publicar">
           <i class="bi bi-plus-circle-fill"></i>
           <span class="btn-publish-text">Publicar</span>
@@ -117,43 +132,7 @@
 <!-- ============================================================
     LOGIN MODAL
 ============================================================ -->
-<div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
-  <div class="modal-dialog modal-dialog-centered">
-    <div class="modal-content">
-      <div class="login-modal-body">
-        <button type="button" class="btn-close float-end" data-bs-dismiss="modal" aria-label="Fechar"></button>
-
-        <div class="brand login-logo">
-          <span class="brand-dot"></span>
-          BOTUKA
-        </div>
-
-        <p class="login-copy">
-          Entre para publicar, favoritar, conversar e acompanhar o que acontece na região.
-        </p>
-
-        <form id="loginForm">
-          <input class="form-control login-input mb-3" type="email" placeholder="Seu e-mail" required>
-          <button class="btn-botuka btn-yellow w-100" type="submit">
-            Continuar com e-mail
-          </button>
-        </form>
-
-        <div class="divider">ou</div>
-
-        <button class="btn-google" type="button">
-          <i class="bi bi-google"></i>
-          Continuar com Google
-        </button>
-
-        <button class="btn-botuka btn-soft w-100 mt-3" type="button">
-          Criar conta grátis
-        </button>
-      </div>
-    </div>
-  </div>
-</div>
-
+{% include "_layout/platform/partials/modais.html" %}
 <!-- ============================================================
     TOAST
 ============================================================ -->
@@ -222,11 +201,7 @@ $(function(){
     showToast('Buscando "' + value + '" na região — protótipo visual.');
   });
 
-  $('#loginForm').on('submit', function(e){
-    e.preventDefault();
-    showToast('Login demonstrativo — sem backend conectado.');
-    bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
-  });
+  // O bloqueio do submit do #loginForm foi removido para permitir envio normal ao Django.
 
   $('.feed-link, .price-pill, .publish-option, .map-pin, .map-filter, .quick-chip').on('click', function(e){
     if(!$(this).attr('href') || $(this).attr('href') === '#'){
