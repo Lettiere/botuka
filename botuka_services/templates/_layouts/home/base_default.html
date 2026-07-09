@@ -1,0 +1,1725 @@
+<!DOCTYPE html>
+<html lang="pt-BR" data-bs-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Botuka Services — Profissionais de confiança em Botucatu</title>
+  <meta name="description" content="Botuka Services conecta moradores de Botucatu e região a prestadores de serviços de confiança, com busca rápida, categorias, avaliações e contato direto.">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --botuka-yellow:#FFB703;
+      --botuka-yellow-2:#F2A000;
+      --botuka-blue:#13293D;
+      --botuka-blue-2:#1E3A54;
+      --botuka-green:#2E8B57;
+      --botuka-green-2:#236941;
+      --botuka-earth:#C1642F;
+      --botuka-earth-2:#A94F22;
+      --botuka-sky:#EAF6F7;
+
+      --bg:#F8F5ED;
+      --surface:#FFFFFF;
+      --surface-2:#FFF9EA;
+      --text:#20201D;
+      --muted:#746E60;
+      --border:#E8DECA;
+
+      --radius-xs:10px;
+      --radius:18px;
+      --radius-lg:28px;
+      --pill:999px;
+
+      --shadow:0 10px 28px -18px rgba(19,41,61,.28);
+      --shadow-hover:0 18px 46px -24px rgba(19,41,61,.42);
+
+      --font-title:'Baloo 2', system-ui, sans-serif;
+      --font-body:'Inter', system-ui, sans-serif;
+    }
+
+    [data-bs-theme="dark"]{
+      --bg:#111820;
+      --surface:#18222C;
+      --surface-2:#202C37;
+      --text:#F3EEDF;
+      --muted:#B3AB98;
+      --border:#2A3440;
+      --botuka-sky:#172A32;
+    }
+
+    *{box-sizing:border-box}
+    html{scroll-behavior:smooth}
+    body{
+      margin:0;
+      background:
+        radial-gradient(760px 340px at 14% -6%, rgba(255,183,3,.20), transparent 62%),
+        radial-gradient(560px 300px at 92% 6%, rgba(46,139,87,.14), transparent 60%),
+        var(--bg);
+      color:var(--text);
+      font-family:var(--font-body);
+      -webkit-font-smoothing:antialiased;
+    }
+    a{text-decoration:none;color:inherit}
+    h1,h2,h3,h4,h5,.brand,.font-title{font-family:var(--font-title)}
+    .container-botuka{max-width:1220px;margin-inline:auto;padding-inline:18px}
+    .text-muted-botuka{color:var(--muted)}
+    ::selection{background:var(--botuka-yellow);color:var(--botuka-blue)}
+
+    /* NAVBAR */
+    .app-header{
+      position:sticky;
+      top:0;
+      z-index:1040;
+      background:rgba(255,255,255,.86);
+      backdrop-filter:blur(18px) saturate(140%);
+      border-bottom:1px solid rgba(232,222,202,.78);
+    }
+    [data-bs-theme="dark"] .app-header{
+      background:rgba(17,24,32,.86);
+      border-bottom-color:var(--border);
+    }
+    .header-inner{
+      min-height:74px;
+      display:flex;
+      align-items:center;
+      gap:14px;
+    }
+    .brand{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      font-size:1.8rem;
+      font-weight:800;
+      letter-spacing:-.04em;
+      color:var(--botuka-earth);
+      white-space:nowrap;
+    }
+    .brand-dot{
+      width:16px;height:16px;border-radius:50%;
+      background:linear-gradient(135deg,var(--botuka-yellow),var(--botuka-earth));
+      box-shadow:0 0 0 6px rgba(255,183,3,.16);
+    }
+    .brand-service-pill{
+      background:rgba(46,139,87,.12);
+      color:var(--botuka-green-2);
+      border:1px solid rgba(46,139,87,.16);
+      padding:5px 10px;
+      border-radius:var(--pill);
+      font-size:.76rem;
+      font-weight:850;
+      letter-spacing:.02em;
+      margin-left:4px;
+    }
+    [data-bs-theme="dark"] .brand-service-pill{color:#8BE1AE;background:rgba(46,139,87,.16)}
+    .nav-location{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      border:1px solid var(--border);
+      background:var(--surface);
+      color:var(--botuka-blue);
+      border-radius:var(--pill);
+      padding:8px 12px;
+      font-weight:800;
+      font-size:.88rem;
+    }
+    [data-bs-theme="dark"] .nav-location{color:var(--text)}
+    .nav-search{
+      flex:1;
+      max-width:330px;
+      margin-left:auto;
+      position:relative;
+    }
+    .nav-search input{
+      width:100%;
+      border:1px solid var(--border);
+      background:var(--surface);
+      color:var(--text);
+      border-radius:var(--pill);
+      padding:10px 42px 10px 15px;
+      outline:none;
+      font-size:.92rem;
+    }
+    .nav-search i{
+      position:absolute;
+      right:15px;
+      top:50%;
+      transform:translateY(-50%);
+      color:var(--muted);
+    }
+    .desktop-nav{
+      display:flex;
+      align-items:center;
+      gap:4px;
+    }
+    .desktop-nav a{
+      padding:9px 11px;
+      border-radius:var(--pill);
+      color:var(--muted);
+      font-size:.9rem;
+      font-weight:800;
+      transition:.18s ease;
+      white-space:nowrap;
+    }
+    .desktop-nav a:hover,
+    .desktop-nav a.active{
+      background:var(--surface-2);
+      color:var(--botuka-earth);
+    }
+    .header-actions{
+      display:flex;
+      align-items:center;
+      gap:8px;
+    }
+    .btn-botuka{
+      border:0;
+      border-radius:var(--pill);
+      padding:10px 16px;
+      font-weight:850;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap:8px;
+      transition:.2s ease;
+      white-space:nowrap;
+    }
+    .btn-yellow{
+      background:var(--botuka-yellow);
+      color:var(--botuka-blue);
+      box-shadow:0 8px 18px -12px rgba(255,183,3,.65);
+    }
+    .btn-yellow:hover{background:var(--botuka-yellow-2);color:var(--botuka-blue);transform:translateY(-1px)}
+    .btn-soft{
+      background:var(--surface);
+      border:1px solid var(--border);
+      color:var(--text);
+    }
+    .btn-soft:hover{background:var(--surface-2);color:var(--text);transform:translateY(-1px)}
+    .btn-icon{width:42px;height:42px;padding:0;border-radius:50%}
+    .mobile-menu-btn{display:none}
+
+    .mobile-panel{
+      display:none;
+      border-top:1px solid var(--border);
+      padding:12px 0 16px;
+    }
+    .mobile-panel.open{display:block}
+    .mobile-panel .nav-search{display:block;max-width:none;margin:0 0 10px}
+    .mobile-links{
+      display:grid;
+      gap:8px;
+    }
+    .mobile-links a{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:16px;
+      padding:12px;
+      color:var(--text);
+      font-weight:850;
+      display:flex;
+      align-items:center;
+      gap:10px;
+    }
+    .mobile-links i{color:var(--botuka-earth)}
+
+    /* HERO */
+    .hero-services{
+      padding:34px 0 28px;
+    }
+    .hero-card{
+      display:grid;
+      grid-template-columns:1.08fr .92fr;
+      gap:28px;
+      align-items:stretch;
+      background:
+        linear-gradient(135deg, rgba(255,255,255,.96), rgba(255,249,234,.92)),
+        radial-gradient(420px 240px at 12% 0%, rgba(255,183,3,.18), transparent 70%);
+      border:1px solid var(--border);
+      border-radius:var(--radius-lg);
+      box-shadow:var(--shadow);
+      overflow:hidden;
+      position:relative;
+    }
+    [data-bs-theme="dark"] .hero-card{background:var(--surface)}
+    .hero-copy{padding:38px;position:relative;z-index:2}
+    .hero-kicker{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      background:#EAF8EF;
+      color:var(--botuka-green-2);
+      border-radius:var(--pill);
+      padding:8px 13px;
+      font-size:.84rem;
+      font-weight:850;
+      margin-bottom:18px;
+    }
+    [data-bs-theme="dark"] .hero-kicker{background:rgba(46,139,87,.14);color:#7DD6A5}
+    .hero-copy h1{
+      font-size:clamp(2.15rem,5vw,4.15rem);
+      line-height:.96;
+      letter-spacing:-.05em;
+      font-weight:800;
+      margin:0 0 16px;
+      color:var(--botuka-blue);
+    }
+    [data-bs-theme="dark"] .hero-copy h1{color:var(--text)}
+    .hero-copy h1 span{color:var(--botuka-earth)}
+    .hero-copy p{
+      color:var(--muted);
+      font-size:1.05rem;
+      max-width:620px;
+      margin:0 0 22px;
+    }
+    .hero-trust{
+      display:flex;
+      flex-wrap:wrap;
+      gap:9px;
+      margin-top:16px;
+    }
+    .trust-pill{
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      background:var(--surface);
+      border:1px solid var(--border);
+      color:var(--text);
+      border-radius:var(--pill);
+      padding:8px 12px;
+      font-size:.84rem;
+      font-weight:800;
+    }
+    .trust-pill i{color:var(--botuka-green)}
+    .hero-visual{
+      padding:28px;
+      background:
+        radial-gradient(300px 200px at 80% 8%, rgba(255,183,3,.22), transparent 70%),
+        linear-gradient(145deg, rgba(19,41,61,.96), rgba(30,58,84,.92));
+      color:#fff;
+      position:relative;
+      overflow:hidden;
+      min-height:390px;
+    }
+    .hero-visual::after{
+      content:"";
+      position:absolute;
+      width:220px;height:220px;
+      border-radius:50%;
+      right:-70px;top:-60px;
+      background:rgba(255,183,3,.20);
+    }
+    .visual-panel{
+      position:relative;
+      z-index:2;
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.18);
+      border-radius:24px;
+      padding:18px;
+      backdrop-filter:blur(12px);
+      margin-bottom:14px;
+    }
+    .visual-provider{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .visual-avatar{
+      width:54px;height:54px;border-radius:18px;
+      display:flex;align-items:center;justify-content:center;
+      background:linear-gradient(135deg,var(--botuka-yellow),var(--botuka-earth));
+      color:var(--botuka-blue);
+      font-weight:900;
+      font-family:var(--font-title);
+      font-size:1.35rem;
+    }
+    .visual-title{font-weight:900}
+    .visual-meta{font-size:.86rem;color:rgba(255,255,255,.74)}
+    .visual-badges{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+    .visual-badge{
+      background:rgba(255,255,255,.12);
+      border:1px solid rgba(255,255,255,.16);
+      border-radius:var(--pill);
+      padding:7px 10px;
+      font-size:.78rem;
+      font-weight:800;
+    }
+
+    /* SEARCH */
+    .search-wrap{margin-top:-22px;position:relative;z-index:5}
+    .search-card{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:24px;
+      box-shadow:var(--shadow-hover);
+      padding:14px;
+    }
+    .services-search-form{
+      display:grid;
+      grid-template-columns:1.2fr .8fr .65fr auto;
+      gap:10px;
+      align-items:end;
+    }
+    .search-field{
+      position:relative;
+    }
+    .search-field label{
+      font-size:.75rem;
+      color:var(--muted);
+      font-weight:800;
+      margin:0 0 5px 12px;
+    }
+    .search-field input,
+    .search-field select{
+      width:100%;
+      border:1px solid var(--border);
+      background:var(--bg);
+      color:var(--text);
+      border-radius:18px;
+      padding:13px 14px;
+      outline:none;
+      font-weight:700;
+    }
+    .search-field input:focus,
+    .search-field select:focus{
+      border-color:var(--botuka-yellow);
+      box-shadow:0 0 0 4px rgba(255,183,3,.16);
+      background:var(--surface);
+    }
+    .quick-chips{
+      display:flex;
+      gap:9px;
+      overflow-x:auto;
+      padding:14px 2px 2px;
+    }
+    .quick-chip{
+      border:1px solid var(--border);
+      background:var(--surface);
+      color:var(--text);
+      border-radius:var(--pill);
+      padding:8px 13px;
+      display:inline-flex;
+      align-items:center;
+      gap:7px;
+      font-size:.88rem;
+      font-weight:800;
+      white-space:nowrap;
+      transition:.18s ease;
+    }
+    .quick-chip:hover{border-color:var(--botuka-yellow);background:var(--surface-2);transform:translateY(-1px)}
+    .quick-chip i{color:var(--botuka-earth)}
+
+    /* SECTIONS */
+    .section-pad{padding:48px 0}
+    .section-title{
+      display:flex;
+      justify-content:space-between;
+      align-items:end;
+      gap:18px;
+      margin-bottom:20px;
+    }
+    .section-title h2{
+      margin:0;
+      font-size:1.85rem;
+      font-weight:900;
+      color:var(--botuka-blue);
+      letter-spacing:-.03em;
+    }
+    [data-bs-theme="dark"] .section-title h2{color:var(--text)}
+    .section-title p{margin:4px 0 0;color:var(--muted);font-weight:650}
+
+    /* CATEGORIES */
+    .category-grid{
+      display:grid;
+      grid-template-columns:repeat(5,1fr);
+      gap:14px;
+    }
+    .category-card{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:22px;
+      padding:18px 14px;
+      min-height:150px;
+      box-shadow:var(--shadow);
+      transition:.18s ease;
+      cursor:pointer;
+      position:relative;
+      overflow:hidden;
+    }
+    .category-card::after{
+      content:"";
+      position:absolute;
+      inset:auto -30px -44px auto;
+      width:92px;height:92px;border-radius:50%;
+      background:rgba(255,183,3,.12);
+      transition:.18s ease;
+    }
+    .category-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-hover);border-color:rgba(255,183,3,.55)}
+    .category-card:hover::after{scale:1.2}
+    .category-icon{
+      width:48px;height:48px;border-radius:17px;
+      display:flex;align-items:center;justify-content:center;
+      background:#EAF8EF;
+      color:var(--botuka-green-2);
+      font-size:1.4rem;
+      margin-bottom:12px;
+    }
+    [data-bs-theme="dark"] .category-icon{background:rgba(46,139,87,.16);color:#8BE1AE}
+    .category-name{font-weight:900;font-family:var(--font-title);font-size:1.08rem;color:var(--text)}
+    .category-count{color:var(--muted);font-size:.82rem;font-weight:750;margin-top:2px}
+    .category-desc{color:var(--muted);font-size:.8rem;margin-top:8px;line-height:1.3}
+
+    /* PROVIDERS */
+    .providers-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:18px;
+    }
+    .provider-card{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:26px;
+      box-shadow:var(--shadow);
+      padding:18px;
+      transition:.18s ease;
+      position:relative;
+      overflow:hidden;
+    }
+    .provider-card:hover{transform:translateY(-4px);box-shadow:var(--shadow-hover);border-color:rgba(255,183,3,.55)}
+    .provider-top{
+      display:flex;
+      gap:13px;
+      align-items:flex-start;
+    }
+    .provider-avatar{
+      width:62px;height:62px;border-radius:20px;
+      display:flex;align-items:center;justify-content:center;
+      color:#fff;
+      background:linear-gradient(135deg,var(--botuka-green),var(--botuka-earth));
+      font-family:var(--font-title);
+      font-size:1.35rem;
+      font-weight:900;
+      flex:0 0 auto;
+    }
+    .provider-name{
+      margin:0;
+      font-size:1.18rem;
+      font-weight:900;
+      line-height:1.1;
+    }
+    .provider-job{color:var(--muted);font-size:.9rem;font-weight:700;margin-top:2px}
+    .verified{
+      color:var(--botuka-green);
+      margin-left:4px;
+    }
+    .provider-rating{
+      display:flex;
+      align-items:center;
+      gap:5px;
+      color:#8A6100;
+      background:#FFF2C9;
+      border-radius:var(--pill);
+      padding:5px 9px;
+      font-size:.78rem;
+      font-weight:900;
+      width:max-content;
+      margin-top:9px;
+    }
+    .provider-info{
+      display:flex;
+      flex-wrap:wrap;
+      gap:8px;
+      margin:14px 0;
+    }
+    .provider-chip{
+      border:1px solid var(--border);
+      background:var(--bg);
+      color:var(--muted);
+      border-radius:var(--pill);
+      padding:6px 9px;
+      font-size:.78rem;
+      font-weight:800;
+    }
+    .provider-actions{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:8px;
+    }
+    .btn-outline-botuka{
+      background:var(--surface);
+      border:1px solid var(--border);
+      color:var(--text);
+      border-radius:16px;
+      padding:10px;
+      font-weight:900;
+    }
+    .btn-outline-botuka:hover{background:var(--surface-2)}
+
+    /* HOW / BENEFITS */
+    .steps-grid,.benefits-grid,.trust-grid,.recent-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:16px;
+    }
+    .info-card{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:24px;
+      box-shadow:var(--shadow);
+      padding:22px;
+      height:100%;
+    }
+    .info-icon{
+      width:52px;height:52px;border-radius:18px;
+      background:var(--surface-2);
+      color:var(--botuka-earth);
+      display:flex;align-items:center;justify-content:center;
+      font-size:1.45rem;
+      margin-bottom:14px;
+    }
+    .info-card h3{font-size:1.22rem;font-weight:900;margin:0 0 6px}
+    .info-card p{color:var(--muted);margin:0;font-size:.93rem;line-height:1.48}
+
+    .trust-band{
+      background:
+        radial-gradient(300px 160px at 88% 0%, rgba(255,183,3,.18), transparent 70%),
+        var(--botuka-blue);
+      color:#fff;
+      border-radius:var(--radius-lg);
+      padding:26px;
+      overflow:hidden;
+    }
+    .trust-band h2{color:#fff!important}
+    .trust-band p{color:rgba(255,255,255,.72)}
+    .trust-card{
+      background:rgba(255,255,255,.10);
+      border:1px solid rgba(255,255,255,.16);
+      border-radius:20px;
+      padding:18px;
+    }
+    .trust-card i{color:var(--botuka-yellow);font-size:1.55rem}
+    .trust-card strong{display:block;margin-top:10px;font-size:1.05rem}
+
+    .stats-grid{
+      display:grid;
+      grid-template-columns:repeat(4,1fr);
+      gap:14px;
+    }
+    .stat-card{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:22px;
+      padding:20px;
+      box-shadow:var(--shadow);
+    }
+    .stat-value{
+      font-family:var(--font-title);
+      font-size:2rem;
+      font-weight:900;
+      color:var(--botuka-earth);
+      line-height:1;
+    }
+    .stat-label{color:var(--muted);font-weight:800;margin-top:5px;font-size:.9rem}
+
+    .testimonial-grid{
+      display:grid;
+      grid-template-columns:repeat(3,1fr);
+      gap:16px;
+    }
+    .testimonial-card{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:24px;
+      box-shadow:var(--shadow);
+      padding:20px;
+    }
+    .stars{color:var(--botuka-yellow);margin-bottom:10px}
+    .quote{color:var(--muted);font-size:.93rem;line-height:1.5;margin-bottom:15px}
+    .person{display:flex;align-items:center;gap:10px}
+    .person-avatar{
+      width:42px;height:42px;border-radius:50%;
+      background:linear-gradient(135deg,var(--botuka-yellow),var(--botuka-earth));
+      display:flex;align-items:center;justify-content:center;
+      color:var(--botuka-blue);
+      font-weight:900;
+    }
+    .person strong{display:block}
+    .person small{color:var(--muted);font-weight:700}
+
+    .recent-card{
+      background:var(--surface);
+      border:1px solid var(--border);
+      border-radius:22px;
+      padding:18px;
+      box-shadow:var(--shadow);
+      display:flex;
+      gap:12px;
+      align-items:flex-start;
+    }
+    .recent-icon{
+      width:46px;height:46px;border-radius:16px;
+      background:#EAF8EF;
+      color:var(--botuka-green-2);
+      display:flex;align-items:center;justify-content:center;
+      font-size:1.25rem;
+      flex:0 0 auto;
+    }
+    .recent-card strong{display:block;font-weight:900}
+    .recent-card small{display:block;color:var(--muted);font-weight:700;margin-top:3px}
+    .recent-card a{color:var(--botuka-earth);font-weight:900;font-size:.86rem;margin-top:7px;display:inline-block}
+
+    .cta-grid{
+      display:grid;
+      grid-template-columns:1fr 1fr;
+      gap:18px;
+    }
+    .cta-card{
+      border-radius:var(--radius-lg);
+      padding:28px;
+      box-shadow:var(--shadow-hover);
+      border:1px solid var(--border);
+      overflow:hidden;
+      position:relative;
+    }
+    .cta-client{
+      background:
+        radial-gradient(260px 140px at 85% 0%, rgba(255,183,3,.22), transparent 70%),
+        var(--surface);
+    }
+    .cta-pro{
+      background:
+        radial-gradient(260px 140px at 88% 0%, rgba(255,183,3,.22), transparent 70%),
+        linear-gradient(145deg,var(--botuka-green),var(--botuka-blue-2));
+      color:#fff;
+      border-color:transparent;
+    }
+    .cta-card h2{font-size:1.8rem;font-weight:900;margin-bottom:8px}
+    .cta-card p{color:var(--muted);margin-bottom:18px}
+    .cta-pro p{color:rgba(255,255,255,.76)}
+
+    .faq-wrap{
+      max-width:900px;
+      margin-inline:auto;
+    }
+    .accordion-item{
+      background:var(--surface);
+      color:var(--text);
+      border:1px solid var(--border)!important;
+      border-radius:18px!important;
+      overflow:hidden;
+      margin-bottom:10px;
+    }
+    .accordion-button{
+      background:var(--surface);
+      color:var(--text);
+      font-weight:900;
+      box-shadow:none!important;
+    }
+    .accordion-button:not(.collapsed){
+      background:var(--surface-2);
+      color:var(--botuka-earth);
+    }
+    .accordion-body{color:var(--muted)}
+
+    /* FOOTER */
+    .footer{
+      padding:36px 0 96px;
+      border-top:1px solid var(--border);
+      margin-top:28px;
+      background:var(--surface);
+    }
+    .footer-grid{
+      display:grid;
+      grid-template-columns:1.35fr repeat(3,1fr);
+      gap:22px;
+    }
+    .footer p{color:var(--muted);font-weight:650;font-size:.92rem}
+    .footer h4{font-size:1rem;font-weight:900;margin-bottom:10px}
+    .footer a{
+      display:block;
+      color:var(--muted);
+      font-weight:700;
+      font-size:.9rem;
+      margin-bottom:7px;
+    }
+    .footer a:hover{color:var(--botuka-earth)}
+    .akashi-note{
+      background:var(--bg);
+      border:1px solid var(--border);
+      border-radius:18px;
+      padding:14px;
+      color:var(--muted);
+      font-size:.86rem;
+      font-weight:650;
+    }
+
+    /* MOBILE NAV */
+    .mobile-bottom-nav{
+      display:none;
+      position:fixed;
+      left:12px;right:12px;bottom:12px;
+      z-index:1050;
+      background:rgba(255,255,255,.92);
+      backdrop-filter:blur(16px);
+      border:1px solid var(--border);
+      border-radius:24px;
+      box-shadow:0 18px 45px -22px rgba(19,41,61,.45);
+      padding:8px;
+    }
+    [data-bs-theme="dark"] .mobile-bottom-nav{background:rgba(24,34,44,.92)}
+    .mobile-bottom-nav a{
+      flex:1;
+      display:flex;
+      flex-direction:column;
+      align-items:center;
+      gap:2px;
+      font-size:.7rem;
+      color:var(--muted);
+      font-weight:850;
+    }
+    .mobile-bottom-nav i{font-size:1.2rem;color:var(--botuka-earth)}
+    .mobile-bottom-nav .publish-mobile{margin-top:-22px}
+    .mobile-bottom-nav .publish-mobile i{
+      width:52px;height:52px;border-radius:50%;
+      background:var(--botuka-yellow);
+      color:var(--botuka-blue);
+      display:flex;align-items:center;justify-content:center;
+      box-shadow:0 10px 20px -12px rgba(255,183,3,.7);
+    }
+
+    .reveal{opacity:0;transform:translateY(16px);transition:.55s ease}
+    .reveal.on{opacity:1;transform:translateY(0)}
+
+    @media (max-width:1100px){
+      .desktop-nav{display:none}
+      .nav-search{max-width:300px}
+      .category-grid{grid-template-columns:repeat(4,1fr)}
+    }
+    @media (max-width:992px){
+      .hero-card{grid-template-columns:1fr}
+      .hero-visual{min-height:auto}
+      .services-search-form{grid-template-columns:1fr 1fr}
+      .services-search-form button{grid-column:1/-1}
+      .providers-grid,.steps-grid,.benefits-grid,.trust-grid,.recent-grid,.testimonial-grid{grid-template-columns:1fr 1fr}
+      .stats-grid{grid-template-columns:repeat(2,1fr)}
+      .cta-grid{grid-template-columns:1fr}
+      .footer-grid{grid-template-columns:1fr 1fr}
+    }
+    @media (max-width:768px){
+      body{padding-bottom:84px}
+      .header-inner{min-height:64px}
+      .brand{font-size:1.48rem}
+      .brand-service-pill{font-size:.68rem;padding:4px 8px}
+      .nav-location,.header-actions .btn-login,.header-actions .btn-announce,.header-actions .theme-desktop,.header-inner > .nav-search{display:none}
+      .mobile-menu-btn{display:inline-flex}
+      .hero-services{padding-top:20px}
+      .hero-copy{padding:26px 18px}
+      .hero-copy h1{font-size:2.35rem}
+      .hero-visual{padding:18px}
+      .search-wrap{margin-top:16px}
+      .services-search-form{grid-template-columns:1fr}
+      .category-grid{grid-template-columns:repeat(2,1fr)}
+      .providers-grid,.steps-grid,.benefits-grid,.trust-grid,.recent-grid,.testimonial-grid{grid-template-columns:1fr}
+      .section-title{align-items:flex-start;flex-direction:column}
+      .provider-actions{grid-template-columns:1fr}
+      .footer-grid{grid-template-columns:1fr}
+      .mobile-bottom-nav{display:flex}
+    }
+    @media (max-width:480px){
+      .container-botuka{padding-inline:14px}
+      .category-grid{gap:10px}
+      .category-card{padding:15px 12px;min-height:138px}
+      .stat-value{font-size:1.65rem}
+    }
+  </style>
+</head>
+
+<body>
+
+<header class="app-header">
+  <div class="container-botuka">
+    <div class="header-inner">
+      <a href="#inicio" class="brand" aria-label="BOTUKA Services início">
+        <span class="brand-dot"></span>
+        BOTUKA
+        <span class="brand-service-pill">Services</span>
+      </a>
+
+      <button class="nav-location" type="button">
+        <i class="bi bi-geo-alt-fill"></i>
+        Botucatu
+      </button>
+
+      <nav class="desktop-nav" aria-label="Navegação principal">
+        <a href="#categorias">Categorias</a>
+        <a href="#prestadores">Prestadores</a>
+        <a href="#como-funciona">Como funciona</a>
+        <a href="#recentes">Recentes</a>
+      </nav>
+
+      <form class="nav-search" id="headerSearch">
+        <input type="search" placeholder="Buscar serviço..." aria-label="Buscar serviço">
+        <i class="bi bi-search"></i>
+      </form>
+
+      <div class="header-actions">
+        <button class="btn-botuka btn-soft btn-icon theme-desktop" id="themeToggle" type="button" aria-label="Alternar tema">
+          <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
+        </button>
+        <button class="btn-botuka btn-soft btn-login" data-bs-toggle="modal" data-bs-target="#loginModal" type="button">
+          <i class="bi bi-person-circle"></i>
+          Entrar
+        </button>
+        <a class="btn-botuka btn-yellow btn-announce" href="#cadastro">
+          <i class="bi bi-megaphone-fill"></i>
+          Anunciar Serviço
+        </a>
+        <button class="btn-botuka btn-soft btn-icon mobile-menu-btn" id="mobileMenuBtn" type="button" aria-label="Abrir menu">
+          <i class="bi bi-list"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="mobile-panel" id="mobilePanel">
+      <form class="nav-search" id="mobileSearch">
+        <input type="search" placeholder="Buscar serviço em Botucatu..." aria-label="Buscar serviço">
+        <i class="bi bi-search"></i>
+      </form>
+      <div class="mobile-links">
+        <a href="#categorias"><i class="bi bi-grid-fill"></i> Categorias</a>
+        <a href="#prestadores"><i class="bi bi-patch-check-fill"></i> Prestadores</a>
+        <a href="#como-funciona"><i class="bi bi-signpost-2-fill"></i> Como funciona</a>
+        <a href="#cadastro"><i class="bi bi-megaphone-fill"></i> Anunciar Serviço</a>
+        <button class="btn-botuka btn-soft w-100" id="themeToggleMobile" type="button">
+          <i class="bi bi-moon-stars-fill"></i>
+          Alternar tema
+        </button>
+      </div>
+    </div>
+  </div>
+</header>
+
+<main id="inicio">
+  <section class="hero-services">
+    <div class="container-botuka">
+      <div class="hero-card reveal">
+        <div class="hero-copy">
+          <div class="hero-kicker">
+            <i class="bi bi-shield-check"></i>
+            Marketplace regional de serviços
+          </div>
+
+          <h1>Encontre profissionais <span>de confiança em Botucatu.</span></h1>
+
+          <p>
+            Contrate eletricistas, pedreiros, diaristas, motoristas, designers, advogados, técnicos e qualquer outro prestador da região com mais rapidez, clareza e contato direto.
+          </p>
+
+          <a href="#buscar" class="btn-botuka btn-yellow">
+            <i class="bi bi-search"></i>
+            Procurar profissional
+          </a>
+          <a href="#cadastro" class="btn-botuka btn-soft ms-2">
+            <i class="bi bi-plus-circle"></i>
+            Sou prestador
+          </a>
+
+          <div class="hero-trust">
+            <span class="trust-pill"><i class="bi bi-patch-check-fill"></i> Verificados</span>
+            <span class="trust-pill"><i class="bi bi-star-fill"></i> Avaliações reais</span>
+            <span class="trust-pill"><i class="bi bi-chat-dots-fill"></i> Contato direto</span>
+          </div>
+        </div>
+
+        <aside class="hero-visual">
+          <div class="visual-panel">
+            <div class="visual-provider">
+              <div class="visual-avatar">JR</div>
+              <div>
+                <div class="visual-title">João Ricardo</div>
+                <div class="visual-meta">Eletricista residencial · Centro</div>
+              </div>
+            </div>
+            <div class="visual-badges">
+              <span class="visual-badge"><i class="bi bi-star-fill"></i> 4.9</span>
+              <span class="visual-badge">67 avaliações</span>
+              <span class="visual-badge">responde em 5 min</span>
+            </div>
+          </div>
+
+          <div class="visual-panel">
+            <div class="visual-provider">
+              <div class="visual-avatar">LG</div>
+              <div>
+                <div class="visual-title">Luciana Gama</div>
+                <div class="visual-meta">Beleza e estética · Vila Nova</div>
+              </div>
+            </div>
+            <div class="visual-badges">
+              <span class="visual-badge"><i class="bi bi-patch-check-fill"></i> Verificada</span>
+              <span class="visual-badge">agenda aberta</span>
+            </div>
+          </div>
+
+          <div class="visual-panel">
+            <strong>+870 serviços ativos</strong>
+            <div class="visual-meta mt-1">Profissionais locais organizados por categoria, bairro e disponibilidade.</div>
+          </div>
+        </aside>
+      </div>
+    </div>
+  </section>
+
+  <section class="search-wrap" id="buscar">
+    <div class="container-botuka">
+      <div class="search-card reveal">
+        <form class="services-search-form" id="mainSearch">
+          <div class="search-field">
+            <label for="need">O que você precisa?</label>
+            <input id="need" type="search" placeholder="Ex: eletricista, pintura, site, diarista..." required>
+          </div>
+          <div class="search-field">
+            <label for="bairro">Bairro</label>
+            <input id="bairro" type="text" placeholder="Centro, Vila Nova...">
+          </div>
+          <div class="search-field">
+            <label for="categoria">Categoria</label>
+            <select id="categoria">
+              <option value="">Todas</option>
+              <option>Reformas</option>
+              <option>Casa e Limpeza</option>
+              <option>Tecnologia</option>
+              <option>Jurídico</option>
+              <option>Transporte</option>
+            </select>
+          </div>
+          <button class="btn-botuka btn-yellow" type="submit">
+            <i class="bi bi-search"></i>
+            Buscar
+          </button>
+        </form>
+
+        <div class="quick-chips" aria-label="Buscas rápidas">
+          <a class="quick-chip" href="#prestadores"><i class="bi bi-lightning-charge-fill"></i> Eletricista</a>
+          <a class="quick-chip" href="#prestadores"><i class="bi bi-tools"></i> Pedreiro</a>
+          <a class="quick-chip" href="#prestadores"><i class="bi bi-brush-fill"></i> Pintor</a>
+          <a class="quick-chip" href="#prestadores"><i class="bi bi-house-heart-fill"></i> Diarista</a>
+          <a class="quick-chip" href="#prestadores"><i class="bi bi-car-front-fill"></i> Motorista</a>
+          <a class="quick-chip" href="#prestadores"><i class="bi bi-laptop-fill"></i> Informática</a>
+          <a class="quick-chip" href="#prestadores"><i class="bi bi-briefcase-fill"></i> Advogado</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad" id="categorias">
+    <div class="container-botuka">
+      <div class="section-title reveal">
+        <div>
+          <h2>Categorias de serviços</h2>
+          <p>Encontre profissionais por tipo de necessidade.</p>
+        </div>
+        <a href="#" class="btn-botuka btn-soft" data-bs-toggle="modal" data-bs-target="#categoriesModal">Ver todas</a>
+      </div>
+
+      <div class="category-carousel-wrap reveal" style="position: relative; display: flex; align-items: center; margin-top: 12px;">
+        <button class="category-arrow category-arrow-left" type="button" aria-label="Categorias anteriores" style="background: none; border: none; font-size: 2rem; width: 44px; height: 64px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--botuka-blue); opacity: .7; transition: opacity .2s;">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+
+        <div class="category-carousel" id="categoryCarousel" style="overflow-x: auto; display: flex; gap: 18px; scroll-behavior: smooth; padding: 12px 0; flex: 1;">
+          <!-- Os 10 cards + "Ver mais" serão renderizados pelo JS -->
+        </div>
+
+        <button class="category-arrow category-arrow-right" type="button" aria-label="Próximas categorias" style="background: none; border: none; font-size: 2rem; width: 44px; height: 64px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--botuka-blue); opacity: .7; transition: opacity .2s;">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+    <!-- Carousel CSS -->
+    <style>
+      .category-carousel::-webkit-scrollbar {
+        display: none;
+      }
+      .category-carousel {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .category-card-carousel {
+        background: var(--surface-2, #FFF9EA);
+        border: 1.5px solid var(--border, #E8DECA);
+        border-radius: 18px;
+        padding: 22px 16px 16px 16px;
+        min-width: 142px;
+        max-width: 148px;
+        text-align: center;
+        font-weight: 800;
+        font-size: 1rem;
+        color: var(--botuka-blue);
+        transition: box-shadow .15s, border .2s;
+        box-shadow: 0 1px 9px -6px rgba(19,41,61,.07);
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        gap: 9px;
+      }
+      .category-card-carousel .cc-icon {
+        font-size: 2rem;
+        border-radius: 11px;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 2px;
+        background: linear-gradient(90deg, var(--botuka-yellow), var(--botuka-earth));
+        color: #fff;
+      }
+      .category-card-carousel:hover, .category-card-carousel:focus {
+        border-color: var(--botuka-yellow);
+        box-shadow: 0 4px 18px -7px rgba(255,183,3,.15);
+        text-decoration: none;
+      }
+      .category-card-carousel.more {
+        background: rgba(255, 183, 3, .08);
+        color: var(--botuka-yellow-2);
+        border: 1.5px dashed var(--botuka-yellow);
+      }
+      .category-arrow {
+        background: none;
+        border: none;
+        font-size: 2rem;
+        width: 44px; height: 64px;
+        display:flex; align-items: center; justify-content: center;
+        cursor:pointer; color: var(--botuka-blue); opacity: .7;
+        transition: opacity .2s;
+      }
+      .category-arrow[disabled],
+      .category-arrow.disabled {
+        opacity: .25;
+        pointer-events: none;
+      }
+      @media (max-width: 950px) {
+        .category-card-carousel {
+          min-width: 120px;
+          max-width: 124px;
+          padding: 17px 8px 12px 8px;
+          font-size: .95rem;
+        }
+        .category-carousel { gap: 12px; }
+      }
+      @media (max-width: 600px) {
+        .category-card-carousel {
+          min-width: 104px;
+          max-width: 112px;
+          font-size: .85rem;
+        }
+        .category-carousel { gap: 8px; }
+        .category-arrow { width:32px;height:54px;font-size:1.55rem;}
+      }
+    </style>
+    <!-- JQuery CDN and carrossel logic -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+    <script>
+      // Lista de categorias de exemplo:
+      const categoriesData = [
+        { icon: "bi bi-tools", label: "Reformas" },
+        { icon: "bi bi-house-heart-fill", label: "Casa e Limpeza" },
+        { icon: "bi bi-laptop", label: "Tecnologia" },
+        { icon: "bi bi-people", label: "Eventos" },
+        { icon: "bi bi-car-front-fill", label: "Transporte" },
+        { icon: "bi bi-briefcase", label: "Jurídico" },
+        { icon: "bi bi-emoji-smile", label: "Saúde e Bem-estar" },
+        { icon: "bi bi-droplet-half", label: "Hidráulica" },
+        { icon: "bi bi-lightning-charge", label: "Elétrica" },
+        { icon: "bi bi-tree-fill", label: "Jardinagem" },
+        { icon: "bi bi-three-dots", label: "Outros" }
+      ];
+      
+      function renderCategoryCarousel() {
+        const $carousel = $('#categoryCarousel');
+        $carousel.empty();
+        // Renderizar os 10 primeiros cards
+        for(let i=0;i<10;i++){
+          const cat = categoriesData[i];
+          if(!cat) continue;
+          $carousel.append(`
+            <div class="category-card-carousel" tabindex="0" role="button" aria-label="${cat.label}">
+              <span class="cc-icon"><i class="${cat.icon}"></i></span>
+              <span>${cat.label}</span>
+            </div>
+          `);
+        }
+        // Card "Ver mais"
+        $carousel.append(`
+          <div class="category-card-carousel more" tabindex="0" role="button" aria-label="Ver mais categorias" data-bs-toggle="modal" data-bs-target="#categoriesModal">
+            <span class="cc-icon"><i class="bi bi-grid-3x3-gap-fill"></i></span>
+            <span>Ver mais</span>
+          </div>
+        `);
+      }
+
+      function scrollCategoryCarousel(dir){
+        const $carousel = $('#categoryCarousel')[0];
+        const child = $carousel.querySelector('.category-card-carousel');
+        if (!child) return;
+        const scrollStep = child.offsetWidth + parseInt(getComputedStyle($carousel).gap||'18');
+        if(dir === "right"){
+          $carousel.scrollBy({ left: scrollStep * 3, behavior: "smooth" });
+        } else {
+          $carousel.scrollBy({ left: -scrollStep * 3, behavior: "smooth" });
+        }
+      }
+
+      // Abrir modal ao clicar no card "Ver mais"
+      $(document).on('click', '.category-card-carousel.more', function(e){
+        e.preventDefault();
+        $('#categoriesModal').modal ? $('#categoriesModal').modal('show') // Bootstrap 4
+        : document.querySelector('#categoriesModal')?.setAttribute('open', 'open') // fallback
+      });
+
+      // Botões do carrossel
+      $(function(){
+        renderCategoryCarousel();
+        $('.category-arrow-left').on('click', function(){ scrollCategoryCarousel('left'); });
+        $('.category-arrow-right').on('click', function(){ scrollCategoryCarousel('right'); });
+      });
+    </script>
+  </section>
+
+  <section class="section-pad pt-0" id="prestadores">
+    <div class="container-botuka">
+      <div class="section-title reveal">
+        <div>
+          <h2>Prestadores em destaque</h2>
+          <p>Perfis simulados para validar a experiência do marketplace.</p>
+        </div>
+        <a href="#" class="btn-botuka btn-soft">Ver todos</a>
+      </div>
+
+      <div class="providers-grid" id="providersGrid"></div>
+    </div>
+  </section>
+
+  <section class="section-pad pt-0" id="como-funciona">
+    <div class="container-botuka">
+      <div class="section-title reveal">
+        <div>
+          <h2>Como funciona</h2>
+          <p>Fluxo simples para cliente e profissional.</p>
+        </div>
+      </div>
+
+      <div class="steps-grid">
+        <article class="info-card reveal">
+          <div class="info-icon"><i class="bi bi-search"></i></div>
+          <h3>1. Busque o serviço</h3>
+          <p>Digite o que precisa, filtre por bairro, categoria ou disponibilidade e veja profissionais locais.</p>
+        </article>
+        <article class="info-card reveal">
+          <div class="info-icon"><i class="bi bi-sliders"></i></div>
+          <h3>2. Compare perfis</h3>
+          <p>Veja avaliações, especialidades, tempo de resposta, verificação e histórico de atendimento.</p>
+        </article>
+        <article class="info-card reveal">
+          <div class="info-icon"><i class="bi bi-chat-dots"></i></div>
+          <h3>3. Combine direto</h3>
+          <p>Solicite orçamento e converse diretamente com o prestador, sem complicação.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad pt-0" id="beneficios">
+    <div class="container-botuka">
+      <div class="section-title reveal">
+        <div>
+          <h2>Por que usar o Botuka Services?</h2>
+          <p>Produto regional, pensado para a economia local.</p>
+        </div>
+      </div>
+
+      <div class="benefits-grid">
+        <article class="info-card reveal">
+          <div class="info-icon"><i class="bi bi-geo-alt-fill"></i></div>
+          <h3>Foco regional</h3>
+          <p>Profissionais de Botucatu e região, com comunicação mais próxima e atendimento local.</p>
+        </article>
+        <article class="info-card reveal">
+          <div class="info-icon"><i class="bi bi-patch-check-fill"></i></div>
+          <h3>Mais confiança</h3>
+          <p>Selos, avaliações, categorias e dados organizados para reduzir risco na contratação.</p>
+        </article>
+        <article class="info-card reveal">
+          <div class="info-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+          <h3>Mais velocidade</h3>
+          <p>Busca rápida, filtros objetivos e contato direto para transformar necessidade em solução.</p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad pt-0">
+    <div class="container-botuka">
+      <div class="trust-band reveal">
+        <div class="section-title">
+          <div>
+            <h2>Profissionais verificados</h2>
+            <p>O módulo deve evoluir com validação, reputação e histórico de atendimento.</p>
+          </div>
+        </div>
+
+        <div class="trust-grid">
+          <div class="trust-card">
+            <i class="bi bi-person-vcard-fill"></i>
+            <strong>Dados do prestador</strong>
+            <small>Perfil profissional, área de atuação e região atendida.</small>
+          </div>
+          <div class="trust-card">
+            <i class="bi bi-star-fill"></i>
+            <strong>Avaliações</strong>
+            <small>Feedback de clientes para melhorar a tomada de decisão.</small>
+          </div>
+          <div class="trust-card">
+            <i class="bi bi-shield-lock-fill"></i>
+            <strong>Segurança</strong>
+            <small>Regras de uso, denúncia e moderação para proteger a comunidade.</small>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad pt-0">
+    <div class="container-botuka">
+      <div class="stats-grid">
+        <div class="stat-card reveal">
+          <div class="stat-value">870+</div>
+          <div class="stat-label">serviços ativos</div>
+        </div>
+        <div class="stat-card reveal">
+          <div class="stat-value">32</div>
+          <div class="stat-label">categorias</div>
+        </div>
+        <div class="stat-card reveal">
+          <div class="stat-value">4.8</div>
+          <div class="stat-label">média de avaliação</div>
+        </div>
+        <div class="stat-card reveal">
+          <div class="stat-value">15min</div>
+          <div class="stat-label">resposta média</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad pt-0">
+    <div class="container-botuka">
+      <div class="section-title reveal">
+        <div>
+          <h2>Depoimentos</h2>
+          <p>Como a experiência deve ser percebida pelos moradores.</p>
+        </div>
+      </div>
+
+      <div class="testimonial-grid">
+        <article class="testimonial-card reveal">
+          <div class="stars"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
+          <p class="quote">“Achei um profissional perto de casa e consegui orçamento no mesmo dia.”</p>
+          <div class="person"><div class="person-avatar">MA</div><div><strong>Mariana Alves</strong><small>Cliente · Centro</small></div></div>
+        </article>
+        <article class="testimonial-card reveal">
+          <div class="stars"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i></div>
+          <p class="quote">“Para quem presta serviço, estar visível na região muda o jogo.”</p>
+          <div class="person"><div class="person-avatar">CL</div><div><strong>Carlos Lima</strong><small>Prestador · Eletricista</small></div></div>
+        </article>
+        <article class="testimonial-card reveal">
+          <div class="stars"><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i></div>
+          <p class="quote">“A proposta regional passa mais confiança do que buscar no escuro.”</p>
+          <div class="person"><div class="person-avatar">RF</div><div><strong>Renan Ferreira</strong><small>Cliente · Vila Nova</small></div></div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad pt-0" id="recentes">
+    <div class="container-botuka">
+      <div class="section-title reveal">
+        <div>
+          <h2>Serviços recentes</h2>
+          <p>Anúncios e disponibilidades que podem virar feed no futuro.</p>
+        </div>
+      </div>
+
+      <div class="recent-grid">
+        <article class="recent-card reveal">
+          <div class="recent-icon"><i class="bi bi-brush-fill"></i></div>
+          <div>
+            <strong>Pintor disponível esta semana</strong>
+            <small>Atende Centro, Vila Nova e região.</small>
+            <a href="#">Pedir orçamento <i class="bi bi-arrow-right"></i></a>
+          </div>
+        </article>
+        <article class="recent-card reveal">
+          <div class="recent-icon"><i class="bi bi-lightning-fill"></i></div>
+          <div>
+            <strong>Eletricista para urgências</strong>
+            <small>Instalações, reparos e manutenção residencial.</small>
+            <a href="#">Ver perfil <i class="bi bi-arrow-right"></i></a>
+          </div>
+        </article>
+        <article class="recent-card reveal">
+          <div class="recent-icon"><i class="bi bi-house-heart-fill"></i></div>
+          <div>
+            <strong>Diarista com agenda aberta</strong>
+            <small>Limpeza residencial por diária ou recorrência.</small>
+            <a href="#">Combinar atendimento <i class="bi bi-arrow-right"></i></a>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad pt-0" id="cadastro">
+    <div class="container-botuka">
+      <div class="cta-grid">
+        <article class="cta-card cta-client reveal">
+          <h2>Precisa contratar alguém?</h2>
+          <p>Busque por serviço, compare profissionais e peça orçamento sem perder tempo.</p>
+          <a href="#buscar" class="btn-botuka btn-yellow"><i class="bi bi-search"></i> Buscar agora</a>
+        </article>
+        <article class="cta-card cta-pro reveal">
+          <h2>Você presta serviço em Botucatu?</h2>
+          <p>Crie seu perfil, apareça nas buscas e receba oportunidades de clientes da região.</p>
+          <a href="#" class="btn-botuka btn-yellow"><i class="bi bi-megaphone-fill"></i> Cadastrar meu serviço</a>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-pad pt-0" id="faq">
+    <div class="container-botuka">
+      <div class="section-title reveal">
+        <div>
+          <h2>Dúvidas frequentes</h2>
+          <p>Respostas para orientar a primeira versão pública.</p>
+        </div>
+      </div>
+
+      <div class="faq-wrap reveal">
+        <div class="accordion" id="faqAccordion">
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#faq1">
+                O Botuka Services cobra comissão?
+              </button>
+            </h3>
+            <div id="faq1" class="accordion-collapse collapse show" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">Nesta fase, a página é um protótipo visual. O modelo comercial pode evoluir para planos, anúncios em destaque ou assinatura de prestadores.</div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq2">
+                Quem pode anunciar serviço?
+              </button>
+            </h3>
+            <div id="faq2" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">Qualquer profissional ou empresa local: reformas, tecnologia, jurídico, saúde, beleza, transporte, eventos, aulas e outras áreas.</div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq3">
+                Como funciona a verificação?
+              </button>
+            </h3>
+            <div id="faq3" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">A verificação pode envolver dados cadastrais, área de atuação, histórico, avaliações e revisão manual conforme a regra de negócio do Botuka.</div>
+            </div>
+          </div>
+
+          <div class="accordion-item">
+            <h3 class="accordion-header">
+              <button class="accordion-button collapsed" type="button" data-bs-toggle="collapse" data-bs-target="#faq4">
+                O Botuka intermedia o pagamento?
+              </button>
+            </h3>
+            <div id="faq4" class="accordion-collapse collapse" data-bs-parent="#faqAccordion">
+              <div class="accordion-body">Na primeira etapa, a proposta mais simples é contato direto. Pagamentos, garantias e intermediação podem ser módulos futuros.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="footer">
+  <div class="container-botuka">
+    <div class="footer-grid">
+      <div>
+        <div class="brand mb-2"><span class="brand-dot"></span> BOTUKA <span class="brand-service-pill">Services</span></div>
+        <p>Marketplace regional para conectar pessoas, profissionais e empresas de serviços em Botucatu e região.</p>
+        <div class="akashi-note">
+          BOTUKA é uma plataforma digital desenvolvida por <strong>Akashi Soluções Digitais</strong>.
+        </div>
+      </div>
+      <div>
+        <h4>Descobrir</h4>
+        <a href="#buscar">Buscar serviço</a>
+        <a href="#categorias">Categorias</a>
+        <a href="#prestadores">Prestadores</a>
+      </div>
+      <div>
+        <h4>Profissionais</h4>
+        <a href="#cadastro">Anunciar serviço</a>
+        <a href="#">Planos futuros</a>
+        <a href="#">Perfil verificado</a>
+      </div>
+      <div>
+        <h4>Ajuda</h4>
+        <a href="#faq">Dúvidas</a>
+        <a href="#">Segurança</a>
+        <a href="#">Termos</a>
+      </div>
+    </div>
+
+    <div class="text-muted-botuka mt-4 small">
+      © 2026 BOTUKA. Todos os direitos reservados.<br>
+      Desenvolvido com foco na valorização da economia regional, na conexão entre pessoas e profissionais e no fortalecimento do comércio e dos serviços locais.
+    </div>
+  </div>
+</footer>
+
+<nav class="mobile-bottom-nav" aria-label="Navegação mobile">
+  <a href="#inicio"><i class="bi bi-house-fill"></i> Início</a>
+  <a href="#buscar"><i class="bi bi-search"></i> Buscar</a>
+  <a href="#cadastro" class="publish-mobile"><i class="bi bi-plus-lg"></i> Anunciar</a>
+  <a href="#prestadores"><i class="bi bi-patch-check-fill"></i> Profissionais</a>
+  <a href="#faq"><i class="bi bi-question-circle-fill"></i> Ajuda</a>
+</nav>
+
+<div class="modal fade" id="categoriesModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content" style="border-radius:24px;background:var(--surface);color:var(--text);border:1px solid var(--border)">
+      <div class="modal-header" style="border-bottom:1px solid var(--border)">
+        <h5 class="modal-title font-title fw-bold">Todas as categorias</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+      <div class="modal-body">
+        <div class="category-grid" id="modalCategoryGrid" style="grid-template-columns:repeat(3,1fr)"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal fade" id="loginModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="border-radius:28px;background:var(--surface);color:var(--text);border:0">
+      <div class="p-4">
+        <button type="button" class="btn-close float-end" data-bs-dismiss="modal" aria-label="Fechar"></button>
+        <div class="brand justify-content-center mb-2"><span class="brand-dot"></span> BOTUKA <span class="brand-service-pill">Services</span></div>
+        <p class="text-center text-muted-botuka fw-semibold">Entre para publicar, favoritar e acompanhar seus orçamentos.</p>
+        <form id="loginForm">
+          <input class="form-control mb-3" style="border-radius:18px;padding:13px;background:var(--bg);border:1px solid var(--border);color:var(--text)" type="email" placeholder="Seu e-mail" required>
+          <button class="btn-botuka btn-yellow w-100" type="submit">Continuar com e-mail</button>
+        </form>
+        <button class="btn-botuka btn-soft w-100 mt-3" type="button">Criar conta grátis</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index:1080">
+  <div id="appToast" class="toast align-items-center text-bg-dark border-0" role="alert">
+    <div class="d-flex">
+      <div class="toast-body">
+        <i class="bi bi-info-circle-fill me-2"></i>
+        <span id="toastText">Ação demonstrativa.</span>
+      </div>
+      <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Fechar"></button>
+    </div>
+  </div>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+(function(){
+  const root = document.documentElement;
+  const themeButton = document.getElementById('themeToggle');
+  const themeButtonMobile = document.getElementById('themeToggleMobile');
+  const themeIcon = document.getElementById('themeIcon');
+  const storedTheme = localStorage.getItem('botuka-services-theme') || 'light';
+
+  function setTheme(theme){
+    root.setAttribute('data-bs-theme', theme);
+    localStorage.setItem('botuka-services-theme', theme);
+    if(themeIcon){
+      themeIcon.className = theme === 'dark' ? 'bi bi-sun-fill' : 'bi bi-moon-stars-fill';
+    }
+    if(themeButtonMobile){
+      themeButtonMobile.innerHTML = theme === 'dark'
+        ? '<i class="bi bi-sun-fill"></i> Alternar para claro'
+        : '<i class="bi bi-moon-stars-fill"></i> Alternar para escuro';
+    }
+  }
+
+  function toggleTheme(){
+    setTheme(root.getAttribute('data-bs-theme') === 'dark' ? 'light' : 'dark');
+  }
+
+  setTheme(storedTheme);
+  themeButton?.addEventListener('click', toggleTheme);
+  themeButtonMobile?.addEventListener('click', toggleTheme);
+})();
+
+const categories = [
+  {icon:'bi bi-house-gear-fill', name:'Reformas', total:87, desc:'Pedreiro, pintura, elétrica e acabamento.'},
+  {icon:'bi bi-house-heart-fill', name:'Casa e limpeza', total:64, desc:'Diarista, limpeza, organização e cuidados.'},
+  {icon:'bi bi-car-front-fill', name:'Automotivo', total:41, desc:'Mecânico, guincho, estética e revisões.'},
+  {icon:'bi bi-laptop-fill', name:'Tecnologia', total:38, desc:'Sites, suporte, sistemas e informática.'},
+  {icon:'bi bi-heart-pulse-fill', name:'Saúde', total:52, desc:'Bem-estar, terapias e atendimento especializado.'},
+  {icon:'bi bi-scissors', name:'Beleza', total:73, desc:'Manicure, cabelo, estética e maquiagem.'},
+  {icon:'bi bi-mortarboard-fill', name:'Aulas', total:29, desc:'Reforço, idiomas, música e cursos.'},
+  {icon:'bi bi-calendar-heart-fill', name:'Eventos', total:35, desc:'Buffet, DJ, foto, decoração e cerimonial.'},
+  {icon:'bi bi-briefcase-fill', name:'Jurídico', total:26, desc:'Advogados, consultorias e orientação.'},
+  {icon:'bi bi-truck', name:'Transporte', total:44, desc:'Motorista, frete, mudança e entregas.'}
+];
+
+const providers = [
+  {initials:'JR', name:'João Ricardo', job:'Eletricista Residencial', rating:'4.9', reviews:'67', place:'Centro', response:'5 min', tags:['Emergência','Residencial'], verified:true},
+  {initials:'LG', name:'Luciana Gama', job:'Beleza e Estética', rating:'5.0', reviews:'48', place:'Vila Nova', response:'15 min', tags:['Unhas','Spa'], verified:true},
+  {initials:'RM', name:'Raphael Mendes', job:'Programador e Sites', rating:'4.8', reviews:'21', place:'Jd. Paraíso', response:'37 min', tags:['Landing Pages','WordPress'], verified:true},
+  {initials:'AL', name:'Antônio Lopes', job:'Encanador', rating:'4.6', reviews:'54', place:'Cohab 1', response:'32 min', tags:['Residencial','Comercial'], verified:true},
+  {initials:'CS', name:'Camila Souza', job:'Veterinária', rating:'5.0', reviews:'38', place:'Vila Assis', response:'17 min', tags:['Consultas','Pets'], verified:true},
+  {initials:'PA', name:'Pedro Araújo', job:'DJ e Cerimonialista', rating:'4.5', reviews:'12', place:'Santa Elisa', response:'54 min', tags:['Festas','Casamentos'], verified:false}
+];
+
+function showToast(message){
+  $('#toastText').text(message);
+  const toast = new bootstrap.Toast(document.getElementById('appToast'), { delay: 2800 });
+  toast.show();
+}
+
+function renderCategories(){
+  const grid = document.getElementById('categoryGrid');
+  const modalGrid = document.getElementById('modalCategoryGrid');
+  if(!grid || !modalGrid) return;
+
+  grid.innerHTML = '';
+  modalGrid.innerHTML = '';
+
+  categories.forEach(cat => {
+    const card = `
+      <article class="category-card reveal">
+        <div class="category-icon"><i class="${cat.icon}"></i></div>
+        <div class="category-name">${cat.name}</div>
+        <div class="category-count">${cat.total} profissionais</div>
+        <div class="category-desc">${cat.desc}</div>
+      </article>
+    `;
+    grid.insertAdjacentHTML('beforeend', card);
+    modalGrid.insertAdjacentHTML('beforeend', card.replace('reveal',''));
+  });
+}
+
+function renderProviders(){
+  const grid = document.getElementById('providersGrid');
+  if(!grid) return;
+  grid.innerHTML = '';
+
+  providers.forEach(pro => {
+    grid.insertAdjacentHTML('beforeend', `
+      <article class="provider-card reveal">
+        <div class="provider-top">
+          <div class="provider-avatar">${pro.initials}</div>
+          <div>
+            <h3 class="provider-name">
+              ${pro.name}
+              ${pro.verified ? '<i class="bi bi-patch-check-fill verified" title="Verificado"></i>' : ''}
+            </h3>
+            <div class="provider-job">${pro.job}</div>
+            <div class="provider-rating"><i class="bi bi-star-fill"></i> ${pro.rating} <span>(${pro.reviews})</span></div>
+          </div>
+        </div>
+        <div class="provider-info">
+          <span class="provider-chip"><i class="bi bi-geo-alt"></i> ${pro.place}</span>
+          <span class="provider-chip"><i class="bi bi-clock"></i> ${pro.response}</span>
+          ${pro.tags.map(tag => `<span class="provider-chip">${tag}</span>`).join('')}
+        </div>
+        <div class="provider-actions">
+          <button class="btn-outline-botuka" type="button"><i class="bi bi-person-badge"></i> Ver perfil</button>
+          <button class="btn-botuka btn-yellow" type="button"><i class="bi bi-bag-plus"></i> Orçamento</button>
+        </div>
+      </article>
+    `);
+  });
+}
+
+$(function(){
+  renderCategories();
+  renderProviders();
+
+  $('#mobileMenuBtn').on('click', function(){
+    $('#mobilePanel').toggleClass('open');
+    $(this).find('i').toggleClass('bi-list bi-x-lg');
+  });
+
+  $('a[href^="#"]').on('click', function(e){
+    const target = $(this.getAttribute('href'));
+    if(target.length){
+      e.preventDefault();
+      $('#mobilePanel').removeClass('open');
+      $('#mobileMenuBtn i').removeClass('bi-x-lg').addClass('bi-list');
+      $('html, body').animate({ scrollTop: target.offset().top - 86 }, 520);
+    }
+  });
+
+  $('#mainSearch, #headerSearch, #mobileSearch').on('submit', function(e){
+    e.preventDefault();
+    const value = $(this).find('input[type="search"]').val().trim();
+    showToast(value ? `Buscando "${value}" em Botucatu — protótipo visual.` : 'Digite o serviço que você procura.');
+  });
+
+  $('#loginForm').on('submit', function(e){
+    e.preventDefault();
+    showToast('Login demonstrativo — backend ainda não conectado.');
+    bootstrap.Modal.getInstance(document.getElementById('loginModal'))?.hide();
+  });
+
+  $(document).on('click', '.provider-card button, .category-card, .quick-chip, .recent-card a', function(e){
+    if($(this).is('.quick-chip')) return;
+    e.preventDefault();
+    showToast('Ação demonstrativa do Botuka Services.');
+  });
+
+  const observer = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        entry.target.classList.add('on');
+        observer.unobserve(entry.target);
+      }
+    });
+  }, {threshold:.12});
+
+  document.querySelectorAll('.reveal').forEach(function(el){
+    observer.observe(el);
+  });
+});
+</script>
+
+</body>
+</html>
