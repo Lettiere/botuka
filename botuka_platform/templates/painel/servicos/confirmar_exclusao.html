@@ -1,0 +1,12 @@
+{% extends "painel/base.html" %}
+{% block content %}
+<section class="painel-card">
+  <h1 class="painel-title">Excluir serviço</h1>
+  <p>Confirma a remoção de <strong>{{ servico.titulo }}</strong>?</p>
+  <form method="post" class="d-flex gap-2">
+    {% csrf_token %}
+    <button class="btn btn-danger" type="submit">Excluir</button>
+    <a class="btn btn-outline-secondary" href="{% url 'painel:servico_detalhe' servico.pk %}">Cancelar</a>
+  </form>
+</section>
+{% endblock %}

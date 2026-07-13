@@ -1,0 +1,33 @@
+{% if botuka_contatos or botuka_redes_sociais %}
+  <div class="botuka-topbar">
+    <div class="container-botuka botuka-topbar-inner">
+      <div class="botuka-topbar-contacts">
+        {% if botuka_whatsapp %}
+          <a href="{{ botuka_whatsapp.link }}" target="_blank" rel="noopener" aria-label="WhatsApp BOTUKA">
+            <i class="bi {{ botuka_whatsapp.icone|default:'bi-whatsapp' }}"></i>
+            <span class="d-none d-sm-inline">{{ botuka_whatsapp.valor }}</span>
+          </a>
+        {% endif %}
+        {% if botuka_telefone %}
+          <a href="{{ botuka_telefone.link }}" aria-label="Telefone BOTUKA">
+            <i class="bi {{ botuka_telefone.icone|default:'bi-telephone' }}"></i>
+            <span class="d-none d-sm-inline">{{ botuka_telefone.valor }}</span>
+          </a>
+        {% endif %}
+        {% if botuka_email %}
+          <a href="{{ botuka_email.link }}" aria-label="E-mail BOTUKA">
+            <i class="bi {{ botuka_email.icone|default:'bi-envelope' }}"></i>
+            <span class="d-none d-md-inline">{{ botuka_email.valor }}</span>
+          </a>
+        {% endif %}
+      </div>
+      <div class="botuka-topbar-social">
+        {% for rede in botuka_redes_sociais %}
+          <a href="{{ rede.link }}" target="_blank" rel="noopener" aria-label="{{ rede.nome }}" title="{{ rede.nome }}">
+            <i class="bi {{ rede.icone|default:'bi-link-45deg' }}"></i>
+          </a>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+{% endif %}

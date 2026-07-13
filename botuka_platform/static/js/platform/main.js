@@ -53,12 +53,6 @@ $(function(){
     showToast('Buscando "' + value + '" na região — protótipo visual.');
   });
 
-  $('#loginForm').on('submit', function(e){
-    e.preventDefault();
-    showToast('Login demonstrativo — sem backend conectado.');
-    bootstrap.Modal.getInstance(document.getElementById('loginModal')).hide();
-  });
-
   $('.feed-link, .price-pill, .publish-option, .map-pin, .map-filter, .quick-chip').on('click', function(e){
     if(!$(this).attr('href') || $(this).attr('href') === '#'){
       e.preventDefault();

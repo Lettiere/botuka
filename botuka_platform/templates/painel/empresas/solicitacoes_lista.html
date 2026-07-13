@@ -1,0 +1,9 @@
+{% extends "painel/base.html" %}
+{% block content %}
+<section class="painel-card">
+  <h1 class="painel-title">Solicitações de empresas</h1>
+  <div class="list-group">
+    {% for item in solicitacoes %}<a class="list-group-item list-group-item-action d-flex justify-content-between" href="{% url 'painel:empresa_solicitacao_analisar' item.pk %}"><span>{{ item.get_tipo_solicitacao_display }} · {{ item.usuario_solicitante }}</span><span>{{ item.get_status_display }}</span></a>{% empty %}<div class="text-muted">Nenhuma solicitação pendente.</div>{% endfor %}
+  </div>
+</section>
+{% endblock %}

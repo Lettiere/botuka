@@ -1,0 +1,176 @@
+<section class="section-pad" id="categorias">
+    <div class="container-botuka">
+      <div class="section-title reveal">
+        <div>
+          <h2>Categorias de serviços</h2>
+          <p>Encontre profissionais por tipo de necessidade.</p>
+        </div>
+        <a href="#" class="btn-botuka btn-soft" data-bs-toggle="modal" data-bs-target="#categoriesModal">Ver todas</a>
+      </div>
+
+      <div class="category-carousel-wrap reveal" style="position: relative; display: flex; align-items: center; margin-top: 12px;">
+        <button class="category-arrow category-arrow-left" type="button" aria-label="Categorias anteriores" style="background: none; border: none; font-size: 2rem; width: 44px; height: 64px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--botuka-blue); opacity: .7; transition: opacity .2s;">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+
+        <div class="category-carousel" id="categoryCarousel" style="overflow-x: auto; display: flex; gap: 18px; scroll-behavior: smooth; padding: 12px 0; flex: 1;">
+          <!-- Os 10 cards + "Ver mais" serão renderizados pelo JS -->
+        </div>
+
+        <button class="category-arrow category-arrow-right" type="button" aria-label="Próximas categorias" style="background: none; border: none; font-size: 2rem; width: 44px; height: 64px; display: flex; align-items: center; justify-content: center; cursor: pointer; color: var(--botuka-blue); opacity: .7; transition: opacity .2s;">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+    </div>
+    <!-- Carousel CSS -->
+    <style>
+      .category-carousel::-webkit-scrollbar {
+        display: none;
+      }
+      .category-carousel {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .category-card-carousel {
+        background: var(--surface-2, #FFF9EA);
+        border: 1.5px solid var(--border, #E8DECA);
+        border-radius: 18px;
+        padding: 22px 16px 16px 16px;
+        min-width: 142px;
+        max-width: 148px;
+        text-align: center;
+        font-weight: 800;
+        font-size: 1rem;
+        color: var(--botuka-blue);
+        transition: box-shadow .15s, border .2s;
+        box-shadow: 0 1px 9px -6px rgba(19,41,61,.07);
+        cursor: pointer;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        position: relative;
+        gap: 9px;
+      }
+      .category-card-carousel .cc-icon {
+        font-size: 2rem;
+        border-radius: 11px;
+        width: 44px;
+        height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 2px;
+        background: linear-gradient(90deg, var(--botuka-yellow), var(--botuka-earth));
+        color: #fff;
+      }
+      .category-card-carousel:hover, .category-card-carousel:focus {
+        border-color: var(--botuka-yellow);
+        box-shadow: 0 4px 18px -7px rgba(255,183,3,.15);
+        text-decoration: none;
+      }
+      .category-card-carousel.more {
+        background: rgba(255, 183, 3, .08);
+        color: var(--botuka-yellow-2);
+        border: 1.5px dashed var(--botuka-yellow);
+      }
+      .category-arrow {
+        background: none;
+        border: none;
+        font-size: 2rem;
+        width: 44px; height: 64px;
+        display:flex; align-items: center; justify-content: center;
+        cursor:pointer; color: var(--botuka-blue); opacity: .7;
+        transition: opacity .2s;
+      }
+      .category-arrow[disabled],
+      .category-arrow.disabled {
+        opacity: .25;
+        pointer-events: none;
+      }
+      @media (max-width: 950px) {
+        .category-card-carousel {
+          min-width: 120px;
+          max-width: 124px;
+          padding: 17px 8px 12px 8px;
+          font-size: .95rem;
+        }
+        .category-carousel { gap: 12px; }
+      }
+      @media (max-width: 600px) {
+        .category-card-carousel {
+          min-width: 104px;
+          max-width: 112px;
+          font-size: .85rem;
+        }
+        .category-carousel { gap: 8px; }
+        .category-arrow { width:32px;height:54px;font-size:1.55rem;}
+      }
+    </style>
+    <!-- JQuery CDN and carrossel logic -->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" crossorigin="anonymous"></script>
+    <script>
+      // Lista de categorias de exemplo:
+      const categoriesData = [
+        { icon: "bi bi-tools", label: "Reformas" },
+        { icon: "bi bi-house-heart-fill", label: "Casa e Limpeza" },
+        { icon: "bi bi-laptop", label: "Tecnologia" },
+        { icon: "bi bi-people", label: "Eventos" },
+        { icon: "bi bi-car-front-fill", label: "Transporte" },
+        { icon: "bi bi-briefcase", label: "Jurídico" },
+        { icon: "bi bi-emoji-smile", label: "Saúde e Bem-estar" },
+        { icon: "bi bi-droplet-half", label: "Hidráulica" },
+        { icon: "bi bi-lightning-charge", label: "Elétrica" },
+        { icon: "bi bi-tree-fill", label: "Jardinagem" },
+        { icon: "bi bi-three-dots", label: "Outros" }
+      ];
+      
+      function renderCategoryCarousel() {
+        const $carousel = $('#categoryCarousel');
+        $carousel.empty();
+        // Renderizar os 10 primeiros cards
+        for(let i=0;i<10;i++){
+          const cat = categoriesData[i];
+          if(!cat) continue;
+          $carousel.append(`
+            <div class="category-card-carousel" tabindex="0" role="button" aria-label="${cat.label}">
+              <span class="cc-icon"><i class="${cat.icon}"></i></span>
+              <span>${cat.label}</span>
+            </div>
+          `);
+        }
+        // Card "Ver mais"
+        $carousel.append(`
+          <div class="category-card-carousel more" tabindex="0" role="button" aria-label="Ver mais categorias" data-bs-toggle="modal" data-bs-target="#categoriesModal">
+            <span class="cc-icon"><i class="bi bi-grid-3x3-gap-fill"></i></span>
+            <span>Ver mais</span>
+          </div>
+        `);
+      }
+
+      function scrollCategoryCarousel(dir){
+        const $carousel = $('#categoryCarousel')[0];
+        const child = $carousel.querySelector('.category-card-carousel');
+        if (!child) return;
+        const scrollStep = child.offsetWidth + parseInt(getComputedStyle($carousel).gap||'18');
+        if(dir === "right"){
+          $carousel.scrollBy({ left: scrollStep * 3, behavior: "smooth" });
+        } else {
+          $carousel.scrollBy({ left: -scrollStep * 3, behavior: "smooth" });
+        }
+      }
+
+      // Abrir modal ao clicar no card "Ver mais"
+      $(document).on('click', '.category-card-carousel.more', function(e){
+        e.preventDefault();
+        $('#categoriesModal').modal ? $('#categoriesModal').modal('show') // Bootstrap 4
+        : document.querySelector('#categoriesModal')?.setAttribute('open', 'open') // fallback
+      });
+
+      // Botões do carrossel
+      $(function(){
+        renderCategoryCarousel();
+        $('.category-arrow-left').on('click', function(){ scrollCategoryCarousel('left'); });
+        $('.category-arrow-right').on('click', function(){ scrollCategoryCarousel('right'); });
+      });
+    </script>
+  </section>

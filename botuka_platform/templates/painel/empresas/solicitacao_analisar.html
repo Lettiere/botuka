@@ -1,0 +1,12 @@
+{% extends "painel/base.html" %}
+{% block content %}
+<section class="painel-card">
+  <h1 class="painel-title">Analisar solicitação</h1>
+  <p class="text-muted">{{ solicitacao.get_tipo_solicitacao_display }} · {{ solicitacao.usuario_solicitante }}</p>
+  <form method="post" class="row g-3">
+    {% csrf_token %}
+    {% for field in form %}<div class="col-md-6"><label class="form-label">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}
+    <div class="col-12 d-flex gap-2"><button class="btn btn-primary" type="submit">Salvar análise</button><a class="btn btn-outline-secondary" href="{% url 'painel:empresa_solicitacoes_lista' %}">Voltar</a></div>
+  </form>
+</section>
+{% endblock %}

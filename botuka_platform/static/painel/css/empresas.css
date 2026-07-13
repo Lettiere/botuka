@@ -1,0 +1,11 @@
+.empresa-panel-list {
+  display: grid;
+  gap: 12px;
+}
+
+.empresa-panel-item {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+  background: #fff;
+}

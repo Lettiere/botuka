@@ -1,0 +1,60 @@
+{% extends "gestao/base.html" %}
+
+{% block title %}Usuário | Gestão BOTUKA{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1>{{ object.nome_exibicao|default:object.get_full_name|default:object.email }}</h1>
+    <div class="actions">
+      <a class="btn btn-muted" href="{% url 'gestao:usuarios_lista' %}">Voltar</a>
+      <a class="btn btn-primary" href="{% url 'gestao:usuarios_editar' object.pk %}">Editar</a>
+    </div>
+  </div>
+  <div class="grid-cards">
+    <section class="panel panel-pad">
+      <h2>Dados pessoais</h2>
+      <p><strong>Nome:</strong> {{ object.first_name|default:"-" }}</p>
+      <p><strong>Sobrenome:</strong> {{ object.last_name|default:"-" }}</p>
+      <p><strong>Nome de exibição:</strong> {{ object.nome_exibicao|default:"-" }}</p>
+      <p><strong>Nascimento:</strong> {{ object.data_nascimento|date:"d/m/Y"|default:"-" }}</p>
+      <p><strong>Biografia:</strong> {{ object.biografia|default:"-" }}</p>
+    </section>
+    <section class="panel panel-pad">
+      <h2>Contato</h2>
+      <p><strong>E-mail:</strong> {{ object.email }}</p>
+      <p><strong>Telefone:</strong> {{ object.telefone|default:"-" }}</p>
+      <p><strong>Celular:</strong> {{ object.celular|default:"-" }}</p>
+      <p><strong>Cidade:</strong> {{ object.cidade|default:"-" }}</p>
+      <p><strong>Estado:</strong> {{ object.estado|default:"-" }}</p>
+    </section>
+    <section class="panel panel-pad">
+      <h2>Documento</h2>
+      <p><strong>CPF:</strong> {{ object.cpf_mascarado|default:"-" }}</p>
+    </section>
+    <section class="panel panel-pad">
+      <h2>Perfil e permissões</h2>
+      <p><strong>Perfil principal:</strong> {{ object.perfil|default:"-" }}</p>
+      <p><strong>Perfis adicionais:</strong>
+        {% for perfil in object.perfis_adicionais.all %}
+          {{ perfil }}{% if not forloop.last %}, {% endif %}
+        {% empty %}
+          -
+        {% endfor %}
+      </p>
+    </section>
+    <section class="panel panel-pad">
+      <h2>Empresas</h2>
+      <p><strong>Vinculadas:</strong> {{ object.organizacoes.count }}</p>
+      <p><strong>Como proprietário:</strong> {{ object.organizacoes_proprietario.count }}</p>
+    </section>
+    <section class="panel panel-pad">
+      <h2>Status e auditoria</h2>
+      <p><strong>Ativo:</strong> {{ object.is_active|yesno:"Sim,Não" }}</p>
+      <p><strong>Staff:</strong> {{ object.is_staff|yesno:"Sim,Não" }}</p>
+      <p><strong>Superusuário:</strong> {{ object.is_superuser|yesno:"Sim,Não" }}</p>
+      <p><strong>Cadastro:</strong> {{ object.date_joined|date:"d/m/Y H:i" }}</p>
+      <p><strong>Atualizado em:</strong> {{ object.atualizado_em|date:"d/m/Y H:i" }}</p>
+      <p><strong>Último acesso:</strong> {{ object.ultimo_acesso|default:"-" }}</p>
+    </section>
+  </div>
+{% endblock %}

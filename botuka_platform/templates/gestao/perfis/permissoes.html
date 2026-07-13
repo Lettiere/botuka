@@ -1,0 +1,33 @@
+{% extends "gestao/base.html" %}
+
+{% block title %}Permissões do perfil | Gestão BOTUKA{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <div>
+      <h1>Permissões do perfil {{ perfil.nome }}</h1>
+      <p style="margin:6px 0 0;color:#64748b">Usuários vinculados: {{ usuarios_vinculados }}</p>
+    </div>
+    <a class="btn btn-muted" href="{% url 'gestao:perfis_lista' %}">Voltar</a>
+  </div>
+  <form class="panel panel-pad" method="post">
+    {% csrf_token %}
+    {% for modulo, permissoes in grupos.items %}
+      <section style="margin-bottom:18px">
+        <h2 style="font-size:18px;text-transform:capitalize">{{ modulo }}</h2>
+        <div class="form-grid">
+          {% for permissao in permissoes %}
+            <label class="panel" style="padding:12px;display:flex;gap:10px;align-items:flex-start">
+              <input class="form-check-input" type="checkbox" name="permissoes" value="{{ permissao.pk }}" {% if permissao.pk in permissoes_ativas %}checked{% endif %}>
+              <span>
+                <strong>{{ permissao.nome }}</strong>
+                <small style="display:block;color:#64748b">{{ permissao.codigo }}</small>
+              </span>
+            </label>
+          {% endfor %}
+        </div>
+      </section>
+    {% endfor %}
+    <button class="btn btn-primary" type="submit">Salvar permissões</button>
+  </form>
+{% endblock %}

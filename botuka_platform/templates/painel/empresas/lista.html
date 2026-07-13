@@ -1,0 +1,914 @@
+{% extends "painel/base.html" %}
+
+{% block title %}Minhas empresas | Painel BOTUKA{% endblock %}
+
+{% block content %}
+<style>
+  :root {
+    --emp-bg: #f4f7fb;
+    --emp-surface: #ffffff;
+    --emp-soft: #f8fafc;
+    --emp-text: #172033;
+    --emp-muted: #667085;
+    --emp-border: #e6eaf0;
+    --emp-dark: #111827;
+    --emp-yellow: #ffd230;
+    --emp-yellow-dark: #e5b800;
+    --emp-success: #16a34a;
+    --emp-warning: #d97706;
+    --emp-danger: #dc2626;
+    --emp-shadow: 0 18px 50px rgba(15, 23, 42, .08);
+    --emp-shadow-sm: 0 8px 24px rgba(15, 23, 42, .06);
+  }
+
+  .empresas-page {
+    min-height: 72vh;
+    margin: -26px -18px -26px;
+    padding: 28px 18px 46px;
+    background:
+      radial-gradient(circle at top left, rgba(255, 210, 48, .14), transparent 28rem),
+      var(--emp-bg);
+  }
+
+  .empresas-container {
+    width: min(1180px, 100%);
+    margin: 0 auto;
+  }
+
+  .empresas-hero {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 24px;
+    align-items: center;
+    margin-bottom: 18px;
+    padding: 30px;
+    overflow: hidden;
+    position: relative;
+    border-radius: 24px;
+    background: linear-gradient(135deg, #101827 0%, #1f2937 68%, #303b4f 100%);
+    color: #fff;
+    box-shadow: var(--emp-shadow);
+  }
+
+  .empresas-hero::before,
+  .empresas-hero::after {
+    content: "";
+    position: absolute;
+    border-radius: 999px;
+    pointer-events: none;
+  }
+
+  .empresas-hero::before {
+    width: 240px;
+    height: 240px;
+    top: -150px;
+    right: 8%;
+    background: rgba(255, 210, 48, .16);
+  }
+
+  .empresas-hero::after {
+    width: 150px;
+    height: 150px;
+    right: -52px;
+    bottom: -82px;
+    background: rgba(255, 255, 255, .07);
+  }
+
+  .empresas-hero-main,
+  .empresas-hero-action {
+    position: relative;
+    z-index: 1;
+  }
+
+  .empresas-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 9px;
+    color: var(--emp-yellow);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .11em;
+    text-transform: uppercase;
+  }
+
+  .empresas-title {
+    margin: 0;
+    font-size: clamp(28px, 4vw, 40px);
+    line-height: 1.08;
+    font-weight: 900;
+  }
+
+  .empresas-subtitle {
+    max-width: 760px;
+    margin: 10px 0 0;
+    color: rgba(255, 255, 255, .72);
+    font-size: 15px;
+    line-height: 1.6;
+  }
+
+  .empresas-button {
+    min-height: 46px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 11px 18px;
+    border: 0;
+    border-radius: 11px;
+    font: inherit;
+    font-size: 14px;
+    font-weight: 850;
+    text-decoration: none;
+    transition: transform .18s ease, box-shadow .18s ease, background .18s ease;
+  }
+
+  .empresas-button:hover {
+    transform: translateY(-1px);
+  }
+
+  .empresas-button-primary {
+    background: var(--emp-yellow);
+    color: var(--emp-dark);
+    box-shadow: 0 8px 18px rgba(229, 184, 0, .22);
+  }
+
+  .empresas-button-primary:hover {
+    background: #ffda4f;
+    color: var(--emp-dark);
+  }
+
+  .empresas-button-light {
+    border: 1px solid var(--emp-border);
+    background: #fff;
+    color: var(--emp-dark);
+  }
+
+  .empresas-button-light:hover {
+    background: #f8fafc;
+    color: var(--emp-dark);
+  }
+
+  .empresas-stats {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 14px;
+    margin-bottom: 18px;
+  }
+
+  .empresas-stat {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    min-width: 0;
+    padding: 17px;
+    border: 1px solid var(--emp-border);
+    border-radius: 16px;
+    background: var(--emp-surface);
+    box-shadow: var(--emp-shadow-sm);
+  }
+
+  .empresas-stat-icon {
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    flex: 0 0 auto;
+    border-radius: 12px;
+    background: rgba(255, 210, 48, .22);
+    color: #7a5a00;
+    font-size: 19px;
+  }
+
+  .empresas-stat span {
+    display: block;
+    color: var(--emp-muted);
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+
+  .empresas-stat strong {
+    display: block;
+    margin-top: 2px;
+    color: var(--emp-text);
+    font-size: 25px;
+    line-height: 1;
+    font-weight: 900;
+  }
+
+  .empresas-filters {
+    margin-bottom: 20px;
+    border: 1px solid var(--emp-border);
+    border-radius: 18px;
+    background: var(--emp-surface);
+    box-shadow: var(--emp-shadow-sm);
+  }
+
+  .empresas-filters-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: center;
+    padding: 18px 20px;
+    border-bottom: 1px solid var(--emp-border);
+  }
+
+  .empresas-filters-title {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0;
+    color: var(--emp-text);
+    font-size: 15px;
+    font-weight: 900;
+  }
+
+  .empresas-filter-toggle {
+    display: none;
+    border: 0;
+    background: transparent;
+    color: var(--emp-text);
+    font-weight: 850;
+  }
+
+  .empresas-filter-body {
+    padding: 18px 20px 20px;
+  }
+
+  .empresas-filter-grid {
+    display: grid;
+    grid-template-columns: minmax(220px, 1.35fr) repeat(3, minmax(150px, 1fr)) auto;
+    gap: 12px;
+    align-items: end;
+  }
+
+  .empresas-field label {
+    display: block;
+    margin-bottom: 7px;
+    color: #344054;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .empresas-field input,
+  .empresas-field select {
+    width: 100%;
+    min-height: 46px;
+    padding: 10px 12px;
+    border: 1px solid #d9dee7;
+    border-radius: 11px;
+    outline: none;
+    background: #fff;
+    color: var(--emp-text);
+    font: inherit;
+    font-size: 14px;
+    transition: border-color .18s ease, box-shadow .18s ease;
+  }
+
+  .empresas-field input:focus,
+  .empresas-field select:focus {
+    border-color: #d9b000;
+    box-shadow: 0 0 0 4px rgba(255, 210, 48, .18);
+  }
+
+  .empresas-check {
+    min-height: 46px;
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    color: #344054;
+    font-size: 13px;
+    font-weight: 800;
+    white-space: nowrap;
+  }
+
+  .empresas-check input {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--emp-yellow-dark);
+  }
+
+  .empresas-results-head {
+    display: flex;
+    justify-content: space-between;
+    gap: 14px;
+    align-items: center;
+    margin-bottom: 14px;
+  }
+
+  .empresas-results-head h2 {
+    margin: 0;
+    color: var(--emp-text);
+    font-size: 19px;
+    font-weight: 900;
+  }
+
+  .empresas-results-head span {
+    color: var(--emp-muted);
+    font-size: 13px;
+    font-weight: 750;
+  }
+
+  .empresas-grid {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  .empresa-card {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow: hidden;
+    border: 1px solid var(--emp-border);
+    border-radius: 18px;
+    background: var(--emp-surface);
+    box-shadow: var(--emp-shadow-sm);
+    transition: transform .18s ease, box-shadow .18s ease, border-color .18s ease;
+  }
+
+  .empresa-card:hover {
+    transform: translateY(-2px);
+    border-color: #d5dae3;
+    box-shadow: 0 16px 34px rgba(15, 23, 42, .09);
+  }
+
+  .empresa-cover {
+    height: 86px;
+    position: relative;
+    background:
+      linear-gradient(135deg, rgba(17, 24, 39, .92), rgba(48, 59, 79, .88)),
+      linear-gradient(45deg, rgba(255, 210, 48, .28), transparent);
+  }
+
+  .empresa-cover img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .empresa-logo {
+    width: 72px;
+    height: 72px;
+    position: absolute;
+    left: 18px;
+    bottom: -34px;
+    display: grid;
+    place-items: center;
+    overflow: hidden;
+    border: 4px solid #fff;
+    border-radius: 18px;
+    background: linear-gradient(145deg, #ffd230, #f0b900);
+    color: var(--emp-dark);
+    font-size: 25px;
+    font-weight: 900;
+    box-shadow: 0 10px 22px rgba(15, 23, 42, .18);
+  }
+
+  .empresa-logo img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .empresa-card-body {
+    flex: 1;
+    padding: 44px 18px 16px;
+  }
+
+  .empresa-card-top {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+
+  .empresa-name {
+    min-width: 0;
+  }
+
+  .empresa-name h3 {
+    margin: 0;
+    color: var(--emp-text);
+    font-size: 18px;
+    line-height: 1.22;
+    font-weight: 900;
+    word-break: break-word;
+  }
+
+  .empresa-name p {
+    margin: 4px 0 0;
+    overflow: hidden;
+    color: var(--emp-muted);
+    font-size: 13px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .empresa-actions-menu .btn {
+    width: 36px;
+    height: 36px;
+    display: inline-grid;
+    place-items: center;
+    padding: 0;
+    border-radius: 11px;
+  }
+
+  .empresa-badges {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 7px;
+    margin: 12px 0 14px;
+  }
+
+  .empresa-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    min-height: 28px;
+    padding: 5px 9px;
+    border-radius: 999px;
+    background: #f2f4f7;
+    color: #475467;
+    font-size: 12px;
+    font-weight: 800;
+  }
+
+  .empresa-badge.status-ativa {
+    background: #ecfdf3;
+    color: #027a48;
+  }
+
+  .empresa-badge.status-pendente,
+  .empresa-badge.status-rascunho {
+    background: #fff7d6;
+    color: #8a5b00;
+  }
+
+  .empresa-badge.status-suspensa,
+  .empresa-badge.status-bloqueada {
+    background: #fef2f2;
+    color: #b42318;
+  }
+
+  .empresa-meta {
+    display: grid;
+    gap: 9px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .empresa-meta li {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    min-width: 0;
+    color: #475467;
+    font-size: 13px;
+  }
+
+  .empresa-meta i {
+    width: 18px;
+    flex: 0 0 auto;
+    color: #98a2b3;
+    text-align: center;
+  }
+
+  .empresa-meta span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .empresa-card-footer {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 18px 18px;
+  }
+
+  .empresas-empty {
+    padding: 48px 24px;
+    border: 1px dashed #cfd5df;
+    border-radius: 20px;
+    background: #fff;
+    text-align: center;
+    box-shadow: var(--emp-shadow-sm);
+  }
+
+  .empresas-empty-icon {
+    width: 74px;
+    height: 74px;
+    display: grid;
+    place-items: center;
+    margin: 0 auto 16px;
+    border-radius: 22px;
+    background: rgba(255, 210, 48, .22);
+    color: #7a5a00;
+    font-size: 32px;
+  }
+
+  .empresas-empty h2 {
+    margin: 0;
+    color: var(--emp-text);
+    font-size: clamp(22px, 4vw, 29px);
+    font-weight: 900;
+  }
+
+  .empresas-empty p {
+    max-width: 560px;
+    margin: 10px auto 20px;
+    color: var(--emp-muted);
+    font-size: 14px;
+    line-height: 1.65;
+  }
+
+  .empresas-pagination {
+    display: flex;
+    justify-content: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 22px;
+  }
+
+  .empresas-page-link {
+    min-width: 42px;
+    min-height: 42px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 12px;
+    border: 1px solid var(--emp-border);
+    border-radius: 11px;
+    background: #fff;
+    color: var(--emp-dark);
+    font-weight: 850;
+    text-decoration: none;
+    box-shadow: var(--emp-shadow-sm);
+  }
+
+  .empresas-page-link.is-active {
+    border-color: var(--emp-yellow);
+    background: var(--emp-yellow);
+  }
+
+  @media (max-width: 1040px) {
+    .empresas-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .empresas-filter-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+  }
+
+  @media (max-width: 760px) {
+    .empresas-page {
+      margin-left: -18px;
+      margin-right: -18px;
+      padding: 16px 12px 34px;
+    }
+
+    .empresas-hero {
+      grid-template-columns: 1fr;
+      padding: 22px;
+      border-radius: 18px;
+    }
+
+    .empresas-hero-action .empresas-button {
+      width: 100%;
+    }
+
+    .empresas-stats {
+      grid-template-columns: 1fr;
+    }
+
+    .empresas-filter-toggle {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .empresas-filter-body {
+      display: none;
+    }
+
+    .empresas-filters.is-open .empresas-filter-body {
+      display: block;
+    }
+
+    .empresas-filter-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .empresas-results-head {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .empresas-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .empresa-card-footer {
+      grid-template-columns: 1fr;
+    }
+
+    .empresa-card-footer .empresas-button {
+      min-height: 50px;
+    }
+  }
+
+  @media (max-width: 390px) {
+    .empresas-hero,
+    .empresas-filters,
+    .empresa-card,
+    .empresas-empty {
+      border-radius: 16px;
+    }
+
+    .empresas-hero {
+      padding: 18px;
+    }
+  }
+</style>
+
+<div class="empresas-page">
+  <div class="empresas-container">
+    <header class="empresas-hero">
+      <div class="empresas-hero-main">
+        <span class="empresas-eyebrow">
+          <i class="bi bi-buildings"></i>
+          Empresas BOTUKA
+        </span>
+        <h1 class="empresas-title">{{ titulo|default:"Minhas empresas" }}</h1>
+        <p class="empresas-subtitle">
+          Cadastre e gerencie seus negócios, dados comerciais, contatos públicos,
+          equipe vinculada e empresas usadas para publicar serviços na plataforma.
+        </p>
+      </div>
+
+      <div class="empresas-hero-action">
+        <a class="empresas-button empresas-button-primary" href="{% url 'painel:empresa_criar' %}">
+          <i class="bi bi-plus-lg"></i>
+          Cadastrar empresa
+        </a>
+      </div>
+    </header>
+
+    <section class="empresas-stats" aria-label="Resumo das empresas">
+      <article class="empresas-stat">
+        <span class="empresas-stat-icon"><i class="bi bi-collection"></i></span>
+        <div>
+          <span>Total</span>
+          <strong>{{ total_empresas|default:"0" }}</strong>
+        </div>
+      </article>
+
+      <article class="empresas-stat">
+        <span class="empresas-stat-icon"><i class="bi bi-check2-circle"></i></span>
+        <div>
+          <span>Ativas</span>
+          <strong>{{ total_ativas|default:"0" }}</strong>
+        </div>
+      </article>
+
+      <article class="empresas-stat">
+        <span class="empresas-stat-icon"><i class="bi bi-hourglass-split"></i></span>
+        <div>
+          <span>Em análise</span>
+          <strong>{{ total_pendentes|default:"0" }}</strong>
+        </div>
+      </article>
+    </section>
+
+    <section class="empresas-filters" id="empresasFilters">
+      <div class="empresas-filters-head">
+        <h2 class="empresas-filters-title">
+          <i class="bi bi-funnel"></i>
+          Filtros
+        </h2>
+        
+        <button class="empresas-filter-toggle" type="button" data-empresas-filter-toggle>
+          <i class="bi bi-sliders"></i>
+          Mostrar filtros
+        </button>
+      </div>
+
+      <div class="empresas-filter-body">
+        <form method="get" class="empresas-filter-grid">
+          <div class="empresas-field">
+            <label for="busca">Buscar</label>
+            <input
+              id="busca"
+              name="busca"
+              type="search"
+              value="{{ request.GET.busca }}"
+              placeholder="Nome, CPF ou CNPJ"
+            >
+          </div>
+
+          <div class="empresas-field">
+            <label for="status">Status</label>
+            <select id="status" name="status">
+              <option value="">Todos</option>
+              <option value="RASCUNHO" {% if request.GET.status == "RASCUNHO" %}selected{% endif %}>Rascunho</option>
+              <option value="PENDENTE" {% if request.GET.status == "PENDENTE" %}selected{% endif %}>Pendente</option>
+              <option value="ATIVA" {% if request.GET.status == "ATIVA" %}selected{% endif %}>Ativa</option>
+              <option value="SUSPENSA" {% if request.GET.status == "SUSPENSA" %}selected{% endif %}>Suspensa</option>
+              <option value="BLOQUEADA" {% if request.GET.status == "BLOQUEADA" %}selected{% endif %}>Bloqueada</option>
+            </select>
+          </div>
+
+          <div class="empresas-field">
+            <label for="cidade">Cidade</label>
+            <input
+              id="cidade"
+              name="cidade"
+              type="text"
+              value="{{ request.GET.cidade }}"
+              placeholder="Ex.: Botucatu"
+            >
+          </div>
+
+          <div class="empresas-field">
+            <label for="tipo">Tipo</label>
+            <select id="tipo" name="tipo">
+              <option value="">Todos</option>
+              <option value="AUTONOMO" {% if request.GET.tipo == "AUTONOMO" %}selected{% endif %}>Autônomo</option>
+              <option value="INFORMAL" {% if request.GET.tipo == "INFORMAL" %}selected{% endif %}>Informal</option>
+              <option value="MEI" {% if request.GET.tipo == "MEI" %}selected{% endif %}>MEI</option>
+              <option value="EMPRESA" {% if request.GET.tipo == "EMPRESA" %}selected{% endif %}>Empresa</option>
+            </select>
+          </div>
+
+          <label class="empresas-check">
+            <input
+              type="checkbox"
+              name="somente_ativas"
+              value="1"
+              {% if request.GET.somente_ativas %}checked{% endif %}
+            >
+            Somente ativas
+          </label>
+
+          <button class="empresas-button empresas-button-primary" type="submit">
+            <i class="bi bi-search"></i>
+            Filtrar
+          </button>
+        </form>
+      </div>
+    </section>
+
+    <div class="empresas-results-head">
+      <div>
+        <h2>Empresas vinculadas</h2>
+        <span>{{ total_filtrado|default:"0" }} registro{{ total_filtrado|default:"0"|pluralize }} encontrado{{ total_filtrado|default:"0"|pluralize }}</span>
+      </div>
+    </div>
+
+    {% if empresas %}
+      <section class="empresas-grid" aria-label="Lista de empresas">
+        {% for empresa in empresas %}
+          <article class="empresa-card">
+            <div class="empresa-cover">
+              {% if empresa.imagem_capa %}
+                <img src="{{ empresa.imagem_capa.url }}" alt="Capa de {{ empresa.nome_exibicao }}">
+              {% endif %}
+
+              <div class="empresa-logo">
+                {% if empresa.logo %}
+                  <img src="{{ empresa.logo.url }}" alt="Logo de {{ empresa.nome_exibicao }}">
+                {% else %}
+                  {{ empresa.nome_exibicao|first|upper }}
+                {% endif %}
+              </div>
+            </div>
+
+            <div class="empresa-card-body">
+              <div class="empresa-card-top">
+                <div class="empresa-name">
+                  <h3>{{ empresa.nome_exibicao }}</h3>
+                  <p>{{ empresa.razao_social|default:"Razão social não informada" }}</p>
+                </div>
+
+                <div class="dropdown empresa-actions-menu">
+                  <button class="btn btn-light" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Ações da empresa">
+                    <i class="bi bi-three-dots-vertical"></i>
+                  </button>
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li><a class="dropdown-item" href="{% url 'painel:empresa_detalhe' empresa.pk %}"><i class="bi bi-eye"></i> Visualizar</a></li>
+                    <li><a class="dropdown-item" href="{% url 'painel:empresa_editar' empresa.pk %}"><i class="bi bi-pencil"></i> Editar</a></li>
+                    <li><a class="dropdown-item" href="{% url 'painel:empresa_equipe' empresa.pk %}"><i class="bi bi-people"></i> Equipe</a></li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li><a class="dropdown-item text-danger" href="{% url 'painel:empresa_excluir' empresa.pk %}"><i class="bi bi-power"></i> Desativar</a></li>
+                  </ul>
+                </div>
+              </div>
+
+              <div class="empresa-badges">
+                <span class="empresa-badge">{{ empresa.get_tipo_cadastro_display }}</span>
+                <span class="empresa-badge status-{{ empresa.status|lower }}">{{ empresa.get_status_display }}</span>
+                {% if empresa.verificada %}
+                  <span class="empresa-badge"><i class="bi bi-patch-check-fill"></i> Verificada</span>
+                {% endif %}
+              </div>
+
+              <ul class="empresa-meta">
+                <li>
+                  <i class="bi bi-card-text"></i>
+                  <span>{{ empresa.documento_formatado|default:"Documento não informado" }}</span>
+                </li>
+                <li>
+                  <i class="bi bi-geo-alt"></i>
+                  <span>{{ empresa.endereco_resumido|default:"Localização não informada" }}</span>
+                </li>
+                <li>
+                  <i class="bi bi-briefcase"></i>
+                  <span>{{ empresa.total_servicos|default:"0" }} serviço{{ empresa.total_servicos|default:"0"|pluralize }}</span>
+                </li>
+                <li>
+                  <i class="bi bi-people"></i>
+                  <span>{{ empresa.total_usuarios|default:"0" }} usuário{{ empresa.total_usuarios|default:"0"|pluralize }} vinculado{{ empresa.total_usuarios|default:"0"|pluralize }}</span>
+                </li>
+              </ul>
+            </div>
+
+            <div class="empresa-card-footer">
+              <a class="empresas-button empresas-button-light" href="{% url 'painel:empresa_detalhe' empresa.pk %}">
+                <i class="bi bi-eye"></i>
+                Visualizar
+              </a>
+              <a class="empresas-button empresas-button-primary" href="{% url 'painel:empresa_editar' empresa.pk %}">
+                <i class="bi bi-pencil"></i>
+                Editar
+              </a>
+            </div>
+          </article>
+        {% endfor %}
+      </section>
+
+      {% if page_obj.has_other_pages %}
+        <nav class="empresas-pagination" aria-label="Paginação de empresas">
+          {% if page_obj.has_previous %}
+            <a class="empresas-page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.previous_page_number }}" aria-label="Página anterior">
+              <i class="bi bi-chevron-left"></i>
+            </a>
+          {% endif %}
+
+          {% for page_number in page_obj.paginator.page_range %}
+            {% if page_number == page_obj.number %}
+              <span class="empresas-page-link is-active">{{ page_number }}</span>
+            {% elif page_number >= page_obj.number|add:"-2" and page_number <= page_obj.number|add:"2" %}
+              <a class="empresas-page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_number }}">{{ page_number }}</a>
+            {% endif %}
+          {% endfor %}
+
+          {% if page_obj.has_next %}
+            <a class="empresas-page-link" href="?{% if querystring %}{{ querystring }}&{% endif %}page={{ page_obj.next_page_number }}" aria-label="Próxima página">
+              <i class="bi bi-chevron-right"></i>
+            </a>
+          {% endif %}
+        </nav>
+      {% endif %}
+    {% else %}
+      <section class="empresas-empty">
+        <div class="empresas-empty-icon">
+          <i class="bi bi-buildings"></i>
+        </div>
+        <h2>Nenhuma empresa cadastrada</h2>
+        <p>
+          Crie seu primeiro negócio na BOTUKA para organizar dados comerciais,
+          equipe, contatos e publicações de serviços em nome da empresa.
+        </p>
+        <a class="empresas-button empresas-button-primary" href="{% url 'painel:empresa_criar' %}">
+          <i class="bi bi-plus-lg"></i>
+          Cadastrar minha primeira empresa
+        </a>
+      </section>
+    {% endif %}
+  </div>
+</div>
+
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const filters = document.getElementById("empresasFilters");
+    const toggle = document.querySelector("[data-empresas-filter-toggle]");
+
+    if (!filters || !toggle) {
+      return;
+    }
+
+    toggle.addEventListener("click", function () {
+      const isOpen = filters.classList.toggle("is-open");
+      toggle.innerHTML = isOpen
+        ? '<i class="bi bi-x-lg"></i> Ocultar filtros'
+        : '<i class="bi bi-sliders"></i> Mostrar filtros';
+    });
+  });
+</script>
+{% endblock %}

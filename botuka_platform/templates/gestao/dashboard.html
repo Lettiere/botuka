@@ -1,0 +1,17 @@
+{% extends "gestao/base.html" %}
+
+{% block title %}Dashboard | Gestão BOTUKA{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1>Dashboard</h1>
+  </div>
+  <div class="grid-cards">
+    {% for label, total, url_name in cards %}
+      <a class="stat" href="{% url url_name %}">
+        <span>{{ label }}</span>
+        <strong>{{ total }}</strong>
+      </a>
+    {% endfor %}
+  </div>
+{% endblock %}

@@ -1,0 +1,20 @@
+<aside class="gestao-sidebar">
+  <div class="gestao-brand">BOTUKA</div>
+  <nav class="gestao-menu" aria-label="Menu de gestão">
+    <a href="{% url 'gestao:dashboard' %}">Dashboard</a>
+    <a href="{% url 'gestao:usuarios_lista' %}">Usuários</a>
+    <a href="{% url 'gestao:perfis_lista' %}">Perfis</a>
+    <a href="{% url 'gestao:permissoes_lista' %}">Permissões</a>
+    <a href="{% url 'gestao:organizacoes_lista' %}">Organizações</a>
+    <a href="{% url 'gestao:unidades_lista' %}">Unidades</a>
+    <a href="{% url 'gestao:categorias_lista' %}">Categorias</a>
+    <a href="{% url 'gestao:subcategorias_lista' %}">Subcategorias</a>
+    <a href="{% url 'gestao:paises_lista' %}">Países</a>
+    <a href="{% url 'gestao:estados_lista' %}">Estados</a>
+    <a href="{% url 'gestao:cidades_lista' %}">Cidades</a>
+    <a href="{% url 'gestao:bairros_lista' %}">Bairros</a>
+    <a href="{% url 'gestao:contatos_lista' %}">Contatos</a>
+    <a href="{% url 'gestao:configuracoes_lista' %}">Configurações</a>
+    <a href="{% url 'accounts:logout' %}">Sair</a>
+  </nav>
+</aside>

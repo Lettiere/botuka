@@ -1,0 +1,1023 @@
+
+
+{% extends "_layouts/home/base_default.html" %}
+{% load static %}
+
+{% block content %}
+
+<style>
+  .provider-profile {
+    padding: 28px 0 56px;
+  }
+
+  .profile-cover {
+    position: relative;
+    min-height: 360px;
+    border-radius: 32px;
+    overflow: hidden;
+    background:
+      linear-gradient(180deg, rgba(19,41,61,.12), rgba(19,41,61,.88)),
+      url("https://images.unsplash.com/photo-1503387762-592deb58ef4e?auto=format&fit=crop&w=1600&q=80") center/cover;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow-hover);
+  }
+
+  .profile-cover-actions {
+    position: absolute;
+    top: 18px;
+    right: 18px;
+    display: flex;
+    gap: 10px;
+    z-index: 3;
+  }
+
+  .profile-main-card {
+    margin-top: -110px;
+    position: relative;
+    z-index: 5;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 22px;
+    align-items: start;
+  }
+
+  .profile-identity,
+  .profile-sidebar-card,
+  .profile-section,
+  .post-card,
+  .service-card,
+  .review-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 28px;
+    box-shadow: var(--shadow);
+  }
+
+  .profile-identity {
+    padding: 24px;
+  }
+
+  .identity-top {
+    display: flex;
+    gap: 18px;
+    align-items: flex-end;
+  }
+
+  .profile-avatar {
+    width: 132px;
+    height: 132px;
+    border-radius: 32px;
+    border: 6px solid var(--surface);
+    background:
+      linear-gradient(135deg, rgba(255,183,3,.95), rgba(193,100,47,.95)),
+      url("https://images.unsplash.com/photo-1581091215367-59ab6b426745?auto=format&fit=crop&w=500&q=80") center/cover;
+    box-shadow: 0 16px 35px -20px rgba(19,41,61,.65);
+    flex: 0 0 auto;
+  }
+
+  .identity-info h1 {
+    margin: 0;
+    font-size: clamp(2rem, 4vw, 3.4rem);
+    line-height: .95;
+    letter-spacing: -.04em;
+    font-weight: 900;
+    color: var(--botuka-blue);
+  }
+
+  [data-bs-theme="dark"] .identity-info h1 {
+    color: var(--text);
+  }
+
+  .identity-subtitle {
+    color: var(--muted);
+    font-weight: 750;
+    margin-top: 6px;
+  }
+
+  .profile-badges,
+  .profile-tags,
+  .profile-actions,
+  .metric-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+
+  .profile-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    padding: 7px 11px;
+    border-radius: 999px;
+    font-size: .82rem;
+    font-weight: 850;
+    background: var(--surface-2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+
+  .profile-badge.green {
+    background: rgba(46,139,87,.12);
+    color: var(--botuka-green-2);
+    border-color: rgba(46,139,87,.22);
+  }
+
+  [data-bs-theme="dark"] .profile-badge.green {
+    color: #8BE1AE;
+  }
+
+  .profile-badge.yellow {
+    background: #FFF2C9;
+    color: #8A6100;
+    border-color: rgba(255,183,3,.3);
+  }
+
+  .profile-actions {
+    margin-top: 22px;
+  }
+
+  .profile-tabs {
+    position: sticky;
+    top: 75px;
+    z-index: 25;
+    background: rgba(255,255,255,.88);
+    backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 7px;
+    display: flex;
+    gap: 5px;
+    overflow-x: auto;
+    margin: 22px 0;
+  }
+
+  [data-bs-theme="dark"] .profile-tabs {
+    background: rgba(24,34,44,.88);
+  }
+
+  .profile-tabs a {
+    padding: 10px 14px;
+    border-radius: 999px;
+    font-size: .86rem;
+    font-weight: 850;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+
+  .profile-tabs a:hover,
+  .profile-tabs a.active {
+    background: var(--surface-2);
+    color: var(--botuka-earth);
+  }
+
+  .profile-layout {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 22px;
+    align-items: start;
+  }
+
+  .profile-content {
+    display: grid;
+    gap: 22px;
+  }
+
+  .profile-section {
+    padding: 24px;
+  }
+
+  .profile-section h2 {
+    margin: 0 0 14px;
+    font-weight: 900;
+    letter-spacing: -.03em;
+    color: var(--botuka-blue);
+  }
+
+  [data-bs-theme="dark"] .profile-section h2 {
+    color: var(--text);
+  }
+
+  .section-intro {
+    color: var(--muted);
+    font-weight: 650;
+    line-height: 1.6;
+  }
+
+  .sidebar-stack {
+    display: grid;
+    gap: 16px;
+    position: sticky;
+    top: 150px;
+  }
+
+  .profile-sidebar-card {
+    padding: 20px;
+  }
+
+  .profile-sidebar-card h3 {
+    font-size: 1.2rem;
+    font-weight: 900;
+    margin-bottom: 12px;
+  }
+
+  .contact-panel {
+    display: grid;
+    gap: 10px;
+  }
+
+  .contact-panel .btn-botuka {
+    width: 100%;
+  }
+
+  .metric-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+    margin-top: 18px;
+  }
+
+  .metric-box {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    padding: 14px;
+  }
+
+  .metric-value {
+    font-family: var(--font-title);
+    font-size: 1.65rem;
+    line-height: 1;
+    font-weight: 900;
+    color: var(--botuka-earth);
+  }
+
+  .metric-label {
+    color: var(--muted);
+    font-size: .78rem;
+    font-weight: 800;
+    margin-top: 4px;
+  }
+
+  .stories-row {
+    display: flex;
+    gap: 14px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .story-item {
+    min-width: 94px;
+    text-align: center;
+  }
+
+  .story-ring {
+    width: 82px;
+    height: 82px;
+    margin-inline: auto;
+    border-radius: 50%;
+    padding: 4px;
+    background: linear-gradient(135deg, var(--botuka-yellow), var(--botuka-earth), var(--botuka-green));
+  }
+
+  .story-ring div {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    border: 4px solid var(--surface);
+    background: var(--surface-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--botuka-earth);
+    font-size: 1.45rem;
+  }
+
+  .story-item span {
+    display: block;
+    margin-top: 7px;
+    font-size: .78rem;
+    font-weight: 850;
+    color: var(--muted);
+  }
+
+  .feed-grid {
+    display: grid;
+    gap: 16px;
+  }
+
+  .post-card {
+    overflow: hidden;
+  }
+
+  .post-head {
+    padding: 16px;
+    display: flex;
+    gap: 12px;
+    align-items: center;
+  }
+
+  .mini-avatar {
+    width: 46px;
+    height: 46px;
+    border-radius: 16px;
+    background: linear-gradient(135deg, var(--botuka-yellow), var(--botuka-earth));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    color: var(--botuka-blue);
+  }
+
+  .post-image {
+    aspect-ratio: 16/9;
+    background: url("https://images.unsplash.com/photo-1581858726788-75bc0f6a952d?auto=format&fit=crop&w=1200&q=80") center/cover;
+  }
+
+  .post-body {
+    padding: 16px;
+  }
+
+  .post-actions {
+    display: flex;
+    gap: 16px;
+    color: var(--muted);
+    font-weight: 850;
+    border-top: 1px solid var(--border);
+    padding-top: 13px;
+    margin-top: 12px;
+  }
+
+  .service-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 14px;
+  }
+
+  .service-card {
+    padding: 18px;
+    box-shadow: none;
+  }
+
+  .service-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 17px;
+    background: var(--surface-2);
+    color: var(--botuka-earth);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.35rem;
+    margin-bottom: 12px;
+  }
+
+  .service-card h3 {
+    font-size: 1.13rem;
+    font-weight: 900;
+    margin: 0 0 5px;
+  }
+
+  .service-card p {
+    color: var(--muted);
+    font-size: .9rem;
+    margin-bottom: 12px;
+  }
+
+  .service-price {
+    font-weight: 950;
+    color: var(--botuka-green);
+  }
+
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: 1.2fr .8fr .8fr;
+    gap: 10px;
+  }
+
+  .gallery-photo {
+    min-height: 180px;
+    border-radius: 22px;
+    overflow: hidden;
+    background-size: cover;
+    background-position: center;
+    position: relative;
+  }
+
+  .gallery-photo.large {
+    grid-row: span 2;
+    min-height: 370px;
+  }
+
+  .gallery-photo::after {
+    content: attr(data-label);
+    position: absolute;
+    left: 12px;
+    bottom: 12px;
+    background: rgba(19,41,61,.82);
+    color: #fff;
+    padding: 7px 11px;
+    border-radius: 999px;
+    font-size: .78rem;
+    font-weight: 850;
+  }
+
+  .review-list {
+    display: grid;
+    gap: 14px;
+  }
+
+  .review-card {
+    padding: 18px;
+    box-shadow: none;
+  }
+
+  .stars {
+    color: var(--botuka-yellow);
+    margin-bottom: 8px;
+  }
+
+  .map-box {
+    min-height: 260px;
+    border-radius: 24px;
+    background:
+      linear-gradient(135deg, rgba(19,41,61,.82), rgba(46,139,87,.72)),
+      url("https://images.unsplash.com/photo-1524661135-423995f22d0b?auto=format&fit=crop&w=1200&q=80") center/cover;
+    display: flex;
+    align-items: end;
+    padding: 18px;
+    color: #fff;
+  }
+
+  .map-card {
+    background: rgba(255,255,255,.12);
+    border: 1px solid rgba(255,255,255,.22);
+    backdrop-filter: blur(12px);
+    border-radius: 20px;
+    padding: 16px;
+    width: 100%;
+  }
+
+  .info-list {
+    display: grid;
+    gap: 10px;
+  }
+
+  .info-list div {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    color: var(--muted);
+    font-weight: 750;
+  }
+
+  .info-list i {
+    color: var(--botuka-earth);
+    font-size: 1.1rem;
+  }
+
+  .budget-form {
+    display: grid;
+    gap: 10px;
+  }
+
+  .budget-form input,
+  .budget-form select,
+  .budget-form textarea {
+    width: 100%;
+    border: 1px solid var(--border);
+    background: var(--bg);
+    color: var(--text);
+    border-radius: 16px;
+    padding: 12px 14px;
+    outline: none;
+    font-weight: 700;
+  }
+
+  .budget-form textarea {
+    min-height: 105px;
+    resize: vertical;
+  }
+
+  .budget-form input:focus,
+  .budget-form select:focus,
+  .budget-form textarea:focus {
+    border-color: var(--botuka-yellow);
+    box-shadow: 0 0 0 4px rgba(255,183,3,.16);
+    background: var(--surface);
+  }
+
+  .floating-mobile-cta {
+    display: none;
+  }
+
+  @media (max-width: 992px) {
+    .profile-main-card,
+    .profile-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .sidebar-stack {
+      position: static;
+    }
+
+    .metric-grid {
+      grid-template-columns: repeat(2, 1fr);
+    }
+
+    .service-grid,
+    .gallery-grid {
+      grid-template-columns: 1fr;
+    }
+
+    .gallery-photo.large {
+      min-height: 260px;
+    }
+  }
+
+  @media (max-width: 768px) {
+    .profile-cover {
+      min-height: 270px;
+      border-radius: 0 0 30px 30px;
+      margin-inline: -14px;
+    }
+
+    .profile-main-card {
+      margin-top: -80px;
+    }
+
+    .identity-top {
+      align-items: flex-start;
+      flex-direction: column;
+    }
+
+    .profile-avatar {
+      width: 112px;
+      height: 112px;
+      border-radius: 28px;
+    }
+
+    .profile-tabs {
+      top: 64px;
+      border-radius: 22px;
+    }
+
+    .profile-actions .btn-botuka {
+      flex: 1 1 100%;
+    }
+
+    .floating-mobile-cta {
+      position: fixed;
+      left: 12px;
+      right: 12px;
+      bottom: 92px;
+      z-index: 1049;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+  }
+</style>
+
+<section class="provider-profile">
+  <div class="container-botuka">
+
+    <div class="profile-cover reveal">
+      <div class="profile-cover-actions">
+        <button class="btn-botuka btn-soft btn-icon" type="button">
+          <i class="bi bi-share-fill"></i>
+        </button>
+        <button class="btn-botuka btn-soft btn-icon" type="button">
+          <i class="bi bi-heart-fill"></i>
+        </button>
+      </div>
+    </div>
+
+    <div class="profile-main-card">
+      <article class="profile-identity reveal">
+        <div class="identity-top">
+          <div class="profile-avatar"></div>
+
+          <div class="identity-info">
+            <div class="profile-badges mb-2">
+              <span class="profile-badge green">
+                <i class="bi bi-patch-check-fill"></i>
+                Perfil verificado
+              </span>
+              <span class="profile-badge yellow">
+                <i class="bi bi-star-fill"></i>
+                4.9 · 238 avaliações
+              </span>
+              <span class="profile-badge">
+                <i class="bi bi-geo-alt-fill"></i>
+                Botucatu/SP
+              </span>
+            </div>
+
+            <h1>Reformas Oliveira</h1>
+            <div class="identity-subtitle">
+              Reformas residenciais, pintura, elétrica, hidráulica e acabamento premium.
+            </div>
+
+            <div class="profile-tags mt-3">
+              <span class="profile-badge">Reformas</span>
+              <span class="profile-badge">Pintura</span>
+              <span class="profile-badge">Elétrica</span>
+              <span class="profile-badge">Hidráulica</span>
+              <span class="profile-badge">Acabamento</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="metric-grid">
+          <div class="metric-box">
+            <div class="metric-value">327</div>
+            <div class="metric-label">serviços feitos</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value">8min</div>
+            <div class="metric-label">resposta média</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value">97%</div>
+            <div class="metric-label">recomendam</div>
+          </div>
+          <div class="metric-box">
+            <div class="metric-value">12</div>
+            <div class="metric-label">anos de experiência</div>
+          </div>
+        </div>
+
+        <div class="profile-actions">
+          <a href="#orcamento" class="btn-botuka btn-yellow">
+            <i class="bi bi-send-fill"></i>
+            Solicitar orçamento
+          </a>
+          <a href="https://wa.me/5500000000000" target="_blank" class="btn-botuka btn-soft">
+            <i class="bi bi-whatsapp"></i>
+            Chamar no WhatsApp
+          </a>
+          <button class="btn-botuka btn-soft" type="button">
+            <i class="bi bi-person-plus-fill"></i>
+            Seguir
+          </button>
+        </div>
+      </article>
+
+      <aside class="profile-sidebar-card reveal">
+        <h3>Contato rápido</h3>
+        <div class="contact-panel">
+          <a href="#orcamento" class="btn-botuka btn-yellow">
+            <i class="bi bi-clipboard-check-fill"></i>
+            Pedir orçamento
+          </a>
+          <a href="tel:+5500000000000" class="btn-botuka btn-soft">
+            <i class="bi bi-telephone-fill"></i>
+            Ligar agora
+          </a>
+          <a href="#" class="btn-botuka btn-soft">
+            <i class="bi bi-instagram"></i>
+            Instagram
+          </a>
+        </div>
+
+        <hr style="border-color:var(--border)">
+
+        <div class="info-list">
+          <div><i class="bi bi-clock-fill"></i> Aberto hoje até 18:00</div>
+          <div><i class="bi bi-shield-check"></i> Documentação validada</div>
+          <div><i class="bi bi-receipt"></i> Emite nota fiscal</div>
+          <div><i class="bi bi-credit-card"></i> PIX, cartão e dinheiro</div>
+        </div>
+      </aside>
+    </div>
+
+    <nav class="profile-tabs reveal" aria-label="Navegação do perfil">
+      <a href="#sobre" class="active">Sobre</a>
+      <a href="#destaques">Destaques</a>
+      <a href="#servicos">Serviços</a>
+      <a href="#portfolio">Portfólio</a>
+      <a href="#avaliacoes">Avaliações</a>
+      <a href="#area">Atendimento</a>
+      <a href="#orcamento">Orçamento</a>
+    </nav>
+
+    <div class="profile-layout">
+      <div class="profile-content">
+
+        <section class="profile-section reveal" id="sobre">
+          <h2>Sobre o prestador</h2>
+          <p class="section-intro">
+            A Reformas Oliveira atua em Botucatu e região oferecendo serviços completos para casas,
+            apartamentos e comércios. O foco é entregar acabamento limpo, prazo combinado, atendimento
+            transparente e orçamento detalhado antes do início do serviço.
+          </p>
+
+          <div class="profile-badges mt-3">
+            <span class="profile-badge green"><i class="bi bi-check-circle-fill"></i> Garantia de serviço</span>
+            <span class="profile-badge green"><i class="bi bi-check-circle-fill"></i> Equipe própria</span>
+            <span class="profile-badge green"><i class="bi bi-check-circle-fill"></i> Orçamento gratuito</span>
+            <span class="profile-badge green"><i class="bi bi-check-circle-fill"></i> Atendimento emergencial</span>
+          </div>
+        </section>
+
+        <section class="profile-section reveal" id="destaques">
+          <h2>Destaques</h2>
+
+          <div class="stories-row">
+            <div class="story-item">
+              <div class="story-ring"><div><i class="bi bi-house-gear-fill"></i></div></div>
+              <span>Reformas</span>
+            </div>
+            <div class="story-item">
+              <div class="story-ring"><div><i class="bi bi-brush-fill"></i></div></div>
+              <span>Pintura</span>
+            </div>
+            <div class="story-item">
+              <div class="story-ring"><div><i class="bi bi-lightning-charge-fill"></i></div></div>
+              <span>Elétrica</span>
+            </div>
+            <div class="story-item">
+              <div class="story-ring"><div><i class="bi bi-droplet-fill"></i></div></div>
+              <span>Hidráulica</span>
+            </div>
+            <div class="story-item">
+              <div class="story-ring"><div><i class="bi bi-camera-video-fill"></i></div></div>
+              <span>Vídeos</span>
+            </div>
+            <div class="story-item">
+              <div class="story-ring"><div><i class="bi bi-chat-heart-fill"></i></div></div>
+              <span>Clientes</span>
+            </div>
+          </div>
+        </section>
+
+        <section class="feed-grid reveal">
+          <article class="post-card">
+            <div class="post-head">
+              <div class="mini-avatar">RO</div>
+              <div>
+                <strong>Reformas Oliveira</strong>
+                <div class="text-muted-botuka small fw-bold">Publicou uma obra finalizada · há 2 dias</div>
+              </div>
+            </div>
+
+            <div class="post-image"></div>
+
+            <div class="post-body">
+              <p class="mb-2">
+                Finalizamos a pintura e acabamento desta sala com correção de parede,
+                massa corrida, pintura lavável e instalação de luminárias.
+              </p>
+
+              <div class="post-actions">
+                <span><i class="bi bi-hand-thumbs-up-fill"></i> 128 curtidas</span>
+                <span><i class="bi bi-chat-fill"></i> 24 comentários</span>
+                <span><i class="bi bi-share-fill"></i> compartilhar</span>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="profile-section reveal" id="servicos">
+          <h2>Serviços oferecidos</h2>
+
+          <div class="service-grid">
+            <article class="service-card">
+              <div class="service-icon"><i class="bi bi-house-gear-fill"></i></div>
+              <h3>Reforma residencial</h3>
+              <p>Reforma de ambientes internos, banheiros, cozinhas, áreas externas e pequenos reparos.</p>
+              <div class="service-price">A partir de R$ 350</div>
+            </article>
+
+            <article class="service-card">
+              <div class="service-icon"><i class="bi bi-brush-fill"></i></div>
+              <h3>Pintura completa</h3>
+              <p>Pintura interna e externa, textura, massa corrida, grafiato e preparação de parede.</p>
+              <div class="service-price">A partir de R$ 280</div>
+            </article>
+
+            <article class="service-card">
+              <div class="service-icon"><i class="bi bi-lightning-charge-fill"></i></div>
+              <h3>Elétrica</h3>
+              <p>Troca de tomadas, iluminação, disjuntores, quadros e revisão elétrica residencial.</p>
+              <div class="service-price">A partir de R$ 180</div>
+            </article>
+
+            <article class="service-card">
+              <div class="service-icon"><i class="bi bi-droplet-fill"></i></div>
+              <h3>Hidráulica</h3>
+              <p>Correção de vazamentos, troca de torneiras, registros, sifões e manutenção geral.</p>
+              <div class="service-price">A partir de R$ 160</div>
+            </article>
+          </div>
+        </section>
+
+        <section class="profile-section reveal" id="portfolio">
+          <h2>Portfólio e antes/depois</h2>
+
+          <div class="gallery-grid">
+            <div class="gallery-photo large" data-label="Cozinha finalizada"
+                 style="background-image:url('https://images.unsplash.com/photo-1556912167-f556f1f39fdf?auto=format&fit=crop&w=900&q=80')"></div>
+
+            <div class="gallery-photo" data-label="Pintura interna"
+                 style="background-image:url('https://images.unsplash.com/photo-1562259949-e8e7689d7828?auto=format&fit=crop&w=700&q=80')"></div>
+
+            <div class="gallery-photo" data-label="Banheiro reformado"
+                 style="background-image:url('https://images.unsplash.com/photo-1620626011761-996317b8d101?auto=format&fit=crop&w=700&q=80')"></div>
+
+            <div class="gallery-photo" data-label="Acabamento"
+                 style="background-image:url('https://images.unsplash.com/photo-1505693416388-ac5ce068fe85?auto=format&fit=crop&w=700&q=80')"></div>
+
+            <div class="gallery-photo" data-label="Área externa"
+                 style="background-image:url('https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?auto=format&fit=crop&w=700&q=80')"></div>
+          </div>
+        </section>
+
+        <section class="profile-section reveal" id="avaliacoes">
+          <h2>Avaliações dos clientes</h2>
+
+          <div class="review-list">
+            <article class="review-card">
+              <div class="stars">
+                <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+              </div>
+              <strong>Mariana Souza</strong>
+              <p class="text-muted-botuka mb-0">
+                Serviço muito bem feito. Chegaram no horário, protegeram os móveis e entregaram antes do prazo.
+              </p>
+            </article>
+
+            <article class="review-card">
+              <div class="stars">
+                <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-half"></i>
+              </div>
+              <strong>Carlos Henrique</strong>
+              <p class="text-muted-botuka mb-0">
+                Contratei para reforma do banheiro. Gostei do orçamento claro e do acompanhamento por WhatsApp.
+              </p>
+            </article>
+
+            <article class="review-card">
+              <div class="stars">
+                <i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i><i class="bi bi-star-fill"></i>
+              </div>
+              <strong>Fernanda Lima</strong>
+              <p class="text-muted-botuka mb-0">
+                Excelente acabamento. Recomendo para pintura e pequenos reparos.
+              </p>
+            </article>
+          </div>
+        </section>
+
+        <section class="profile-section reveal" id="area">
+          <h2>Área de atendimento</h2>
+
+          <div class="map-box">
+            <div class="map-card">
+              <strong>Atende Botucatu e região</strong>
+              <div class="mt-2">
+                Centro, Vila dos Lavradores, Jardim Paraíso, Rubião Júnior, São Manuel, Pardinho e cidades próximas.
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section class="profile-section reveal" id="orcamento">
+          <h2>Solicitar orçamento</h2>
+          <p class="section-intro">
+            Envie os dados principais do serviço. O prestador poderá responder pelo BOTUKA ou WhatsApp.
+          </p>
+
+          <form class="budget-form" id="budgetForm">
+            <input type="text" placeholder="Seu nome" required>
+            <input type="tel" placeholder="WhatsApp" required>
+
+            <select required>
+              <option value="">Tipo de serviço</option>
+              <option>Reforma</option>
+              <option>Pintura</option>
+              <option>Elétrica</option>
+              <option>Hidráulica</option>
+              <option>Outro serviço</option>
+            </select>
+
+            <textarea placeholder="Descreva o que você precisa"></textarea>
+
+            <button class="btn-botuka btn-yellow" type="submit">
+              <i class="bi bi-send-fill"></i>
+              Enviar solicitação
+            </button>
+          </form>
+        </section>
+
+      </div>
+
+      <aside class="sidebar-stack">
+        <section class="profile-sidebar-card reveal">
+          <h3>Resumo profissional</h3>
+          <div class="info-list">
+            <div><i class="bi bi-building-check"></i> Empresa cadastrada</div>
+            <div><i class="bi bi-calendar-check"></i> No BOTUKA desde 2026</div>
+            <div><i class="bi bi-award-fill"></i> Top prestador da categoria</div>
+            <div><i class="bi bi-people-fill"></i> Equipe com 5 profissionais</div>
+          </div>
+        </section>
+
+        <section class="profile-sidebar-card reveal">
+          <h3>Horário</h3>
+          <div class="info-list">
+            <div><i class="bi bi-clock"></i> Segunda a sexta: 08h às 18h</div>
+            <div><i class="bi bi-clock"></i> Sábado: 08h às 13h</div>
+            <div><i class="bi bi-moon-stars"></i> Emergência sob consulta</div>
+          </div>
+        </section>
+
+        <section class="profile-sidebar-card reveal">
+          <h3>Segurança BOTUKA</h3>
+          <p class="text-muted-botuka mb-3">
+            Antes de contratar, combine escopo, prazo, valor, forma de pagamento e garantia pelo chat ou WhatsApp.
+          </p>
+          <button class="btn-botuka btn-soft w-100" type="button">
+            <i class="bi bi-flag-fill"></i>
+            Denunciar perfil
+          </button>
+        </section>
+      </aside>
+    </div>
+
+  </div>
+</section>
+
+<div class="floating-mobile-cta">
+  <a href="https://wa.me/5500000000000" class="btn-botuka btn-soft">
+    <i class="bi bi-whatsapp"></i>
+    WhatsApp
+  </a>
+  <a href="#orcamento" class="btn-botuka btn-yellow">
+    <i class="bi bi-send-fill"></i>
+    Orçamento
+  </a>
+</div>
+
+<script>
+(function(){
+  function showProfileToast(message){
+    const toastText = document.getElementById('toastText');
+    const toastEl = document.getElementById('appToast');
+
+    if (toastText && toastEl && window.bootstrap) {
+      toastText.textContent = message;
+      new bootstrap.Toast(toastEl, { delay: 2800 }).show();
+      return;
+    }
+
+    alert(message);
+  }
+
+  document.querySelectorAll('.profile-tabs a[href^="#"], .floating-mobile-cta a[href^="#"], .profile-actions a[href^="#"]').forEach(function(link){
+    link.addEventListener('click', function(e){
+      const target = document.querySelector(this.getAttribute('href'));
+      if (!target) return;
+
+      e.preventDefault();
+      window.scrollTo({
+        top: target.offsetTop - 130,
+        behavior: 'smooth'
+      });
+    });
+  });
+
+  const tabLinks = document.querySelectorAll('.profile-tabs a');
+  const sections = [...tabLinks]
+    .map(link => document.querySelector(link.getAttribute('href')))
+    .filter(Boolean);
+
+  const spy = new IntersectionObserver(function(entries){
+    entries.forEach(function(entry){
+      if(entry.isIntersecting){
+        tabLinks.forEach(link => link.classList.remove('active'));
+        const active = document.querySelector('.profile-tabs a[href="#' + entry.target.id + '"]');
+        if(active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-35% 0px -55% 0px', threshold: 0 });
+
+  sections.forEach(section => spy.observe(section));
+
+  const budgetForm = document.getElementById('budgetForm');
+  if (budgetForm) {
+    budgetForm.addEventListener('submit', function(e){
+      e.preventDefault();
+      showProfileToast('Solicitação enviada em modo demonstrativo. Depois vamos ligar isso ao backend.');
+    });
+  }
+
+  document.querySelectorAll('.profile-cover-actions button, .post-actions span, .story-item').forEach(function(item){
+    item.addEventListener('click', function(){
+      showProfileToast('Ação demonstrativa do perfil do prestador.');
+    });
+  });
+})();
+</script>
+
+{% endblock %}
