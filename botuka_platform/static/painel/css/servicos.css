@@ -46,8 +46,79 @@
   color: #475569;
 }
 
+.servicos-empty {
+  border: 1px dashed #cbd5e1;
+  border-radius: 16px;
+  padding-inline: 20px;
+}
+
+.servicos-empty-icon {
+  display: inline-grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin-bottom: 14px;
+  border-radius: 50%;
+  background: rgba(255, 193, 7, .18);
+  color: #8a6400;
+  font-size: 1.35rem;
+}
+
+.servicos-empty h2 { font-size: 1.15rem; }
+.servicos-empty p { color: #64748b; }
+
+.service-form { display: grid; gap: 22px; }
+.service-step { border: 1px solid #e2e8f0; border-radius: 16px; padding: 20px; }
+.service-step-heading { display: flex; gap: 12px; align-items: flex-start; margin-bottom: 18px; }
+.service-step-number { display: grid; place-items: center; flex: 0 0 34px; height: 34px; border-radius: 50%; background: #111827; color: #fff; font-weight: 800; }
+.service-step h2 { margin: 2px 0 3px; font-size: 1.12rem; font-weight: 800; }
+.service-step-heading p { margin: 0; color: #64748b; font-size: .92rem; }
+.provider-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; }
+.provider-card { position: relative; display: flex; gap: 14px; min-height: 126px; padding: 18px; border: 2px solid #e2e8f0; border-radius: 15px; cursor: pointer; transition: .18s ease; }
+.provider-card:hover { border-color: #94a3b8; transform: translateY(-1px); }
+.provider-card.is-selected { border-color: #ffc107; background: rgba(255, 193, 7, .08); box-shadow: 0 0 0 3px rgba(255, 193, 7, .12); }
+.provider-card input { position: absolute; opacity: 0; pointer-events: none; }
+.provider-icon { display: grid; place-items: center; flex: 0 0 42px; height: 42px; border-radius: 12px; background: #f1f5f9; font-size: 1.15rem; }
+.provider-card strong, .provider-card span { display: block; }
+.provider-card span { margin-top: 6px; color: #64748b; font-size: .9rem; }
+.provider-check { position: absolute; right: 14px; top: 12px; color: transparent; }
+.provider-card.is-selected .provider-check { color: #b58100; }
+.responsavel-panel { padding: 16px; border-radius: 14px; background: #f8fafc; border: 1px solid #e2e8f0; }
+.responsavel-panel[hidden] { display: none; }
+.responsavel-data { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 12px; margin-bottom: 12px; }
+.responsavel-data small, .responsavel-data strong { display: block; }
+.responsavel-data small { color: #64748b; }
+.field-error { color: #dc3545; font-size: .875rem; margin-top: 5px; }
+.required::after { content: ' *'; color: #dc3545; }
+.attendance-grid { display: flex; flex-wrap: wrap; gap: 10px 20px; }
+.upload-box { display: block; min-height: 120px; padding: 18px; text-align: center; border: 1px dashed #94a3b8; border-radius: 14px; cursor: pointer; background: #f8fafc; }
+.upload-box i { display: block; margin-bottom: 5px; font-size: 1.5rem; }
+.upload-box input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.form-actions { display: flex; justify-content: flex-end; flex-wrap: wrap; gap: 10px; padding-top: 4px; }
+
+[data-theme="dark"] .servicos-page .servicos-kpis > div,
+[data-theme="dark"] .responsavel-panel,
+[data-theme="dark"] .upload-box { background: #172033; border-color: #334155; }
+[data-theme="dark"] .service-step,
+[data-theme="dark"] .provider-card,
+[data-theme="dark"] .servico-row,
+[data-theme="dark"] .servicos-empty { border-color: #334155; }
+[data-theme="dark"] .provider-card.is-selected { background: rgba(255, 193, 7, .1); border-color: #ffc107; }
+[data-theme="dark"] .provider-icon { background: #263247; }
+[data-theme="dark"] .service-step-heading p,
+[data-theme="dark"] .provider-card span,
+[data-theme="dark"] .responsavel-data small,
+[data-theme="dark"] .servicos-empty p { color: #a8b3c5; }
+
 @media (max-width: 640px) {
   .servico-row {
     grid-template-columns: 1fr;
   }
+  .provider-grid, .responsavel-data { grid-template-columns: 1fr; }
+  .service-step { padding: 16px; }
+  .form-actions .btn { width: 100%; }
+}
+
+@media (min-width: 641px) and (max-width: 900px) {
+  .responsavel-data { grid-template-columns: 1fr 1fr; }
 }

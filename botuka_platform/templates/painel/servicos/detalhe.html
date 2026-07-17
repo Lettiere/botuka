@@ -31,6 +31,8 @@
         <a class="list-group-item list-group-item-action" href="{% url 'painel:servico_imagens' servico.pk %}">Imagens</a>
         <a class="list-group-item list-group-item-action" href="{% url 'painel:servico_areas' servico.pk %}">Áreas de atendimento</a>
         <a class="list-group-item list-group-item-action" href="{% url 'painel:servico_caracteristicas' servico.pk %}">Características</a>
+        <a class="list-group-item list-group-item-action" href="{% url 'painel:servico_links' servico.pk %}">Links, redes sociais e vídeos</a>
+        <a class="list-group-item list-group-item-action" href="{% url 'painel:servico_qrcode' servico.uuid %}">QR Code</a>
         <a class="list-group-item list-group-item-action" href="{% url 'painel:servico_preview' servico.pk %}">Preview público</a>
       </div>
       <form method="post" action="{% url 'painel:servico_alterar_status' servico.pk %}" class="mt-3">

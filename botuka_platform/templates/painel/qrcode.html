@@ -1,0 +1,16 @@
+{% extends "painel/base.html" %}
+{% block title %}QR Code | BOTUKA{% endblock %}
+{% block content %}
+<section class="painel-card text-center">
+  <a class="btn btn-outline-secondary float-start" href="{{ voltar_url }}">Voltar</a>
+  <h1 class="painel-title">QR Code do {{ tipo_objeto }}</h1>
+  <p class="text-muted">O QR Code usa um endereço curto estável e não expõe IDs sequenciais.</p>
+  <img class="img-fluid my-3" width="320" height="320" src="{{ imagem_url }}" alt="QR Code de {{ objeto }}">
+  <div class="input-group mx-auto mb-3" style="max-width:720px"><input id="qr-url" class="form-control" readonly value="{{ url_curta }}"><button class="btn btn-outline-primary" type="button" onclick="navigator.clipboard.writeText(document.getElementById('qr-url').value)">Copiar link</button></div>
+  <div class="d-flex flex-wrap justify-content-center gap-2">
+    <a class="btn btn-primary" href="{{ imagem_url }}" download>Baixar PNG</a><button class="btn btn-outline-secondary" onclick="window.print()">Imprimir</button>
+    <form method="post">{% csrf_token %}<button class="btn btn-outline-warning" name="acao" value="alternar">{% if objeto.qr_ativo %}Desativar{% else %}Ativar{% endif %}</button></form>
+    <form method="post" onsubmit="return confirm('Regenerar o token invalidará imediatamente o link anterior. Continuar?')">{% csrf_token %}<button class="btn btn-outline-danger" name="acao" value="regenerar">Regenerar token</button></form>
+  </div>
+</section>
+{% endblock %}

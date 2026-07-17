@@ -8,6 +8,7 @@ from apps.organizations.models import (
     CNPJConsulta,
     Endereco,
     Empresa,
+    EmpresaLink,
     EmpresaCapacidade,
     EmpresaCNAE,
     EmpresaEndereco,
@@ -22,6 +23,8 @@ from apps.organizations.models import (
     Unidade,
     UsuarioCapacidade,
 )
+
+admin.site.register(EmpresaLink)
 
 
 @admin.register(Empresa)

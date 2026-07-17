@@ -67,6 +67,8 @@
           <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresas_lista' %}"><i class="bi bi-arrow-left"></i> Lista</a>
           {% if pode_editar %}
             <a class="empresa-btn empresa-btn-primary" href="{% url 'painel:empresa_editar' empresa.pk %}"><i class="bi bi-pencil"></i> Editar</a>
+            <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_links' empresa.pk %}"><i class="bi bi-link-45deg"></i> Links</a>
+            <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_qrcode' empresa.uuid %}"><i class="bi bi-qr-code"></i> QR Code</a>
           {% endif %}
           {% if pode_gerenciar_equipe %}
             <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_equipe' empresa.pk %}"><i class="bi bi-people"></i> Equipe</a>

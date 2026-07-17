@@ -33,7 +33,21 @@ def servicos_disponiveis_para_usuario(usuario) -> QuerySet[Servico]:
     return queryset.filter(
         Q(usuario_responsavel=usuario)
         | Q(empresa__usuario_proprietario=usuario)
-        | Q(empresa__usuarios_vinculados__usuario=usuario, empresa__usuarios_vinculados__ativo=True)
+        | Q(
+            empresa__usuarios_vinculados__usuario=usuario,
+            empresa__usuarios_vinculados__ativo=True,
+            empresa__usuarios_vinculados__administrador=True,
+        )
+        | Q(
+            empresa__usuarios_vinculados__usuario=usuario,
+            empresa__usuarios_vinculados__ativo=True,
+            empresa__usuarios_vinculados__proprietario=True,
+        )
+        | Q(
+            empresa__usuarios_vinculados__usuario=usuario,
+            empresa__usuarios_vinculados__ativo=True,
+            empresa__usuarios_vinculados__pode_editar=True,
+        )
     ).distinct()
 
 

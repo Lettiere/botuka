@@ -1,0 +1,18 @@
+{% extends "painel/base.html" %}
+{% block title %}Links de {{ objeto }} | BOTUKA{% endblock %}
+{% block content %}
+<section class="painel-card">
+  <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
+    <div><h1 class="painel-title mb-1">Links, redes sociais e vídeos</h1><p class="text-muted mb-0">Gerencie os links públicos deste {{ tipo_objeto }}.</p></div>
+    <a class="btn btn-outline-secondary" href="{{ voltar_url }}">Voltar</a>
+  </div>
+  <form method="post" class="row g-3 mb-4">{% csrf_token %}
+    {% for field in form %}<div class="col-md-6"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}</div>{% endfor %}
+    {% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+    <div class="col-12"><button class="btn btn-primary" type="submit">Adicionar link</button></div>
+  </form>
+  <div class="list-group">
+    {% for link in links %}<div class="list-group-item d-flex flex-wrap justify-content-between align-items-center gap-2"><div><strong>{{ link.get_tipo_link_display }}</strong>{% if link.titulo %} — {{ link.titulo }}{% endif %}<br><a href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.url }}</a></div><form method="post">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" name="excluir" value="{{ link.uuid }}" type="submit">Remover</button></form></div>{% empty %}<p class="text-muted">Nenhum link cadastrado.</p>{% endfor %}
+  </div>
+</section>
+{% endblock %}

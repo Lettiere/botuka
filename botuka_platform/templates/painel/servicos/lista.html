@@ -9,7 +9,7 @@
       <h1 class="painel-title mb-1">Serviços</h1>
       <p class="text-muted mb-0">Gerencie serviços de pessoa física ou empresas vinculadas.</p>
     </div>
-    <a class="btn btn-primary" href="{% url 'painel:servico_criar' %}"><i class="bi bi-plus-lg"></i> Novo serviço</a>
+    <a class="btn btn-primary" href="{% url 'painel:servico_criar' %}"><i class="bi bi-plus-lg"></i> Novo cadastro</a>
   </div>
 
   <div class="servicos-kpis mb-4">
@@ -47,7 +47,16 @@
         </div>
       </article>
     {% empty %}
-      <div class="text-center text-muted py-5">Nenhum serviço encontrado.</div>
+      {% if total_servicos == 0 %}
+        <div class="servicos-empty text-center py-5">
+          <span class="servicos-empty-icon"><i class="bi bi-tools"></i></span>
+          <h2>Nenhum serviço cadastrado.</h2>
+          <p>Cadastre um serviço como profissional autônomo ou por uma empresa vinculada.</p>
+          <a class="btn btn-primary" href="{% url 'painel:servico_criar' %}">Criar primeiro cadastro</a>
+        </div>
+      {% else %}
+        <div class="text-center text-muted py-5">Nenhum serviço encontrado para os filtros informados.</div>
+      {% endif %}
     {% endfor %}
   </div>
 

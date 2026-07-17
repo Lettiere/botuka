@@ -8,13 +8,14 @@ from django import forms
 from django.contrib.auth import get_user_model
 
 from apps.core.models import EnderecoCore, PessoaDocumento
-from apps.organizations.models import Empresa, EmpresaUsuario
+from apps.organizations.models import Empresa, EmpresaLink, EmpresaUsuario
 from apps.organizations.models import EmpresaCapacidade, EmpresaSolicitacao
 from apps.services.models import (
     Servico,
     ServicoArea,
     ServicoCaracteristica,
     ServicoImagem,
+    ServicoLink,
 )
 
 Usuario = get_user_model()
@@ -505,7 +506,6 @@ class ServicoForm(BaseServicoForm):
             'telefone_publico',
             'whatsapp_publico',
             'email_publico',
-            'status',
         ]
 
 
@@ -525,3 +525,15 @@ class ServicoCaracteristicaForm(BaseServicoForm):
     class Meta:
         model = ServicoCaracteristica
         fields = ['titulo', 'descricao', 'icone', 'ordem', 'ativo']
+
+
+class ServicoLinkForm(BaseServicoForm):
+    class Meta:
+        model = ServicoLink
+        fields = ['tipo_link', 'titulo', 'url', 'ordem', 'destaque', 'ativo']
+
+
+class EmpresaLinkForm(BaseServicoForm):
+    class Meta:
+        model = EmpresaLink
+        fields = ['tipo_link', 'titulo', 'url', 'ordem', 'destaque', 'ativo']

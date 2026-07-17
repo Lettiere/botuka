@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import uuid
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
@@ -7,6 +9,7 @@ from django.db.models import Avg, Count
 from django.utils import timezone
 
 from apps.core.models import BairroCidade, CidadeBrasil, EstadoBrasil, RegiaoCidade, UUIDModel
+from apps.core.public_links import TipoLink, normalizar_link_publico, url_embed_youtube
 from apps.core.utils import gerar_slug_unico
 from apps.organizations.models import Empresa
 
@@ -166,6 +169,9 @@ class Servico(UUIDModel):
     criado_em = models.DateTimeField(auto_now_add=True, db_column='services_servico_criado_em')
     atualizado_em = models.DateTimeField(auto_now=True, db_column='services_servico_atualizado_em')
     excluido_em = models.DateTimeField(null=True, blank=True, db_column='services_servico_excluido_em')
+    qr_token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_column='services_servico_qr_token')
+    qr_ativo = models.BooleanField(default=True, db_default=True, db_column='services_servico_qr_ativo')
+    qr_atualizado_em = models.DateTimeField(default=timezone.now, db_column='services_servico_qr_atualizado_em')
 
     objects = ServicoManager()
     all_objects = models.Manager()
@@ -224,6 +230,11 @@ class Servico(UUIDModel):
     def __str__(self):
         return self.titulo
 
+    def regenerar_qr_token(self):
+        self.qr_token = uuid.uuid4()
+        self.qr_atualizado_em = timezone.now()
+        self.save(update_fields=['qr_token', 'qr_atualizado_em', 'atualizado_em'])
+
 
 class ServicoArea(UUIDModel):
     class TipoArea(models.TextChoices):
@@ -269,6 +280,54 @@ class ServicoImagem(UUIDModel):
     class Meta:
         db_table = '"services"."services_servico_imagem_tb"'
         constraints = [models.UniqueConstraint(fields=['servico'], condition=models.Q(principal=True, ativo=True), name='services_servico_img_principal_uk')]
+
+
+class ServicoLink(models.Model):
+    id = models.BigAutoField(primary_key=True, db_column='services_servico_link_id')
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True, db_index=True, verbose_name='UUID')
+    servico = models.ForeignKey(Servico, on_delete=models.CASCADE, db_column='services_servico_link_fk_servico', related_name='links')
+    tipo_link = models.CharField(max_length=20, choices=TipoLink.choices, db_column='services_servico_link_tipo')
+    titulo = models.CharField(max_length=120, blank=True, db_column='services_servico_link_titulo')
+    url = models.URLField(max_length=500, db_column='services_servico_link_url')
+    identificador_externo = models.CharField(max_length=120, null=True, blank=True, db_column='services_servico_link_identificador_externo')
+    ordem = models.PositiveSmallIntegerField(default=0, db_column='services_servico_link_ordem')
+    destaque = models.BooleanField(default=False, db_column='services_servico_link_destaque')
+    ativo = models.BooleanField(default=True, db_column='services_servico_link_ativo')
+    criado_em = models.DateTimeField(auto_now_add=True, db_column='services_servico_link_criado_em')
+    atualizado_em = models.DateTimeField(auto_now=True, db_column='services_servico_link_atualizado_em')
+    excluido_em = models.DateTimeField(null=True, blank=True, db_column='services_servico_link_excluido_em')
+
+    class Meta:
+        ordering = ['-destaque', 'ordem', 'id']
+        db_table = '"services"."services_servico_link_tb"'
+        indexes = [models.Index(fields=['servico', 'ativo', 'ordem'], name='services_serv_link_s_a_o_idx')]
+        constraints = [
+            models.UniqueConstraint(fields=['servico', 'url'], condition=models.Q(ativo=True, excluido_em__isnull=True), name='services_serv_link_url_ativa_uk'),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.servico_id and self.ativo and self.excluido_em is None:
+            ativos = type(self).objects.filter(servico_id=self.servico_id, ativo=True, excluido_em__isnull=True).exclude(pk=self.pk)
+            if ativos.count() >= 15:
+                raise ValidationError('Cada serviço pode ter no máximo 15 links ativos.')
+            if self.tipo_link == TipoLink.YOUTUBE and ativos.filter(tipo_link=TipoLink.YOUTUBE, identificador_externo__gt='').count() >= 6:
+                raise ValidationError('Cada serviço pode exibir no máximo 6 vídeos do YouTube.')
+        self.url, self.identificador_externo = normalizar_link_publico(self.tipo_link, self.url)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def delete(self, using=None, keep_parents=False):
+        self.ativo = False
+        self.excluido_em = timezone.now()
+        self.save(update_fields=['ativo', 'excluido_em', 'atualizado_em'])
+        return 1, {self._meta.label: 1}
+
+    @property
+    def url_embed(self):
+        return url_embed_youtube(self.identificador_externo)
 
 
 class ServicoCaracteristica(UUIDModel):

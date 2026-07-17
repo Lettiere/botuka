@@ -6,6 +6,7 @@ from django.urls import path, include
 from apps.core.views import home, offline, pwa_manifest, service_worker
 
 urlpatterns = [
+    path("", include("apps.services.urls")),
     path("", home, name="home"),
     path("manifest.webmanifest", pwa_manifest, name="pwa_manifest"),
     path("service-worker.js", service_worker, name="service_worker"),

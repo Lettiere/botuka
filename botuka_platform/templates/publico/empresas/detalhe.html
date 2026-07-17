@@ -1,0 +1,11 @@
+{% extends "_layout/platform/platform_home.html" %}
+{% block content %}
+<main class="container py-5">
+  <article class="card border-0 shadow-sm mx-auto" style="max-width:960px"><div class="card-body p-4 p-lg-5">
+    <span class="badge text-bg-warning mb-3">Empresa BOTUKA</span><h1>{{ empresa.nome_exibicao }}</h1>
+    <p class="lead">{{ empresa.descricao_curta }}</p><div>{{ empresa.descricao_completa|linebreaksbr }}</div>
+    <nav class="d-flex flex-wrap gap-2 my-4" aria-label="Links públicos">{% for link in links %}<a class="btn btn-outline-primary" href="{{ link.url }}" target="_blank" rel="noopener noreferrer">{{ link.titulo|default:link.get_tipo_link_display }}</a>{% endfor %}</nav>
+    <div class="row g-3">{% for video in videos %}<div class="col-12 col-lg-6"><div class="ratio ratio-16x9"><iframe loading="lazy" src="{{ video.url_embed }}" title="Vídeo de {{ empresa.nome_exibicao }}" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div></div>{% endfor %}</div>
+  </div></article>
+</main>
+{% endblock %}

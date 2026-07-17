@@ -9,9 +9,12 @@ from apps.services.models import (
     ServicoCaracteristica,
     ServicoFavorito,
     ServicoImagem,
+    ServicoLink,
     Setor,
     TipoServico,
 )
+
+admin.site.register(ServicoLink)
 
 
 @admin.register(Setor)
