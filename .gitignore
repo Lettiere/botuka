@@ -48,3 +48,6 @@ desktop.ini
 *.swo
 ~$*
 .tmp_*
+
+# Ambiente Linux do servidor
+.venv_linux/
