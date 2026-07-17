@@ -1,0 +1,8 @@
+<header class="gestao-topbar">
+  <div>
+    <strong>{{ section|default:"Gestão" }}</strong>
+  </div>
+  <div>
+    {{ request.user.get_full_name|default:request.user.email }}
+  </div>
+</header>

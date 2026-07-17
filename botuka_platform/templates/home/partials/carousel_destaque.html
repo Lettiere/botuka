@@ -1,0 +1,306 @@
+<!-- CARROSSEL DESTAQUES E RESPONSIVO -->
+<style>
+.showcase-section { padding: 22px 0; }
+.showcase-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  transition: .18s ease;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+.showcase-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+.showcase-img {
+  height: 170px;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  width: 100%;
+}
+.showcase-body { padding: 16px; flex: 1 1 auto; display: flex; flex-direction: column; }
+/* Reduzindo tamanho da tipografia dos cards de destaque */
+.showcase-title { font-weight: 800; font-size: 0.96rem; margin-bottom: 5px; }
+.showcase-text { color: var(--muted); font-size: .82rem; margin-bottom: 8px; }
+/* Responsive Grid for Category */
+.category-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 12px;
+}
+@media (max-width: 1200px) {
+  .category-grid { grid-template-columns: repeat(5, 1fr); }
+}
+@media (max-width: 992px) {
+  .category-grid { grid-template-columns: repeat(4, 1fr); }
+}
+@media (max-width: 768px) {
+  .category-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 576px) {
+  .category-grid { grid-template-columns: repeat(2, 1fr); }
+  .carousel-banner-content { padding: 28px 20px }
+}
+.category-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 18px;
+  padding: 16px 10px;
+  text-align: center;
+  box-shadow: var(--shadow);
+  font-weight: 850;
+  transition: .18s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+.category-card:hover { background: var(--surface-2); transform: translateY(-2px); }
+.category-card i {
+  display: block;
+  font-size: 1.6rem;
+  color: var(--botuka-earth);
+  margin-bottom: 8px;
+}
+.carousel-banner {
+  min-height: 330px;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  background: linear-gradient(135deg, var(--botuka-blue), var(--botuka-earth));
+  color: #fff;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+.carousel-banner-content {
+  padding: 42px;
+  max-width: 620px;
+  position: relative;
+  z-index: 2;
+}
+.carousel-banner h2 {
+  font-size: clamp(1.4rem, 3vw, 2.4rem);
+  font-weight: 800;
+  line-height: .98;
+  margin-bottom: 13px;
+}
+.carousel-banner p { color: rgba(255,255,255,.82); font-size: 0.92rem; }
+.carousel-banner::after {
+  content: "";
+  position: absolute;
+  width: 360px;
+  height: 360px;
+  right: -90px;
+  top: -80px;
+  border-radius: 50%;
+  background: rgba(255,183,3,.22);
+  z-index: 1;
+}
+.banner-event { background: linear-gradient(135deg,#13293D,#2E8B57); }
+.banner-culture { background: linear-gradient(135deg,#1E3A54,#C1642F); }
+.banner-products { background: linear-gradient(135deg,#C1642F,#FFB703); }
+.banner-tour { background: linear-gradient(135deg,#236941,#13293D); }
+.mini-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: rgba(255,255,255,.18);
+  color: #fff;
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: .74rem;
+  font-weight: 800;
+  margin-bottom: 11px;
+}
+@media (max-width: 768px) {
+  .carousel-banner {
+    min-height: 220px;
+    flex-direction: column;
+    justify-content: center;
+    align-items: stretch;
+  }
+  .carousel-banner-content {
+    padding: 24px 12px;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+  .carousel-banner h2 {
+    font-size: 1.15rem;
+  }
+}
+@media (max-width: 576px) {
+  .carousel-banner {
+    min-height: 160px;
+    flex-direction: column;
+    border-radius: var(--radius-md);
+  }
+  .carousel-banner-content {
+    padding: 15px 6vw;
+    max-width: 100%;
+  }
+  .carousel-banner h2 { font-size: 0.98rem; }
+  .mini-tag { font-size: .70rem; padding: 5px 10px; }
+  .carousel-control-next, .carousel-control-prev {
+    width: 9%;
+    min-width: 34px;
+  }
+  .section-title h2 { font-size: 1.12rem; }
+}
+.carousel-control-next, .carousel-control-prev {
+  filter: drop-shadow(0 1px 3px rgba(0,0,0,0.19));
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: rgba(20,24,44,0.13);
+  top: 50%;
+  transform: translateY(-50%);
+}
+.carousel-control-next-icon, .carousel-control-prev-icon {
+  background-size: 80% 80%;
+}
+.carousel-control-prev { left: 10px; }
+.carousel-control-next { right: 10px; }
+@media (hover: hover) and (pointer: fine) {
+  .carousel-banner:hover { box-shadow: var(--shadow-hover); }
+}
+</style>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<!-- Script responsivo para Desktop/Mobile/Tablet -->
+<script>
+/**
+ * Configura o carrossel para funcionar em todas as telas,
+ * com navegação por botão (touch e mouse) e responsividade.
+ */
+(function() {
+  // Bootstrap carousel já suporta responsividade;
+  // Asseguramos navegação via swipe para mobile/tablet.
+  function enableSwipeOnCarousel(carouselSelector) {
+    var $carousel = $(carouselSelector);
+    var touchStartX = null;
+
+    $carousel.on('touchstart', function(event) {
+      var e = event.originalEvent.touches[0];
+      touchStartX = e.clientX;
+    });
+
+    $carousel.on('touchmove', function(event) {
+      if (!touchStartX) return;
+      var e = event.originalEvent.touches[0];
+      var touchEndX = e.clientX;
+      var delta = touchEndX - touchStartX;
+
+      // Swipe left/right threshold (30px)
+      if (Math.abs(delta) > 30) {
+        if (delta > 0) {
+          $carousel.carousel('prev');
+        } else {
+          $carousel.carousel('next');
+        }
+        touchStartX = null;
+      }
+    });
+
+    $carousel.on('touchend', function() {
+      touchStartX = null;
+    });
+  }
+
+  $(function() {
+    var $carousel = $('#homeShowcaseCarousel');
+    $carousel.carousel();
+
+    // Inicializa swipe para mobile/tablet
+    enableSwipeOnCarousel($carousel);
+
+    // Aumenta área do botão em mobile
+    function updateCarouselButtonSize() {
+      var width = window.innerWidth || document.documentElement.clientWidth;
+      if (width <= 576) {
+        $('.carousel-control-next, .carousel-control-prev').css({
+          width: '15vw',
+          minWidth: '34px',
+          height: '44px'
+        });
+      } else {
+        $('.carousel-control-next, .carousel-control-prev').css({
+          width: '42px',
+          height: '42px'
+        });
+      }
+    }
+    $(window).on('resize', updateCarouselButtonSize);
+    updateCarouselButtonSize();
+  });
+})();
+</script>
+
+<section class="showcase-section">
+  <div class="container-botuka">
+    <div class="section-title">
+      <div>
+        <h2>Destaques da cidade</h2>
+        <small>Eventos, cultura, produtos e experiências em evidência</small>
+      </div>
+    </div>
+
+    <div id="homeShowcaseCarousel" class="carousel slide reveal" data-bs-ride="carousel" tabindex="0">
+      <div class="carousel-inner">
+
+        <div class="carousel-item active">
+          <div class="carousel-banner banner-event">
+            <div class="carousel-banner-content">
+              <div class="mini-tag"><i class="bi bi-calendar-event-fill"></i> Evento da semana</div>
+              <h2>Feira, música e gastronomia local</h2>
+              <p>Uma vitrine para produtores, artistas e moradores encontrarem o melhor da região.</p>
+              <a href="#eventos" class="btn-botuka btn-yellow">Ver eventos</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="carousel-item">
+          <div class="carousel-banner banner-culture">
+            <div class="carousel-banner-content">
+              <div class="mini-tag"><i class="bi bi-music-note-beamed"></i> Cultura e lazer</div>
+              <h2>Shows, oficinas, teatro e encontros</h2>
+              <p>O BOTUKA organiza a agenda cultural da cidade em uma tela simples.</p>
+              <a href="#cultura" class="btn-botuka btn-yellow">Explorar cultura</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="carousel-item">
+          <div class="carousel-banner banner-products">
+            <div class="carousel-banner-content">
+              <div class="mini-tag"><i class="bi bi-bag-fill"></i> Comércio local</div>
+              <h2>Produtos e ofertas de empresas da região</h2>
+              <p>Compre de quem está perto, fortaleça o comércio local e descubra novidades.</p>
+              <a href="#produtos" class="btn-botuka btn-yellow">Ver produtos</a>
+            </div>
+          </div>
+        </div>
+
+        <div class="carousel-item">
+          <div class="carousel-banner banner-tour">
+            <div class="carousel-banner-content">
+              <div class="mini-tag"><i class="bi bi-binoculars-fill"></i> Turismo regional</div>
+              <h2>Cuesta, trilhas, cafés e experiências</h2>
+              <p>Moradores e visitantes descobrindo a região com mais facilidade.</p>
+              <a href="#turismo" class="btn-botuka btn-yellow">Ver turismo</a>
+            </div>
+          </div>
+        </div>
+
+      </div>
+
+      <button class="carousel-control-prev" type="button" data-bs-target="#homeShowcaseCarousel" data-bs-slide="prev" aria-label="Anterior">
+        <span class="carousel-control-prev-icon"></span>
+      </button>
+      <button class="carousel-control-next" type="button" data-bs-target="#homeShowcaseCarousel" data-bs-slide="next" aria-label="Próximo">
+        <span class="carousel-control-next-icon"></span>
+      </button>
+    </div>
+  </div>
+</section>

@@ -1,0 +1,50 @@
+# Ambientes e dependências locais
+.venv/
+venv/
+env/
+ENV/
+.codex_tmp_deps/
+
+# Variáveis e segredos
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# Django
+*.log
+logs/
+db.sqlite3
+db.sqlite3-journal
+*.sqlite3
+staticfiles/
+
+# Uploads e arquivos gerados
+media/
+uploads/
+
+# IDE e sistema operacional
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Temporários
+*.tmp
+*.temp
+*.bak
+*.backup
+*.swp
+*.swo
+~$*
+.tmp_*

@@ -1,0 +1,755 @@
+"""Views da área interna do usuário."""
+
+from __future__ import annotations
+
+from functools import wraps
+
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
+from django.core.exceptions import PermissionDenied
+from django.db import transaction
+from django.db.models import Count, Q
+from django.core.paginator import Paginator
+from django.http import HttpRequest, HttpResponse, JsonResponse
+from django.shortcuts import get_object_or_404, redirect, render
+from django.utils import timezone
+
+from apps.painel.forms import (
+    ApresentacaoUsuarioForm,
+    ContatoUsuarioForm,
+    DadosPessoaisForm,
+    DocumentoUsuarioForm,
+    EmpresaCNPJConsultaForm,
+    EmpresaCapacidadeForm,
+    EmpresaDocumentoForm,
+    EmpresaEnderecoForm,
+    EmpresaForm,
+    EmpresaSolicitacaoAnaliseForm,
+    EmpresaUsuarioForm,
+    FotoPerfilForm,
+    ServicoAreaForm,
+    ServicoCaracteristicaForm,
+    ServicoForm,
+    ServicoImagemForm,
+)
+from apps.integrations.cnpj.exceptions import CNPJError
+from apps.integrations.cnpj.services import consultar_cnpj
+from apps.organizations.models import Empresa, EmpresaCapacidade, EmpresaEndereco, EmpresaSolicitacao, EmpresaUsuario
+from apps.organizations.permissions import (
+    empresas_disponiveis_para_usuario,
+    usuario_pode_editar_empresa,
+    usuario_pode_gerenciar_empresa,
+    usuario_pode_gerenciar_equipe,
+    usuario_pode_visualizar_empresa,
+)
+from apps.services.models import Profissao, Servico, ServicoArea, ServicoCaracteristica, ServicoImagem
+from apps.services.permissions import (
+    servicos_disponiveis_para_usuario,
+    usuario_pode_editar_servico,
+    usuario_pode_publicar_servico,
+    usuario_pode_visualizar_servico,
+)
+
+
+def painel_permission_required(codigo: str):
+    """Decorator para validar permissões de domínio no painel."""
+
+    def decorator(view_func):
+        @wraps(view_func)
+        @login_required
+        def wrapper(request: HttpRequest, *args, **kwargs) -> HttpResponse:
+            tem_permissao = getattr(request.user, 'tem_permissao', None)
+            if callable(tem_permissao) and tem_permissao(codigo):
+                return view_func(request, *args, **kwargs)
+
+            raise PermissionDenied
+
+        return wrapper
+
+    return decorator
+
+
+@login_required
+def dashboard(request: HttpRequest) -> HttpResponse:
+    return render(request, 'painel/dashboard.html')
+
+
+@login_required
+def perfil(request: HttpRequest) -> HttpResponse:
+    forms = {
+        'dados': DadosPessoaisForm(instance=request.user),
+        'contato': ContatoUsuarioForm(instance=request.user),
+        'foto': FotoPerfilForm(instance=request.user),
+        'documento': DocumentoUsuarioForm(instance=request.user),
+        'apresentacao': ApresentacaoUsuarioForm(instance=request.user),
+    }
+
+    if request.method == 'POST':
+        secao = request.POST.get('secao', 'dados')
+        form_classes = {
+            'dados': DadosPessoaisForm,
+            'contato': ContatoUsuarioForm,
+            'foto': FotoPerfilForm,
+            'documento': DocumentoUsuarioForm,
+            'apresentacao': ApresentacaoUsuarioForm,
+        }
+        form_class = form_classes.get(secao, DadosPessoaisForm)
+        form = form_class(request.POST, request.FILES, instance=request.user)
+        forms[secao] = form
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Perfil atualizado com sucesso.')
+
+    empresas = request.user.organizacoes.all()
+    empresas_proprietario = request.user.organizacoes_proprietario.all()
+    total_empresas = empresas.count() + empresas_proprietario.count()
+    return render(
+        request,
+        'painel/perfil.html',
+        {
+            'forms': forms,
+            'empresas': empresas,
+            'empresas_proprietario': empresas_proprietario,
+            'total_empresas': total_empresas,
+        },
+    )
+
+
+def render_pagina(request: HttpRequest, template_name: str, titulo: str) -> HttpResponse:
+    return render(request, template_name, {'titulo': titulo})
+
+
+def _empresa_autorizada(request: HttpRequest, pk: int) -> Empresa:
+    return get_object_or_404(empresas_disponiveis_para_usuario(request.user), pk=pk)
+
+
+def _aplicar_filtros_empresas(request: HttpRequest, queryset):
+    busca = request.GET.get('busca', '').strip()
+    status = request.GET.get('status', '').strip()
+    cidade = request.GET.get('cidade', '').strip()
+    tipo = request.GET.get('tipo', '').strip()
+    somente_ativas = request.GET.get('somente_ativas')
+
+    if busca:
+        busca_digitos = ''.join(char for char in busca if char.isdigit())
+        filtro_busca = (
+            Q(nome_fantasia__icontains=busca)
+            | Q(razao_social__icontains=busca)
+            | Q(cpf_cnpj__icontains=busca_digitos or busca)
+        )
+        queryset = queryset.filter(filtro_busca)
+
+    if status:
+        queryset = queryset.filter(status=status)
+
+    if cidade:
+        queryset = queryset.filter(cidade__nome__icontains=cidade)
+
+    if tipo:
+        queryset = queryset.filter(tipo_cadastro=tipo)
+
+    if somente_ativas:
+        queryset = queryset.filter(ativo=True, status=Empresa.Status.ATIVA)
+
+    return queryset
+
+
+@login_required
+def empresas_lista(request: HttpRequest) -> HttpResponse:
+    empresas_base = empresas_disponiveis_para_usuario(request.user)
+    empresas_filtradas = _aplicar_filtros_empresas(request, empresas_base).annotate(
+        total_usuarios=Count(
+            'usuarios_vinculados',
+            filter=Q(usuarios_vinculados__ativo=True),
+            distinct=True,
+        )
+    )
+    paginator = Paginator(empresas_filtradas, 9)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    querystring = request.GET.copy()
+    querystring.pop('page', None)
+
+    return render(
+        request,
+        'painel/empresas/lista.html',
+        {
+            'titulo': 'Minhas empresas',
+            'empresas': page_obj.object_list,
+            'page_obj': page_obj,
+            'querystring': querystring.urlencode(),
+            'total_empresas': empresas_base.count(),
+            'total_filtrado': paginator.count,
+            'total_ativas': empresas_base.filter(status=Empresa.Status.ATIVA).count(),
+            'total_pendentes': empresas_base.filter(status=Empresa.Status.PENDENTE).count(),
+        },
+    )
+
+
+@login_required
+def empresa_criar(request: HttpRequest) -> HttpResponse:
+    if request.method == 'POST':
+        form = EmpresaForm(
+            request.POST,
+            request.FILES,
+            usuario=request.user,
+            pode_alterar_status=request.user.is_staff or request.user.is_superuser,
+        )
+
+        if form.is_valid():
+            with transaction.atomic():
+                empresa = form.save(commit=False)
+                empresa.usuario_proprietario = request.user
+                empresa.save()
+                EmpresaUsuario.objects.create(
+                    empresa=empresa,
+                    usuario=request.user,
+                    funcao=EmpresaUsuario.Funcao.PROPRIETARIO,
+                    proprietario=True,
+                    administrador=True,
+                    pode_editar=True,
+                    pode_publicar_servico=True,
+                    pode_gerenciar_equipe=True,
+                )
+
+            messages.success(request, 'Empresa cadastrada com sucesso.')
+            return redirect('painel:empresa_detalhe', pk=empresa.pk)
+    else:
+        form = EmpresaForm(usuario=request.user)
+
+    return render(
+        request,
+        'painel/empresas/form.html',
+        {
+            'titulo': 'Cadastrar empresa',
+            'form': form,
+            'empresa': None,
+        },
+    )
+
+
+@login_required
+def empresa_detalhe(request: HttpRequest, pk: int) -> HttpResponse:
+    empresa = _empresa_autorizada(request, pk)
+    if not usuario_pode_visualizar_empresa(request.user, empresa):
+        raise PermissionDenied
+
+    usuarios = empresa.usuarios_vinculados.select_related('usuario').order_by(
+        '-proprietario',
+        'usuario__first_name',
+        'usuario__username',
+    )
+
+    return render(
+        request,
+        'painel/empresas/detalhe.html',
+        {
+            'empresa': empresa,
+            'usuarios': usuarios,
+            'pode_editar': usuario_pode_editar_empresa(request.user, empresa),
+            'pode_gerenciar': usuario_pode_gerenciar_empresa(request.user, empresa),
+            'pode_gerenciar_equipe': usuario_pode_gerenciar_equipe(request.user, empresa),
+        },
+    )
+
+
+@login_required
+def empresa_editar(request: HttpRequest, pk: int) -> HttpResponse:
+    empresa = _empresa_autorizada(request, pk)
+    if not usuario_pode_editar_empresa(request.user, empresa):
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        form = EmpresaForm(
+            request.POST,
+            request.FILES,
+            instance=empresa,
+            usuario=request.user,
+            pode_alterar_status=usuario_pode_gerenciar_empresa(request.user, empresa),
+        )
+
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Empresa atualizada com sucesso.')
+            return redirect('painel:empresa_detalhe', pk=empresa.pk)
+    else:
+        form = EmpresaForm(
+            instance=empresa,
+            usuario=request.user,
+            pode_alterar_status=usuario_pode_gerenciar_empresa(request.user, empresa),
+        )
+
+    return render(
+        request,
+        'painel/empresas/form.html',
+        {
+            'titulo': 'Editar empresa',
+            'form': form,
+            'empresa': empresa,
+        },
+    )
+
+
+@login_required
+def empresa_equipe(request: HttpRequest, pk: int) -> HttpResponse:
+    empresa = _empresa_autorizada(request, pk)
+    if not usuario_pode_gerenciar_equipe(request.user, empresa):
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        acao = request.POST.get('acao', 'adicionar')
+
+        if acao in {'ativar', 'desativar'}:
+            vinculo = get_object_or_404(EmpresaUsuario, empresa=empresa, pk=request.POST.get('vinculo_id'))
+            if vinculo.proprietario:
+                messages.error(request, 'O proprietário não pode ser desativado por este fluxo.')
+            else:
+                vinculo.ativo = acao == 'ativar'
+                vinculo.save(update_fields=['ativo', 'atualizado_em'])
+                messages.success(request, 'Vínculo atualizado com sucesso.')
+            return redirect('painel:empresa_equipe', pk=empresa.pk)
+
+        form = EmpresaUsuarioForm(request.POST, empresa=empresa)
+        if form.is_valid():
+            form.save()
+            messages.success(request, 'Usuário vinculado à empresa com sucesso.')
+            return redirect('painel:empresa_equipe', pk=empresa.pk)
+    else:
+        form = EmpresaUsuarioForm(empresa=empresa)
+
+    vinculos = empresa.usuarios_vinculados.select_related('usuario').order_by(
+        '-proprietario',
+        '-administrador',
+        'usuario__first_name',
+        'usuario__username',
+    )
+
+    return render(
+        request,
+        'painel/empresas/equipe.html',
+        {
+            'empresa': empresa,
+            'form': form,
+            'vinculos': vinculos,
+        },
+    )
+
+
+@login_required
+def empresa_alterar_status(request: HttpRequest, pk: int) -> HttpResponse:
+    empresa = _empresa_autorizada(request, pk)
+    if not usuario_pode_gerenciar_empresa(request.user, empresa):
+        raise PermissionDenied
+
+    if request.method != 'POST':
+        return redirect('painel:empresa_detalhe', pk=empresa.pk)
+
+    novo_status = request.POST.get('status')
+    if novo_status not in Empresa.Status.values:
+        messages.error(request, 'Status inválido.')
+        return redirect('painel:empresa_detalhe', pk=empresa.pk)
+
+    empresa.status = novo_status
+    empresa.ativo = novo_status not in {Empresa.Status.SUSPENSA, Empresa.Status.BLOQUEADA}
+    empresa.save(update_fields=['status', 'ativo', 'atualizado_em'])
+    messages.success(request, 'Status da empresa atualizado.')
+    return redirect('painel:empresa_detalhe', pk=empresa.pk)
+
+
+@login_required
+def empresa_excluir(request: HttpRequest, pk: int) -> HttpResponse:
+    empresa = _empresa_autorizada(request, pk)
+    if not usuario_pode_gerenciar_empresa(request.user, empresa):
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        empresa.delete()
+        messages.success(request, 'Empresa removida com sucesso.')
+        return redirect('painel:empresas_lista')
+
+    return render(
+        request,
+        'painel/empresas/confirmar_exclusao.html',
+        {'empresa': empresa},
+    )
+
+
+@login_required
+def empresa_adicionar(request: HttpRequest) -> HttpResponse:
+    return empresa_criar(request)
+
+
+@login_required
+def empresa_ajax_consultar_cnpj(request: HttpRequest) -> JsonResponse:
+    if request.method != 'POST':
+        return JsonResponse({'ok': False, 'erro': 'Método inválido.'}, status=405)
+
+    form = EmpresaCNPJConsultaForm(request.POST)
+    if not form.is_valid():
+        return JsonResponse({'ok': False, 'erros': form.errors}, status=400)
+
+    try:
+        dados = consultar_cnpj(form.cleaned_data['cnpj'], usuario=request.user)
+    except CNPJError as exc:
+        return JsonResponse({'ok': False, 'erro': str(exc)}, status=400)
+    except Exception:
+        return JsonResponse({'ok': False, 'erro': 'Não foi possível consultar o CNPJ agora.'}, status=502)
+
+    return JsonResponse({'ok': True, 'dados': dados})
+
+
+@login_required
+def empresa_capacidades(request: HttpRequest, pk: int) -> HttpResponse:
+    empresa = _empresa_autorizada(request, pk)
+    if not usuario_pode_gerenciar_empresa(request.user, empresa):
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        form = EmpresaCapacidadeForm(request.POST)
+        if form.is_valid():
+            capacidade = form.save(commit=False)
+            capacidade.empresa = empresa
+            capacidade.solicitado_por = request.user
+            capacidade.save()
+            messages.success(request, 'Capacidade solicitada com sucesso.')
+            return redirect('painel:empresa_capacidades', pk=empresa.pk)
+    else:
+        form = EmpresaCapacidadeForm()
+
+    capacidades = empresa.capacidades_empresa.select_related('capacidade').order_by('-criado_em')
+    return render(request, 'painel/empresas/capacidades.html', {'empresa': empresa, 'form': form, 'capacidades': capacidades})
+
+
+@login_required
+def empresa_enderecos(request: HttpRequest, pk: int) -> HttpResponse:
+    empresa = _empresa_autorizada(request, pk)
+    if not usuario_pode_editar_empresa(request.user, empresa):
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        form = EmpresaEnderecoForm(request.POST)
+        if form.is_valid():
+            with transaction.atomic():
+                endereco = form.save()
+                if endereco.principal:
+                    EmpresaEndereco.objects.filter(empresa=empresa, principal=True).update(principal=False)
+                EmpresaEndereco.objects.create(
+                    empresa=empresa,
+                    endereco=endereco,
+                    principal=endereco.principal,
+                    publico=True,
+                )
+            messages.success(request, 'Endereço vinculado com sucesso.')
+            return redirect('painel:empresa_enderecos', pk=empresa.pk)
+    else:
+        form = EmpresaEnderecoForm()
+
+    enderecos = empresa.enderecos_empresa.select_related('endereco').order_by('-principal', '-criado_em')
+    return render(request, 'painel/empresas/enderecos.html', {'empresa': empresa, 'form': form, 'enderecos': enderecos})
+
+
+@login_required
+def empresa_documentos(request: HttpRequest, pk: int) -> HttpResponse:
+    empresa = _empresa_autorizada(request, pk)
+    if not usuario_pode_gerenciar_empresa(request.user, empresa):
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        form = EmpresaDocumentoForm(request.POST, request.FILES)
+        if form.is_valid():
+            documento = form.save(commit=False)
+            documento.usuario = request.user
+            documento.status_validacao = documento.StatusValidacao.PENDENTE
+            documento.save()
+            messages.success(request, 'Documento enviado para análise.')
+            return redirect('painel:empresa_documentos', pk=empresa.pk)
+    else:
+        form = EmpresaDocumentoForm()
+
+    documentos = request.user.documentos_pessoais.select_related('tipo_documento').order_by('-criado_em')
+    return render(request, 'painel/empresas/documentos.html', {'empresa': empresa, 'form': form, 'documentos': documentos})
+
+
+@login_required
+def empresa_solicitacoes(request: HttpRequest, pk: int) -> HttpResponse:
+    empresa = _empresa_autorizada(request, pk)
+    solicitacoes = empresa.solicitacoes.select_related('usuario_solicitante', 'analisado_por').order_by('-criado_em')
+    return render(request, 'painel/empresas/solicitacoes.html', {'empresa': empresa, 'solicitacoes': solicitacoes})
+
+
+@login_required
+def empresa_solicitacoes_lista(request: HttpRequest) -> HttpResponse:
+    if not (request.user.is_staff or request.user.is_superuser):
+        raise PermissionDenied
+
+    solicitacoes = EmpresaSolicitacao.objects.select_related('empresa', 'usuario_solicitante').order_by('-criado_em')
+    return render(request, 'painel/empresas/solicitacoes_lista.html', {'solicitacoes': solicitacoes})
+
+
+@login_required
+def empresa_solicitacao_analisar(request: HttpRequest, pk: int) -> HttpResponse:
+    if not (request.user.is_staff or request.user.is_superuser):
+        raise PermissionDenied
+
+    solicitacao = get_object_or_404(EmpresaSolicitacao, pk=pk)
+    if request.method == 'POST':
+        form = EmpresaSolicitacaoAnaliseForm(request.POST, instance=solicitacao)
+        if form.is_valid():
+            solicitacao = form.save(commit=False)
+            solicitacao.analisado_por = request.user
+            solicitacao.analisado_em = timezone.now()
+            solicitacao.save()
+            messages.success(request, 'Solicitação analisada com sucesso.')
+            return redirect('painel:empresa_solicitacoes_lista')
+    else:
+        form = EmpresaSolicitacaoAnaliseForm(instance=solicitacao)
+
+    return render(request, 'painel/empresas/solicitacao_analisar.html', {'solicitacao': solicitacao, 'form': form})
+
+
+@painel_permission_required('publicacoes.visualizar')
+def publicacoes_lista(request: HttpRequest) -> HttpResponse:
+    return render_pagina(request, 'painel/publicacoes/lista.html', 'Publicações')
+
+
+def _servico_autorizado(request: HttpRequest, pk: int) -> Servico:
+    servico = get_object_or_404(servicos_disponiveis_para_usuario(request.user), pk=pk)
+    if not usuario_pode_visualizar_servico(request.user, servico):
+        raise PermissionDenied
+    return servico
+
+
+def _aplicar_filtros_servicos(request: HttpRequest, queryset):
+    busca = request.GET.get('busca', '').strip()
+    status = request.GET.get('status', '').strip()
+    empresa = request.GET.get('empresa', '').strip()
+
+    if busca:
+        queryset = queryset.filter(
+            Q(titulo__icontains=busca)
+            | Q(descricao_curta__icontains=busca)
+            | Q(empresa__nome_fantasia__icontains=busca)
+        )
+    if status:
+        queryset = queryset.filter(status=status)
+    if empresa:
+        queryset = queryset.filter(empresa_id=empresa)
+    return queryset
+
+
+@login_required
+def servicos_lista(request: HttpRequest) -> HttpResponse:
+    servicos_base = servicos_disponiveis_para_usuario(request.user)
+    servicos_filtrados = _aplicar_filtros_servicos(request, servicos_base)
+    paginator = Paginator(servicos_filtrados, 12)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    querystring = request.GET.copy()
+    querystring.pop('page', None)
+
+    return render(
+        request,
+        'painel/servicos/lista.html',
+        {
+            'titulo': 'Serviços',
+            'servicos': page_obj.object_list,
+            'page_obj': page_obj,
+            'querystring': querystring.urlencode(),
+            'status_choices': Servico.Status.choices,
+            'total_servicos': servicos_base.count(),
+            'total_publicados': servicos_base.filter(status=Servico.Status.PUBLICADO).count(),
+            'total_pendentes': servicos_base.filter(status__in=[Servico.Status.PENDENTE, Servico.Status.EM_ANALISE]).count(),
+        },
+    )
+
+
+@login_required
+def servico_criar(request: HttpRequest) -> HttpResponse:
+    if request.method == 'POST':
+        form = ServicoForm(request.POST, request.FILES)
+        if form.is_valid():
+            servico = form.save(commit=False)
+            servico.usuario_responsavel = request.user
+            if not usuario_pode_publicar_servico(request.user, servico):
+                raise PermissionDenied
+            servico.save()
+            messages.success(request, 'Serviço cadastrado com sucesso.')
+            return redirect('painel:servico_detalhe', pk=servico.pk)
+    else:
+        form = ServicoForm(initial={'prestador_tipo': Servico.PrestadorTipo.PESSOA_FISICA})
+
+    return render(request, 'painel/servicos/form.html', {'titulo': 'Cadastrar serviço', 'form': form, 'servico': None})
+
+
+@login_required
+def servico_detalhe(request: HttpRequest, pk: int) -> HttpResponse:
+    servico = _servico_autorizado(request, pk)
+    return render(
+        request,
+        'painel/servicos/detalhe.html',
+        {
+            'servico': servico,
+            'pode_editar': usuario_pode_editar_servico(request.user, servico),
+            'imagens': servico.imagens.filter(ativo=True).order_by('-principal', 'ordem'),
+            'areas': servico.areas.filter(ativo=True),
+            'caracteristicas': servico.caracteristicas.filter(ativo=True).order_by('ordem'),
+        },
+    )
+
+
+@login_required
+def servico_editar(request: HttpRequest, pk: int) -> HttpResponse:
+    servico = _servico_autorizado(request, pk)
+    if not usuario_pode_editar_servico(request.user, servico):
+        raise PermissionDenied
+
+    if request.method == 'POST':
+        form = ServicoForm(request.POST, request.FILES, instance=servico)
+        if form.is_valid():
+            servico = form.save(commit=False)
+            if not usuario_pode_publicar_servico(request.user, servico):
+                raise PermissionDenied
+            servico.save()
+            messages.success(request, 'Serviço atualizado com sucesso.')
+            return redirect('painel:servico_detalhe', pk=servico.pk)
+    else:
+        form = ServicoForm(instance=servico)
+
+    return render(request, 'painel/servicos/form.html', {'titulo': 'Editar serviço', 'form': form, 'servico': servico})
+
+
+@login_required
+def servico_excluir(request: HttpRequest, pk: int) -> HttpResponse:
+    servico = _servico_autorizado(request, pk)
+    if not usuario_pode_editar_servico(request.user, servico):
+        raise PermissionDenied
+    if request.method == 'POST':
+        servico.delete()
+        messages.success(request, 'Serviço removido com sucesso.')
+        return redirect('painel:servicos_lista')
+    return render(request, 'painel/servicos/confirmar_exclusao.html', {'servico': servico})
+
+
+@login_required
+def servico_alterar_status(request: HttpRequest, pk: int) -> HttpResponse:
+    servico = _servico_autorizado(request, pk)
+    if request.method != 'POST':
+        return redirect('painel:servico_detalhe', pk=servico.pk)
+    if not usuario_pode_editar_servico(request.user, servico):
+        raise PermissionDenied
+
+    novo_status = request.POST.get('status')
+    if novo_status not in Servico.Status.values:
+        messages.error(request, 'Status inválido.')
+    else:
+        servico.status = novo_status
+        servico.save(update_fields=['status', 'publicado_em', 'atualizado_em'])
+        messages.success(request, 'Status do serviço atualizado.')
+    return redirect('painel:servico_detalhe', pk=servico.pk)
+
+
+@login_required
+def servico_imagens(request: HttpRequest, pk: int) -> HttpResponse:
+    servico = _servico_autorizado(request, pk)
+    if request.method == 'POST':
+        form = ServicoImagemForm(request.POST, request.FILES)
+        if form.is_valid():
+            imagem = form.save(commit=False)
+            imagem.servico = servico
+            imagem.save()
+            messages.success(request, 'Imagem adicionada com sucesso.')
+            return redirect('painel:servico_imagens', pk=servico.pk)
+    else:
+        form = ServicoImagemForm()
+    imagens = ServicoImagem.objects.filter(servico=servico, ativo=True).order_by('-principal', 'ordem')
+    return render(request, 'painel/servicos/imagens.html', {'servico': servico, 'form': form, 'imagens': imagens})
+
+
+@login_required
+def servico_areas(request: HttpRequest, pk: int) -> HttpResponse:
+    servico = _servico_autorizado(request, pk)
+    if request.method == 'POST':
+        form = ServicoAreaForm(request.POST)
+        if form.is_valid():
+            area = form.save(commit=False)
+            area.servico = servico
+            area.save()
+            messages.success(request, 'Área de atendimento adicionada com sucesso.')
+            return redirect('painel:servico_areas', pk=servico.pk)
+    else:
+        form = ServicoAreaForm()
+    areas = ServicoArea.objects.filter(servico=servico, ativo=True)
+    return render(request, 'painel/servicos/areas.html', {'servico': servico, 'form': form, 'areas': areas})
+
+
+@login_required
+def servico_caracteristicas(request: HttpRequest, pk: int) -> HttpResponse:
+    servico = _servico_autorizado(request, pk)
+    if request.method == 'POST':
+        form = ServicoCaracteristicaForm(request.POST)
+        if form.is_valid():
+            caracteristica = form.save(commit=False)
+            caracteristica.servico = servico
+            caracteristica.save()
+            messages.success(request, 'Característica adicionada com sucesso.')
+            return redirect('painel:servico_caracteristicas', pk=servico.pk)
+    else:
+        form = ServicoCaracteristicaForm()
+    caracteristicas = ServicoCaracteristica.objects.filter(servico=servico, ativo=True).order_by('ordem')
+    return render(request, 'painel/servicos/caracteristicas.html', {'servico': servico, 'form': form, 'caracteristicas': caracteristicas})
+
+
+@login_required
+def servico_preview(request: HttpRequest, pk: int) -> HttpResponse:
+    servico = _servico_autorizado(request, pk)
+    return render(request, 'painel/servicos/preview.html', {'servico': servico})
+
+
+@login_required
+def servicos_ajax_profissoes(request: HttpRequest) -> JsonResponse:
+    setor_id = request.GET.get('setor')
+    profissoes = Profissao.objects.filter(ativo=True)
+    if setor_id:
+        profissoes = profissoes.filter(setor_id=setor_id)
+    return JsonResponse(
+        {
+            'results': [
+                {'id': profissao.id, 'text': profissao.nome}
+                for profissao in profissoes.order_by('nome')[:100]
+            ]
+        }
+    )
+
+
+@painel_permission_required('produtos.visualizar')
+def produtos_lista(request: HttpRequest) -> HttpResponse:
+    return render_pagina(request, 'painel/produtos/lista.html', 'Produtos')
+
+
+@painel_permission_required('vagas.visualizar')
+def vagas_lista(request: HttpRequest) -> HttpResponse:
+    return render_pagina(request, 'painel/vagas/lista.html', 'Vagas')
+
+
+@painel_permission_required('curriculo.visualizar')
+def curriculo(request: HttpRequest) -> HttpResponse:
+    return render_pagina(request, 'painel/curriculo/index.html', 'Currículo')
+
+
+@painel_permission_required('eventos.visualizar')
+def eventos_lista(request: HttpRequest) -> HttpResponse:
+    return render_pagina(request, 'painel/eventos/lista.html', 'Eventos')
+
+
+@painel_permission_required('rede_social.acessar')
+def rede_social(request: HttpRequest) -> HttpResponse:
+    return render_pagina(request, 'painel/rede_social/index.html', 'Rede social')
+
+
+@painel_permission_required('mensagens.acessar')
+def mensagens(request: HttpRequest) -> HttpResponse:
+    return render_pagina(request, 'painel/mensagens/index.html', 'Mensagens')
+
+
+@painel_permission_required('configuracoes.editar')
+def configuracoes(request: HttpRequest) -> HttpResponse:
+    return render_pagina(request, 'painel/configuracoes/index.html', 'Configurações')

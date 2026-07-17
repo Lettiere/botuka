@@ -1,0 +1,70 @@
+{% extends "gestao/base.html" %}
+{% load gestao_extras %}
+
+{% block title %}{{ title }} | Gestão BOTUKA{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1>{{ title }}</h1>
+    {% if create_url_name %}
+      <a class="btn btn-primary" href="{% url create_url_name %}">Novo</a>
+    {% endif %}
+  </div>
+  <div class="panel panel-pad">
+    <div class="toolbar">
+      <form class="search" method="get">
+        <input type="search" name="q" value="{{ query }}" placeholder="Buscar">
+        <button class="btn btn-muted" type="submit">Buscar</button>
+      </form>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            {% for label, field in columns %}<th>{{ label }}</th>{% endfor %}
+            <th>Ações</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for object in object_list %}
+            <tr>
+              {% for label, field in columns %}
+                <td>{{ object|attr:field }}</td>
+              {% endfor %}
+              <td>
+                <div class="actions">
+                  {% if detail_url_name %}
+                    <a class="btn btn-soft" href="{% url detail_url_name object.pk %}">Ver</a>
+                  {% endif %}
+                  {% if edit_url_name %}
+                    <a class="btn btn-muted" href="{% url edit_url_name object.pk %}">Editar</a>
+                  {% endif %}
+                  {% if title == "Perfis" %}
+                    <a class="btn btn-soft" href="{% url 'gestao:perfil_permissoes' object.pk %}">Permissões</a>
+                  {% endif %}
+                  {% if title == "Usuários" %}
+                    {% if object.is_active %}
+                      <a class="btn btn-danger" href="{% url 'gestao:usuarios_desativar' object.pk %}">Desativar</a>
+                    {% else %}
+                      <a class="btn btn-soft" href="{% url 'gestao:usuarios_ativar' object.pk %}">Ativar</a>
+                    {% endif %}
+                  {% endif %}
+                  {% if title == "Contatos" %}
+                    {% if object.ativo %}
+                      <a class="btn btn-danger" href="{% url 'gestao:contatos_desativar' object.pk %}">Desativar</a>
+                    {% else %}
+                      <a class="btn btn-soft" href="{% url 'gestao:contatos_ativar' object.pk %}">Ativar</a>
+                    {% endif %}
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% empty %}
+            <tr><td colspan="{{ columns|length|add:1 }}">Nenhum registro encontrado.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% include "gestao/components/pagination.html" %}
+  </div>
+{% endblock %}

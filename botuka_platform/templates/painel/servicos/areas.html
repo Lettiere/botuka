@@ -1,0 +1,19 @@
+{% extends "painel/base.html" %}
+{% block content %}
+<section class="painel-card">
+  <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+    <div><h1 class="painel-title mb-1">Áreas de atendimento</h1><p class="text-muted mb-0">{{ servico.titulo }}</p></div>
+    <a class="btn btn-outline-secondary" href="{% url 'painel:servico_detalhe' servico.pk %}">Voltar</a>
+  </div>
+  <form method="post" class="row g-3 mb-4">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="col-md-4"><label class="form-label">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>
+    {% endfor %}
+    <div class="col-12"><button class="btn btn-primary" type="submit">Adicionar</button></div>
+  </form>
+  <div class="list-group">
+    {% for area in areas %}<div class="list-group-item">{{ area.get_tipo_area_display }}</div>{% empty %}<div class="text-muted">Nenhuma área cadastrada.</div>{% endfor %}
+  </div>
+</section>
+{% endblock %}

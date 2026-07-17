@@ -1,0 +1,12 @@
+{% extends "painel/base.html" %}
+{% block content %}
+<section class="painel-card">
+  <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+    <div><h1 class="painel-title mb-1">Solicitações</h1><p class="text-muted mb-0">{{ empresa.nome_exibicao }}</p></div>
+    <a class="btn btn-outline-secondary" href="{% url 'painel:empresa_detalhe' empresa.pk %}">Voltar</a>
+  </div>
+  <div class="list-group">
+    {% for item in solicitacoes %}<div class="list-group-item d-flex justify-content-between"><span>{{ item.get_tipo_solicitacao_display }} · {{ item.usuario_solicitante }}</span><span>{{ item.get_status_display }}</span></div>{% empty %}<div class="text-muted">Nenhuma solicitação registrada.</div>{% endfor %}
+  </div>
+</section>
+{% endblock %}

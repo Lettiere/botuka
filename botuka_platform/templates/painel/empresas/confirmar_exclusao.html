@@ -1,0 +1,38 @@
+{% extends "painel/base.html" %}
+
+{% block title %}Desativar {{ empresa.nome_exibicao }} | Painel BOTUKA{% endblock %}
+
+{% block content %}
+<style>
+  .empresa-delete{background:#f4f7fb;margin:-26px -18px;padding:46px 18px;min-height:72vh;display:grid;place-items:center}
+  .empresa-delete-card{width:min(620px,100%);background:#fff;border:1px solid #e6eaf0;border-radius:22px;padding:28px;box-shadow:0 18px 50px rgba(15,23,42,.08)}
+  .empresa-delete-icon{width:64px;height:64px;display:grid;place-items:center;border-radius:18px;background:#fef2f2;color:#b42318;font-size:29px;margin-bottom:16px}
+  .empresa-delete-card h1{margin:0;color:#172033;font-size:clamp(25px,4vw,34px);font-weight:900}
+  .empresa-delete-card p{margin:10px 0 0;color:#667085;line-height:1.65}
+  .empresa-delete-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:24px}
+  .empresa-btn{min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:11px;border:0;text-decoration:none;font-weight:850}
+  .empresa-btn-light{background:#fff;color:#111827;border:1px solid #e6eaf0}
+  .empresa-btn-danger{background:#dc2626;color:#fff}
+  @media(max-width:560px){.empresa-delete{padding:18px 12px}.empresa-delete-actions{flex-direction:column}.empresa-btn{width:100%}}
+</style>
+
+<div class="empresa-delete">
+  <section class="empresa-delete-card">
+    <div class="empresa-delete-icon"><i class="bi bi-power"></i></div>
+    <h1>Desativar empresa?</h1>
+    <p>
+      A empresa <strong>{{ empresa.nome_exibicao }}</strong> será removida da sua listagem ativa
+      por exclusão lógica. Os vínculos e o histórico continuam preservados para auditoria.
+    </p>
+
+    <form method="post" class="empresa-delete-actions">
+      {% csrf_token %}
+      <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_detalhe' empresa.pk %}">Cancelar</a>
+      <button class="empresa-btn empresa-btn-danger" type="submit">
+        <i class="bi bi-check-lg"></i>
+        Confirmar desativação
+      </button>
+    </form>
+  </section>
+</div>
+{% endblock %}

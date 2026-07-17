@@ -1,0 +1,41 @@
+{% load gestao_extras %}
+
+<div class="dropdown">
+  <button class="user-avatar-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Abrir menu do usuário">
+    {% if request.user.foto %}
+      <img src="{{ request.user.foto.url }}" alt="{{ request.user.get_full_name|default:request.user.email }}">
+    {% else %}
+      <span>{{ request.user.first_name|default:request.user.username|first|upper }}</span>
+    {% endif %}
+  </button>
+  <div class="dropdown-menu dropdown-menu-end botuka-user-menu shadow">
+    <div class="user-menu-head">
+      <div class="user-menu-avatar">
+        {% if request.user.foto %}
+          <img src="{{ request.user.foto.url }}" alt="{{ request.user.get_full_name|default:request.user.email }}">
+        {% else %}
+          <span>{{ request.user.first_name|default:request.user.username|first|upper }}</span>
+        {% endif %}
+      </div>
+      <div class="min-w-0">
+        <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
+        <small>{{ request.user.email }}</small>
+        <small>{{ request.user.perfil|default:"Sem perfil" }}</small>
+      </div>
+    </div>
+    <div class="dropdown-divider"></div>
+    <a class="dropdown-item" href="{% url 'painel:perfil' %}"><i class="bi bi-person"></i> Meu perfil</a>
+    <a class="dropdown-item" href="{% url 'painel:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
+    <a class="dropdown-item" href="{% url 'painel:empresas_lista' %}"><i class="bi bi-buildings"></i> Minhas empresas</a>
+    <a class="dropdown-item" href="{% url 'painel:publicacoes_lista' %}"><i class="bi bi-megaphone"></i> Publicações</a>
+    <a class="dropdown-item" href="{% url 'painel:rede_social' %}"><i class="bi bi-share"></i> Rede social</a>
+    <a class="dropdown-item" href="{% url 'painel:eventos_lista' %}"><i class="bi bi-calendar-event"></i> Eventos</a>
+    <a class="dropdown-item" href="{% url 'painel:mensagens' %}"><i class="bi bi-chat-dots"></i> Mensagens</a>
+    <a class="dropdown-item" href="{% url 'painel:configuracoes' %}"><i class="bi bi-gear"></i> Configurações</a>
+    {% if request.user.is_staff or request.user.is_superuser or request.user|has_perm_code:"gestao.acessar" %}
+      <a class="dropdown-item" href="{% url 'gestao:dashboard' %}"><i class="bi bi-shield-lock"></i> Gestão</a>
+    {% endif %}
+    <div class="dropdown-divider"></div>
+    <a class="dropdown-item" href="{% url 'accounts:logout' %}"><i class="bi bi-box-arrow-right"></i> Sair</a>
+  </div>
+</div>

@@ -1,0 +1,19 @@
+{% if SOCIAL_LINKS.facebook or SOCIAL_LINKS.instagram or SOCIAL_LINKS.linkedin or SOCIAL_LINKS.youtube or SOCIAL_LINKS.tiktok %}
+  <div class="botuka-social-links d-none d-lg-flex align-items-center gap-1">
+    {% if SOCIAL_LINKS.facebook %}
+      <a href="{{ SOCIAL_LINKS.facebook }}" target="_blank" rel="noopener" aria-label="Facebook" title="Facebook"><i class="bi bi-facebook"></i></a>
+    {% endif %}
+    {% if SOCIAL_LINKS.instagram %}
+      <a href="{{ SOCIAL_LINKS.instagram }}" target="_blank" rel="noopener" aria-label="Instagram" title="Instagram"><i class="bi bi-instagram"></i></a>
+    {% endif %}
+    {% if SOCIAL_LINKS.linkedin %}
+      <a href="{{ SOCIAL_LINKS.linkedin }}" target="_blank" rel="noopener" aria-label="LinkedIn" title="LinkedIn"><i class="bi bi-linkedin"></i></a>
+    {% endif %}
+    {% if SOCIAL_LINKS.youtube %}
+      <a href="{{ SOCIAL_LINKS.youtube }}" target="_blank" rel="noopener" aria-label="YouTube" title="YouTube"><i class="bi bi-youtube"></i></a>
+    {% endif %}
+    {% if SOCIAL_LINKS.tiktok %}
+      <a href="{{ SOCIAL_LINKS.tiktok }}" target="_blank" rel="noopener" aria-label="TikTok" title="TikTok"><i class="bi bi-tiktok"></i></a>
+    {% endif %}
+  </div>
+{% endif %}

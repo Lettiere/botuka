@@ -1,0 +1,22 @@
+
+{% extends "_layout/platform/platform_home.html" %}
+{% load static %}
+
+{% block content %}
+
+<link rel="stylesheet" href="{% static 'home/css/style.css' %}">
+
+<div id="inicio">
+  {% include "home/partials/hero.html" %}
+  {% include "home/partials/categorias.html" %}
+  {% include "home/partials/carousel_destaque.html" %}
+  {% include "home/partials/cultura.html" %}
+  {% include "home/partials/turismo.html" %}
+  {% include "home/partials/produtos.html" %}
+  {% include "home/partials/eventos.html" %}
+  {% include "home/partials/mapa_cidade.html" %}
+  {% include "home/partials/servicos.html" %}
+  {% include "home/partials/cta.html" %}
+</div>
+
+{% endblock %}

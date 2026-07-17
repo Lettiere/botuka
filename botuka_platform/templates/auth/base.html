@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="pt-br">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}BOTUKA{% endblock %}</title>
+  {% include "pwa/head.html" %}
+  <style>
+    body{margin:0;min-height:100vh;display:grid;place-items:center;background:#f4f7fb;color:#1e293b;font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+    .auth-card{width:min(100% - 32px,460px);background:#fff;border:1px solid #d9e1ec;border-radius:8px;padding:24px}
+    input{width:100%;border:1px solid #d9e1ec;border-radius:8px;padding:10px 12px;font:inherit}
+    label{display:block;font-weight:700;margin-bottom:6px}
+    .btn{display:inline-flex;border:0;border-radius:8px;padding:10px 14px;background:#0f766e;color:#fff;font-weight:700;cursor:pointer}
+    .errorlist{color:#b91c1c}
+  </style>
+</head>
+<body>
+  <main class="auth-card">
+    {% block content %}{% endblock %}
+  </main>
+  {% include "pwa/register.html" %}
+</body>
+</html>

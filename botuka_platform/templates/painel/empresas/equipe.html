@@ -1,0 +1,122 @@
+{% extends "painel/base.html" %}
+
+{% block title %}Equipe de {{ empresa.nome_exibicao }} | Painel BOTUKA{% endblock %}
+
+{% block content %}
+<style>
+  .equipe-page{background:#f4f7fb;margin:-26px -18px;padding:28px 18px 46px;min-height:72vh}
+  .equipe-wrap{width:min(1180px,100%);margin:0 auto}
+  .equipe-hero{display:flex;justify-content:space-between;gap:18px;align-items:center;background:#111827;color:#fff;border-radius:24px;padding:26px 28px;margin-bottom:18px;box-shadow:0 18px 50px rgba(15,23,42,.08)}
+  .equipe-hero h1{margin:0;font-size:clamp(26px,4vw,38px);font-weight:900}
+  .equipe-hero p{margin:8px 0 0;color:rgba(255,255,255,.72)}
+  .equipe-layout{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:18px;align-items:start}
+  .equipe-card{background:#fff;border:1px solid #e6eaf0;border-radius:18px;padding:20px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+  .equipe-card h2{margin:0 0 16px;color:#172033;font-size:19px;font-weight:900}
+  .equipe-list{display:grid;gap:12px}
+  .equipe-item{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:14px;align-items:center;padding:14px;border:1px solid #e6eaf0;border-radius:14px;background:#f8fafc}
+  .equipe-user{display:flex;gap:12px;align-items:center;min-width:0}
+  .equipe-avatar{width:42px;height:42px;display:grid;place-items:center;border-radius:50%;background:#111827;color:#fff;font-weight:900;flex:0 0 auto}
+  .equipe-user strong,.equipe-user span{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .equipe-user strong{color:#172033}
+  .equipe-user span{color:#667085;font-size:13px}
+  .equipe-badges{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+  .equipe-badge{display:inline-flex;align-items:center;gap:5px;padding:5px 9px;border-radius:999px;background:#fff;color:#475467;font-size:12px;font-weight:800;border:1px solid #e6eaf0}
+  .equipe-actions{display:flex;gap:8px}
+  .equipe-btn{min-height:42px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:9px 14px;border-radius:11px;border:0;text-decoration:none;font-weight:850}
+  .equipe-btn-primary{background:#ffd230;color:#111827}
+  .equipe-btn-light{background:#fff;color:#111827;border:1px solid #e6eaf0}
+  .equipe-btn-danger{background:#fef2f2;color:#b42318;border:1px solid #fecaca}
+  .equipe-form-grid{display:grid;gap:14px}
+  .equipe-field label{display:block;margin-bottom:7px;color:#344054;font-size:13px;font-weight:800}
+  .equipe-field input:not([type=checkbox]),.equipe-field select{width:100%;min-height:44px;border:1px solid #d9dee7;border-radius:11px;padding:9px 11px}
+  .equipe-field .errorlist{margin:0 0 7px;padding:9px 12px;list-style:none;border:1px solid #fecaca;border-radius:10px;background:#fef2f2;color:#b42318;font-size:12px;font-weight:700}
+  .equipe-check{display:flex;align-items:center;gap:9px;padding:11px;border:1px solid #e6eaf0;border-radius:12px;background:#f8fafc;font-weight:800}
+  @media(max-width:900px){.equipe-layout{grid-template-columns:1fr}.equipe-hero{display:block;border-radius:18px}.equipe-hero .equipe-btn{margin-top:14px}}
+  @media(max-width:620px){.equipe-page{padding:16px 12px 34px}.equipe-item{grid-template-columns:1fr}.equipe-actions{flex-direction:column}.equipe-btn{width:100%}}
+</style>
+
+<div class="equipe-page">
+  <div class="equipe-wrap">
+    <header class="equipe-hero">
+      <div>
+        <h1>Equipe</h1>
+        <p>{{ empresa.nome_exibicao }} pode ter um proprietário e vários colaboradores autorizados.</p>
+      </div>
+      <a class="equipe-btn equipe-btn-light" href="{% url 'painel:empresa_detalhe' empresa.pk %}">
+        <i class="bi bi-arrow-left"></i>
+        Voltar
+      </a>
+    </header>
+
+    <div class="equipe-layout">
+      <section class="equipe-card">
+        <h2>Usuários vinculados</h2>
+        <div class="equipe-list">
+          {% for vinculo in vinculos %}
+            <article class="equipe-item">
+              <div>
+                <div class="equipe-user">
+                  <div class="equipe-avatar">{{ vinculo.usuario|first|upper }}</div>
+                  <div>
+                    <strong>{{ vinculo.usuario }}</strong>
+                    <span>{{ vinculo.usuario.email|default:"E-mail não informado" }}</span>
+                  </div>
+                </div>
+                <div class="equipe-badges">
+                  <span class="equipe-badge">{{ vinculo.get_funcao_display }}</span>
+                  {% if vinculo.proprietario %}<span class="equipe-badge"><i class="bi bi-star-fill"></i> Proprietário</span>{% endif %}
+                  {% if vinculo.administrador %}<span class="equipe-badge">Administrador</span>{% endif %}
+                  {% if vinculo.pode_editar %}<span class="equipe-badge">Edita</span>{% endif %}
+                  {% if vinculo.pode_publicar_servico %}<span class="equipe-badge">Publica</span>{% endif %}
+                  {% if vinculo.pode_gerenciar_equipe %}<span class="equipe-badge">Equipe</span>{% endif %}
+                  <span class="equipe-badge">{{ vinculo.ativo|yesno:"Ativo,Inativo" }}</span>
+                </div>
+              </div>
+
+              <div class="equipe-actions">
+                {% if not vinculo.proprietario %}
+                  <form method="post">
+                    {% csrf_token %}
+                    <input type="hidden" name="acao" value="{% if vinculo.ativo %}desativar{% else %}ativar{% endif %}">
+                    <input type="hidden" name="vinculo_id" value="{{ vinculo.pk }}">
+                    <button class="equipe-btn {% if vinculo.ativo %}equipe-btn-danger{% else %}equipe-btn-primary{% endif %}" type="submit">
+                      {% if vinculo.ativo %}Desativar{% else %}Ativar{% endif %}
+                    </button>
+                  </form>
+                {% endif %}
+              </div>
+            </article>
+          {% empty %}
+            <div class="alert alert-light border mb-0">Nenhum usuário vinculado.</div>
+          {% endfor %}
+        </div>
+      </section>
+
+      <aside class="equipe-card">
+        <h2>Adicionar colaborador</h2>
+        <form method="post" class="equipe-form-grid">
+          {% csrf_token %}
+          <input type="hidden" name="acao" value="adicionar">
+
+          {% for field in form %}
+            {% if field.name == "administrador" or field.name == "pode_editar" or field.name == "pode_publicar_servico" or field.name == "pode_gerenciar_equipe" or field.name == "ativo" %}
+              <label class="equipe-check">{{ field }} {{ field.label }}</label>
+              {{ field.errors }}
+            {% else %}
+              <div class="equipe-field">
+                <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                {{ field.errors }}{{ field }}
+              </div>
+            {% endif %}
+          {% endfor %}
+
+          <button class="equipe-btn equipe-btn-primary" type="submit">
+            <i class="bi bi-person-plus"></i>
+            Vincular usuário
+          </button>
+        </form>
+      </aside>
+    </div>
+  </div>
+</div>
+{% endblock %}

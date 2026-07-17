@@ -1,0 +1,18 @@
+<div class="dropdown">
+  <button class="btn-botuka btn-yellow publish-plus" type="button" data-bs-toggle="dropdown" aria-expanded="false" title="Publicar" aria-label="Publicar">
+    <i class="bi bi-plus-lg"></i>
+  </button>
+  <div class="dropdown-menu dropdown-menu-end botuka-publicar-menu shadow">
+    {% if request.user.is_authenticated %}
+      {% for option in PUBLICAR_OPTIONS %}
+        <a class="dropdown-item" href="{{ option.url }}"><i class="bi {{ option.icon }}"></i> {{ option.label }}</a>
+      {% empty %}
+        <span class="dropdown-item-text text-muted">Nenhuma opção disponível</span>
+      {% endfor %}
+    {% else %}
+      <button class="dropdown-item" type="button" data-bs-toggle="modal" data-bs-target="#loginModal">
+        <i class="bi bi-person-lock"></i> Entrar para publicar
+      </button>
+    {% endif %}
+  </div>
+</div>

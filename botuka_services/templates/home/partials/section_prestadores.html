@@ -1,0 +1,323 @@
+<section class="section-pad pt-0" id="prestadores">
+  <style>
+    #prestadores .providers-grid-image {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+    #prestadores .provider-market-card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 26px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      position: relative;
+      transition: .22s ease;
+    }
+    #prestadores .provider-market-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-hover);
+      border-color: rgba(255, 183, 3, .55);
+    }
+    #prestadores .provider-cover {
+      height: 172px;
+      position: relative;
+      overflow: hidden;
+      background: var(--surface-2);
+    }
+    #prestadores .provider-cover img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: .45s ease;
+    }
+    #prestadores .provider-market-card:hover .provider-cover img {
+      transform: scale(1.06);
+    }
+    #prestadores .provider-cover::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(180deg, transparent 35%, rgba(0,0,0,.42));
+    }
+    #prestadores .provider-service-badge {
+      position: absolute;
+      left: 14px;
+      bottom: 12px;
+      z-index: 2;
+      background: rgba(255,255,255,.92);
+      color: var(--botuka-blue);
+      border-radius: var(--pill);
+      padding: 6px 10px;
+      font-size: .78rem;
+      font-weight: 900;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    #prestadores .provider-company-logo {
+      position: absolute;
+      top: 132px;
+      right: 16px;
+      z-index: 3;
+      width: 58px;
+      height: 58px;
+      border-radius: 18px;
+      background: #fff;
+      box-shadow: 0 12px 26px -14px rgba(0,0,0,.45);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--botuka-earth);
+      font-size: 1.55rem;
+    }
+    #prestadores .provider-market-body {
+      padding: 18px;
+    }
+    #prestadores .provider-profile-row {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+    }
+    #prestadores .provider-photo {
+      width: 62px;
+      height: 62px;
+      border-radius: 50%;
+      overflow: hidden;
+      border: 4px solid var(--surface);
+      box-shadow: 0 8px 18px -12px rgba(19,41,61,.45);
+      flex: 0 0 auto;
+      margin-top: -38px;
+      z-index: 4;
+      background: var(--surface);
+    }
+    #prestadores .provider-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+    #prestadores .provider-market-name {
+      margin: 0;
+      font-family: var(--font-title);
+      font-size: 1.22rem;
+      font-weight: 900;
+      line-height: 1.05;
+    }
+    #prestadores .provider-market-job {
+      color: var(--muted);
+      font-size: .88rem;
+      font-weight: 750;
+      margin-top: 2px;
+    }
+    #prestadores .provider-market-rating {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin: 10px 0;
+    }
+    #prestadores .rating-pill {
+      background: #FFF2C9;
+      color: #8A6100;
+      border-radius: var(--pill);
+      padding: 6px 9px;
+      font-size: .78rem;
+      font-weight: 900;
+    }
+    #prestadores .verified-pill {
+      background: #E8F7EF;
+      color: var(--botuka-green-2);
+      border-radius: var(--pill);
+      padding: 6px 9px;
+      font-size: .78rem;
+      font-weight: 900;
+    }
+    [data-bs-theme="dark"] #prestadores .verified-pill {
+      background: rgba(46,139,87,.16);
+      color: #8BE1AE;
+    }
+    #prestadores .provider-market-info {
+      display: grid;
+      gap: 7px;
+      color: var(--muted);
+      font-size: .86rem;
+      font-weight: 750;
+      margin-bottom: 12px;
+    }
+    #prestadores .provider-market-info i {
+      color: var(--botuka-earth);
+    }
+    #prestadores .provider-market-tags {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 7px;
+      margin-bottom: 14px;
+    }
+    #prestadores .provider-market-tags span {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--muted);
+      border-radius: var(--pill);
+      padding: 6px 9px;
+      font-size: .76rem;
+      font-weight: 850;
+    }
+    #prestadores .provider-market-actions {
+      display: grid;
+      grid-template-columns: 1fr 1.2fr;
+      gap: 8px;
+    }
+    #prestadores .provider-market-actions .btn-botuka {
+      padding: 10px 12px;
+      font-size: .88rem;
+    }
+    @media (max-width: 992px) {
+      #prestadores .providers-grid-image {
+        grid-template-columns: repeat(2, 1fr);
+      }
+    }
+    @media (max-width: 768px) {
+      #prestadores .providers-grid-image {
+        grid-template-columns: 1fr;
+      }
+      #prestadores .provider-cover {
+        height: 190px;
+      }
+      #prestadores .provider-market-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+
+  <div class="container-botuka">
+    <div class="section-title reveal">
+      <div>
+        <h2>Prestadores em destaque</h2>
+        <p>Profissionais com imagem, reputação, localização e chamada clara para orçamento.</p>
+      </div>
+      <a href="#prestadores" class="btn-botuka btn-soft">Ver todos</a>
+    </div>
+
+    <div class="providers-grid-image">
+      {% for prestador in prestadores_destaque %}
+      <article class="provider-market-card reveal">
+        <div class="provider-cover">
+          <img
+            src="{% if prestador.capa %}{{ prestador.capa }}{% else %}https://placehold.co/600x400?text={{ prestador.categoria|default:'Prestador' }}{% endif %}"
+            alt="{% if prestador.nome %}{{ prestador.nome }}{% else %}Prestador{% endif %} - {{ prestador.categoria|default:'Categoria' }}"
+            loading="lazy"
+          >
+          {% if prestador.categoria or prestador.icone %}
+          <div class="provider-service-badge">
+            {% if prestador.icone %}
+              <i class="{{ prestador.icone }}"></i>
+            {% endif %}
+            {{ prestador.categoria|default:"Categoria" }}
+          </div>
+          {% endif %}
+        </div>
+        {% if prestador.icone %}
+        <div class="provider-company-logo">
+          <i class="{{ prestador.icone }}"></i>
+        </div>
+        {% endif %}
+        <div class="provider-market-body">
+          <div class="provider-profile-row">
+            <div class="provider-photo">
+              <img
+                src="{% if prestador.foto %}{{ prestador.foto }}{% else %}https://ui-avatars.com/api/?name={{ prestador.nome|default:'P' }}&background=eeeeee&color=888888&bold=true{% endif %}"
+                alt="{{ prestador.nome|default:'Prestador' }}"
+                loading="lazy"
+              >
+            </div>
+            <div>
+              <h3 class="provider-market-name">
+                {{ prestador.nome|default:"Prestador" }}
+              </h3>
+              <div class="provider-market-job">
+                {{ prestador.profissao|default:"Profissão não informada" }}
+              </div>
+            </div>
+          </div>
+          <div class="provider-market-rating">
+            {% if prestador.nota %}
+            <span class="rating-pill">
+              <i class="bi bi-star-fill"></i>
+              {{ prestador.nota|floatformat:1 }}{% if prestador.avaliacoes %} · {{ prestador.avaliacoes }} avaliação{% if prestador.avaliacoes > 1 %}s{% endif %}{% endif %}
+            </span>
+            {% endif %}
+            {% if prestador.verificado %}
+            <span class="verified-pill"><i class="bi bi-patch-check-fill"></i> Verificado</span>
+            {% endif %}
+            {% if prestador.destaque %}
+            <span class="verified-pill" style="background:#fff4d2;color:#b08508;">
+              <i class="bi bi-lightning-fill"></i> Destaque
+            </span>
+            {% endif %}
+            {% if prestador.online %}
+            <span class="verified-pill" style="background:#e3ffe6;color:#20a258;">
+              <i class="bi bi-circle-fill" style="font-size:0.7em"></i> Online
+            </span>
+            {% endif %}
+            {% if prestador.novo %}
+            <span class="verified-pill" style="background:#e0f0ff;color:#238ed3;">
+              <i class="bi bi-stars"></i> Novo
+            </span>
+            {% endif %}
+            {% if prestador.premium %}
+            <span class="verified-pill" style="background:#f5e9fd;color:#9b56dd;">
+              <i class="bi bi-gem"></i> Premium
+            </span>
+            {% endif %}
+          </div>
+          <div class="provider-market-info">
+            {% if prestador.bairro or prestador.cidade %}
+            <div>
+              <i class="bi bi-geo-alt-fill"></i>
+              {{ prestador.bairro|default_if_none:"" }}{% if prestador.bairro and prestador.cidade %} · {% endif %}{{ prestador.cidade|default_if_none:"" }}
+            </div>
+            {% endif %}
+            {% if prestador.tempo_resposta %}
+            <div>
+              <i class="bi bi-chat-dots-fill"></i>
+              Responde em {{ prestador.tempo_resposta }}
+            </div>
+            {% endif %}
+          </div>
+          {% if prestador.tags %}
+          <div class="provider-market-tags">
+            {% for tag in prestador.tags %}
+            <span>{{ tag }}</span>
+            {% empty %}
+            {% endfor %}
+          </div>
+          {% endif %}
+          <div class="provider-market-actions">
+            {% if prestador.slug %}
+              <a href="{% url 'prestador_perfil' prestador.slug %}" class="btn-botuka btn-soft">
+                <i class="bi bi-person-badge"></i> Ver perfil
+              </a>
+              <a href="{% url 'prestador_perfil' prestador.slug %}#orcamento" class="btn-botuka btn-yellow">
+                <i class="bi bi-bag-plus-fill"></i> Orçamento
+              </a>
+            {% else %}
+              <button class="btn-botuka btn-soft" type="button" disabled>
+                <i class="bi bi-person-badge"></i> Ver perfil
+              </button>
+              <button class="btn-botuka btn-yellow" type="button" disabled>
+                <i class="bi bi-bag-plus-fill"></i> Orçamento
+              </button>
+            {% endif %}
+          </div>
+        </div>
+      </article>
+      {% empty %}
+      <div class="col-12 text-center text-muted my-5">
+        <i class="bi bi-person-x display-5 mb-2"></i>
+        <div>Nenhum prestador em destaque encontrado.</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</section>

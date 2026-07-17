@@ -1,0 +1,37 @@
+{% extends "gestao/base.html" %}
+
+{% block title %}{{ title }} | Gestão BOTUKA{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1>{{ title }}</h1>
+    <a class="btn btn-muted" href="{% url list_url_name %}">Voltar</a>
+  </div>
+  <form class="panel panel-pad" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    {{ form.non_field_errors }}
+    <div class="form-grid">
+      {% for field in form %}
+        <div class="form-field {% if field.field.widget.input_type == 'textarea' or field.name == 'permissoes' %}full{% endif %}">
+          <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field.errors }}
+          {{ field }}
+          {% if field.help_text %}<span class="helptext">{{ field.help_text }}</span>{% endif %}
+        </div>
+      {% endfor %}
+    </div>
+    {% if section == "Contatos" and object %}
+      <div class="panel" style="padding:14px;margin-top:18px">
+        <strong>Preview:</strong>
+        <a href="{{ object.link }}" target="_blank" rel="noopener" style="margin-left:8px">
+          {% if object.icone %}<i class="bi {{ object.icone }}"></i>{% endif %}
+          {{ object.nome }} - {{ object.valor }}
+        </a>
+      </div>
+    {% endif %}
+    <div class="actions" style="margin-top:18px">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      <a class="btn btn-muted" href="{% url list_url_name %}">Cancelar</a>
+    </div>
+  </form>
+{% endblock %}

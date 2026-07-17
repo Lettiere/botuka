@@ -1,0 +1,36 @@
+{% extends "painel/base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} | Painel BOTUKA{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'painel/css/servicos.css' %}">
+<section class="painel-card servicos-page">
+  <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <h1 class="painel-title mb-1">{{ titulo }}</h1>
+      <p class="text-muted mb-0">Preencha as informações do serviço e salve como rascunho ou pendente.</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'painel:servicos_lista' %}">Voltar</a>
+  </div>
+  <form method="post" enctype="multipart/form-data" class="row g-3">
+    {% csrf_token %}
+    {% for field in form %}
+      <div class="{% if field.field.widget.input_type == 'checkbox' %}col-12{% else %}col-md-6{% endif %}">
+        {% if field.field.widget.input_type == 'checkbox' %}
+          <div class="form-check">{{ field }} <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label></div>
+        {% else %}
+          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+          {{ field }}
+        {% endif %}
+        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+        {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+      </div>
+    {% endfor %}
+    {% if form.non_field_errors %}<div class="col-12 alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <div class="col-12 d-flex gap-2">
+      <button class="btn btn-primary" type="submit">Salvar</button>
+      {% if servico %}<a class="btn btn-outline-secondary" href="{% url 'painel:servico_detalhe' servico.pk %}">Cancelar</a>{% endif %}
+    </div>
+  </form>
+</section>
+<script src="{% static 'painel/js/servicos.js' %}"></script>
+{% endblock %}

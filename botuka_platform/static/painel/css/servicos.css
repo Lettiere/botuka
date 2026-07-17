@@ -1,0 +1,53 @@
+.servicos-page .servicos-kpis {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.servicos-page .servicos-kpis > div {
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 14px;
+  background: #f8fafc;
+}
+
+.servicos-page .servicos-kpis strong {
+  display: block;
+  font-size: 1.35rem;
+}
+
+.servicos-page .servicos-kpis span {
+  color: #64748b;
+  font-size: .9rem;
+}
+
+.servicos-list {
+  display: grid;
+  gap: 12px;
+}
+
+.servico-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: start;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.servico-row h2 {
+  font-size: 1.05rem;
+  margin: 0 0 4px;
+}
+
+.servico-row p {
+  margin: 0 0 6px;
+  color: #475569;
+}
+
+@media (max-width: 640px) {
+  .servico-row {
+    grid-template-columns: 1fr;
+  }
+}

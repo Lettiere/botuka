@@ -1,0 +1,360 @@
+<!-- HERO -->
+<section class="hero">
+  <div class="container-botuka px-mobile">
+    <div class="hero-grid-responsive">
+
+      <div class="hero-main reveal">
+        <div class="hero-kicker">
+          <i class="bi bi-broadcast-pin"></i>
+          Botucatu e região ao vivo
+        </div>
+
+        <h1>Sua cidade <span>em uma vitrine viva.</span></h1>
+
+        <p class="hero-subtitle">
+          Encontre eventos, cultura, produtos, empresas, serviços, vagas, turismo e avisos importantes da região.
+        </p>
+
+        <form class="search-hero" id="mainSearch">
+          <input type="search" placeholder="O que você procura na cidade?" aria-label="Buscar">
+          <button class="btn-botuka btn-yellow" type="submit">
+            <i class="bi bi-search"></i>
+            Buscar
+          </button>
+        </form>
+
+        <div class="quick-chips">
+          <a href="#eventos" class="quick-chip"><i class="bi bi-calendar-event-fill"></i> Eventos</a>
+          <a href="#cultura" class="quick-chip"><i class="bi bi-music-note-beamed"></i> Cultura</a>
+          <a href="#produtos" class="quick-chip"><i class="bi bi-bag-fill"></i> Produtos</a>
+          <button class="quick-chip quick-chip-more" type="button" data-bs-toggle="modal" data-bs-target="#filtersModal">
+            <i class="bi bi-sliders"></i>
+            Mais filtros
+          </button>
+        </div>
+      </div>
+
+      <aside class="today-panel reveal">
+        <div class="weather-card">
+          <div class="weather-top">
+            <div>
+              <div class="weather-city">Hoje em Botucatu</div>
+              <div class="weather-desc">Cidade em movimento</div>
+            </div>
+            <i class="bi bi-sun-fill fs-1" style="color:var(--botuka-yellow);position:relative;z-index:2"></i>
+          </div>
+
+          <div class="weather-temp mt-4">28°C</div>
+          <div class="weather-desc">Bom dia para descobrir o que está acontecendo.</div>
+        </div>
+
+        <!-- Cards em grid responsivo: agora 4 colunas no desktop, e 9 cards no mobile (3x3) -->
+        <div class="city-status-grid-responsive">
+          <div class="status-item">
+            <div class="status-icon"><i class="bi bi-calendar-event-fill" style="color:#2871e0;font-size:1.6rem"></i></div>
+            <div class="status-value">12</div>
+            <div class="status-label">Eventos</div>
+          </div>
+          <div class="status-item">
+            <div class="status-icon"><i class="bi bi-briefcase-fill" style="color:#737d08;font-size:1.6rem"></i></div>
+            <div class="status-value">34</div>
+            <div class="status-label">Vagas</div>
+          </div>
+          <div class="status-item">
+            <div class="status-icon"><i class="bi bi-tools" style="color:#31445b;font-size:1.6rem"></i></div>
+            <div class="status-value">87</div>
+            <div class="status-label">Serviços</div>
+          </div>
+          <div class="status-item">
+            <div class="status-icon"><i class="bi bi-megaphone-fill" style="color:#c52832;font-size:1.6rem"></i></div>
+            <div class="status-value">5</div>
+            <div class="status-label">Avisos</div>
+          </div>
+          <div class="status-item">
+            <div class="status-icon"><i class="bi bi-shop" style="color:#126e45;font-size:1.6rem"></i></div>
+            <div class="status-value">22</div>
+            <div class="status-label">Comércios</div>
+          </div>
+          <div class="status-item">
+            <div class="status-icon"><i class="bi bi-bag-fill" style="color:#be7300;font-size:1.6rem"></i></div>
+            <div class="status-value">14</div>
+            <div class="status-label">Produtos</div>
+          </div>
+          <div class="status-item">
+            <div class="status-icon"><i class="bi bi-binoculars-fill" style="color:#369487;font-size:1.6rem"></i></div>
+            <div class="status-value">9</div>
+            <div class="status-label">Turismo</div>
+          </div>
+          <div class="status-item">
+            <div class="status-icon"><i class="bi bi-music-note-beamed" style="color:#873ca5;font-size:1.6rem"></i></div>
+            <div class="status-value">7</div>
+            <div class="status-label">Cultura</div>
+          </div>
+          <!-- 9o card para mobile, mantém para ocupação igual -->
+          <div class="status-item only-mobile">
+            <div class="status-icon"><i class="bi bi-map-fill" style="color:#17696a;font-size:1.6rem"></i></div>
+            <div class="status-value">3</div>
+            <div class="status-label">No Mapa</div>
+          </div>
+        </div>
+      </aside>
+
+    </div>
+  </div>
+</section>
+
+<!-- MODAL FILTROS - visual melhorado com ícones destacados -->
+<div class="modal fade" id="filtersModal" tabindex="-1" aria-labelledby="filtersModalLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-lg">
+    <div class="modal-content filter-modal-content">
+      <div class="modal-header align-items-center" style="border-bottom: none;">
+        <i class="bi bi-funnel-fill" style="font-size:2.1rem;color:var(--botuka-yellow);margin-right:14px;"></i>
+        <div>
+          <h5 class="modal-title" id="filtersModalLabel" style="font-weight:800;">Filtrar por categoria</h5>
+          <small class="text-muted-botuka">Escolha o que deseja encontrar na cidade.</small>
+        </div>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+      </div>
+
+      <div class="modal-body px-mobile">
+        <!-- Filter-grid responsiva -->
+        <div class="filter-grid-responsive">
+          <a href="#eventos" class="filter-option text-center" data-bs-dismiss="modal">
+            <span class="filter-icon">
+              <i class="bi bi-calendar-event-fill" style="font-size:2.3rem;color:#2871e0;"></i>
+            </span>
+            <span>Eventos</span>
+          </a>
+
+          <a href="#cultura" class="filter-option text-center" data-bs-dismiss="modal">
+            <span class="filter-icon">
+              <i class="bi bi-music-note-beamed" style="font-size:2.3rem;color:#873ca5;"></i>
+            </span>
+            <span>Cultura</span>
+          </a>
+
+          <a href="#produtos" class="filter-option text-center" data-bs-dismiss="modal">
+            <span class="filter-icon">
+              <i class="bi bi-bag-fill" style="font-size:2.3rem;color:#be7300;"></i>
+            </span>
+            <span>Produtos</span>
+          </a>
+
+          <a href="#empresas" class="filter-option text-center" data-bs-dismiss="modal">
+            <span class="filter-icon">
+              <i class="bi bi-shop" style="font-size:2.3rem;color:#126e45;"></i>
+            </span>
+            <span>Empresas</span>
+          </a>
+
+          <a href="#servicos" class="filter-option text-center" data-bs-dismiss="modal">
+            <span class="filter-icon">
+              <i class="bi bi-tools" style="font-size:2.3rem;color:#31445b;"></i>
+            </span>
+            <span>Serviços</span>
+          </a>
+
+          <a href="#vagas" class="filter-option text-center" data-bs-dismiss="modal">
+            <span class="filter-icon">
+              <i class="bi bi-briefcase-fill" style="font-size:2.3rem;color:#737d08;"></i>
+            </span>
+            <span>Vagas</span>
+          </a>
+
+          <a href="#turismo" class="filter-option text-center" data-bs-dismiss="modal">
+            <span class="filter-icon">
+              <i class="bi bi-binoculars-fill" style="font-size:2.3rem;color:#369487;"></i>
+            </span>
+            <span>Turismo</span>
+          </a>
+
+          <a href="#avisos" class="filter-option text-center" data-bs-dismiss="modal">
+            <span class="filter-icon">
+              <i class="bi bi-megaphone-fill" style="font-size:2.3rem;color:#c52832;"></i>
+            </span>
+            <span>Avisos</span>
+          </a>
+
+          <a href="#mapa" class="filter-option text-center" data-bs-dismiss="modal">
+            <span class="filter-icon">
+              <i class="bi bi-map-fill" style="font-size:2.3rem;color:#17696a;"></i>
+            </span>
+            <span>Mapa</span>
+          </a>
+
+          <a href="#publicar" class="filter-option text-center" data-bs-dismiss="modal">
+            <span class="filter-icon">
+              <i class="bi bi-plus-circle-fill" style="font-size:2.3rem;color:#e0b200;"></i>
+            </span>
+            <span>Publicar</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+  /* HERO GRID RESPONSIVE */
+  .hero-grid-responsive {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 44px;
+    align-items: stretch;
+  }
+  .hero-main {
+    flex: 2 1 330px;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .today-panel {
+    flex: 1 1 320px;
+    min-width: 0;
+    max-width: 410px;
+    margin-left: 18px;
+  }
+  @media (max-width: 992px) {
+    .hero-grid-responsive {
+      flex-direction: column;
+      gap: 32px;
+    }
+    .today-panel {
+      max-width: 100%;
+      margin-left: 0;
+    }
+  }
+
+  /* City-status-grid responsiva */
+  .city-status-grid-responsive {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+  @media (max-width:768px) {
+    .city-status-grid-responsive {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .city-status-grid-responsive .status-item.only-mobile {
+      display: flex;
+    }
+  }
+  @media (min-width:769px) {
+    .city-status-grid-responsive .status-item.only-mobile {
+      display: none !important;
+    }
+  }
+  @media (max-width:480px) {
+    .city-status-grid-responsive {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .city-status-grid-responsive .status-item.only-mobile {
+      display: flex;
+    }
+  }
+  /* Centraliza os cards de status */
+  .city-status-grid-responsive .status-item {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 15px 8px 10px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    text-align: center;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+  }
+  .city-status-grid-responsive .status-icon {
+    margin-bottom: 7px;
+  }
+  .city-status-grid-responsive .status-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--botuka-yellow);
+    margin-bottom: 3px;
+    margin-top: 0;
+  }
+  .city-status-grid-responsive .status-label {
+    font-size: .98rem;
+    color: var(--text);
+    font-weight: 600;
+    text-transform: capitalize;
+    margin-bottom: 0;
+  }
+  /* Garante que o 9° card não aparece no desktop */
+  .city-status-grid-responsive .status-item.only-mobile {
+    display: none;
+  }
+
+  /* Filter-grid responsivo no modal */
+  .filter-grid-responsive {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px,1fr));
+    gap: 18px;
+  }
+  @media (max-width:768px) {
+    .filter-grid-responsive {
+      grid-template-columns: repeat(2,1fr);
+      gap: 10px;
+    }
+  }
+  @media (max-width:480px) {
+    .filter-grid-responsive {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+  }
+
+  /* Espaçamento lateral para mobile usando classe utilitária */
+  @media (max-width: 576px) {
+    .px-mobile {
+      padding-left: 14px !important;
+      padding-right: 14px !important;
+    }
+  }
+  /* Visual dos ícones do modal: maior e centralizado */
+  .filter-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 8px;
+    transition: transform .14s;
+  }
+  .filter-option:hover .filter-icon {
+    transform: scale(1.17) rotate(-7deg);
+    filter: drop-shadow(0px 4px 8px rgba(34,34,34,0.09));
+  }
+  .filter-option span {
+    font-size: .98rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .filter-option {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 18px 8px 14px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    transition: box-shadow 0.15s, border 0.15s;
+    min-width: 0;
+    cursor: pointer;
+    margin: 0;
+    align-items: center;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+  .filter-option:hover,
+  .filter-option:focus {
+    background: var(--surface-2);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--botuka-yellow);
+    outline: none;
+    text-decoration: none;
+  }
+</style>
