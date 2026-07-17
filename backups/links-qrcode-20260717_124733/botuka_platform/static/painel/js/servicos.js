@@ -1,0 +1,56 @@
+document.addEventListener('change', (event) => {
+  const prestador = event.target.closest('input[name="prestador_tipo"]');
+  if (prestador) {
+    document.querySelectorAll('.provider-card').forEach((card) => {
+      const input = card.querySelector('input[name="prestador_tipo"]');
+      card.classList.toggle('is-selected', Boolean(input && input.checked));
+    });
+    document.querySelectorAll('[data-responsavel]').forEach((panel) => {
+      panel.hidden = panel.dataset.responsavel !== prestador.value;
+    });
+  }
+
+  const setor = event.target.closest('select[name="setor"]');
+  const profissao = document.querySelector('select[name="profissao"]');
+
+  if (!setor || !profissao || !setor.value) {
+    return;
+  }
+
+  fetch(`/painel/servicos/ajax/profissoes/?setor=${encodeURIComponent(setor.value)}`)
+    .then((response) => response.ok ? response.json() : Promise.reject())
+    .then((data) => {
+      profissao.innerHTML = '<option value="">---------</option>';
+      data.results.forEach((item) => {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.text;
+        profissao.appendChild(option);
+      });
+    })
+    .catch(() => {});
+});
+
+document.addEventListener('DOMContentLoaded', () => {
+  const selectedProvider = document.querySelector('input[name="prestador_tipo"]:checked');
+  if (selectedProvider) {
+    selectedProvider.dispatchEvent(new Event('change', { bubbles: true }));
+  }
+
+  const coverInput = document.querySelector('#imagem_capa');
+  const coverName = document.querySelector('[data-cover-name]');
+  if (coverInput && coverName) {
+    coverInput.addEventListener('change', () => {
+      coverName.textContent = coverInput.files[0]?.name || 'Nenhum arquivo selecionado';
+    });
+  }
+
+  const galleryInput = document.querySelector('#galeria');
+  const galleryName = document.querySelector('[data-gallery-name]');
+  if (galleryInput && galleryName) {
+    galleryInput.addEventListener('change', () => {
+      const total = galleryInput.files.length;
+      galleryName.textContent = total ? `${total} imagem(ns) selecionada(s)` : 'Nenhum arquivo selecionado';
+    });
+  }
+});

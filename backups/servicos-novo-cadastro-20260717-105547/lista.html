@@ -1,0 +1,65 @@
+{% extends "painel/base.html" %}
+{% load static %}
+{% block title %}Serviços | Painel BOTUKA{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'painel/css/servicos.css' %}">
+<section class="painel-card servicos-page">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <h1 class="painel-title mb-1">Serviços</h1>
+      <p class="text-muted mb-0">Gerencie serviços de pessoa física ou empresas vinculadas.</p>
+    </div>
+    <a class="btn btn-primary" href="{% url 'painel:servico_criar' %}"><i class="bi bi-plus-lg"></i> Novo serviço</a>
+  </div>
+
+  <div class="servicos-kpis mb-4">
+    <div><strong>{{ total_servicos }}</strong><span>Total</span></div>
+    <div><strong>{{ total_publicados }}</strong><span>Publicados</span></div>
+    <div><strong>{{ total_pendentes }}</strong><span>Pendentes</span></div>
+  </div>
+
+  <form class="row g-2 mb-4" method="get">
+    <div class="col-md-7"><input class="form-control" name="busca" value="{{ request.GET.busca }}" placeholder="Buscar por título, descrição ou empresa"></div>
+    <div class="col-md-3">
+      <select class="form-select" name="status">
+        <option value="">Todos os status</option>
+        {% for value,label in status_choices %}
+          <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div class="col-md-2"><button class="btn btn-outline-secondary w-100" type="submit">Filtrar</button></div>
+  </form>
+
+  <div class="servicos-list">
+    {% for servico in servicos %}
+      <article class="servico-row">
+        <div>
+          <h2>{{ servico.titulo }}</h2>
+          <p>{{ servico.descricao_curta|default:"Sem descrição curta." }}</p>
+          <small>{{ servico.get_prestador_tipo_display }}{% if servico.empresa %} · {{ servico.empresa.nome_exibicao }}{% endif %}</small>
+        </div>
+        <div class="text-md-end">
+          <span class="badge text-bg-light">{{ servico.get_status_display }}</span>
+          <div class="mt-3">
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'painel:servico_detalhe' servico.pk %}">Abrir</a>
+          </div>
+        </div>
+      </article>
+    {% empty %}
+      <div class="text-center text-muted py-5">Nenhum serviço encontrado.</div>
+    {% endfor %}
+  </div>
+
+  {% if page_obj.has_other_pages %}
+    <nav class="mt-4">
+      <ul class="pagination">
+        {% if page_obj.has_previous %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Anterior</a></li>{% endif %}
+        <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+        {% if page_obj.has_next %}<li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}{% if querystring %}&{{ querystring }}{% endif %}">Próxima</a></li>{% endif %}
+      </ul>
+    </nav>
+  {% endif %}
+</section>
+<script src="{% static 'painel/js/servicos.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,153 @@
+{% extends "painel/base.html" %}
+
+{% block title %}{{ empresa.nome_exibicao }} | Painel BOTUKA{% endblock %}
+
+{% block content %}
+<style>
+  .empresa-detail{background:#f4f7fb;margin:-26px -18px;padding:28px 18px 46px;min-height:72vh}
+  .empresa-wrap{width:min(1180px,100%);margin:0 auto}
+  .empresa-head{overflow:hidden;background:#fff;border:1px solid #e6eaf0;border-radius:24px;box-shadow:0 18px 50px rgba(15,23,42,.08);margin-bottom:18px}
+  .empresa-cover{height:190px;background:linear-gradient(135deg,#111827,#303b4f)}
+  .empresa-cover img{width:100%;height:100%;object-fit:cover}
+  .empresa-head-body{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding:0 26px 24px}
+  .empresa-ident{display:flex;gap:18px;align-items:flex-end;margin-top:-42px;min-width:0}
+  .empresa-logo{width:96px;height:96px;display:grid;place-items:center;overflow:hidden;border:5px solid #fff;border-radius:22px;background:#ffd230;color:#111827;font-size:34px;font-weight:900;box-shadow:0 12px 28px rgba(15,23,42,.18)}
+  .empresa-logo img{width:100%;height:100%;object-fit:cover}
+  .empresa-title h1{margin:0;color:#172033;font-size:clamp(26px,4vw,40px);font-weight:900;word-break:break-word}
+  .empresa-title p{margin:6px 0 0;color:#667085}
+  .empresa-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
+  .empresa-btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;border-radius:11px;border:0;text-decoration:none;font-weight:850}
+  .empresa-btn-primary{background:#ffd230;color:#111827}
+  .empresa-btn-light{background:#fff;color:#111827;border:1px solid #e6eaf0}
+  .empresa-btn-danger{background:#fef2f2;color:#b42318;border:1px solid #fecaca}
+  .empresa-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
+  .empresa-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:12px;font-weight:800}
+  .empresa-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
+  .empresa-card{background:#fff;border:1px solid #e6eaf0;border-radius:18px;padding:20px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+  .empresa-card h2{margin:0 0 14px;color:#172033;font-size:17px;font-weight:900}
+  .empresa-list{display:grid;gap:10px;margin:0;padding:0;list-style:none}
+  .empresa-list li{display:flex;justify-content:space-between;gap:12px;color:#475467;font-size:14px}
+  .empresa-list strong{color:#172033;text-align:right}
+  .empresa-status-form{display:flex;gap:10px}
+  .empresa-status-form select{min-height:44px;border:1px solid #d9dee7;border-radius:11px;padding:8px 10px;flex:1}
+  @media(max-width:920px){.empresa-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.empresa-head-body{display:block}.empresa-actions{margin-top:16px}}
+  @media(max-width:640px){.empresa-detail{padding:16px 12px 34px}.empresa-grid{grid-template-columns:1fr}.empresa-ident{display:block}.empresa-title{margin-top:10px}.empresa-actions,.empresa-status-form{flex-direction:column}.empresa-btn{width:100%}.empresa-list li{display:block}.empresa-list strong{display:block;text-align:left;margin-top:3px}}
+</style>
+
+<div class="empresa-detail">
+  <div class="empresa-wrap">
+    <section class="empresa-head">
+      <div class="empresa-cover">
+        {% if empresa.imagem_capa %}
+          <img src="{{ empresa.imagem_capa.url }}" alt="Capa de {{ empresa.nome_exibicao }}">
+        {% endif %}
+      </div>
+      <div class="empresa-head-body">
+        <div class="empresa-ident">
+          <div class="empresa-logo">
+            {% if empresa.logo %}
+              <img src="{{ empresa.logo.url }}" alt="Logo de {{ empresa.nome_exibicao }}">
+            {% else %}
+              {{ empresa.nome_exibicao|first|upper }}
+            {% endif %}
+          </div>
+          <div class="empresa-title">
+            <h1>{{ empresa.nome_exibicao }}</h1>
+            <p>{{ empresa.razao_social|default:"Razão social não informada" }}</p>
+            <div class="empresa-badges">
+              <span class="empresa-badge">{{ empresa.get_tipo_cadastro_display }}</span>
+              <span class="empresa-badge">{{ empresa.get_status_display }}</span>
+              {% if empresa.verificada %}<span class="empresa-badge"><i class="bi bi-patch-check-fill"></i> Verificada</span>{% endif %}
+              {% if empresa.perfil_publico %}<span class="empresa-badge"><i class="bi bi-globe"></i> Perfil público</span>{% endif %}
+            </div>
+          </div>
+        </div>
+
+        <div class="empresa-actions">
+          <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresas_lista' %}"><i class="bi bi-arrow-left"></i> Lista</a>
+          {% if pode_editar %}
+            <a class="empresa-btn empresa-btn-primary" href="{% url 'painel:empresa_editar' empresa.pk %}"><i class="bi bi-pencil"></i> Editar</a>
+          {% endif %}
+          {% if pode_gerenciar_equipe %}
+            <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_equipe' empresa.pk %}"><i class="bi bi-people"></i> Equipe</a>
+          {% endif %}
+          {% if pode_gerenciar %}
+            <a class="empresa-btn empresa-btn-danger" href="{% url 'painel:empresa_excluir' empresa.pk %}"><i class="bi bi-power"></i> Desativar</a>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+
+    <section class="empresa-grid">
+      <article class="empresa-card">
+        <h2>Dados gerais</h2>
+        <ul class="empresa-list">
+          <li>Documento <strong>{{ empresa.documento_formatado|default:"Não informado" }}</strong></li>
+          <li>Categoria <strong>{{ empresa.categoria_empresa|default:"Não informada" }}</strong></li>
+          <li>Serviços <strong>{{ empresa.total_servicos|default:"0" }}</strong></li>
+          <li>Criada em <strong>{{ empresa.criado_em|date:"d/m/Y" }}</strong></li>
+        </ul>
+      </article>
+
+      <article class="empresa-card">
+        <h2>Contato</h2>
+        <ul class="empresa-list">
+          <li>Telefone <strong>{{ empresa.telefone|default:"Não informado" }}</strong></li>
+          <li>WhatsApp <strong>{{ empresa.whatsapp|default:"Não informado" }}</strong></li>
+          <li>E-mail <strong>{{ empresa.email|default:"Não informado" }}</strong></li>
+          <li>Site <strong>{{ empresa.site|default:"Não informado" }}</strong></li>
+        </ul>
+      </article>
+
+      <article class="empresa-card">
+        <h2>Localização</h2>
+        <ul class="empresa-list">
+          <li>Cidade <strong>{{ empresa.endereco_resumido|default:"Não informada" }}</strong></li>
+          <li>Endereço <strong>{{ empresa.endereco|default:"Não informado" }}</strong></li>
+          <li>Bairro <strong>{{ empresa.bairro|default:"Não informado" }}</strong></li>
+          <li>CEP <strong>{{ empresa.cep|default:"Não informado" }}</strong></li>
+        </ul>
+      </article>
+
+      <article class="empresa-card">
+        <h2>Atendimento</h2>
+        <ul class="empresa-list">
+          <li>Local <strong>{{ empresa.atende_local|yesno:"Sim,Não" }}</strong></li>
+          <li>Online <strong>{{ empresa.atende_online|yesno:"Sim,Não" }}</strong></li>
+          <li>Horário <strong>{{ empresa.horario_atendimento|default:"Não informado" }}</strong></li>
+        </ul>
+      </article>
+
+      <article class="empresa-card">
+        <h2>Equipe</h2>
+        <ul class="empresa-list">
+          {% for vinculo in usuarios %}
+            <li>{{ vinculo.get_funcao_display }} <strong>{{ vinculo.usuario }}</strong></li>
+          {% empty %}
+            <li>Nenhum vínculo <strong>-</strong></li>
+          {% endfor %}
+        </ul>
+      </article>
+
+      <article class="empresa-card">
+        <h2>Configurações</h2>
+        {% if pode_gerenciar %}
+          <form class="empresa-status-form" method="post" action="{% url 'painel:empresa_alterar_status' empresa.pk %}">
+            {% csrf_token %}
+            <select name="status" aria-label="Status da empresa">
+              <option value="RASCUNHO" {% if empresa.status == "RASCUNHO" %}selected{% endif %}>Rascunho</option>
+              <option value="PENDENTE" {% if empresa.status == "PENDENTE" %}selected{% endif %}>Pendente</option>
+              <option value="ATIVA" {% if empresa.status == "ATIVA" %}selected{% endif %}>Ativa</option>
+              <option value="SUSPENSA" {% if empresa.status == "SUSPENSA" %}selected{% endif %}>Suspensa</option>
+              <option value="BLOQUEADA" {% if empresa.status == "BLOQUEADA" %}selected{% endif %}>Bloqueada</option>
+            </select>
+            <button class="empresa-btn empresa-btn-primary" type="submit">Atualizar</button>
+          </form>
+        {% else %}
+          <p class="text-muted mb-0">Você pode visualizar esta empresa, mas não alterar configurações.</p>
+        {% endif %}
+      </article>
+    </section>
+  </div>
+</div>
+{% endblock %}

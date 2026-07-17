@@ -1,0 +1,83 @@
+{% extends "painel/base.html" %}
+{% load static %}
+{% block title %}Novo cadastro de serviço | Painel BOTUKA{% endblock %}
+{% block content %}
+<link rel="stylesheet" href="{% static 'painel/css/servicos.css' %}">
+<section class="painel-card servicos-page">
+  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
+    <div>
+      <h1 class="painel-title mb-1">Novo cadastro de serviço</h1>
+      <p class="text-muted mb-0">Cadastre um serviço como profissional autônomo ou por uma empresa vinculada.</p>
+    </div>
+    <a class="btn btn-outline-secondary" href="{% url 'painel:servicos_lista' %}"><i class="bi bi-arrow-left"></i> Voltar</a>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" class="service-form" novalidate>
+    {% csrf_token %}
+    <section class="service-step" aria-labelledby="step-provider">
+      <div class="service-step-heading"><span class="service-step-number">1</span><div><h2 id="step-provider">Tipo de prestador</h2><p>Escolha quem será apresentado como responsável pelo serviço.</p></div></div>
+      <div class="provider-grid">
+        <label class="provider-card {% if request.POST.prestador_tipo != 'pj' %}is-selected{% endif %}">
+          <input type="radio" name="prestador_tipo" value="pf" {% if request.POST.prestador_tipo != 'pj' %}checked{% endif %}>
+          <span class="provider-icon"><i class="bi bi-person"></i></span><span><strong>Pessoa Física</strong><span>Quero oferecer serviços como profissional autônomo.</span></span><i class="bi bi-check-circle-fill provider-check"></i>
+        </label>
+        <label class="provider-card {% if request.POST.prestador_tipo == 'pj' %}is-selected{% endif %}">
+          <input type="radio" name="prestador_tipo" value="pj" {% if request.POST.prestador_tipo == 'pj' %}checked{% endif %}>
+          <span class="provider-icon"><i class="bi bi-building"></i></span><span><strong>Pessoa Jurídica</strong><span>Quero oferecer serviços por uma empresa vinculada.</span></span><i class="bi bi-check-circle-fill provider-check"></i>
+        </label>
+      </div>
+      {% if erros.prestador_tipo %}<div class="field-error">{{ erros.prestador_tipo }}</div>{% endif %}
+    </section>
+
+    <section class="service-step" aria-labelledby="step-owner">
+      <div class="service-step-heading"><span class="service-step-number">2</span><div><h2 id="step-owner">Responsável pelo serviço</h2><p>Confira os dados que ficarão associados a este cadastro.</p></div></div>
+      <div class="responsavel-panel" data-responsavel="pf" {% if request.POST.prestador_tipo == 'pj' %}hidden{% endif %}>
+        <div class="responsavel-data"><div><small>Nome</small><strong>{{ request.user.get_full_name|default:request.user.username }}</strong></div><div><small>E-mail</small><strong>{{ request.user.email|default:"Não informado" }}</strong></div><div><small>Telefone</small><strong>{{ request.user.telefone|default:request.user.celular|default:"Não informado" }}</strong></div></div>
+        <div class="alert alert-info mb-0"><i class="bi bi-info-circle"></i> Os dados serão vinculados ao seu perfil pessoal.</div>
+      </div>
+      <div class="responsavel-panel" data-responsavel="pj" {% if request.POST.prestador_tipo != 'pj' %}hidden{% endif %}>
+        <label class="form-label required" for="empresa">Empresa vinculada</label>
+        <div class="d-flex flex-column flex-md-row gap-2">
+          <select class="form-select" id="empresa" name="empresa">
+            <option value="">Selecione uma empresa</option>
+            {% for empresa in empresas %}<option value="{{ empresa.pk }}" {% if request.POST.empresa == empresa.pk|stringformat:'s' %}selected{% endif %}>{{ empresa.nome_exibicao }}</option>{% endfor %}
+          </select>
+          <a class="btn btn-outline-primary text-nowrap" href="{% url 'painel:empresa_criar' %}"><i class="bi bi-plus-lg"></i> Cadastrar nova empresa</a>
+        </div>
+        {% if not empresas %}<div class="form-text">Você ainda não possui empresas disponíveis.</div>{% endif %}
+        {% if erros.empresa %}<div class="field-error">{{ erros.empresa }}</div>{% endif %}
+      </div>
+    </section>
+
+    <section class="service-step" aria-labelledby="step-data">
+      <div class="service-step-heading"><span class="service-step-number">3</span><div><h2 id="step-data">Dados do serviço</h2><p>Descreva a oferta, atendimento, valores e contatos.</p></div></div>
+      <div class="row g-3">
+        <div class="col-12"><label class="form-label required" for="titulo">Título do serviço</label><input class="form-control {% if erros.titulo %}is-invalid{% endif %}" id="titulo" name="titulo" maxlength="160" value="{{ request.POST.titulo }}" required>{% if erros.titulo %}<div class="invalid-feedback">{{ erros.titulo }}</div>{% endif %}</div>
+        <div class="col-md-6"><label class="form-label required" for="categoria">Categoria</label><select class="form-select {% if erros.categoria %}is-invalid{% endif %}" id="categoria" name="categoria" required><option value="">Selecione</option><option {% if request.POST.categoria == 'casa' %}selected{% endif %} value="casa">Casa e manutenção</option><option {% if request.POST.categoria == 'beleza' %}selected{% endif %} value="beleza">Beleza e bem-estar</option><option {% if request.POST.categoria == 'tecnologia' %}selected{% endif %} value="tecnologia">Tecnologia</option><option {% if request.POST.categoria == 'aulas' %}selected{% endif %} value="aulas">Aulas e consultoria</option><option {% if request.POST.categoria == 'eventos' %}selected{% endif %} value="eventos">Eventos</option><option {% if request.POST.categoria == 'outros' %}selected{% endif %} value="outros">Outros</option></select>{% if erros.categoria %}<div class="invalid-feedback">{{ erros.categoria }}</div>{% endif %}</div>
+        <div class="col-md-6"><label class="form-label" for="subcategoria">Subcategoria</label><input class="form-control" id="subcategoria" name="subcategoria" value="{{ request.POST.subcategoria }}"></div>
+        <div class="col-12"><label class="form-label required" for="descricao_curta">Descrição curta</label><input class="form-control {% if erros.descricao_curta %}is-invalid{% endif %}" id="descricao_curta" name="descricao_curta" maxlength="220" value="{{ request.POST.descricao_curta }}" required>{% if erros.descricao_curta %}<div class="invalid-feedback">{{ erros.descricao_curta }}</div>{% endif %}</div>
+        <div class="col-12"><label class="form-label required" for="descricao_completa">Descrição completa</label><textarea class="form-control {% if erros.descricao_completa %}is-invalid{% endif %}" id="descricao_completa" name="descricao_completa" rows="6" required>{{ request.POST.descricao_completa }}</textarea>{% if erros.descricao_completa %}<div class="invalid-feedback">{{ erros.descricao_completa }}</div>{% endif %}</div>
+        <div class="col-12"><fieldset><legend class="form-label required">Tipo de atendimento</legend><div class="attendance-grid"><label class="form-check"><input class="form-check-input" type="checkbox" name="tipo_atendimento" value="cliente" {% if 'cliente' in tipos_atendimento %}checked{% endif %}> <span class="form-check-label">No local do cliente</span></label><label class="form-check"><input class="form-check-input" type="checkbox" name="tipo_atendimento" value="prestador" {% if 'prestador' in tipos_atendimento %}checked{% endif %}> <span class="form-check-label">No endereço do prestador</span></label><label class="form-check"><input class="form-check-input" type="checkbox" name="tipo_atendimento" value="online" {% if 'online' in tipos_atendimento %}checked{% endif %}> <span class="form-check-label">Online</span></label></div>{% if erros.tipo_atendimento %}<div class="field-error">{{ erros.tipo_atendimento }}</div>{% endif %}</fieldset></div>
+        <div class="col-md-5"><label class="form-label required" for="cidade">Cidade</label><input class="form-control {% if erros.cidade %}is-invalid{% endif %}" id="cidade" name="cidade" value="{{ request.POST.cidade }}" required>{% if erros.cidade %}<div class="invalid-feedback">{{ erros.cidade }}</div>{% endif %}</div>
+        <div class="col-md-4"><label class="form-label" for="bairro">Bairro</label><input class="form-control" id="bairro" name="bairro" value="{{ request.POST.bairro }}"></div>
+        <div class="col-md-3"><label class="form-label" for="raio_atendimento">Raio de atendimento</label><div class="input-group"><input class="form-control" id="raio_atendimento" name="raio_atendimento" type="number" min="0" value="{{ request.POST.raio_atendimento }}"><span class="input-group-text">km</span></div></div>
+        <div class="col-md-3"><label class="form-label" for="valor_inicial">Valor inicial</label><div class="input-group"><span class="input-group-text">R$</span><input class="form-control" id="valor_inicial" name="valor_inicial" inputmode="decimal" value="{{ request.POST.valor_inicial }}"></div></div>
+        <div class="col-md-3"><label class="form-label" for="valor_final">Valor final</label><div class="input-group"><span class="input-group-text">R$</span><input class="form-control" id="valor_final" name="valor_final" inputmode="decimal" value="{{ request.POST.valor_final }}"></div></div>
+        <div class="col-md-6 d-flex align-items-end"><label class="form-check mb-2"><input class="form-check-input" type="checkbox" name="aceita_orcamento" value="1" {% if request.POST.aceita_orcamento %}checked{% endif %}> <span class="form-check-label">Aceita orçamento</span></label></div>
+        <div class="col-md-6"><label class="form-label" for="telefone_comercial">Telefone comercial</label><input class="form-control" id="telefone_comercial" name="telefone_comercial" type="tel" value="{{ request.POST.telefone_comercial }}"></div>
+        <div class="col-md-6"><label class="form-label" for="whatsapp">WhatsApp</label><input class="form-control" id="whatsapp" name="whatsapp" type="tel" value="{{ request.POST.whatsapp }}"></div>
+        <div class="col-md-6"><label class="form-label" for="status">Status</label><select class="form-select" id="status" name="status"><option value="rascunho">Rascunho</option><option value="publicado" {% if request.POST.status == 'publicado' %}selected{% endif %}>Publicado</option></select></div>
+        <div class="col-md-6"><label class="upload-box" for="imagem_capa"><input id="imagem_capa" name="imagem_capa" type="file" accept="image/*"><i class="bi bi-image"></i><strong>Imagem de capa</strong><span class="d-block text-muted small" data-cover-name>Nenhum arquivo selecionado</span></label></div>
+        <div class="col-md-6"><label class="upload-box" for="galeria"><input id="galeria" name="galeria" type="file" accept="image/*" multiple><i class="bi bi-images"></i><strong>Galeria de imagens</strong><span class="d-block text-muted small" data-gallery-name>Nenhum arquivo selecionado</span></label></div>
+      </div>
+    </section>
+
+    <div class="form-actions">
+      <a class="btn btn-outline-secondary" href="{% url 'painel:servicos_lista' %}">Cancelar</a>
+      <button class="btn btn-outline-primary" type="submit" name="acao" value="rascunho"><i class="bi bi-save"></i> Salvar como rascunho</button>
+      <button class="btn btn-primary" type="submit" name="acao" value="publicar"><i class="bi bi-send"></i> Publicar serviço</button>
+    </div>
+  </form>
+</section>
+<script src="{% static 'painel/js/servicos.js' %}"></script>
+{% endblock %}
