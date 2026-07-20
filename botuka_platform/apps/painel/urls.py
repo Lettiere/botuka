@@ -1,12 +1,17 @@
 """URLs da área interna do usuário."""
 
-from django.urls import path
+from django.urls import include, path
 
 from apps.painel import views
+from apps.recruitment import views as recruitment_views
 
 app_name = 'painel'
 
 urlpatterns = [
+    path('', include('apps.sports.panel_urls')),
+    path('', include('apps.media.panel_urls')),
+    path('', include('apps.news.panel_urls')),
+    path('', include('apps.government.panel_urls')),
     path('', views.dashboard, name='dashboard'),
     path('perfil/', views.perfil, name='perfil'),
     # --- Empresas ---
@@ -46,8 +51,44 @@ urlpatterns = [
     path('servicos/<uuid:uuid>/preview/', views.servico_preview, name='servico_preview'),
     # --- Produtos, Vagas, Currículo, etc ---
     path('produtos/', views.produtos_lista, name='produtos_lista'),
-    path('vagas/', views.vagas_lista, name='vagas_lista'),
-    path('curriculo/', views.curriculo, name='curriculo'),
+    path('vagas/', recruitment_views.vaga_lista, name='vagas_lista'),
+    path('vagas/nova/', recruitment_views.vaga_criar, name='vaga_criar'),
+    path('vagas/<uuid:uuid>/', recruitment_views.vaga_detalhe, name='vaga_detalhe'),
+    path('vagas/<uuid:uuid>/editar/', recruitment_views.vaga_editar, name='vaga_editar'),
+    path('vagas/<uuid:uuid>/status/', recruitment_views.vaga_status, name='vaga_status'),
+    path('vagas/<uuid:uuid>/excluir/', recruitment_views.vaga_excluir, name='vaga_excluir'),
+    path('vagas/<uuid:uuid>/candidaturas/', recruitment_views.candidaturas_empresa, name='candidaturas_empresa'),
+    path('curriculo/', recruitment_views.curriculo_detalhe, name='curriculo'),
+    path('curriculo/novo/', recruitment_views.curriculo_novo, name='curriculo_novo'),
+    path('curriculo/editar/', recruitment_views.curriculo_editar, name='curriculo_editar'),
+    path('curriculo/etapa/<int:etapa>/', recruitment_views.curriculo_etapa, name='curriculo_etapa'),
+    path('curriculo/experiencias/', recruitment_views.curriculo_experiencias, name='curriculo_experiencias'),
+    path('curriculo/experiencias/nova/', recruitment_views.curriculo_experiencias, name='curriculo_experiencia_nova'),
+    path('curriculo/experiencias/<uuid:uuid>/editar/', recruitment_views.curriculo_experiencias, name='curriculo_experiencia_editar'),
+    path('curriculo/experiencias/<uuid:uuid>/remover/', recruitment_views.curriculo_experiencias, name='curriculo_experiencia_remover'),
+    path('curriculo/formacoes/', recruitment_views.curriculo_formacoes, name='curriculo_formacoes'),
+    path('curriculo/formacoes/nova/', recruitment_views.curriculo_formacoes, name='curriculo_formacao_nova'),
+    path('curriculo/formacoes/<uuid:uuid>/editar/', recruitment_views.curriculo_formacoes, name='curriculo_formacao_editar'),
+    path('curriculo/formacoes/<uuid:uuid>/remover/', recruitment_views.curriculo_formacoes, name='curriculo_formacao_remover'),
+    path('curriculo/cursos/', recruitment_views.curriculo_cursos, name='curriculo_cursos'),
+    path('curriculo/cursos/novo/', recruitment_views.curriculo_cursos, name='curriculo_curso_novo'),
+    path('curriculo/cursos/<uuid:uuid>/editar/', recruitment_views.curriculo_cursos, name='curriculo_curso_editar'),
+    path('curriculo/cursos/<uuid:uuid>/remover/', recruitment_views.curriculo_cursos, name='curriculo_curso_remover'),
+    path('curriculo/habilidades/', recruitment_views.curriculo_habilidades, name='curriculo_habilidades'),
+    path('curriculo/habilidades/nova/', recruitment_views.curriculo_habilidades, name='curriculo_habilidade_nova'),
+    path('curriculo/habilidades/<uuid:uuid>/editar/', recruitment_views.curriculo_habilidades, name='curriculo_habilidade_editar'),
+    path('curriculo/habilidades/<uuid:uuid>/remover/', recruitment_views.curriculo_habilidades, name='curriculo_habilidade_remover'),
+    path('curriculo/idiomas/', recruitment_views.curriculo_idiomas, name='curriculo_idiomas'),
+    path('curriculo/idiomas/novo/', recruitment_views.curriculo_idiomas, name='curriculo_idioma_novo'),
+    path('curriculo/idiomas/<uuid:uuid>/editar/', recruitment_views.curriculo_idiomas, name='curriculo_idioma_editar'),
+    path('curriculo/idiomas/<uuid:uuid>/remover/', recruitment_views.curriculo_idiomas, name='curriculo_idioma_remover'),
+    path('curriculo/projetos/', recruitment_views.curriculo_projetos, name='curriculo_projetos'),
+    path('curriculo/projetos/novo/', recruitment_views.curriculo_projetos, name='curriculo_projeto_novo'),
+    path('curriculo/projetos/<uuid:uuid>/editar/', recruitment_views.curriculo_projetos, name='curriculo_projeto_editar'),
+    path('curriculo/projetos/<uuid:uuid>/remover/', recruitment_views.curriculo_projetos, name='curriculo_projeto_remover'),
+    path('curriculo/visualizar/', recruitment_views.curriculo_visualizar, name='curriculo_visualizar'),
+    path('curriculo/preview/', recruitment_views.curriculo_preview, name='curriculo_preview'),
+    path('candidaturas/', recruitment_views.minhas_candidaturas, name='minhas_candidaturas'),
     path('eventos/', views.eventos_lista, name='eventos_lista'),
     path('rede-social/', views.rede_social, name='rede_social'),
     path('mensagens/', views.mensagens, name='mensagens'),

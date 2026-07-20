@@ -1,0 +1,6 @@
+{% if cultura_destaque or cultura_recentes %}
+<section class="home-domain city-section city-section--culture" id="cultura" aria-labelledby="cultura-title"><div class="container-botuka">
+  <header class="city-section__header"><div><span class="section-kicker">Cultura local</span><h2 id="cultura-title">Cultura em Botucatu</h2><p>Publicações, projetos e ações culturais da cidade.</p></div>{% url 'news_public:categoria' 'cultura' as cultura_url %}<a class="btn-botuka btn-botuka-outline" href="{{ cultura_url }}">Explorar cultura</a></header>
+  <div class="city-mosaic">{% for item in cultura_destaque %}<a class="city-mosaic__hero" href="{{ item.url }}"><div class="city-media">{% if item.imagem_url %}<img src="{{ item.imagem_url }}" alt="" loading="lazy">{% else %}<i class="bi bi-palette" aria-hidden="true"></i>{% endif %}</div><div><span class="city-tag">{{ item.origem }}</span><h3>{{ item.titulo }}</h3><p>{{ item.resumo|truncatechars:160 }}</p></div></a>{% endfor %}<div class="city-mosaic__side">{% for item in cultura_recentes %}<a class="city-side-item" href="{{ item.url }}"><span><strong>{{ item.titulo }}</strong><small>{{ item.categoria }} · {{ item.origem }}</small></span></a>{% endfor %}</div></div>
+</div></section>
+{% endif %}

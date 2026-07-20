@@ -65,6 +65,23 @@ class LinksQrCodeTests(TestCase):
         self.assertIsNone(criado.empresa_id)
         self.assertEqual(criado.status, Servico.Status.RASCUNHO)
 
+    def test_gratuito_bloqueia_quarto_servico_no_backend(self):
+        for indice in range(2):
+            Servico.objects.create(
+                usuario_responsavel=self.usuario,
+                prestador_tipo=Servico.PrestadorTipo.PESSOA_FISICA,
+                setor=self.servico.setor,
+                profissao=self.servico.profissao,
+                tipo_servico=self.servico.tipo_servico,
+                forma_cobranca=self.servico.forma_cobranca,
+                titulo=f'Serviço adicional {indice}',
+            )
+        self.client.force_login(self.usuario)
+        resposta = self.client.post(reverse('painel:servico_criar'), self.dados_cadastro())
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, 'limite de serviços')
+        self.assertFalse(Servico.objects.filter(titulo='Novo serviço persistente').exists())
+
     def test_cadastro_persistente_pj(self):
         self.client.force_login(self.usuario)
         resposta = self.client.post(reverse('painel:servico_criar'), self.dados_cadastro(prestador_tipo=Servico.PrestadorTipo.EMPRESA, empresa=self.empresa.pk, acao='publicar'))
@@ -83,6 +100,15 @@ class LinksQrCodeTests(TestCase):
         self.client.force_login(self.usuario)
         resposta = self.client.post(reverse('painel:servico_criar'), self.dados_cadastro(prestador_tipo=Servico.PrestadorTipo.EMPRESA, empresa=''))
         self.assertEqual(resposta.status_code, 200)
+
+    def test_pf_com_empresa_enviada_e_rejeitada(self):
+        self.client.force_login(self.usuario)
+        resposta = self.client.post(
+            reverse('painel:servico_criar'),
+            self.dados_cadastro(empresa=self.empresa.pk),
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertFalse(Servico.objects.filter(titulo='Novo serviço persistente').exists())
 
     def test_sem_atendimento_rejeitado(self):
         self.client.force_login(self.usuario)
@@ -197,12 +223,12 @@ class LinksQrCodeTests(TestCase):
 
     def test_terceiro_nao_gerencia_links_servico(self):
         self.client.force_login(self.terceiro)
-        resposta = self.client.get(reverse('painel:servico_links', args=[self.servico.pk]))
+        resposta = self.client.get(reverse('painel:servico_links', args=[self.servico.uuid]))
         self.assertIn(resposta.status_code, (403, 404))
 
     def test_terceiro_nao_gerencia_links_empresa(self):
         self.client.force_login(self.terceiro)
-        resposta = self.client.get(reverse('painel:empresa_links', args=[self.empresa.pk]))
+        resposta = self.client.get(reverse('painel:empresa_links', args=[self.empresa.uuid]))
         self.assertIn(resposta.status_code, (403, 404))
 
     def test_qr_ignora_destino_arbitrario(self):

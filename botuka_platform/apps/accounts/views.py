@@ -66,6 +66,7 @@ def cadastro_usuario(request):
     return redirect(obter_url_pos_login(user))
 
 
+@require_POST
 def logout_usuario(request):
     logout(request)
     messages.success(request, "Você saiu da sua conta.")

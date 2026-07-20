@@ -1,0 +1,15 @@
+{% if eventos_destaque or eventos_proximos %}
+<section class="home-domain city-section" id="eventos" aria-labelledby="eventos-title">
+  <div class="container-botuka">
+    <header class="city-section__header"><div><span class="section-kicker">Agenda da cidade</span><h2 id="eventos-title">Eventos em Botucatu</h2><p>Programação pública e esportiva confirmada na cidade.</p></div><a class="btn-botuka btn-botuka-outline" href="{% url 'events:lista' %}">Ver todos os eventos</a></header>
+    <div class="city-feature-grid">
+      {% for evento in eventos_destaque %}<article class="city-feature-card">
+        <div class="city-media">{% if evento.imagem_url %}<img src="{{ evento.imagem_url }}" alt="" loading="lazy">{% else %}<i class="bi bi-calendar-event" aria-hidden="true"></i>{% endif %}</div>
+        <div class="city-card__body"><span class="city-tag">{{ evento.categoria }}</span>{% if evento.oficial %}<span class="city-tag city-tag--official">Oficial</span>{% endif %}<h3>{{ evento.titulo }}</h3><p>{{ evento.resumo|truncatechars:150 }}</p><ul class="city-meta"><li><i class="bi bi-calendar3"></i> {{ evento.inicio|date:"d/m/Y" }}</li>{% if evento.local %}<li><i class="bi bi-geo-alt"></i> {{ evento.local }}</li>{% endif %}<li><i class="bi bi-person"></i> {{ evento.organizador }}</li></ul><a class="btn-botuka" href="{{ evento.url }}">Ver evento</a></div>
+      </article>{% endfor %}
+      <div class="city-side-list">{% for evento in eventos_proximos|slice:":3" %}<a class="city-side-item" href="{{ evento.url }}"><time>{{ evento.inicio|date:"d M" }}</time><span><strong>{{ evento.titulo }}</strong><small>{{ evento.organizador }}{% if evento.oficial %} · Oficial{% endif %}</small></span></a>{% endfor %}</div>
+    </div>
+    {% if eventos_proximos %}<div class="city-strip-wrap"><button class="city-arrow" type="button" data-city-scroll="eventos-strip" data-direction="-1" aria-label="Eventos anteriores"><i class="bi bi-chevron-left"></i></button><div class="city-strip" id="eventos-strip">{% for evento in eventos_proximos %}<a class="city-mini-card" href="{{ evento.url }}"><span class="city-tag">{{ evento.categoria }}</span><strong>{{ evento.titulo }}</strong><small>{{ evento.inicio|date:"d/m/Y" }}{% if evento.local %} · {{ evento.local }}{% endif %}</small></a>{% endfor %}</div><button class="city-arrow" type="button" data-city-scroll="eventos-strip" data-direction="1" aria-label="Próximos eventos"><i class="bi bi-chevron-right"></i></button></div>{% endif %}
+  </div>
+</section>
+{% endif %}

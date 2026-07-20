@@ -5,6 +5,8 @@ from apps.services import views
 app_name = 'publico'
 
 urlpatterns = [
+    path('servicos/', views.servicos_publicos, name='servicos'),
+    path('empresas/', views.empresas_publicas, name='empresas'),
     path('servicos/<slug:slug>/', views.servico_publico, name='servico'),
     path('empresas/<slug:slug>/', views.empresa_publica, name='empresa'),
     path('q/s/<uuid:token>/', views.qrcode_servico_redirect, name='qrcode_servico'),

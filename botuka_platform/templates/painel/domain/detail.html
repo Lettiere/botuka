@@ -1,0 +1,1 @@
+{% extends 'painel/base.html' %}{% block content %}<main class="container py-4"><h1>{{ objeto }}</h1>{% if objeto.descricao %}{{ objeto.descricao|linebreaks }}{% endif %}{% if editar_url %}<a class="btn btn-primary" href="{{ editar_url }}">Editar</a>{% endif %}</main>{% endblock %}

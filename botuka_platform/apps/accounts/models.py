@@ -219,13 +219,23 @@ class Usuario(UUIDModel, TimeStampedModel, AbstractUser):
     def tem_permissao(self, codigo: str | None = None) -> bool:
         """Verifica permissão de domínio pelo código."""
 
-        if self.is_superuser or self.tem_perfil('MASTER'):
+        perfis_globais = {'ROOT', 'MASTER'}
+        nomes_perfis = set()
+        if self.perfil_id:
+            nomes_perfis.add(self.perfil.nome.upper())
+        nomes_perfis.update(
+            self.usuario_perfis_adicionais.filter(perfil__ativo=True)
+            .values_list('perfil__nome', flat=True)
+        )
+        nomes_perfis = {nome.upper() for nome in nomes_perfis}
+        if self.is_superuser or nomes_perfis.intersection(perfis_globais):
             return True
 
-        if not codigo or not self.perfil_id:
+        if not codigo:
             return False
-
-        return self.perfil.perfil_permissoes.filter(
+        from apps.core.models import PerfilPermissao
+        return PerfilPermissao.objects.filter(
+            perfil__in=self.perfis_adicionais.all() if not self.perfil_id else self.perfis_adicionais.all() | type(self.perfil).objects.filter(pk=self.perfil_id),
             ativo=True,
             permissao__ativo=True,
             permissao__codigo=codigo,

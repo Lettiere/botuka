@@ -1,0 +1,828 @@
+{% if empresas_destaque %}
+<link
+  rel="stylesheet"
+  href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"
+>
+
+<section
+  class="botuka-companies home-domain"
+  aria-labelledby="home-empresas-title"
+>
+  <div class="container-botuka">
+
+    <header class="botuka-companies__header">
+      <div class="botuka-companies__heading">
+        <span class="botuka-companies__eyebrow">
+          <i class="bi bi-buildings-fill" aria-hidden="true"></i>
+          Comércio local
+        </span>
+
+        <h2 id="home-empresas-title">
+          Empresas da cidade
+        </h2>
+
+        <p>
+          Descubra empresas, lojas e negócios que movimentam Botucatu.
+        </p>
+      </div>
+
+      <a
+        href="{% url 'publico:empresas' %}"
+        class="botuka-companies__all"
+      >
+        Ver todas as empresas
+        <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+      </a>
+    </header>
+
+    <div
+      class="botuka-companies__carousel swiper"
+      data-companies-swiper
+      aria-label="Empresas em destaque"
+    >
+      <div class="swiper-wrapper">
+
+        {% for empresa in empresas_destaque %}
+          <div class="swiper-slide">
+
+            <article class="botuka-company-card">
+
+              <div class="botuka-company-card__media">
+                <a
+                  href="{% url 'publico:empresa' empresa.slug %}"
+                  class="botuka-company-card__image"
+                  aria-label="Conhecer {{ empresa.nome_fantasia|default:empresa.razao_social }}"
+                >
+                  {% if empresa.logo %}
+                    <img
+                      src="{{ empresa.logo.url }}"
+                      alt="{{ empresa.nome_fantasia|default:empresa.razao_social }}"
+                      loading="lazy"
+                      decoding="async"
+                      onerror="this.onerror=null;this.src='https://picsum.photos/seed/botuka-empresa-{{ forloop.counter }}/900/620';"
+                    >
+                  {% else %}
+                    <img
+                      src="https://picsum.photos/seed/botuka-empresa-{{ forloop.counter }}/900/620"
+                      alt=""
+                      loading="lazy"
+                      decoding="async"
+                      referrerpolicy="no-referrer"
+                    >
+                  {% endif %}
+                </a>
+
+                <span
+                  class="botuka-company-card__overlay"
+                  aria-hidden="true"
+                ></span>
+
+                <span class="botuka-company-card__badge">
+                  <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                  Botucatu
+                </span>
+
+                <button
+                  type="button"
+                  class="botuka-company-card__favorite"
+                  data-company-favorite
+                  aria-label="Adicionar empresa aos favoritos"
+                  aria-pressed="false"
+                >
+                  <i class="bi bi-heart" aria-hidden="true"></i>
+                </button>
+              </div>
+
+              <div class="botuka-company-card__body">
+
+                <div class="botuka-company-card__title-row">
+                  <h3>
+                    <a href="{% url 'publico:empresa' empresa.slug %}">
+                      {{ empresa.nome_fantasia|default:empresa.razao_social|truncatechars:46 }}
+                    </a>
+                  </h3>
+
+                  {% if empresa.verificada %}
+                    <span
+                      class="botuka-company-card__verified"
+                      aria-label="Empresa verificada"
+                      title="Empresa verificada"
+                    >
+                      <i class="bi bi-patch-check-fill" aria-hidden="true"></i>
+                    </span>
+                  {% endif %}
+                </div>
+
+                {% if empresa.descricao_curta %}
+                  <p class="botuka-company-card__description">
+                    {{ empresa.descricao_curta|truncatechars:100 }}
+                  </p>
+                {% else %}
+                  <p class="botuka-company-card__description">
+                    Conheça os produtos, serviços e informações desta empresa.
+                  </p>
+                {% endif %}
+
+                <div class="botuka-company-card__meta">
+                  <span>
+                    <i class="bi bi-building" aria-hidden="true"></i>
+                    Empresa local
+                  </span>
+
+                  {% if empresa.verificada %}
+                    <span>
+                      <i class="bi bi-shield-check" aria-hidden="true"></i>
+                      Perfil verificado
+                    </span>
+                  {% else %}
+                    <span>
+                      <i class="bi bi-stars" aria-hidden="true"></i>
+                      Perfil no BOTUKA
+                    </span>
+                  {% endif %}
+                </div>
+
+                <div class="botuka-company-card__actions">
+                  <a
+                    href="{% url 'publico:empresa' empresa.slug %}"
+                    class="botuka-company-card__button"
+                  >
+                    Conhecer empresa
+                  </a>
+
+                  <a
+                    href="{% url 'publico:empresa' empresa.slug %}"
+                    class="botuka-company-card__shortcut"
+                    aria-label="Abrir perfil da empresa"
+                  >
+                    <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+                  </a>
+                </div>
+
+              </div>
+            </article>
+
+          </div>
+        {% endfor %}
+
+      </div>
+
+      <div class="botuka-companies__footer">
+        <div
+          class="botuka-companies__pagination swiper-pagination"
+          aria-label="Paginação do carrossel"
+        ></div>
+
+        <div class="botuka-companies__navigation">
+          <button
+            type="button"
+            class="botuka-companies__nav botuka-companies__prev"
+            aria-label="Empresas anteriores"
+          >
+            <i class="bi bi-arrow-left" aria-hidden="true"></i>
+          </button>
+
+          <button
+            type="button"
+            class="botuka-companies__nav botuka-companies__next"
+            aria-label="Próximas empresas"
+          >
+            <i class="bi bi-arrow-right" aria-hidden="true"></i>
+          </button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<style>
+/* ============================================================
+   EMPRESAS — HOME
+============================================================ */
+
+.botuka-companies,
+.botuka-companies * {
+  box-sizing: border-box;
+}
+
+.botuka-companies {
+  position: relative;
+  padding: clamp(3.5rem, 7vw, 6.5rem) 0;
+  overflow: hidden;
+  background:
+    radial-gradient(
+      circle at 8% 10%,
+      rgba(250, 204, 21, 0.16),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 92% 90%,
+      rgba(37, 99, 235, 0.08),
+      transparent 30%
+    ),
+    #f8fafc;
+}
+
+/* Cabeçalho */
+
+.botuka-companies__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 2.2rem;
+}
+
+.botuka-companies__heading {
+  min-width: 0;
+}
+
+.botuka-companies__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.65rem;
+  color: #ca8a04;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.botuka-companies__header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.botuka-companies__header p {
+  max-width: 650px;
+  margin: 0.75rem 0 0;
+  color: #64748b;
+  font-size: 1rem;
+  line-height: 1.65;
+}
+
+.botuka-companies__all {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 46px;
+  padding: 0.78rem 1.15rem;
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 999px;
+  color: #0f172a;
+  background: rgba(255, 255, 255, 0.85);
+  font-size: 0.88rem;
+  font-weight: 750;
+  text-decoration: none;
+  box-shadow: 0 10px 28px rgba(15, 23, 42, 0.06);
+  backdrop-filter: blur(12px);
+  transition:
+    color 0.25s ease,
+    background 0.25s ease,
+    transform 0.25s ease,
+    border-color 0.25s ease;
+}
+
+.botuka-companies__all:hover {
+  border-color: #0f172a;
+  color: #fff;
+  background: #0f172a;
+  transform: translateY(-2px);
+}
+
+/* Swiper */
+
+.botuka-companies__carousel {
+  width: 100%;
+  overflow: visible;
+}
+
+.botuka-companies__carousel .swiper-wrapper {
+  align-items: stretch;
+}
+
+.botuka-companies__carousel .swiper-slide {
+  display: flex;
+  width: auto;
+  height: auto;
+}
+
+/* Card */
+
+.botuka-company-card {
+  display: flex;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 24px;
+  background: #fff;
+  box-shadow:
+    0 16px 38px rgba(15, 23, 42, 0.08),
+    0 2px 6px rgba(15, 23, 42, 0.03);
+  flex-direction: column;
+  transition:
+    transform 0.28s ease,
+    box-shadow 0.28s ease,
+    border-color 0.28s ease;
+}
+
+.botuka-company-card:hover {
+  border-color: rgba(37, 99, 235, 0.28);
+  box-shadow:
+    0 26px 56px rgba(15, 23, 42, 0.15),
+    0 4px 12px rgba(37, 99, 235, 0.08);
+  transform: translateY(-7px);
+}
+
+/* Imagem */
+
+.botuka-company-card__media {
+  position: relative;
+  height: 175px;
+  overflow: hidden;
+  background: #cbd5e1;
+  isolation: isolate;
+}
+
+.botuka-company-card__image {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+  display: block;
+}
+
+.botuka-company-card__image img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  min-width: 100%;
+  max-width: none;
+  object-fit: cover;
+  object-position: center;
+  transition: transform 0.55s ease;
+}
+
+.botuka-company-card:hover .botuka-company-card__image img {
+  transform: scale(1.06);
+}
+
+.botuka-company-card__overlay {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(
+      180deg,
+      rgba(15, 23, 42, 0.02),
+      rgba(15, 23, 42, 0.45)
+    );
+}
+
+.botuka-company-card__badge {
+  position: absolute;
+  z-index: 2;
+  bottom: 0.85rem;
+  left: 0.85rem;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  max-width: calc(100% - 5rem);
+  padding: 0.42rem 0.68rem;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 999px;
+  color: #fff;
+  background: rgba(15, 23, 42, 0.62);
+  font-size: 0.68rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  backdrop-filter: blur(12px);
+}
+
+.botuka-company-card__favorite {
+  position: absolute;
+  z-index: 3;
+  top: 0.8rem;
+  right: 0.8rem;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 1px solid rgba(255, 255, 255, 0.58);
+  border-radius: 50%;
+  color: #2563eb;
+  background: rgba(255, 255, 255, 0.94);
+  cursor: pointer;
+  box-shadow: 0 9px 24px rgba(15, 23, 42, 0.18);
+  backdrop-filter: blur(10px);
+  transition:
+    color 0.2s ease,
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+.botuka-company-card__favorite:hover {
+  color: #e11d48;
+  background: #fff;
+  transform: scale(1.08);
+}
+
+.botuka-company-card__favorite.is-active {
+  color: #e11d48;
+}
+
+/* Corpo */
+
+.botuka-company-card__body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  padding: 1.2rem;
+  flex-direction: column;
+}
+
+.botuka-company-card__title-row {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.65rem;
+  min-width: 0;
+}
+
+.botuka-company-card__title-row h3 {
+  min-width: 0;
+  margin: 0;
+  color: #0f172a;
+  font-size: 1.14rem;
+  font-weight: 820;
+  line-height: 1.25;
+}
+
+.botuka-company-card__title-row h3 a {
+  display: -webkit-box;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  overflow-wrap: anywhere;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.botuka-company-card__title-row h3 a:hover {
+  color: #2563eb;
+}
+
+.botuka-company-card__verified {
+  flex: 0 0 auto;
+  color: #2563eb;
+  font-size: 1.05rem;
+}
+
+.botuka-company-card__description {
+  display: -webkit-box;
+  min-height: 44px;
+  margin: 0.7rem 0 1rem;
+  overflow: hidden;
+  color: #64748b;
+  font-size: 0.85rem;
+  line-height: 1.55;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.botuka-company-card__meta {
+  display: grid;
+  gap: 0.48rem;
+  margin-bottom: 1.1rem;
+}
+
+.botuka-company-card__meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.42rem;
+  min-width: 0;
+  color: #334155;
+  font-size: 0.78rem;
+  font-weight: 650;
+}
+
+.botuka-company-card__meta i {
+  flex: 0 0 auto;
+  color: #2563eb;
+}
+
+/* Ações */
+
+.botuka-company-card__actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 46px;
+  gap: 0.7rem;
+  margin-top: auto;
+}
+
+.botuka-company-card__button,
+.botuka-company-card__shortcut {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+  border-radius: 12px;
+  text-decoration: none;
+  transition:
+    transform 0.2s ease,
+    color 0.2s ease,
+    background 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.botuka-company-card__button {
+  padding: 0.78rem 1rem;
+  color: #fff;
+  background: linear-gradient(135deg, #0d99ff, #2563eb);
+  font-size: 0.86rem;
+  font-weight: 780;
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.22);
+}
+
+.botuka-company-card__button:hover {
+  color: #fff;
+  box-shadow: 0 14px 28px rgba(37, 99, 235, 0.3);
+  transform: translateY(-2px);
+}
+
+.botuka-company-card__shortcut {
+  border: 1px solid rgba(37, 99, 235, 0.2);
+  color: #2563eb;
+  background: rgba(37, 99, 235, 0.07);
+}
+
+.botuka-company-card__shortcut:hover {
+  color: #fff;
+  background: #2563eb;
+  transform: translateY(-2px);
+}
+
+/* Rodapé do carrossel */
+
+.botuka-companies__footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  min-height: 52px;
+  margin-top: 1.5rem;
+}
+
+.botuka-companies__pagination {
+  position: static !important;
+  display: flex;
+  align-items: center;
+  width: auto !important;
+  gap: 0.35rem;
+}
+
+.botuka-companies__pagination .swiper-pagination-bullet {
+  width: 9px;
+  height: 9px;
+  margin: 0 !important;
+  border-radius: 999px;
+  background: #94a3b8;
+  opacity: 0.35;
+  transition:
+    width 0.25s ease,
+    opacity 0.25s ease,
+    background 0.25s ease;
+}
+
+.botuka-companies__pagination .swiper-pagination-bullet-active {
+  width: 30px;
+  background: #2563eb;
+  opacity: 1;
+}
+
+.botuka-companies__navigation {
+  display: flex;
+  gap: 0.7rem;
+}
+
+.botuka-companies__nav {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 48px;
+  height: 48px;
+  padding: 0;
+  border: 1px solid rgba(37, 99, 235, 0.22);
+  border-radius: 14px;
+  color: #2563eb;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 9px 24px rgba(15, 23, 42, 0.07);
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease,
+    opacity 0.2s ease;
+}
+
+.botuka-companies__nav:hover:not(:disabled) {
+  color: #fff;
+  background: #2563eb;
+  transform: translateY(-2px);
+}
+
+.botuka-companies__nav:disabled {
+  color: #94a3b8;
+  background: #e2e8f0;
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+/* Foco */
+
+.botuka-companies a:focus-visible,
+.botuka-companies button:focus-visible {
+  outline: 3px solid rgba(37, 99, 235, 0.38);
+  outline-offset: 3px;
+}
+
+/* Tema escuro */
+
+[data-theme="dark"] .botuka-companies {
+  background:
+    radial-gradient(
+      circle at 8% 10%,
+      rgba(250, 204, 21, 0.09),
+      transparent 28%
+    ),
+    radial-gradient(
+      circle at 92% 90%,
+      rgba(59, 130, 246, 0.12),
+      transparent 30%
+    ),
+    #0f172a;
+}
+
+[data-theme="dark"] .botuka-companies__header h2 {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .botuka-companies__header p {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .botuka-companies__all,
+[data-theme="dark"] .botuka-companies__nav,
+[data-theme="dark"] .botuka-company-card {
+  border-color: rgba(148, 163, 184, 0.16);
+  background: #111c30;
+}
+
+[data-theme="dark"] .botuka-company-card__title-row h3 {
+  color: #f8fafc;
+}
+
+[data-theme="dark"] .botuka-company-card__description {
+  color: #94a3b8;
+}
+
+[data-theme="dark"] .botuka-company-card__meta span {
+  color: #cbd5e1;
+}
+
+/* Responsividade */
+
+@media (max-width: 900px) {
+  .botuka-companies__carousel {
+    overflow: hidden;
+  }
+}
+
+@media (max-width: 700px) {
+  .botuka-companies {
+    padding: 3.25rem 0;
+  }
+
+  .botuka-companies__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .botuka-companies__all {
+    width: 100%;
+  }
+
+  .botuka-company-card__media {
+    height: 165px;
+  }
+
+  .botuka-companies__footer {
+    align-items: center;
+    flex-direction: column;
+  }
+
+  .botuka-companies__navigation {
+    width: 100%;
+    justify-content: center;
+  }
+}
+</style>
+
+<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const swiperElement = document.querySelector("[data-companies-swiper]");
+
+  if (!swiperElement || typeof Swiper === "undefined") {
+    return;
+  }
+
+  const previousButton = swiperElement.querySelector(
+    ".botuka-companies__prev"
+  );
+
+  const nextButton = swiperElement.querySelector(
+    ".botuka-companies__next"
+  );
+
+  const pagination = swiperElement.querySelector(
+    ".botuka-companies__pagination"
+  );
+
+  new Swiper(swiperElement, {
+    slidesPerView: 1.12,
+    spaceBetween: 16,
+    speed: 650,
+    grabCursor: true,
+    watchOverflow: true,
+    observer: true,
+    observeParents: true,
+    keyboard: {
+      enabled: true,
+      onlyInViewport: true
+    },
+    navigation: {
+      prevEl: previousButton,
+      nextEl: nextButton
+    },
+    pagination: {
+      el: pagination,
+      clickable: true
+    },
+    breakpoints: {
+      480: {
+        slidesPerView: 1.5,
+        spaceBetween: 18
+      },
+      700: {
+        slidesPerView: 2.15,
+        spaceBetween: 20
+      },
+      960: {
+        slidesPerView: 3,
+        spaceBetween: 22
+      },
+      1280: {
+        slidesPerView: 4,
+        spaceBetween: 24
+      }
+    }
+  });
+
+  swiperElement
+    .querySelectorAll("[data-company-favorite]")
+    .forEach(function (button) {
+      button.addEventListener("click", function () {
+        const active = button.classList.toggle("is-active");
+        const icon = button.querySelector("i");
+
+        button.setAttribute(
+          "aria-pressed",
+          active ? "true" : "false"
+        );
+
+        if (icon) {
+          icon.className = active
+            ? "bi bi-heart-fill"
+            : "bi bi-heart";
+        }
+      });
+    });
+});
+</script>
+{% endif %}

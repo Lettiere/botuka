@@ -2,9 +2,15 @@ from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.templatetags.static import static
 
+from apps.core.services.home import montar_contexto_home
+
 
 def home(request):
-    return render(request, "home/home.html")
+    return render(
+        request,
+        "home/home.html",
+        montar_contexto_home(getattr(request, "user", None)),
+    )
 
 
 def pwa_manifest(request):

@@ -51,6 +51,12 @@ from apps.organizations.permissions import (
     usuario_pode_gerenciar_equipe,
     usuario_pode_visualizar_empresa,
 )
+from apps.organizations.plans import (
+    LimitePlanoExcedido,
+    bloquear_e_validar_criacao_empresa,
+    bloquear_e_validar_criacao_servico,
+    validar_contexto_servico,
+)
 from apps.services.models import Profissao, Servico, ServicoArea, ServicoCaracteristica, ServicoImagem, ServicoLink
 from apps.services.permissions import (
     servicos_disponiveis_para_usuario,
@@ -80,7 +86,8 @@ def painel_permission_required(codigo: str):
 
 @login_required
 def dashboard(request: HttpRequest) -> HttpResponse:
-    return render(request, 'painel/dashboard.html')
+    from apps.painel.services import montar_dashboard_conta
+    return render(request, 'painel/dashboard.html', {"dashboard": montar_dashboard_conta(request.user)})
 
 
 @login_required
@@ -166,6 +173,8 @@ def _aplicar_filtros_empresas(request: HttpRequest, queryset):
 
 @login_required
 def empresas_lista(request: HttpRequest) -> HttpResponse:
+    from apps.organizations.plans import usuario_pode_criar_empresa
+    limite_empresas = usuario_pode_criar_empresa(request.user)
     empresas_base = empresas_disponiveis_para_usuario(request.user)
     empresas_filtradas = _aplicar_filtros_empresas(request, empresas_base).annotate(
         total_usuarios=Count(
@@ -191,12 +200,19 @@ def empresas_lista(request: HttpRequest) -> HttpResponse:
             'total_filtrado': paginator.count,
             'total_ativas': empresas_base.filter(status=Empresa.Status.ATIVA).count(),
             'total_pendentes': empresas_base.filter(status=Empresa.Status.PENDENTE).count(),
+            'pode_criar_empresa': limite_empresas.permitido,
+            'limite_empresas': limite_empresas.limite,
         },
     )
 
 
 @login_required
 def empresa_criar(request: HttpRequest) -> HttpResponse:
+    from apps.organizations.plans import usuario_pode_criar_empresa
+    limite = usuario_pode_criar_empresa(request.user)
+    if not limite.permitido:
+        messages.error(request, f'Seu plano permite no máximo {limite.limite} empresa ativa. Faça upgrade para cadastrar outra empresa.')
+        return redirect('painel:empresas_lista')
     if request.method == 'POST':
         form = EmpresaForm(
             request.POST,
@@ -206,23 +222,28 @@ def empresa_criar(request: HttpRequest) -> HttpResponse:
         )
 
         if form.is_valid():
-            with transaction.atomic():
-                empresa = form.save(commit=False)
-                empresa.usuario_proprietario = request.user
-                empresa.save()
-                EmpresaUsuario.objects.create(
-                    empresa=empresa,
-                    usuario=request.user,
-                    funcao=EmpresaUsuario.Funcao.PROPRIETARIO,
-                    proprietario=True,
-                    administrador=True,
-                    pode_editar=True,
-                    pode_publicar_servico=True,
-                    pode_gerenciar_equipe=True,
-                )
+            try:
+                with transaction.atomic():
+                    bloquear_e_validar_criacao_empresa(request.user)
+                    empresa = form.save(commit=False)
+                    empresa.usuario_proprietario = request.user
+                    empresa.save()
+                    EmpresaUsuario.objects.create(
+                        empresa=empresa,
+                        usuario=request.user,
+                        funcao=EmpresaUsuario.Funcao.PROPRIETARIO,
+                        proprietario=True,
+                        administrador=True,
+                        pode_editar=True,
+                        pode_publicar_servico=True,
+                        pode_gerenciar_equipe=True,
+                    )
+            except LimitePlanoExcedido as exc:
+                form.add_error(None, exc)
+            else:
+                messages.success(request, 'Empresa cadastrada com sucesso.')
+                return redirect('painel:empresa_detalhe', uuid=empresa.uuid)
 
-            messages.success(request, 'Empresa cadastrada com sucesso.')
-            return redirect('painel:empresa_detalhe', uuid=empresa.uuid)
     else:
         form = EmpresaForm(usuario=request.user)
 
@@ -577,9 +598,7 @@ def servicos_lista(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def servico_criar(request: HttpRequest) -> HttpResponse:
-    empresas = empresas_disponiveis_para_usuario(request.user).filter(ativo=True).order_by('nome_fantasia')
-    form = ServicoForm(request.POST or None)
-    form.fields['empresa'].queryset = empresas
+    form = ServicoForm(request.POST or None, usuario=request.user)
     area_form = ServicoAreaForm(request.POST or None, prefix='area')
     links_forms = _formularios_links_post(request) if request.method == 'POST' else []
     if request.method == 'POST':
@@ -590,12 +609,12 @@ def servico_criar(request: HttpRequest) -> HttpResponse:
         if valido:
             servico = form.save(commit=False)
             servico.usuario_responsavel = request.user
-            if servico.prestador_tipo == Servico.PrestadorTipo.EMPRESA:
-                if not servico.empresa_id or not usuario_pode_gerenciar_empresa(request.user, servico.empresa):
-                    form.add_error('empresa', 'Selecione uma empresa que você administra.')
-                    valido = False
-            elif servico.empresa_id:
-                form.add_error('empresa', 'Pessoa física não pode vincular uma empresa.')
+            try:
+                validar_contexto_servico(
+                    request.user, servico.prestador_tipo, servico.empresa,
+                )
+            except (ValidationError, PermissionDenied) as exc:
+                form.add_error('empresa', str(exc))
                 valido = False
             acao = request.POST.get('acao', 'rascunho')
             if acao not in {'rascunho', 'publicar'}:
@@ -605,6 +624,9 @@ def servico_criar(request: HttpRequest) -> HttpResponse:
         if valido:
             try:
                 with transaction.atomic():
+                    bloquear_e_validar_criacao_servico(
+                        request.user, servico.prestador_tipo, servico.empresa,
+                    )
                     servico.save()
                     if area_informada:
                         area = area_form.save(commit=False)
@@ -620,7 +642,7 @@ def servico_criar(request: HttpRequest) -> HttpResponse:
                         link.save()
                 messages.success(request, 'Serviço enviado para moderação.' if acao == 'publicar' else 'Serviço salvo como rascunho.')
                 return redirect('painel:servico_detalhe', uuid=servico.uuid)
-            except ValidationError as exc:
+            except (ValidationError, LimitePlanoExcedido) as exc:
                 form.add_error(None, exc)
         for erro in erros_upload:
             form.add_error(None, erro)
@@ -675,42 +697,33 @@ def servico_editar(request: HttpRequest, uuid) -> HttpResponse:
     if not usuario_pode_editar_servico(request.user, servico):
         raise PermissionDenied
 
-    empresas_admin = empresas_disponiveis_para_usuario(request.user).filter(ativo=True).order_by('nome_fantasia')
     if request.method == 'POST':
-        form = ServicoForm(request.POST, request.FILES, instance=servico)
-        form.fields['empresa'].queryset = empresas_admin
+        form = ServicoForm(request.POST, request.FILES, instance=servico, usuario=request.user)
         valido = form.is_valid()
         acao = request.POST.get('acao', 'salvar')
         # Validar vínculo de empresa
         if valido:
             servico_obj = form.save(commit=False)
             # PF não pode ter empresa
-            if servico_obj.prestador_tipo == Servico.PrestadorTipo.PF and servico_obj.empresa_id:
-                form.add_error('empresa', 'Pessoa física não pode vincular uma empresa.')
+            try:
+                validar_contexto_servico(
+                    request.user, servico_obj.prestador_tipo, servico_obj.empresa,
+                )
+            except (ValidationError, PermissionDenied) as exc:
+                form.add_error('empresa', str(exc))
                 valido = False
-            # PJ tem que ser empresa administrável, se presente
-            if servico_obj.prestador_tipo == Servico.PrestadorTipo.EMPRESA:
-                # empresa obrigatória para PJ
-                if not servico_obj.empresa_id:
-                    form.add_error('empresa', 'Selecione uma empresa que você administra.')
-                    valido = False
-                elif not empresas_admin.filter(pk=servico_obj.empresa_id).exists():
-                    form.add_error(
-                        'empresa',
-                        'Você não pode trocar para uma empresa que não administra.'
-                    )
-                    valido = False
         # Só exige permissão de publicar caso seja publicação
         if acao == 'publicar':
             if not usuario_pode_publicar_servico(request.user, servico):
                 raise PermissionDenied
         if valido:
-            servico_obj.save()
+            with transaction.atomic():
+                servico_obj.usuario_responsavel = request.user
+                servico_obj.save()
             messages.success(request, 'Serviço atualizado com sucesso.')
             return redirect('painel:servico_detalhe', uuid=servico_obj.uuid)
     else:
-        form = ServicoForm(instance=servico)
-        form.fields['empresa'].queryset = empresas_admin
+        form = ServicoForm(instance=servico, usuario=request.user)
 
     return render(request, 'painel/servicos/form.html', {'titulo': 'Editar serviço', 'form': form, 'servico': servico})
 

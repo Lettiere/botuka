@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import uuid
+from decimal import Decimal
 
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -41,6 +42,173 @@ def formatar_documento(valor: str | None) -> str:
         )
 
     return documento
+
+
+class Plano(models.Model):
+    class Codigo(models.TextChoices):
+        GRATUITO = 'GRATUITO', 'Gratuito'
+        BRONZE = 'BRONZE', 'Bronze'
+        PRATA = 'PRATA', 'Prata'
+        OURO = 'OURO', 'Ouro'
+        PREMIUM = 'PREMIUM', 'Premium'
+        EMPRESARIAL = 'EMPRESARIAL', 'Empresarial'
+        CORPORATIVO = 'CORPORATIVO', 'Corporativo'
+        PERSONALIZADO = 'PERSONALIZADO', 'Personalizado'
+
+    codigo = models.CharField(max_length=30, choices=Codigo.choices, unique=True, null=True, blank=True)
+    nome = models.CharField(max_length=100, unique=True)
+    limite_servicos = models.PositiveIntegerField(null=True, blank=True)
+    limite_empresas = models.PositiveIntegerField(null=True, blank=True, default=None)
+    empresas_inclusas = models.PositiveIntegerField(default=1)
+    preco_mensal_pf = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    preco_mensal_pj = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    preco_empresa_adicional = models.DecimalField(max_digits=10, decimal_places=2, default=Decimal('50.00'))
+    ilimitado = models.BooleanField(default=False)
+    ilimitado_servicos = models.BooleanField(default=False)
+    ilimitado_empresas = models.BooleanField(default=False)
+    ordem = models.PositiveIntegerField(default=0)
+    ativo = models.BooleanField(default=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    excluido_em = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'platform_plano_tb'
+
+    def __str__(self):
+        return self.nome
+
+    def clean(self):
+        super().clean()
+        if self.empresas_inclusas != 1:
+            raise ValidationError({'empresas_inclusas': 'Todos os planos devem incluir exatamente uma empresa.'})
+        if self.preco_empresa_adicional != Decimal('50.00'):
+            raise ValidationError({'preco_empresa_adicional': 'Cada empresa adicional deve custar R$ 50,00 por mês.'})
+        faixas = {
+            self.Codigo.EMPRESARIAL: (50, 100),
+            self.Codigo.CORPORATIVO: (100, 200),
+        }
+        if self.codigo in faixas and self.limite_servicos is not None:
+            minimo, maximo = faixas[self.codigo]
+            if not minimo <= self.limite_servicos <= maximo:
+                raise ValidationError({'limite_servicos': f'O plano {self.get_codigo_display()} aceita de {minimo} a {maximo} serviços.'})
+        if self.codigo == self.Codigo.PERSONALIZADO and self.limite_servicos is None:
+            return
+        if not self.ilimitado_servicos and self.limite_servicos is None:
+            raise ValidationError({'limite_servicos': 'Informe o limite de serviços deste plano.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class Assinatura(models.Model):
+    class Status(models.TextChoices):
+        ATIVA = 'ATIVA', 'Ativa'
+        CANCELADA = 'CANCELADA', 'Cancelada'
+        EXPIRADA = 'EXPIRADA', 'Expirada'
+
+    class TipoContratante(models.TextChoices):
+        PF = 'PF', 'Pessoa física'
+        PJ = 'PJ', 'Pessoa jurídica'
+
+    class Periodicidade(models.TextChoices):
+        MENSAL = 'MENSAL', 'Mensal'
+
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='assinaturas')
+    plano = models.ForeignKey(Plano, on_delete=models.PROTECT, related_name='assinaturas')
+    tipo_contratante = models.CharField(max_length=2, choices=TipoContratante.choices, default=TipoContratante.PF)
+    empresa_contratante = models.ForeignKey('Empresa', on_delete=models.PROTECT, null=True, blank=True, related_name='assinaturas_contratantes')
+    valor_mensal_contratado = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    limite_servicos_contratado = models.PositiveIntegerField(null=True, blank=True)
+    periodicidade = models.CharField(max_length=20, choices=Periodicidade.choices, default=Periodicidade.MENSAL)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.ATIVA)
+    inicio = models.DateTimeField(default=timezone.now)
+    fim = models.DateTimeField(null=True, blank=True)
+    ativo = models.BooleanField(default=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    excluido_em = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'platform_assinatura_tb'
+        indexes = [models.Index(fields=['usuario', 'status', 'fim'], name='platform_assin_user_status_idx')]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(tipo_contratante='PF', empresa_contratante__isnull=True)
+                    | models.Q(tipo_contratante='PJ', empresa_contratante__isnull=False)
+                ),
+                name='platform_assinatura_tipo_empresa_ck',
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.tipo_contratante == self.TipoContratante.PF and self.empresa_contratante_id:
+            raise ValidationError({'empresa_contratante': 'Assinatura de pessoa física não deve possuir empresa contratante.'})
+        if self.tipo_contratante == self.TipoContratante.PJ:
+            if not self.empresa_contratante_id:
+                raise ValidationError({'empresa_contratante': 'Informe a empresa contratante.'})
+            if self.empresa_contratante.usuario_proprietario_id != self.usuario_id:
+                raise ValidationError({'empresa_contratante': 'A empresa contratante deve pertencer ao titular da assinatura.'})
+        if self.plano_id:
+            faixas = {
+                Plano.Codigo.EMPRESARIAL: (50, 100),
+                Plano.Codigo.CORPORATIVO: (100, 200),
+            }
+            if self.plano.codigo in faixas and self.limite_servicos_contratado is not None:
+                minimo, maximo = faixas[self.plano.codigo]
+                if not minimo <= self.limite_servicos_contratado <= maximo:
+                    raise ValidationError({'limite_servicos_contratado': f'Informe um limite entre {minimo} e {maximo} serviços.'})
+            if self.plano.codigo == Plano.Codigo.PERSONALIZADO:
+                if not self.limite_servicos_contratado or self.limite_servicos_contratado < 1:
+                    raise ValidationError({'limite_servicos_contratado': 'Defina o limite de serviços contratado.'})
+            elif self.plano.codigo not in faixas and self.limite_servicos_contratado is not None:
+                raise ValidationError({'limite_servicos_contratado': 'Este plano não aceita limite personalizado por contrato.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+
+class ContratacaoEmpresaAdicional(models.Model):
+    class Status(models.TextChoices):
+        PENDENTE = 'PENDENTE', 'Pendente'
+        ATIVA = 'ATIVA', 'Ativa'
+        CANCELADA = 'CANCELADA', 'Cancelada'
+        EXPIRADA = 'EXPIRADA', 'Expirada'
+
+    assinatura = models.ForeignKey(Assinatura, on_delete=models.PROTECT, related_name='contratacoes_empresas_adicionais')
+    quantidade = models.PositiveIntegerField(default=1)
+    valor_unitario = models.DecimalField(max_digits=10, decimal_places=2)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.PENDENTE)
+    inicio = models.DateTimeField(default=timezone.now)
+    fim = models.DateTimeField(null=True, blank=True)
+    referencia_externa = models.CharField(max_length=120, blank=True)
+    ativo = models.BooleanField(default=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+    excluido_em = models.DateTimeField(null=True, blank=True)
+
+    class Meta:
+        db_table = 'platform_contratacao_empresa_adicional_tb'
+        indexes = [models.Index(fields=['assinatura', 'status', 'fim'], name='plat_cont_emp_add_status_idx')]
+        constraints = [
+            models.CheckConstraint(condition=models.Q(quantidade__gte=1), name='platform_cont_emp_add_qtd_ck'),
+            models.CheckConstraint(condition=models.Q(valor_unitario=Decimal('50.00')), name='platform_cont_emp_add_valor_ck'),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.valor_unitario != Decimal('50.00'):
+            raise ValidationError({'valor_unitario': 'Cada empresa adicional deve custar R$ 50,00 por mês.'})
+        if self.fim and self.fim <= self.inicio:
+            raise ValidationError({'fim': 'O fim deve ser posterior ao início.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
 
 
 class EmpresaQuerySet(models.QuerySet):

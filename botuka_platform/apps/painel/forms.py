@@ -6,10 +6,12 @@ import re
 
 from django import forms
 from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied, ValidationError
 
 from apps.core.models import EnderecoCore, PessoaDocumento
 from apps.organizations.models import Empresa, EmpresaLink, EmpresaUsuario
 from apps.organizations.models import EmpresaCapacidade, EmpresaSolicitacao
+from apps.organizations.permissions import empresas_disponiveis_para_usuario
 from apps.services.models import (
     Servico,
     ServicoArea,
@@ -482,6 +484,30 @@ class ServicoContatoForm(BaseServicoForm):
 
 
 class ServicoForm(BaseServicoForm):
+    def __init__(self, *args, usuario=None, **kwargs):
+        self.usuario = usuario
+        super().__init__(*args, **kwargs)
+        if usuario is not None:
+            self.fields['empresa'].queryset = (
+                empresas_disponiveis_para_usuario(usuario)
+                .filter(ativo=True)
+                .order_by('nome_fantasia')
+            )
+
+    def clean(self):
+        cleaned = super().clean()
+        if self.usuario and cleaned.get('prestador_tipo'):
+            from apps.organizations.plans import validar_contexto_servico
+            try:
+                validar_contexto_servico(
+                    self.usuario,
+                    cleaned.get('prestador_tipo'),
+                    cleaned.get('empresa'),
+                )
+            except (ValidationError, PermissionDenied) as exc:
+                self.add_error('empresa', str(exc))
+        return cleaned
+
     class Meta:
         model = Servico
         fields = [

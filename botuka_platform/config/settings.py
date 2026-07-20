@@ -100,6 +100,11 @@ INSTALLED_APPS = [
     'apps.locations.apps.LocationsConfig',
     'apps.organizations.apps.OrganizationsConfig',
     'apps.services.apps.ServicesConfig',
+    'apps.recruitment.apps.RecruitmentConfig',
+    'apps.sports.apps.SportsConfig',
+    'apps.media.apps.MediaConfig',
+    'apps.news.apps.NewsConfig',
+    'apps.government.apps.GovernmentConfig',
     'apps.taxonomy.apps.TaxonomyConfig',
     'apps.gestao.apps.GestaoConfig',
     'apps.painel.apps.PainelConfig',
@@ -139,10 +144,19 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'apps.gestao.context_processors.public_urls',
                 'apps.gestao.context_processors.publicar_options',
+                'apps.painel.navigation.painel_navigation',
+                'apps.painel.navigation.painel_navigation',
             ],
         },
     },
 ]
+
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        'LOCATION': 'botuka-local',
+    }
+}
 
 LOGIN_URL = 'home'
 LOGIN_REDIRECT_URL = 'gestao:dashboard'

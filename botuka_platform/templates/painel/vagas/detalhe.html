@@ -1,0 +1,1 @@
+{% extends 'painel/base.html' %}{% block content %}<div class="container py-4"><h1>{{ vaga.titulo }}</h1><p>{{ vaga.empresa }} · {{ vaga.get_status_display }}</p><div>{{ vaga.descricao|linebreaks }}</div><a href="{% url 'painel:vaga_editar' vaga.uuid %}">Editar</a></div>{% endblock %}

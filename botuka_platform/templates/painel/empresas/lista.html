@@ -653,10 +653,12 @@
       </div>
 
       <div class="empresas-hero-action">
+        {% if pode_criar_empresa %}
         <a class="empresas-button empresas-button-primary" href="{% url 'painel:empresa_criar' %}">
           <i class="bi bi-plus-lg"></i>
           Cadastrar empresa
         </a>
+        {% endif %}
       </div>
     </header>
 
@@ -885,10 +887,10 @@
           Crie seu primeiro negócio na BOTUKA para organizar dados comerciais,
           equipe, contatos e publicações de serviços em nome da empresa.
         </p>
-        <a class="empresas-button empresas-button-primary" href="{% url 'painel:empresa_criar' %}">
+        {% if pode_criar_empresa %}<a class="empresas-button empresas-button-primary" href="{% url 'painel:empresa_criar' %}">
           <i class="bi bi-plus-lg"></i>
           Cadastrar minha primeira empresa
-        </a>
+        </a>{% endif %}
       </section>
     {% endif %}
   </div>

@@ -4,19 +4,24 @@
 
 {% block content %}
 
-<link rel="stylesheet" href="{% static 'home/css/style.css' %}">
-
 <div id="inicio">
-  {% include "home/partials/hero.html" %}
-  {% include "home/partials/categorias.html" %}
-  {% include "home/partials/carousel_destaque.html" %}
-  {% include "home/partials/cultura.html" %}
-  {% include "home/partials/turismo.html" %}
-  {% include "home/partials/produtos.html" %}
-  {% include "home/partials/eventos.html" %}
-  {% include "home/partials/mapa_cidade.html" %}
-  {% include "home/partials/servicos.html" %}
-  {% include "home/partials/cta.html" %}
+   {% include "home/partials/hero.html" %}
+   {% include "home/includes/news.html" %}
+   {% include "home/includes/eventos.html" %}
+   {% include "home/includes/cultura.html" %}
+   {% include "home/includes/empresas.html" %}
+   {% include "home/includes/servicos.html" %}
+   {% include "home/includes/gastronomia.html" %}
+   {% include "home/includes/parques.html" %}
+   {% include "home/includes/vagas.html" %}
+   {% include "home/includes/ytv.html" %}
+   {% include "home/includes/esportes.html" %}
+   {% include "home/includes/jogos.html" %}
+   {% include "home/includes/prefeitura.html" %}
+   {% include "home/partials/turismo.html" %}
+   {% include "home/partials/produtos.html" %}
+   {% include "home/partials/mapa_cidade.html" %}
+   {% include "home/partials/cta.html" %}
 </div>
 
 {% endblock %}

@@ -41,12 +41,12 @@
           <p>Divulgue serviços, produtos, vagas, eventos, empresas e avisos regionais.</p>
 
           <div class="publish-grid" style="display:flex;flex-wrap:wrap;gap:14px;">
-            <a href="#" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-tools"></i> Serviço</a>
-            <a href="#" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-tag-fill"></i> Produto</a>
-            <a href="#" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-briefcase-fill"></i> Vaga</a>
-            <a href="#" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-calendar-event-fill"></i> Evento</a>
-            <a href="#" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-shop"></i> Empresa</a>
-            <a href="#" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-megaphone-fill"></i> Aviso</a>
+            <a href="{% url 'publico:servicos' %}" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-tools"></i> Serviços</a>
+            <a href="{% url 'publico:empresas' %}" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-tag-fill"></i> Produtos</a>
+            <a href="{% url 'recruitment_public:vagas' %}" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-briefcase-fill"></i> Vagas</a>
+            <a href="{% url 'events:lista' %}" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-calendar-event-fill"></i> Eventos</a>
+            <a href="{% url 'publico:empresas' %}" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-shop"></i> Empresas</a>
+            <a href="{% url 'government_public:home' %}" class="publish-option" style="flex:1 1 160px;min-width:120px;"><i class="bi bi-megaphone-fill"></i> Avisos</a>
           </div>
         </aside>
 

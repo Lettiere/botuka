@@ -1,0 +1,1028 @@
+{% if vagas_recentes %}
+<section
+  class="botuka-jobs-home home-domain"
+  id="vagas"
+  aria-labelledby="home-vagas-title"
+>
+  <div class="container-botuka">
+
+    <header class="botuka-jobs-home__header">
+      <div class="botuka-jobs-home__heading">
+        <span class="botuka-jobs-home__kicker">
+          <i class="bi bi-briefcase-fill" aria-hidden="true"></i>
+          Oportunidades
+        </span>
+
+        <h2 id="home-vagas-title">Vagas recentes</h2>
+
+        <p>
+          Oportunidades de emprego publicadas por empresas da cidade.
+        </p>
+      </div>
+
+      <a
+        href="{% url 'recruitment_public:vagas' %}"
+        class="botuka-jobs-home__all"
+      >
+        Ver todas as vagas
+        <i class="bi bi-arrow-right" aria-hidden="true"></i>
+      </a>
+    </header>
+
+    <div class="botuka-jobs-marquee" aria-label="Vagas recentes">
+
+      <!-- LINHA SUPERIOR — ESQUERDA -->
+      <div class="botuka-jobs-row botuka-jobs-row--left">
+        <div class="botuka-jobs-track">
+          <div class="botuka-jobs-group">
+            {% for vaga in vagas_recentes %}
+              <article class="botuka-job-card">
+                <div class="botuka-job-card__top">
+                  <div class="botuka-job-card__company">
+                    <div class="botuka-job-card__company-logo">
+                      {% if vaga.empresa.logo %}
+                        <img
+                          src="{{ vaga.empresa.logo.url }}"
+                          alt="{{ vaga.empresa.nome_fantasia|default:vaga.empresa.razao_social }}"
+                          loading="lazy"
+                          decoding="async"
+                          onerror="this.hidden=true;"
+                        >
+                      {% else %}
+                        <span aria-hidden="true">
+                          <i class="bi bi-buildings"></i>
+                        </span>
+                      {% endif %}
+                    </div>
+                    <div class="botuka-job-card__company-info">
+                      <span class="botuka-job-card__company-name">
+                        {{ vaga.empresa.nome_fantasia|default:vaga.empresa.razao_social|truncatechars:30 }}
+                      </span>
+                      <span class="botuka-job-card__published">
+                        <i class="bi bi-clock" aria-hidden="true"></i>
+                        {% if vaga.publicado_em %}
+                          {{ vaga.publicado_em|timesince }} atrás
+                        {% else %}
+                          Vaga recente
+                        {% endif %}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="botuka-job-card__favorite"
+                    data-job-favorite
+                    aria-label="Adicionar vaga aos favoritos"
+                    aria-pressed="false"
+                  >
+                    <i class="bi bi-bookmark" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <div class="botuka-job-card__body">
+                  <span class="botuka-job-card__contract">
+                    {{ vaga.get_tipo_contrato_display|default:vaga.tipo_contrato }}
+                  </span>
+                  <h3>
+                    <a href="{% url 'recruitment_public:vaga' vaga.slug %}">
+                      {{ vaga.titulo|truncatechars:52 }}
+                    </a>
+                  </h3>
+                  <div class="botuka-job-card__meta">
+                    {% if vaga.modalidade %}
+                      <span>
+                        {% if vaga.modalidade == "REMOTO" %}
+                          <i class="bi bi-laptop" aria-hidden="true"></i>
+                        {% elif vaga.modalidade == "HIBRIDO" %}
+                          <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+                        {% else %}
+                          <i class="bi bi-building" aria-hidden="true"></i>
+                        {% endif %}
+                        {{ vaga.get_modalidade_display|default:vaga.modalidade }}
+                      </span>
+                    {% endif %}
+                    {% if vaga.cidade %}
+                      <span>
+                        <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                        {{ vaga.cidade }}{% if vaga.estado %}/{{ vaga.estado }}{% endif %}
+                      </span>
+                    {% endif %}
+                  </div>
+                  <div class="botuka-job-card__footer">
+                    <div class="botuka-job-card__salary">
+                      {% if vaga.salario_minimo %}
+                        <small>A partir de</small>
+                        <strong>R$ {{ vaga.salario_minimo|floatformat:2 }}</strong>
+                      {% else %}
+                        <small>Remuneração</small>
+                        <strong>Consulte a vaga</strong>
+                      {% endif %}
+                    </div>
+                    <a
+                      href="{% url 'recruitment_public:vaga' vaga.slug %}"
+                      class="botuka-job-card__button"
+                      aria-label="Ver vaga {{ vaga.titulo }}"
+                    >
+                      Ver vaga
+                      <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+                    </a>
+                  </div>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+          <div class="botuka-jobs-group" aria-hidden="true">
+            {% for vaga in vagas_recentes %}
+              <article class="botuka-job-card">
+                <div class="botuka-job-card__top">
+                  <div class="botuka-job-card__company">
+                    <div class="botuka-job-card__company-logo">
+                      {% if vaga.empresa.logo %}
+                        <img
+                          src="{{ vaga.empresa.logo.url }}"
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          onerror="this.hidden=true;"
+                        >
+                      {% else %}
+                        <span aria-hidden="true">
+                          <i class="bi bi-buildings"></i>
+                        </span>
+                      {% endif %}
+                    </div>
+                    <div class="botuka-job-card__company-info">
+                      <span class="botuka-job-card__company-name">
+                        {{ vaga.empresa.nome_fantasia|default:vaga.empresa.razao_social|truncatechars:30 }}
+                      </span>
+                      <span class="botuka-job-card__published">
+                        <i class="bi bi-clock" aria-hidden="true"></i>
+                        {% if vaga.publicado_em %}
+                          {{ vaga.publicado_em|timesince }} atrás
+                        {% else %}
+                          Vaga recente
+                        {% endif %}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div class="botuka-job-card__body">
+                  <span class="botuka-job-card__contract">
+                    {{ vaga.get_tipo_contrato_display|default:vaga.tipo_contrato }}
+                  </span>
+                  <h3>
+                    <span>{{ vaga.titulo|truncatechars:52 }}</span>
+                  </h3>
+                  <div class="botuka-job-card__meta">
+                    {% if vaga.modalidade %}
+                      <span>
+                        <i class="bi bi-briefcase" aria-hidden="true"></i>
+                        {{ vaga.get_modalidade_display|default:vaga.modalidade }}
+                      </span>
+                    {% endif %}
+                    {% if vaga.cidade %}
+                      <span>
+                        <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                        {{ vaga.cidade }}{% if vaga.estado %}/{{ vaga.estado }}{% endif %}
+                      </span>
+                    {% endif %}
+                  </div>
+                  <div class="botuka-job-card__footer">
+                    <div class="botuka-job-card__salary">
+                      {% if vaga.salario_minimo %}
+                        <small>A partir de</small>
+                        <strong>R$ {{ vaga.salario_minimo|floatformat:2 }}</strong>
+                      {% else %}
+                        <small>Remuneração</small>
+                        <strong>Consulte a vaga</strong>
+                      {% endif %}
+                    </div>
+                    <span class="botuka-job-card__button">
+                      Ver vaga
+                      <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+                    </span>
+                  </div>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- LINHA INFERIOR — DIREITA -->
+      <div class="botuka-jobs-row botuka-jobs-row--right">
+        <div class="botuka-jobs-track">
+          <div class="botuka-jobs-group">
+            {% for vaga in vagas_recentes reversed %}
+              <article class="botuka-job-card">
+                <div class="botuka-job-card__top">
+                  <div class="botuka-job-card__company">
+                    <div class="botuka-job-card__company-logo">
+                      {% if vaga.empresa.logo %}
+                        <img
+                          src="{{ vaga.empresa.logo.url }}"
+                          alt="{{ vaga.empresa.nome_fantasia|default:vaga.empresa.razao_social }}"
+                          loading="lazy"
+                          decoding="async"
+                          onerror="this.hidden=true;"
+                        >
+                      {% else %}
+                        <span aria-hidden="true">
+                          <i class="bi bi-buildings"></i>
+                        </span>
+                      {% endif %}
+                    </div>
+                    <div class="botuka-job-card__company-info">
+                      <span class="botuka-job-card__company-name">
+                        {{ vaga.empresa.nome_fantasia|default:vaga.empresa.razao_social|truncatechars:30 }}
+                      </span>
+                      <span class="botuka-job-card__published">
+                        <i class="bi bi-clock" aria-hidden="true"></i>
+                        {% if vaga.publicado_em %}
+                          {{ vaga.publicado_em|timesince }} atrás
+                        {% else %}
+                          Vaga recente
+                        {% endif %}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="botuka-job-card__favorite"
+                    data-job-favorite
+                    aria-label="Adicionar vaga aos favoritos"
+                    aria-pressed="false"
+                  >
+                    <i class="bi bi-bookmark" aria-hidden="true"></i>
+                  </button>
+                </div>
+                <div class="botuka-job-card__body">
+                  <span class="botuka-job-card__contract">
+                    {{ vaga.get_tipo_contrato_display|default:vaga.tipo_contrato }}
+                  </span>
+                  <h3>
+                    <a href="{% url 'recruitment_public:vaga' vaga.slug %}">
+                      {{ vaga.titulo|truncatechars:52 }}
+                    </a>
+                  </h3>
+                  <div class="botuka-job-card__meta">
+                    {% if vaga.modalidade %}
+                      <span>
+                        <i class="bi bi-briefcase" aria-hidden="true"></i>
+                        {{ vaga.get_modalidade_display|default:vaga.modalidade }}
+                      </span>
+                    {% endif %}
+                    {% if vaga.cidade %}
+                      <span>
+                        <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                        {{ vaga.cidade }}{% if vaga.estado %}/{{ vaga.estado }}{% endif %}
+                      </span>
+                    {% endif %}
+                  </div>
+                  <div class="botuka-job-card__footer">
+                    <div class="botuka-job-card__salary">
+                      {% if vaga.salario_minimo %}
+                        <small>A partir de</small>
+                        <strong>R$ {{ vaga.salario_minimo|floatformat:2 }}</strong>
+                      {% else %}
+                        <small>Remuneração</small>
+                        <strong>Consulte a vaga</strong>
+                      {% endif %}
+                    </div>
+                    <a
+                      href="{% url 'recruitment_public:vaga' vaga.slug %}"
+                      class="botuka-job-card__button"
+                    >
+                      Ver vaga
+                      <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+                    </a>
+                  </div>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+          <div class="botuka-jobs-group" aria-hidden="true">
+            {% for vaga in vagas_recentes reversed %}
+              <article class="botuka-job-card">
+                <div class="botuka-job-card__top">
+                  <div class="botuka-job-card__company">
+                    <div class="botuka-job-card__company-logo">
+                      {% if vaga.empresa.logo %}
+                        <img
+                          src="{{ vaga.empresa.logo.url }}"
+                          alt=""
+                          loading="lazy"
+                          decoding="async"
+                          onerror="this.hidden=true;"
+                        >
+                      {% else %}
+                        <span aria-hidden="true">
+                          <i class="bi bi-buildings"></i>
+                        </span>
+                      {% endif %}
+                    </div>
+                    <div class="botuka-job-card__company-info">
+                      <span class="botuka-job-card__company-name">
+                        {{ vaga.empresa.nome_fantasia|default:vaga.empresa.razao_social|truncatechars:30 }}
+                      </span>
+                      <span class="botuka-job-card__published">
+                        <i class="bi bi-clock" aria-hidden="true"></i>
+                        {% if vaga.publicado_em %}
+                          {{ vaga.publicado_em|timesince }} atrás
+                        {% else %}
+                          Vaga recente
+                        {% endif %}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <div class="botuka-job-card__body">
+                  <span class="botuka-job-card__contract">
+                    {{ vaga.get_tipo_contrato_display|default:vaga.tipo_contrato }}
+                  </span>
+                  <h3>
+                    <span>{{ vaga.titulo|truncatechars:52 }}</span>
+                  </h3>
+                  <div class="botuka-job-card__meta">
+                    {% if vaga.modalidade %}
+                      <span>
+                        <i class="bi bi-briefcase" aria-hidden="true"></i>
+                        {{ vaga.get_modalidade_display|default:vaga.modalidade }}
+                      </span>
+                    {% endif %}
+                    {% if vaga.cidade %}
+                      <span>
+                        <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+                        {{ vaga.cidade }}{% if vaga.estado %}/{{ vaga.estado }}{% endif %}
+                      </span>
+                    {% endif %}
+                  </div>
+                  <div class="botuka-job-card__footer">
+                    <div class="botuka-job-card__salary">
+                      {% if vaga.salario_minimo %}
+                        <small>A partir de</small>
+                        <strong>R$ {{ vaga.salario_minimo|floatformat:2 }}</strong>
+                      {% else %}
+                        <small>Remuneração</small>
+                        <strong>Consulte a vaga</strong>
+                      {% endif %}
+                    </div>
+                    <span class="botuka-job-card__button">
+                      Ver vaga
+                      <i class="bi bi-arrow-up-right" aria-hidden="true"></i>
+                    </span>
+                  </div>
+                </div>
+              </article>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <footer class="botuka-jobs-home__footer">
+      <p>
+        <i class="bi bi-mouse" aria-hidden="true"></i>
+        No computador, use os botões. No celular, arraste com o dedo.
+      </p>
+
+      <div class="botuka-jobs-home__navigation" aria-label="Navegação das vagas">
+        <button
+          type="button"
+          class="botuka-jobs-home__nav"
+          data-jobs-prev
+          aria-label="Ver vagas anteriores"
+        >
+          <i class="bi bi-chevron-left" aria-hidden="true"></i>
+        </button>
+
+        <button
+          type="button"
+          class="botuka-jobs-home__nav"
+          data-jobs-next
+          aria-label="Ver próximas vagas"
+        >
+          <i class="bi bi-chevron-right" aria-hidden="true"></i>
+        </button>
+      </div>
+    </footer>
+
+  </div>
+</section>
+
+<style>
+.botuka-jobs-home,
+.botuka-jobs-home * {
+  box-sizing: border-box;
+}
+
+.botuka-jobs-home {
+  position: relative;
+  padding: clamp(3.5rem, 7vw, 6.5rem) 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 5% 10%, rgba(16, 185, 129, 0.11), transparent 30%),
+    radial-gradient(circle at 95% 90%, rgba(37, 99, 235, 0.09), transparent 28%),
+    #f8fafc;
+}
+
+.botuka-jobs-home__header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 2rem;
+  margin-bottom: 2.2rem;
+}
+
+.botuka-jobs-home__heading {
+  min-width: 0;
+}
+
+.botuka-jobs-home__kicker {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-bottom: 0.65rem;
+  color: #059669;
+  font-size: 0.76rem;
+  font-weight: 850;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.botuka-jobs-home__header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: clamp(2rem, 4vw, 3.25rem);
+  font-weight: 850;
+  line-height: 1;
+  letter-spacing: -0.045em;
+}
+
+.botuka-jobs-home__header p {
+  max-width: 670px;
+  margin: 0.75rem 0 0;
+  color: #64748b;
+  line-height: 1.65;
+}
+
+.botuka-jobs-home__all {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 46px;
+  padding: 0.78rem 1.15rem;
+  border: 1px solid rgba(5, 150, 105, 0.2);
+  border-radius: 999px;
+  color: #047857;
+  background: rgba(16, 185, 129, 0.08);
+  font-size: 0.88rem;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.botuka-jobs-home__all:hover {
+  color: #fff;
+  background: #059669;
+}
+
+.botuka-jobs-marquee {
+  display: grid;
+  gap: 1rem;
+  width: 100%;
+}
+
+/* Regra principal para movimento, arrasto e animação */
+.botuka-jobs-row {
+  width: 100%;
+  overflow: hidden;
+  touch-action: pan-x pan-y;
+  mask-image: linear-gradient(to right, transparent, #000 2%, #000 98%, transparent);
+  -webkit-mask-image: linear-gradient(to right, transparent, #000 2%, #000 98%, transparent);
+}
+
+.botuka-jobs-track {
+  display: flex;
+  width: max-content;
+  backface-visibility: hidden;
+  will-change: transform;
+}
+
+.botuka-jobs-group {
+  display: flex;
+  flex-shrink: 0;
+  gap: 14px;
+  padding-right: 14px;
+}
+
+.botuka-jobs-row--left .botuka-jobs-track {
+  animation: botukaJobsLeft 48s linear infinite;
+}
+
+.botuka-jobs-row--right .botuka-jobs-track {
+  animation: botukaJobsRight 52s linear infinite;
+}
+
+/* Pausa no hover e focus para desktop */
+.botuka-jobs-row:hover .botuka-jobs-track,
+.botuka-jobs-row:focus-within .botuka-jobs-track {
+  animation-play-state: paused;
+}
+
+@keyframes botukaJobsLeft {
+  from {
+    transform: translate3d(0, 0, 0);
+  }
+  to {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes botukaJobsRight {
+  from {
+    transform: translate3d(-50%, 0, 0);
+  }
+  to {
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+.botuka-job-card {
+  display: flex;
+  flex: 0 0 calc((min(100vw, 1320px) - 70px) / 6);
+  width: calc((min(100vw, 1320px) - 70px) / 6);
+  min-width: 190px;
+  min-height: 230px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 18px;
+  background: #fff;
+  box-shadow: 0 10px 27px rgba(15, 23, 42, 0.065);
+  flex-direction: column;
+}
+
+.botuka-job-card:hover {
+  border-color: rgba(5, 150, 105, 0.26);
+  box-shadow: 0 18px 38px rgba(15, 23, 42, 0.12);
+}
+
+.botuka-job-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.55rem;
+  min-width: 0;
+  padding: 0.72rem 0.75rem 0;
+}
+
+.botuka-job-card__company {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  min-width: 0;
+}
+
+.botuka-job-card__company-logo {
+  display: grid;
+  flex: 0 0 auto;
+  width: 34px;
+  height: 34px;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  border-radius: 11px;
+  color: #64748b;
+  background: #e2e8f0;
+  place-items: center;
+}
+
+.botuka-job-card__company-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.botuka-job-card__company-info {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.botuka-job-card__company-name {
+  max-width: 125px;
+  overflow: hidden;
+  color: #334155;
+  font-size: 0.72rem;
+  font-weight: 750;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.botuka-job-card__published {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-top: 0.12rem;
+  color: #94a3b8;
+  font-size: 0.62rem;
+}
+
+.botuka-job-card__favorite {
+  display: inline-grid;
+  flex: 0 0 auto;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  border: 1px solid rgba(148, 163, 184, 0.2);
+  border-radius: 9px;
+  color: #64748b;
+  background: #f8fafc;
+  cursor: pointer;
+  place-items: center;
+}
+
+.botuka-job-card__favorite:hover,
+.botuka-job-card__favorite.is-active {
+  color: #2563eb;
+  background: #dbeafe;
+}
+
+.botuka-job-card__body {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  padding: 0.68rem 0.75rem 0.75rem;
+  flex-direction: column;
+}
+
+.botuka-job-card__contract {
+  display: inline-flex;
+  align-self: flex-start;
+  max-width: 100%;
+  padding: 0.28rem 0.5rem;
+  overflow: hidden;
+  border-radius: 999px;
+  color: #047857;
+  background: rgba(16, 185, 129, 0.09);
+  font-size: 0.6rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.botuka-job-card__body h3 {
+  min-width: 0;
+  min-height: 38px;
+  margin: 0.5rem 0 0.6rem;
+  color: #0f172a;
+  font-size: 0.86rem;
+  font-weight: 810;
+  line-height: 1.25;
+}
+
+.botuka-job-card__body h3 a,
+.botuka-job-card__body h3 span {
+  display: -webkit-box;
+  overflow: hidden;
+  color: inherit;
+  text-decoration: none;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.botuka-job-card__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.4rem 0.65rem;
+  min-height: 30px;
+  margin-bottom: 0.75rem;
+}
+
+.botuka-job-card__meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  color: #64748b;
+  font-size: 0.66rem;
+  font-weight: 650;
+}
+
+.botuka-job-card__meta i {
+  color: #2563eb;
+}
+
+.botuka-job-card__footer {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-top: auto;
+  padding-top: 0.65rem;
+  border-top: 1px solid rgba(148, 163, 184, 0.14);
+}
+
+.botuka-job-card__salary {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+}
+
+.botuka-job-card__salary small {
+  color: #94a3b8;
+  font-size: 0.58rem;
+  font-weight: 650;
+  text-transform: uppercase;
+}
+
+.botuka-job-card__salary strong {
+  display: block;
+  max-width: 110px;
+  overflow: hidden;
+  color: #15803d;
+  font-size: 0.7rem;
+  font-weight: 800;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.botuka-job-card__button {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  min-height: 34px;
+  padding: 0.48rem 0.62rem;
+  border-radius: 9px;
+  color: #fff;
+  background: linear-gradient(135deg, #10b981, #059669);
+  font-size: 0.66rem;
+  font-weight: 780;
+  text-decoration: none;
+}
+
+.botuka-jobs-home__footer {
+  margin-top: 1.35rem;
+}
+
+.botuka-jobs-home__footer p {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0;
+  color: #64748b;
+  font-size: 0.76rem;
+}
+
+.botuka-jobs-home__navigation {
+  display: flex;
+  gap: 0.65rem;
+}
+
+.botuka-jobs-home__nav {
+  display: inline-grid;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  border: 1px solid rgba(5, 150, 105, 0.22);
+  border-radius: 13px;
+  color: #059669;
+  background: #fff;
+  cursor: pointer;
+  box-shadow: 0 8px 22px rgba(15, 23, 42, 0.07);
+  place-items: center;
+  transition:
+    color 0.2s ease,
+    background 0.2s ease,
+    transform 0.2s ease;
+}
+
+.botuka-jobs-home__nav:hover {
+  color: #fff;
+  background: #059669;
+  transform: translateY(-2px);
+}
+
+[data-theme="dark"] .botuka-jobs-home__nav {
+  border-color: rgba(148, 163, 184, 0.16);
+  color: #cbd5e1;
+  background: #172033;
+}
+
+/* Dark theme adjustments */
+[data-theme="dark"] .botuka-jobs-home {
+  background: #0f172a;
+}
+[data-theme="dark"] .botuka-jobs-home__header h2,
+[data-theme="dark"] .botuka-job-card__body h3 {
+  color: #f8fafc;
+}
+[data-theme="dark"] .botuka-jobs-home__header p,
+[data-theme="dark"] .botuka-jobs-home__footer p {
+  color: #94a3b8;
+}
+[data-theme="dark"] .botuka-job-card {
+  border-color: rgba(148, 163, 184, 0.15);
+  background: #111c30;
+}
+[data-theme="dark"] .botuka-job-card__company-name {
+  color: #cbd5e1;
+}
+
+/* Desktop (ajuste existente) */
+@media (max-width: 1199px) {
+  .botuka-job-card {
+    flex-basis: calc((100vw - 84px) / 4);
+    width: calc((100vw - 84px) / 4);
+    min-width: 210px;
+  }
+}
+
+/* Mobile/tablet: movimentação por toque, esconder barras */
+@media (max-width: 900px) {
+  .botuka-jobs-row {
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-behavior: smooth;
+    scroll-snap-type: x proximity;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+    touch-action: pan-x pan-y;
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+  .botuka-jobs-row::-webkit-scrollbar {
+    display: none;
+  }
+  .botuka-jobs-row .botuka-jobs-track {
+    animation: none !important;
+    transform: none !important;
+  }
+  .botuka-job-card {
+    scroll-snap-align: start;
+  }
+
+  .botuka-jobs-home__navigation {
+    display: none;
+  }
+}
+
+@media (max-width: 767px) {
+  .botuka-jobs-home {
+    padding: 3.25rem 0;
+  }
+  .botuka-jobs-home__header {
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 1rem;
+  }
+  .botuka-jobs-home__all {
+    width: 100%;
+  }
+  .botuka-job-card {
+    flex-basis: calc(100vw - 72px);
+    width: calc(100vw - 72px);
+    min-width: 275px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .botuka-jobs-track {
+    animation: none !important;
+  }
+  .botuka-jobs-row {
+    overflow-x: auto;
+  }
+}
+</style>
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const section = document.querySelector(".botuka-jobs-home");
+
+  if (!section) {
+    return;
+  }
+
+  const rows = section.querySelectorAll(".botuka-jobs-row");
+  const previousButton = section.querySelector("[data-jobs-prev]");
+  const nextButton = section.querySelector("[data-jobs-next]");
+  let manualTimer = null;
+
+  function getCardStep(row) {
+    const card = row.querySelector(".botuka-job-card");
+    const group = row.querySelector(".botuka-jobs-group");
+
+    if (!card) {
+      return 220;
+    }
+
+    let gap = 14;
+
+    if (group) {
+      const styles = window.getComputedStyle(group);
+      gap = Number.parseFloat(styles.columnGap || styles.gap || "14") || 14;
+    }
+
+    return card.getBoundingClientRect().width + gap;
+  }
+
+  function moveRows(direction) {
+    if (window.innerWidth <= 900) {
+      return;
+    }
+
+    rows.forEach(function (row, index) {
+      const track = row.querySelector(".botuka-jobs-track");
+
+      if (!track) {
+        return;
+      }
+
+      const computedTransform = window.getComputedStyle(track).transform;
+      const matrix = computedTransform && computedTransform !== "none"
+        ? new DOMMatrixReadOnly(computedTransform)
+        : new DOMMatrixReadOnly();
+
+      const step = getCardStep(row);
+      const rowDirection = index === 0 ? direction : -direction;
+      const target = matrix.m41 - (step * rowDirection);
+
+      track.style.animationPlayState = "paused";
+      track.style.transition = "transform 0.42s ease";
+      track.style.transform = "translate3d(" + target + "px, 0, 0)";
+    });
+
+    if (manualTimer) {
+      window.clearTimeout(manualTimer);
+    }
+
+    manualTimer = window.setTimeout(function () {
+      rows.forEach(function (row) {
+        const track = row.querySelector(".botuka-jobs-track");
+
+        if (!track) {
+          return;
+        }
+
+        track.style.transition = "";
+        track.style.transform = "";
+        track.style.animationPlayState = "running";
+      });
+    }, 650);
+  }
+
+  if (previousButton) {
+    previousButton.addEventListener("click", function () {
+      moveRows(-1);
+    });
+  }
+
+  if (nextButton) {
+    nextButton.addEventListener("click", function () {
+      moveRows(1);
+    });
+  }
+
+  rows.forEach(function (row) {
+    const track = row.querySelector(".botuka-jobs-track");
+
+    if (!track) {
+      return;
+    }
+
+    row.addEventListener("mouseenter", function () {
+      if (window.innerWidth > 900) {
+        track.style.animationPlayState = "paused";
+      }
+    });
+
+    row.addEventListener("mouseleave", function () {
+      if (window.innerWidth > 900) {
+        track.style.animationPlayState = "running";
+      }
+    });
+  });
+
+  section
+    .querySelectorAll("[data-job-favorite]")
+    .forEach(function (button) {
+      button.addEventListener("click", function () {
+        const active = button.classList.toggle("is-active");
+        const icon = button.querySelector("i");
+
+        button.setAttribute(
+          "aria-pressed",
+          active ? "true" : "false"
+        );
+
+        if (icon) {
+          icon.className = active
+            ? "bi bi-bookmark-fill"
+            : "bi bi-bookmark";
+        }
+      });
+    });
+});
+</script>
+{% endif %}

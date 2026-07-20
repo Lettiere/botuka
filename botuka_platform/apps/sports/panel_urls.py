@@ -1,0 +1,7 @@
+from django.urls import path
+from . import views
+def routes(prefix,name,v):
+ l,n,e=v;return [path(f'esportes/{prefix}/',l,name=f'sports_{name}_lista'),path(f'esportes/{prefix}/novo/',n,name=f'sports_{name}_novo'),path(f'esportes/{prefix}/<uuid:uuid>/editar/',e,name=f'sports_{name}_editar')]
+urlpatterns=[]
+for a in [('modalidades','modalidade',(views.modalidade_lista,views.modalidade_novo,views.modalidade_editar)),('estilos','estilo',(views.estilo_lista,views.estilo_novo,views.estilo_editar)),('categorias','categoria',(views.categoria_lista,views.categoria_novo,views.categoria_editar)),('organizacoes','organizacaoesportiva',(views.organizacaoesportiva_lista,views.organizacaoesportiva_novo,views.organizacaoesportiva_editar)),('equipes','equipe',(views.equipe_lista,views.equipe_novo,views.equipe_editar)),('atletas','atleta',(views.atleta_lista,views.atleta_novo,views.atleta_editar)),('campeonatos','campeonato',(views.campeonato_lista,views.campeonato_novo,views.campeonato_editar)),('participantes','participantecampeonato',(views.participantecampeonato_lista,views.participantecampeonato_novo,views.participantecampeonato_editar)),('jogos','disputa',(views.disputa_lista,views.disputa_novo,views.disputa_editar)),('classificacao','classificacao',(views.classificacao_lista,views.classificacao_novo,views.classificacao_editar))]:urlpatterns+=routes(*a)
+urlpatterns += [path('esportes/',views.disputa_lista,name='sports_dashboard')]

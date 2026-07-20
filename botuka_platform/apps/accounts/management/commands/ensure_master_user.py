@@ -1,5 +1,7 @@
 """Cria ou atualiza o usuário administrador MASTER."""
 
+import os
+
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand
 
@@ -18,8 +20,6 @@ class Command(BaseCommand):
     help = 'Garante perfil MASTER, permissões padrão e usuário administrador.'
 
     MASTER_EMAIL = 'master@botuka.com.br'
-    MASTER_PASSWORD = '!~eunaosei2026~!'
-
     DEFAULT_PERMISSIONS = (
         ('usuarios.visualizar', 'Visualizar usuários'),
         ('usuarios.criar', 'Criar usuários'),
@@ -160,7 +160,15 @@ class Command(BaseCommand):
         usuario.is_active = True
         usuario.is_staff = True
         usuario.is_superuser = True
-        usuario.set_password(self.MASTER_PASSWORD)
+        senha_configurada = os.environ.get('BOTUKA_MASTER_PASSWORD')
+        if senha_configurada:
+            usuario.set_password(senha_configurada)
+        elif created:
+            usuario.set_unusable_password()
+            self.stdout.write(self.style.WARNING(
+                'Usuário MASTER criado sem senha utilizável. Defina '
+                'BOTUKA_MASTER_PASSWORD e execute novamente para habilitar o acesso.'
+            ))
         usuario.save()
 
         status = 'criado' if created else 'atualizado'

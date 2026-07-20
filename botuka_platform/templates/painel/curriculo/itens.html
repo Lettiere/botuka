@@ -1,0 +1,12 @@
+{% extends 'painel/base.html' %}
+{% block title %}{{ titulo }} · Currículo | BOTUKA{% endblock %}
+{% block content %}<div class="profile-page curriculum-page"><div class="profile-container">
+{% include 'painel/components/page_header.html' with title=titulo subtitle='Adicione, edite ou remova seus registros.' breadcrumb='Currículo' back_url_name='painel:curriculo' %}
+{% include 'painel/curriculo/steps.html' %}
+<div class="curriculum-layout"><aside class="profile-sidebar curriculum-progress"><strong>Etapa {{ etapa }} de 10</strong><progress value="{{ progresso.percentual }}" max="100">{{ progresso.percentual }}%</progress><span>{{ progresso.percentual }}% preenchido</span></aside><section class="profile-content-card"><div class="profile-content-body">
+{% if item or request.resolver_match.url_name|slice:'-5:' == '_novo' or request.resolver_match.url_name|slice:'-5:' == '_nova' %}
+<form method="post" enctype="multipart/form-data" class="profile-form">{% csrf_token %}<div class="profile-form-grid">{% for field in form %}<div class="profile-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field.errors }}{{ field }}</div>{% endfor %}</div><div class="profile-form-actions"><a class="profile-button" href="{% url lista_url_name %}">Voltar</a><button class="profile-button profile-button-primary" type="submit">Salvar</button></div></form>
+{% else %}
+<div class="profile-form-actions"><a class="profile-button profile-button-primary" href="{% url novo_url_name %}">Adicionar registro</a></div><div class="curriculum-items">{% for registro in itens %}<article><div><strong>{{ registro.titulo|default:registro.nome }}</strong><small>{{ registro.instituicao|default:registro.nivel }}</small></div><div><a href="{% url editar_url_name registro.uuid %}">Editar</a><a href="{% url remover_url_name registro.uuid %}">Remover</a></div></article>{% empty %}<div class="profile-empty">Nenhum registro cadastrado nesta etapa.</div>{% endfor %}</div><div class="profile-form-actions"><a class="profile-button" href="{% url 'painel:curriculo_etapa' etapa|add:'1' %}">Continuar</a></div>
+{% endif %}</div></section></div>
+</div></div>{% endblock %}

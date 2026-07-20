@@ -1,0 +1,1 @@
+{% extends 'painel/base.html' %}{% block content %}<main class="container py-4"><h1>{{ titulo }}</h1><form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary" type="submit">Salvar</button></form></main>{% endblock %}

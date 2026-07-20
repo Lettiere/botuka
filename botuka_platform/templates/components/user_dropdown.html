@@ -31,11 +31,18 @@
     <a class="dropdown-item" href="{% url 'painel:rede_social' %}"><i class="bi bi-share"></i> Rede social</a>
     <a class="dropdown-item" href="{% url 'painel:eventos_lista' %}"><i class="bi bi-calendar-event"></i> Eventos</a>
     <a class="dropdown-item" href="{% url 'painel:mensagens' %}"><i class="bi bi-chat-dots"></i> Mensagens</a>
+    {% for group in painel_module_groups %}
+      <div class="dropdown-divider"></div>
+      <h2 class="dropdown-header">{{ group.label }}</h2>
+      {% for item in group.items %}
+        <a class="dropdown-item" href="{{ item.url }}"><i class="bi {{ item.icon }}"></i> {{ item.label }}</a>
+      {% endfor %}
+    {% endfor %}
     <a class="dropdown-item" href="{% url 'painel:configuracoes' %}"><i class="bi bi-gear"></i> Configurações</a>
     {% if request.user.is_staff or request.user.is_superuser or request.user|has_perm_code:"gestao.acessar" %}
       <a class="dropdown-item" href="{% url 'gestao:dashboard' %}"><i class="bi bi-shield-lock"></i> Gestão</a>
     {% endif %}
     <div class="dropdown-divider"></div>
-    <a class="dropdown-item" href="{% url 'accounts:logout' %}"><i class="bi bi-box-arrow-right"></i> Sair</a>
+    <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="dropdown-item" type="submit"><i class="bi bi-box-arrow-right"></i> Sair</button></form>
   </div>
 </div>

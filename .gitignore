@@ -29,7 +29,8 @@ db.sqlite3-journal
 staticfiles/
 
 # Uploads e arquivos gerados
-media/
+/botuka_platform/media/
+/botuka_platform/backups/
 uploads/
 
 # IDE e sistema operacional
@@ -51,3 +52,6 @@ desktop.ini
 
 # Ambiente Linux do servidor
 .venv_linux/
+.venv-restored/
+.venv-botuka313/
+.python-deps313/

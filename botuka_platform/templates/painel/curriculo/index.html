@@ -1,1 +1,13 @@
-{% extends "painel/base.html" %}{% block content %}<section class="painel-card"><h1>{{ titulo }}</h1><p>Área estrutural de currículo.</p></section>{% endblock %}
+{% extends 'painel/base.html' %}
+{% block title %}Meu currículo | Painel BOTUKA{% endblock %}
+{% block content %}
+<div class="profile-page curriculum-page"><div class="profile-container">
+  {% include 'painel/components/page_header.html' with title='Meu currículo' subtitle='Construa seu currículo profissional no seu ritmo.' breadcrumb='Currículo' back_url_name='painel:dashboard' %}
+  {% if not curriculo %}
+    <section class="profile-content-card curriculum-empty"><i class="bi bi-file-earmark-person"></i><h2>Comece seu currículo</h2><p>O cadastro é dividido em dez etapas e pode ser continuado depois.</p><form method="post" action="{% url 'painel:curriculo_novo' %}">{% csrf_token %}<button class="profile-button profile-button-primary" type="submit">Criar currículo</button></form></section>
+  {% else %}
+    <section class="curriculum-summary profile-content-card"><div><span class="profile-eyebrow">{{ curriculo.get_status_display }}</span><h2>{{ curriculo.titulo_profissional|default:'Currículo em preenchimento' }}</h2><p>{{ progresso.percentual }}% preenchido · etapa {{ curriculo.etapa_atual }} de 10</p><progress value="{{ progresso.percentual }}" max="100">{{ progresso.percentual }}%</progress></div><div class="profile-form-actions"><a class="profile-button profile-button-primary" href="{% url 'painel:curriculo_etapa' curriculo.etapa_atual %}">Continuar</a><a class="profile-button" href="{% url 'painel:curriculo_visualizar' %}">Visualizar</a></div></section>
+    {% include 'painel/curriculo/steps.html' %}
+  {% endif %}
+</div></div>
+{% endblock %}

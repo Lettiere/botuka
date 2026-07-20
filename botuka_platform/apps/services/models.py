@@ -189,6 +189,15 @@ class Servico(UUIDModel):
             models.Index(fields=['usuario_responsavel'], name='services_servico_idx_usuario'),
             models.Index(fields=['empresa'], name='services_servico_idx_empresa'),
         ]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(prestador_tipo='PESSOA_FISICA', empresa__isnull=True)
+                    | models.Q(prestador_tipo='EMPRESA', empresa__isnull=False)
+                ),
+                name='services_servico_prestador_empresa_ck',
+            ),
+        ]
 
     def clean(self):
         super().clean()
