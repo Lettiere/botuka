@@ -8,12 +8,17 @@ document.addEventListener('submit', (event) => {
   const output = document.querySelector(form.dataset.output);
   const formData = new FormData(form);
 
-  fetch('/painel/empresas/ajax/consultar-cnpj/', {
+  window.Botuka.csrfFetch('/painel/empresas/ajax/consultar-cnpj/', {
     method: 'POST',
     body: formData,
     headers: {'X-Requested-With': 'XMLHttpRequest'},
   })
-    .then((response) => response.json())
+    .then((response) => {
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`);
+      }
+      return response.json();
+    })
     .then((data) => {
       if (output) {
         output.textContent = JSON.stringify(data, null, 2);

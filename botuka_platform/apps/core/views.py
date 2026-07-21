@@ -1,8 +1,25 @@
+import logging
+
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.templatetags.static import static
 
 from apps.core.services.home import montar_contexto_home
+
+logger = logging.getLogger('django.security.csrf')
+
+
+def csrf_failure(request, reason=''):
+    """Exibe uma falha segura sem incluir token, payload ou detalhe interno."""
+
+    logger.warning(
+        'CSRF rejeitado em %s %s (host=%s, user_authenticated=%s)',
+        request.method,
+        request.path,
+        request.get_host(),
+        bool(getattr(request, 'user', None) and request.user.is_authenticated),
+    )
+    return render(request, 'errors/csrf_failure.html', status=403)
 
 
 def home(request):

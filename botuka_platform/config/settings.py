@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 
 from pathlib import Path
 from decouple import config, Csv
+from django.core.exceptions import ImproperlyConfigured
 
 
 def cast_debug(value: object) -> bool:
@@ -46,6 +47,9 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY', default='change-me')
 DEBUG = config('DEBUG', default=True, cast=cast_debug)
 APP_ENV = config('APP_ENV', default='development')
+IS_PRODUCTION = APP_ENV.strip().lower() in {'prod', 'production'}
+if IS_PRODUCTION and DEBUG:
+    raise ImproperlyConfigured('DEBUG deve ser False quando APP_ENV=production.')
 PLATFORM_URL = config('PLATFORM_URL', default='http://127.0.0.1:7700')
 SERVICES_URL = config('SERVICES_URL', default='http://127.0.0.1:7701')
 PUBLIC_BASE_URL = config('PUBLIC_BASE_URL', default=PLATFORM_URL)
@@ -57,7 +61,7 @@ CNPJ_API_CACHE_HOURS = config('CNPJ_API_CACHE_HOURS', default=24, cast=int)
 
 
 default_allowed_hosts = ['127.0.0.1', 'localhost']
-if APP_ENV == 'production':
+if IS_PRODUCTION:
     default_allowed_hosts.extend(['botuka.com.br', 'www.botuka.com.br'])
 
 ALLOWED_HOSTS = config(
@@ -65,18 +69,53 @@ ALLOWED_HOSTS = config(
     default=','.join(default_allowed_hosts),
     cast=Csv(),
 )
-CSRF_TRUSTED_ORIGINS = config(
+if IS_PRODUCTION:
+    production_hosts = {'botuka.com.br', 'www.botuka.com.br'}
+    configured_hosts = set(ALLOWED_HOSTS)
+    if '*' in configured_hosts or configured_hosts != production_hosts:
+        raise ImproperlyConfigured(
+            'Em produção, ALLOWED_HOSTS deve conter somente botuka.com.br e '
+            'www.botuka.com.br.'
+        )
+default_csrf_trusted_origins = [
+    'https://botuka.com.br',
+    'https://www.botuka.com.br',
+]
+if not IS_PRODUCTION:
+    default_csrf_trusted_origins.extend([
+        'http://127.0.0.1:7700',
+        'http://localhost:7700',
+    ])
+
+configured_csrf_trusted_origins = config(
     'CSRF_TRUSTED_ORIGINS',
-    default=','.join(
-        [
-            PLATFORM_URL,
-            PUBLIC_BASE_URL,
-            'https://botuka.com.br',
-            'https://www.botuka.com.br',
-        ]
-    ),
+    default=','.join(default_csrf_trusted_origins),
     cast=Csv(),
 )
+CSRF_TRUSTED_ORIGINS = list(dict.fromkeys([
+    *configured_csrf_trusted_origins,
+    *default_csrf_trusted_origins,
+]))
+CSRF_COOKIE_SECURE = config(
+    'CSRF_COOKIE_SECURE', default=IS_PRODUCTION, cast=cast_debug,
+)
+SESSION_COOKIE_SECURE = config(
+    'SESSION_COOKIE_SECURE', default=IS_PRODUCTION, cast=cast_debug,
+)
+CSRF_COOKIE_SAMESITE = config('CSRF_COOKIE_SAMESITE', default='Lax')
+SESSION_COOKIE_SAMESITE = config('SESSION_COOKIE_SAMESITE', default='Lax')
+USE_X_FORWARDED_HOST = config(
+    'USE_X_FORWARDED_HOST', default=IS_PRODUCTION, cast=cast_debug,
+)
+if config('USE_PROXY_SSL_HEADER', default=IS_PRODUCTION, cast=cast_debug):
+    SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+if IS_PRODUCTION and (not CSRF_COOKIE_SECURE or not SESSION_COOKIE_SECURE):
+    raise ImproperlyConfigured(
+        'Cookies CSRF e de sessão devem ser Secure em produção.'
+    )
+
+CSRF_FAILURE_VIEW = 'apps.core.views.csrf_failure'
 
 # =============================================================================
 # Aplicações

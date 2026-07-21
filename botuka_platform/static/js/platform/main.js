@@ -1,3 +1,34 @@
+// Helper CSRF único para requisições que alteram estado.
+window.Botuka = window.Botuka || {};
+window.Botuka.getCookie = function (name) {
+  const prefix = `${name}=`;
+  const cookie = document.cookie.split(';').map(value => value.trim())
+    .find(value => value.startsWith(prefix));
+  return cookie ? decodeURIComponent(cookie.slice(prefix.length)) : null;
+};
+
+window.Botuka.csrfFetch = async function (url, options = {}) {
+  const headers = new Headers(options.headers || {});
+  const method = (options.method || 'GET').toUpperCase();
+  if (!['GET', 'HEAD', 'OPTIONS', 'TRACE'].includes(method)) {
+    const token = window.Botuka.getCookie('csrftoken');
+    if (token) headers.set('X-CSRFToken', token);
+  }
+  const response = await fetch(url, {
+    ...options,
+    headers,
+    credentials: options.credentials || 'same-origin',
+  });
+  if (response.status === 403) {
+    window.dispatchEvent(new CustomEvent('botuka:csrf-failed'));
+  }
+  return response;
+};
+
+window.addEventListener('botuka:csrf-failed', function () {
+  window.alert('Sua sessão ou formulário expirou. Atualize a página e tente novamente.');
+});
+
 // servicos.js — Lógica dinâmica do formulário de cadastro de serviços
 
 (function() {
