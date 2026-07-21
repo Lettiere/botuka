@@ -10,6 +10,7 @@ from apps.sports.models import Campeonato
 from apps.core.services.home.adapters.dto import EventoPublicoDTO
 from apps.core.services.home.adapters.events import _imagem
 from django.urls import reverse
+from apps.core.seo.page_builders import listing_seo
 
 
 def eventos_lista(request):
@@ -46,4 +47,5 @@ def eventos_lista(request):
     ordem = request.GET.get("ordem")
     itens.sort(key=(lambda x: x.titulo.casefold()) if ordem == "az" else (lambda x: (x.inicio is None, x.inicio or hoje)))
     page = Paginator(itens, 12).get_page(request.GET.get("page"))
-    return render(request, "publico/eventos/lista.html", {"eventos": page.object_list, "page_obj": page, "total": page.paginator.count})
+    seo = listing_seo(request, 'Eventos em Botucatu | BOTUKA', 'Agenda de eventos municipais, culturais e esportivos de Botucatu.')
+    return render(request, "publico/eventos/lista.html", {"eventos": page.object_list, "page_obj": page, "total": page.paginator.count, "seo": seo})

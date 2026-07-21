@@ -8,6 +8,7 @@ from apps.core.domain import EditorialStatus
 from apps.core.domain_views import crud_views
 
 from .models import Artigo, ArtigoBloco, ArtigoFonte, CategoriaNoticia
+from apps.core.seo.page_builders import artigo_seo, listing_seo
 
 
 NEWS_PERMISSIONS = {"listar": ("news.revisar",), "editar": ("news.revisar",)}
@@ -85,7 +86,8 @@ def home(request):
     if query:
         queryset = queryset.filter(Q(titulo__icontains=query) | Q(resumo__icontains=query) | Q(conteudo__icontains=query))
     page = Paginator(queryset, 12).get_page(request.GET.get("page"))
-    return render(request, "publico/news/home.html", {"artigos": page.object_list, "page_obj": page, "total": page.paginator.count, "categorias": CategoriaNoticia.objects.filter(ativo=True, excluido_em__isnull=True)})
+    seo = listing_seo(request, 'Notícias de Botucatu | BOTUKA', 'Notícias, informação e conteúdo local publicado e revisado sobre Botucatu.')
+    return render(request, "publico/news/home.html", {"artigos": page.object_list, "page_obj": page, "total": page.paginator.count, "categorias": CategoriaNoticia.objects.filter(ativo=True, excluido_em__isnull=True), "seo": seo})
 
 
 def categoria(request, slug):
@@ -94,10 +96,11 @@ def categoria(request, slug):
     query = request.GET.get("q", "").strip()[:100]
     if query: queryset = queryset.filter(Q(titulo__icontains=query) | Q(resumo__icontains=query) | Q(conteudo__icontains=query))
     page = Paginator(queryset, 12).get_page(request.GET.get("page"))
-    return render(request, "publico/news/home.html", {"categoria": category, "artigos": page.object_list, "page_obj": page, "total": page.paginator.count, "categorias": CategoriaNoticia.objects.filter(ativo=True, excluido_em__isnull=True)})
+    seo = listing_seo(request, f'{category.nome} em Botucatu | BOTUKA', category.descricao or f'Conteúdos de {category.nome} publicados no BOTUKA.')
+    return render(request, "publico/news/home.html", {"categoria": category, "artigos": page.object_list, "page_obj": page, "total": page.paginator.count, "categorias": CategoriaNoticia.objects.filter(ativo=True, excluido_em__isnull=True), "seo": seo})
 
 
 def artigo(request, slug):
     obj = get_object_or_404(_published_articles(), slug=slug)
     related = _published_articles().filter(categoria=obj.categoria).exclude(pk=obj.pk)[:4]
-    return render(request, "publico/news/artigo.html", {"artigo": obj, "relacionados": related})
+    return render(request, "publico/news/artigo.html", {"artigo": obj, "relacionados": related, "seo": artigo_seo(request, obj)})

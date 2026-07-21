@@ -1,0 +1,37 @@
+{% with data=seo|default:seo_default %}
+<title>{{ data.title }}</title>
+<meta name="description" content="{{ data.description }}">
+<meta name="robots" content="{{ data.robots }}">
+<link rel="canonical" href="{{ data.canonical_url }}">
+<link rel="alternate" hreflang="pt-BR" href="{{ data.canonical_url }}">
+<meta name="referrer" content="strict-origin-when-cross-origin">
+<meta property="og:locale" content="pt_BR">
+<meta property="og:site_name" content="BOTUKA">
+<meta property="og:type" content="{{ data.content_type }}">
+<meta property="og:title" content="{{ data.title }}">
+<meta property="og:description" content="{{ data.description }}">
+<meta property="og:url" content="{{ data.canonical_url }}">
+<meta property="og:image" content="{{ data.image_url }}">
+<meta property="og:image:secure_url" content="{{ data.image_url }}">
+<meta property="og:image:type" content="{{ data.image_type }}">
+<meta property="og:image:width" content="{{ data.image_width }}">
+<meta property="og:image:height" content="{{ data.image_height }}">
+<meta property="og:image:alt" content="{{ data.image_alt }}">
+{% if data.published_time %}<meta property="article:published_time" content="{{ data.published_time|date:'c' }}">{% endif %}
+{% if data.modified_time %}<meta property="article:modified_time" content="{{ data.modified_time|date:'c' }}">{% endif %}
+{% if data.author %}<meta property="article:author" content="{{ data.author }}">{% endif %}
+{% if data.author %}<meta name="author" content="{{ data.author }}">{% endif %}
+{% if data.section %}<meta property="article:section" content="{{ data.section }}">{% endif %}
+{% for tag in data.tags %}<meta property="article:tag" content="{{ tag }}">{% endfor %}
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="{{ data.title }}">
+<meta name="twitter:description" content="{{ data.description }}">
+<meta name="twitter:image" content="{{ data.image_url }}">
+<meta name="twitter:image:alt" content="{{ data.image_alt }}">
+{% if seo_config.twitter_site %}<meta name="twitter:site" content="{{ seo_config.twitter_site }}">{% endif %}
+{% if data.twitter_creator %}<meta name="twitter:creator" content="{{ data.twitter_creator }}">{% endif %}
+{% endwith %}
+{% if seo_config.google_site_verification %}<meta name="google-site-verification" content="{{ seo_config.google_site_verification }}">{% endif %}
+{% if seo_config.bing_site_verification %}<meta name="msvalidate.01" content="{{ seo_config.bing_site_verification }}">{% endif %}
+{% if seo_config.meta_domain_verification %}<meta name="facebook-domain-verification" content="{{ seo_config.meta_domain_verification }}">{% endif %}
+{% if seo_config.pinterest_domain_verification %}<meta name="p:domain_verify" content="{{ seo_config.pinterest_domain_verification }}">{% endif %}

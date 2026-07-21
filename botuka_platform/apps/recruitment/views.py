@@ -20,6 +20,7 @@ from .models import (Candidatura, Curso, Curriculo, CurriculoInformacaoAdicional
                      Idioma, Projeto, Vaga)
 from .services import calcular_progresso, concluir_curriculo, curriculo_para_painel, curriculo_publico
 from .services.curriculum import atualizar_etapa_atual
+from apps.core.seo.page_builders import listing_seo, vaga_seo
 
 
 def _vaga_usuario(usuario, uuid):
@@ -92,11 +93,13 @@ def vagas_publicas(request):
     ordem = request.GET.get('ordem')
     queryset = queryset.order_by('encerramento' if ordem == 'prazo' else 'titulo' if ordem == 'az' else '-publicado_em')
     page = Paginator(queryset, 12).get_page(request.GET.get('page'))
-    return render(request, 'publico/vagas/lista.html', {'vagas': page.object_list, 'page_obj': page, 'total': page.paginator.count})
+    seo = listing_seo(request, 'Vagas em Botucatu | BOTUKA', 'Oportunidades de emprego publicadas por empresas de Botucatu e região.')
+    return render(request, 'publico/vagas/lista.html', {'vagas': page.object_list, 'page_obj': page, 'total': page.paginator.count, 'seo': seo})
 
 
 def vaga_publica(request, slug):
-    return render(request, 'publico/vagas/detalhe.html', {'vaga': get_object_or_404(Vaga.objects.select_related('empresa'), slug=slug, status=Vaga.Status.PUBLICADA)})
+    vaga = get_object_or_404(Vaga.objects.select_related('empresa'), slug=slug, status=Vaga.Status.PUBLICADA)
+    return render(request, 'publico/vagas/detalhe.html', {'vaga': vaga, 'seo': vaga_seo(request, vaga)})
 
 
 def curriculo_publico_view(request, uuid):
@@ -111,7 +114,8 @@ def curriculo_publico_view(request, uuid):
     )
     dto = curriculo_publico(objeto)
     if dto is None: raise Http404
-    return render(request, 'publico/vagas/curriculo.html', {'curriculo': dto})
+    seo = listing_seo(request, 'Currículo profissional | BOTUKA', 'Perfil profissional público no BOTUKA.', robots='noindex,follow')
+    return render(request, 'publico/vagas/curriculo.html', {'curriculo': dto, 'seo': seo})
 
 
 @login_required

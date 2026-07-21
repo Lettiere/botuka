@@ -1,39 +1,10 @@
+{% extends "_layout/platform/platform_home.html" %}
 {% load static %}
-<!doctype html>
-<html lang="pt-br" data-theme="light">
-<head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>{% block title %}Painel BOTUKA{% endblock %}</title>
-  {% include "pwa/head.html" %}
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
-  <link rel="stylesheet" href="{% static 'css/platform/style.css' %}">
-</head>
-<body class="painel-body">
-  <script src="{% static 'js/platform/main.js' %}"></script>
-  {% include "components/topbar.html" %}
-  {% include "components/navbar.html" %}
-  {% if painel_module_groups %}
-    <details class="painel-mobile-menu d-lg-none mx-3 mt-3">
-      <summary><i class="bi bi-grid-fill"></i> Módulos do painel</summary>
-      <nav aria-label="Módulos do painel no celular">
-        {% for group in painel_module_groups %}
-          <strong>{{ group.label }}</strong>
-          {% for item in group.items %}<a href="{{ item.url }}"><i class="bi {{ item.icon }}"></i> {{ item.label }}</a>{% endfor %}
-        {% endfor %}
-      </nav>
-    </details>
-  {% endif %}
+{# Base privada: a autenticação continua nas views; noindex é uma camada adicional. #}
+{% block styles %}<link rel="stylesheet" href="{% static 'css/platform/style.css' %}">{% endblock %}
+{% block content %}
   <main class="painel-wrap">
-    {% if request.resolver_match.url_name != 'dashboard' %}
-      <nav class="panel-global-back" aria-label="Navegação do painel"><a href="{% url 'painel:dashboard' %}"><i class="bi bi-arrow-left"></i> Voltar ao painel</a></nav>
-    {% endif %}
     {% if messages %}{% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}{% endif %}
-    {% block content %}{% endblock %}
+    {% block painel_content %}{% endblock %}
   </main>
-  {% include "_layout/platform/partials/modais.html" %}
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
-  {% include "pwa/register.html" %}
-</body>
-</html>
+{% endblock %}

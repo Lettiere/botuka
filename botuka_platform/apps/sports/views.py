@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
 from apps.core.domain_views import crud_views
+from apps.core.seo.page_builders import listing_seo, sports_seo
 from apps.organizations.models import Empresa
 from apps.organizations.permissions import usuario_pode_gerenciar_empresa
 
@@ -136,6 +137,7 @@ def home(request):
         "proximas": disputes.filter(data_hora__gt=now)[:8],
         "resultados": disputes.filter(status=Disputa.Status.ENCERRADA).order_by("-data_hora")[:8],
         "campeonatos": page.object_list, "page_obj": page, "total": page.paginator.count,
+        "seo": listing_seo(request, 'Esportes em Botucatu | BOTUKA', 'Campeonatos, equipes, atletas e jogos publicados por organizações verificadas.'),
     })
 
 
@@ -143,28 +145,30 @@ def modalidade(request, slug):
     modalidade_obj = get_object_or_404(Modalidade.objects, slug=slug, ativo=True, excluido_em__isnull=True)
     equipes = Equipe.objects.filter(ativo=True, excluido_em__isnull=True, modalidade=modalidade_obj, organizacao__ativo=True, organizacao__verificado=True, organizacao__excluido_em__isnull=True).select_related("organizacao", "categoria")[:12]
     campeonatos = _public_championships().filter(modalidade=modalidade_obj).select_related("organizacao", "categoria")[:12]
-    return render(request, "publico/sports/modalidade.html", {"modalidade": modalidade_obj, "equipes": equipes, "campeonatos": campeonatos})
+    return render(request, "publico/sports/modalidade.html", {"modalidade": modalidade_obj, "equipes": equipes, "campeonatos": campeonatos, "seo": sports_seo(request, modalidade_obj, kind='modalidade')})
 
 
 def equipe(request, slug):
     queryset = Equipe.objects.filter(ativo=True, excluido_em__isnull=True, organizacao__ativo=True, organizacao__verificado=True, organizacao__excluido_em__isnull=True).select_related("organizacao", "modalidade", "estilo", "categoria")
     equipe_obj = get_object_or_404(queryset, slug=slug)
     atletas = Atleta.objects.filter(equipe=equipe_obj, publico=True, ativo=True, excluido_em__isnull=True).select_related("modalidade", "categoria")
-    return render(request, "publico/sports/equipe.html", {"equipe": equipe_obj, "atletas": atletas})
+    return render(request, "publico/sports/equipe.html", {"equipe": equipe_obj, "atletas": atletas, "seo": sports_seo(request, equipe_obj, kind='equipe')})
 
 
 def atleta(request, uuid):
     queryset = Atleta.objects.filter(publico=True, equipe__organizacao__ativo=True, equipe__organizacao__verificado=True, equipe__organizacao__excluido_em__isnull=True)
-    return render(request, "publico/sports/atleta.html", {"atleta": get_object_or_404(queryset, uuid=uuid)})
+    atleta_obj = get_object_or_404(queryset, uuid=uuid)
+    return render(request, "publico/sports/atleta.html", {"atleta": atleta_obj, "seo": sports_seo(request, atleta_obj, kind='atleta')})
 
 
 def campeonato(request, slug):
     campeonato_obj = get_object_or_404(_public_championships().select_related("organizacao", "modalidade", "estilo", "categoria"), slug=slug)
     classificacoes = Classificacao.objects.filter(campeonato=campeonato_obj, ativo=True, excluido_em__isnull=True).select_related("participante", "participante__equipe", "participante__atleta").order_by("posicao")
     jogos = _public_disputes().filter(campeonato=campeonato_obj).select_related("participante_a", "participante_a__equipe", "participante_b", "participante_b__equipe").order_by("data_hora")
-    return render(request, "publico/sports/campeonato.html", {"campeonato": campeonato_obj, "classificacoes": classificacoes, "jogos": jogos})
+    return render(request, "publico/sports/campeonato.html", {"campeonato": campeonato_obj, "classificacoes": classificacoes, "jogos": jogos, "seo": sports_seo(request, campeonato_obj, kind='campeonato')})
 
 
 def jogo(request, uuid):
     queryset = _public_disputes().select_related("campeonato", "campeonato__modalidade", "participante_a", "participante_a__equipe", "participante_a__atleta", "participante_b", "participante_b__equipe", "participante_b__atleta")
-    return render(request, "publico/sports/jogo.html", {"jogo": get_object_or_404(queryset, uuid=uuid)})
+    jogo_obj = get_object_or_404(queryset, uuid=uuid)
+    return render(request, "publico/sports/jogo.html", {"jogo": jogo_obj, "seo": sports_seo(request, jogo_obj, kind='jogo')})

@@ -7,6 +7,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.organizations.models import Empresa
 from apps.services.models import Servico, ServicoImagem, Setor
+from apps.core.seo.page_builders import empresa_seo, listing_seo, servico_seo
 
 
 def empresas_publicas(request):
@@ -20,7 +21,8 @@ def empresas_publicas(request):
     queryset = queryset.order_by('nome_fantasia' if request.GET.get('ordem') == 'az' else '-atualizado_em')
     page = Paginator(queryset, 12).get_page(request.GET.get('page'))
     categorias = Empresa.objects.filter(ativo=True, perfil_publico=True, status=Empresa.Status.ATIVA, categoria_empresa__isnull=False).values('categoria_empresa__slug', 'categoria_empresa__nome').distinct().order_by('categoria_empresa__nome')
-    return render(request, 'publico/empresas/lista.html', {'page_obj': page, 'empresas': page.object_list, 'categorias': categorias, 'total': page.paginator.count})
+    seo = listing_seo(request, 'Empresas em Botucatu | BOTUKA', 'Encontre empresas, negócios e organizações com perfil público em Botucatu.')
+    return render(request, 'publico/empresas/lista.html', {'page_obj': page, 'empresas': page.object_list, 'categorias': categorias, 'total': page.paginator.count, 'seo': seo})
 
 
 def servicos_publicos(request):
@@ -34,12 +36,13 @@ def servicos_publicos(request):
     if request.GET.get('presencial') == '1': queryset = queryset.filter(atendimento_presencial=True)
     queryset = queryset.order_by('titulo' if request.GET.get('ordem') == 'az' else '-publicado_em')
     page = Paginator(queryset, 12).get_page(request.GET.get('page'))
-    return render(request, 'publico/servicos/lista.html', {'page_obj': page, 'servicos': page.object_list, 'categorias': Setor.objects.filter(ativo=True), 'total': page.paginator.count})
+    seo = listing_seo(request, 'Serviços em Botucatu | BOTUKA', 'Encontre serviços, profissionais e empresas prestadoras em Botucatu.')
+    return render(request, 'publico/servicos/lista.html', {'page_obj': page, 'servicos': page.object_list, 'categorias': Setor.objects.filter(ativo=True), 'total': page.paginator.count, 'seo': seo})
 
 
 def servico_publico(request, slug):
     servico = get_object_or_404(
-        Servico.objects.select_related('empresa', 'usuario_responsavel').prefetch_related('links'),
+        Servico.objects.select_related('empresa', 'usuario_responsavel', 'tipo_servico').prefetch_related('links', Prefetch('imagens', queryset=ServicoImagem.objects.filter(ativo=True, excluido_em__isnull=True).order_by('-principal', 'ordem'))),
         slug=slug,
         ativo=True,
         status=Servico.Status.PUBLICADO,
@@ -48,7 +51,7 @@ def servico_publico(request, slug):
     if servico.empresa_id and not servico.empresa.pode_publicar_servico:
         raise Http404
     links = servico.links.filter(ativo=True, excluido_em__isnull=True).order_by('-destaque', 'ordem')
-    return render(request, 'publico/servicos/detalhe.html', {'servico': servico, 'links': links, 'videos': [link for link in links if link.url_embed][:6]})
+    return render(request, 'publico/servicos/detalhe.html', {'servico': servico, 'links': links, 'videos': [link for link in links if link.url_embed][:6], 'seo': servico_seo(request, servico)})
 
 
 def empresa_publica(request, slug):
@@ -60,7 +63,7 @@ def empresa_publica(request, slug):
         status=Empresa.Status.ATIVA,
     )
     links = empresa.links.filter(ativo=True, excluido_em__isnull=True).order_by('-destaque', 'ordem')
-    return render(request, 'publico/empresas/detalhe.html', {'empresa': empresa, 'links': links, 'videos': [link for link in links if link.url_embed][:6]})
+    return render(request, 'publico/empresas/detalhe.html', {'empresa': empresa, 'links': links, 'videos': [link for link in links if link.url_embed][:6], 'seo': empresa_seo(request, empresa)})
 
 
 def qrcode_servico_redirect(request, token):

@@ -1,0 +1,1 @@
+{% load seo_tags %}{% with data=seo|default:seo_default %}{% if data.schema %}<script type="application/ld+json">{{ data.schema|json_ld }}</script>{% endif %}{% endwith %}

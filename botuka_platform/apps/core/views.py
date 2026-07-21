@@ -5,6 +5,8 @@ from django.shortcuts import render
 from django.templatetags.static import static
 
 from apps.core.services.home import montar_contexto_home
+from apps.core.seo.page_builders import home_seo
+from apps.core.seo.builders import build_seo
 
 logger = logging.getLogger('django.security.csrf')
 
@@ -22,11 +24,23 @@ def csrf_failure(request, reason=''):
     return render(request, 'errors/csrf_failure.html', status=403)
 
 
+def not_found(request, exception):
+    seo = build_seo(request, title='Página não encontrada | BOTUKA', description='O endereço solicitado não foi encontrado.', robots='noindex,nofollow')
+    return render(request, 'errors/404.html', {'seo': seo}, status=404)
+
+
+def server_error(request):
+    seo = build_seo(request, title='Erro interno | BOTUKA', description='Não foi possível carregar esta página.', robots='noindex,nofollow')
+    return render(request, 'errors/500.html', {'seo': seo}, status=500)
+
+
 def home(request):
+    context = montar_contexto_home(getattr(request, "user", None))
+    context['seo'] = home_seo(request)
     return render(
         request,
         "home/home.html",
-        montar_contexto_home(getattr(request, "user", None)),
+        context,
     )
 
 

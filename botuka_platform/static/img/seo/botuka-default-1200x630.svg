@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="630" viewBox="0 0 1200 630" role="img" aria-labelledby="title desc">
+  <title id="title">BOTUKA</title><desc id="desc">Empresas, serviços, eventos e notícias de Botucatu.</desc>
+  <defs><linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#111827"/><stop offset="1" stop-color="#263449"/></linearGradient></defs>
+  <rect width="1200" height="630" fill="url(#bg)"/><circle cx="118" cy="118" r="42" fill="#ffd230"/>
+  <text x="180" y="145" fill="#ffffff" font-family="Arial, sans-serif" font-size="82" font-weight="800">BOTUKA</text>
+  <text x="84" y="330" fill="#ffffff" font-family="Arial, sans-serif" font-size="52" font-weight="700">Sua cidade em um só lugar</text>
+  <text x="84" y="410" fill="#dbe5f1" font-family="Arial, sans-serif" font-size="30">Empresas · Serviços · Eventos · Vagas · Notícias</text>
+  <rect x="84" y="500" width="360" height="8" rx="4" fill="#ffd230"/>
+</svg>

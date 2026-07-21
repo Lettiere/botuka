@@ -5,6 +5,7 @@ from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
 from apps.core.domain_views import crud_views
+from apps.core.seo.page_builders import listing_seo, media_seo
 
 from .models import Canal, Episodio, Pauta, Programa, Temporada, Transmissao
 
@@ -73,7 +74,8 @@ def home(request):
     page = Paginator(episodes, 12).get_page(request.GET.get("page"))
     programas = Programa.objects.filter(ativo=True, excluido_em__isnull=True, canal__ativo=True, canal__excluido_em__isnull=True).select_related("canal")
     categorias = programas.exclude(categoria="").values_list("categoria", flat=True).distinct().order_by("categoria")
-    return render(request, "publico/ytv/home.html", {"programas": programas[:12], "episodios": page.object_list, "page_obj": page, "total": page.paginator.count, "categorias": categorias, "destaque": page.object_list[0] if page.object_list else None})
+    seo = listing_seo(request, 'YTv Botuka | Vídeos de Botucatu', 'Programas, entrevistas, vídeos e transmissões locais da YTv Botuka.')
+    return render(request, "publico/ytv/home.html", {"programas": programas[:12], "episodios": page.object_list, "page_obj": page, "total": page.paginator.count, "categorias": categorias, "destaque": page.object_list[0] if page.object_list else None, "seo": seo})
 
 
 def programa(request, slug):
@@ -81,16 +83,17 @@ def programa(request, slug):
     programa_obj = get_object_or_404(queryset, slug=slug)
     episodios = _public_episodes().filter(programa=programa_obj).order_by("-publicado_em")
     page = Paginator(episodios, 12).get_page(request.GET.get("page"))
-    return render(request, "publico/ytv/programa.html", {"programa": programa_obj, "episodios": page.object_list, "page_obj": page, "total": page.paginator.count})
+    return render(request, "publico/ytv/programa.html", {"programa": programa_obj, "episodios": page.object_list, "page_obj": page, "total": page.paginator.count, "seo": media_seo(request, programa_obj)})
 
 
 def episodio(request, slug):
     episodio_obj = get_object_or_404(_visible_episodes(), slug=slug)
     relacionados = _public_episodes().filter(programa=episodio_obj.programa).exclude(pk=episodio_obj.pk).order_by("-publicado_em")[:4]
-    return render(request, "publico/ytv/episodio.html", {"episodio": episodio_obj, "relacionados": relacionados})
+    return render(request, "publico/ytv/episodio.html", {"episodio": episodio_obj, "relacionados": relacionados, "seo": media_seo(request, episodio_obj, kind='episodio')})
 
 
 def ao_vivo(request):
     transmissions = Transmissao.objects.filter(ativo=True, excluido_em__isnull=True, status=Transmissao.Status.AO_VIVO, episodio__ativo=True, episodio__excluido_em__isnull=True, episodio__status=Episodio.Status.AO_VIVO, episodio__video_id__gt="", episodio__programa__ativo=True, episodio__programa__excluido_em__isnull=True, episodio__programa__canal__ativo=True, episodio__programa__canal__excluido_em__isnull=True).select_related("episodio", "episodio__programa").order_by("-inicio")
     recentes = _public_episodes().order_by("-publicado_em")[:4]
-    return render(request, "publico/ytv/ao_vivo.html", {"transmissoes": transmissions, "recentes": recentes})
+    seo = listing_seo(request, 'YTv Botuka ao vivo', 'Transmissões e conteúdos audiovisuais locais da YTv Botuka.')
+    return render(request, "publico/ytv/ao_vivo.html", {"transmissoes": transmissions, "recentes": recentes, "seo": seo})

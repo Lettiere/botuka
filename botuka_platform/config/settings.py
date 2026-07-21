@@ -129,6 +129,7 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'django.contrib.sitemaps',
 
     # Terceiros
     'rest_framework',
@@ -184,7 +185,7 @@ TEMPLATES = [
                 'apps.gestao.context_processors.public_urls',
                 'apps.gestao.context_processors.publicar_options',
                 'apps.painel.navigation.painel_navigation',
-                'apps.painel.navigation.painel_navigation',
+                'apps.core.context_processors.seo.seo_context',
             ],
         },
     },
@@ -280,6 +281,36 @@ STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
+
+# =============================================================================
+# SEO, indexação e integrações opcionais
+# =============================================================================
+
+SITE_NAME = config('SITE_NAME', default='BOTUKA')
+SITE_URL = config('SITE_URL', default=PUBLIC_BASE_URL).rstrip('/')
+SITE_DEFAULT_DESCRIPTION = config(
+    'SITE_DEFAULT_DESCRIPTION',
+    default='Empresas, serviços, eventos, vagas e notícias de Botucatu em um só lugar.',
+)
+SITE_DEFAULT_IMAGE = config(
+    'SITE_DEFAULT_IMAGE', default='/static/img/seo/botuka-default-1200x630.png',
+)
+SITE_DEFAULT_LOCALE = config('SITE_DEFAULT_LOCALE', default='pt_BR')
+GOOGLE_TAG_MANAGER_ID = config('GOOGLE_TAG_MANAGER_ID', default='').strip()
+GOOGLE_ANALYTICS_ID = config('GOOGLE_ANALYTICS_ID', default='').strip()
+GOOGLE_SITE_VERIFICATION = config('GOOGLE_SITE_VERIFICATION', default='').strip()
+GOOGLE_ADS_ID = config('GOOGLE_ADS_ID', default='').strip()
+GOOGLE_ADS_CONVERSION_ID = config('GOOGLE_ADS_CONVERSION_ID', default='').strip()
+GOOGLE_ADS_CONVERSION_LABEL = config('GOOGLE_ADS_CONVERSION_LABEL', default='').strip()
+META_PIXEL_ID = config('META_PIXEL_ID', default='').strip()
+META_DOMAIN_VERIFICATION = config('META_DOMAIN_VERIFICATION', default='').strip()
+MICROSOFT_CLARITY_ID = config('MICROSOFT_CLARITY_ID', default='').strip()
+BING_SITE_VERIFICATION = config('BING_SITE_VERIFICATION', default='').strip()
+PINTEREST_DOMAIN_VERIFICATION = config('PINTEREST_DOMAIN_VERIFICATION', default='').strip()
+TWITTER_SITE = config('TWITTER_SITE', default='').strip()
+TWITTER_CREATOR = config('TWITTER_CREATOR', default='').strip()
+ENABLE_ANALYTICS = config('ENABLE_ANALYTICS', default=False, cast=cast_debug)
+ENABLE_MARKETING_TAGS = config('ENABLE_MARKETING_TAGS', default=False, cast=cast_debug)
 
 # =============================================================================
 # Configurações Futuras

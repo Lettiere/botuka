@@ -4,6 +4,7 @@ from django.shortcuts import get_object_or_404, render
 
 from apps.core.domain import EditorialStatus
 from apps.core.domain_views import crud_views
+from apps.core.seo.page_builders import government_seo, listing_seo
 
 from .models import AcaoAtualizacao, AcaoDocumento, AcaoLink, AcaoPublica, OrgaoPublico, OrgaoUsuario
 
@@ -127,13 +128,14 @@ def home(request):
     if request.GET.get("situacao") in AcaoPublica.Situacao.values: queryset = queryset.filter(situacao=request.GET["situacao"])
     from django.core.paginator import Paginator
     page = Paginator(queryset, 12).get_page(request.GET.get("page"))
-    return render(request, "publico/government/home.html", {"acoes": page.object_list, "page_obj": page, "total": page.paginator.count, "orgaos": OrgaoPublico.objects.filter(verificado=True, ativo=True, excluido_em__isnull=True)})
+    seo = listing_seo(request, 'Prefeitura e órgãos públicos de Botucatu | BOTUKA', 'Ações, serviços e publicações de órgãos públicos verificados de Botucatu.')
+    return render(request, "publico/government/home.html", {"acoes": page.object_list, "page_obj": page, "total": page.paginator.count, "orgaos": OrgaoPublico.objects.filter(verificado=True, ativo=True, excluido_em__isnull=True), "seo": seo})
 
 
 def orgao(request, slug):
     orgao_obj = get_object_or_404(OrgaoPublico.objects, slug=slug, verificado=True, ativo=True, excluido_em__isnull=True)
     acoes_orgao = _public_actions().filter(orgao=orgao_obj).order_by("-publicado_em")[:12]
-    return render(request, "publico/government/orgao.html", {"orgao": orgao_obj, "acoes": acoes_orgao})
+    return render(request, "publico/government/orgao.html", {"orgao": orgao_obj, "acoes": acoes_orgao, "seo": government_seo(request, orgao_obj, kind='orgao')})
 
 
 def acoes(request):
@@ -145,4 +147,4 @@ def acao(request, slug):
     atualizacoes = acao_obj.atualizacoes.filter(ativo=True, excluido_em__isnull=True).select_related("autor").order_by("-data", "ordem")
     documentos = acao_obj.documentos.filter(ativo=True, excluido_em__isnull=True).order_by("ordem")
     links = acao_obj.links.filter(ativo=True, excluido_em__isnull=True).order_by("ordem")
-    return render(request, "publico/government/acao.html", {"acao": acao_obj, "atualizacoes": atualizacoes, "documentos": documentos, "links": links})
+    return render(request, "publico/government/acao.html", {"acao": acao_obj, "atualizacoes": atualizacoes, "documentos": documentos, "links": links, "seo": government_seo(request, acao_obj)})
