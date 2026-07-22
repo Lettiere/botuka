@@ -1,24 +1,705 @@
 {% extends "painel/base.html" %}
-{% block title %}Minha conta · Painel BOTUKA{% endblock %}
+
+{% block title %}Minha conta | Painel BOTUKA{% endblock %}
+
 {% block content %}
-<div class="account-dashboard">
-  <header class="account-hero">
-    <div><span class="account-eyebrow">Painel BOTUKA</span><h1>Olá, {{ request.user.nome_exibicao|default:request.user.first_name|default:request.user.username }}</h1><p>Gerencie sua presença e suas atividades na BOTUKA.</p></div>
-    <a class="panel-btn panel-btn--light" href="{% url 'painel:perfil' %}"><i class="bi bi-person"></i> Meu perfil</a>
+<style>
+.dashboard-page {
+  max-width: 1240px;
+  margin: 0 auto;
+}
+
+.dashboard-hero {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  padding: 30px;
+  margin-bottom: 24px;
+  border-radius: 26px;
+  background:
+    radial-gradient(circle at top right, rgba(13, 110, 253, .18), transparent 38%),
+    linear-gradient(135deg, rgba(13, 110, 253, .10), rgba(111, 66, 193, .08));
+  border: 1px solid rgba(13, 110, 253, .14);
+}
+
+.dashboard-eyebrow {
+  display: inline-block;
+  margin-bottom: 10px;
+  color: var(--bs-primary);
+  font-size: .78rem;
+  font-weight: 800;
+  letter-spacing: .09em;
+  text-transform: uppercase;
+}
+
+.dashboard-hero h1 {
+  margin: 0 0 8px;
+  font-size: clamp(1.9rem, 4vw, 2.7rem);
+  font-weight: 850;
+}
+
+.dashboard-hero p {
+  max-width: 720px;
+  margin: 0;
+  color: var(--bs-secondary-color);
+}
+
+.dashboard-hero-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.dashboard-hero-actions .btn {
+  min-height: 44px;
+  border-radius: 12px;
+  font-weight: 700;
+}
+
+.dashboard-welcome,
+.dashboard-section,
+.dashboard-plan {
+  margin-bottom: 24px;
+  padding: 26px;
+  border: 1px solid rgba(120, 120, 120, .16);
+  border-radius: 22px;
+  background: var(--bs-body-bg);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, .05);
+}
+
+.dashboard-welcome {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.dashboard-welcome-icon {
+  display: flex;
+  width: 52px;
+  height: 52px;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 52px;
+  border-radius: 16px;
+  background: rgba(13, 110, 253, .12);
+  color: var(--bs-primary);
+  font-size: 1.45rem;
+}
+
+.dashboard-section-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-bottom: 20px;
+}
+
+.dashboard-section-head h2 {
+  margin: 0;
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.dashboard-section-head p {
+  margin: 5px 0 0;
+  color: var(--bs-secondary-color);
+}
+
+.dashboard-indicators {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+.dashboard-indicator {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 110px;
+  padding: 20px;
+  border: 1px solid rgba(120, 120, 120, .16);
+  border-radius: 18px;
+  background: var(--bs-body-bg);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, .04);
+}
+
+.dashboard-indicator-icon,
+.dashboard-resource-icon,
+.dashboard-action-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 auto;
+  border-radius: 14px;
+  background: rgba(13, 110, 253, .11);
+  color: var(--bs-primary);
+}
+
+.dashboard-indicator-icon {
+  width: 46px;
+  height: 46px;
+  font-size: 1.25rem;
+}
+
+.dashboard-indicator span {
+  display: block;
+  color: var(--bs-secondary-color);
+  font-size: .87rem;
+}
+
+.dashboard-indicator strong {
+  display: block;
+  margin-top: 2px;
+  font-size: 1.55rem;
+  line-height: 1;
+}
+
+.dashboard-actions-grid,
+.dashboard-resource-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+}
+
+.dashboard-action,
+.dashboard-resource {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100%;
+  padding: 22px;
+  border: 1px solid rgba(120, 120, 120, .16);
+  border-radius: 18px;
+  background: rgba(120, 120, 120, .025);
+  color: inherit;
+  text-decoration: none;
+  transition: transform .2s ease, border-color .2s ease, box-shadow .2s ease;
+}
+
+.dashboard-action:hover,
+.dashboard-resource:hover {
+  transform: translateY(-3px);
+  border-color: rgba(13, 110, 253, .34);
+  box-shadow: 0 14px 32px rgba(0, 0, 0, .07);
+}
+
+.dashboard-action-icon,
+.dashboard-resource-icon {
+  width: 46px;
+  height: 46px;
+  margin-bottom: 17px;
+  font-size: 1.2rem;
+}
+
+.dashboard-action h3,
+.dashboard-resource h3 {
+  margin: 0 0 7px;
+  font-size: 1.08rem;
+  font-weight: 800;
+}
+
+.dashboard-action p,
+.dashboard-resource p {
+  margin: 0 0 18px;
+  color: var(--bs-secondary-color);
+  font-size: .92rem;
+}
+
+.dashboard-action-arrow {
+  margin-top: auto;
+  color: var(--bs-primary);
+  font-weight: 700;
+}
+
+.dashboard-resource-logo {
+  width: 62px;
+  height: 62px;
+  margin-bottom: 16px;
+  overflow: hidden;
+  border-radius: 16px;
+  background: rgba(13, 110, 253, .10);
+}
+
+.dashboard-resource-logo img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.dashboard-resource-logo i {
+  display: flex;
+  width: 100%;
+  height: 100%;
+  align-items: center;
+  justify-content: center;
+  color: var(--bs-primary);
+  font-size: 1.5rem;
+}
+
+.dashboard-status {
+  display: inline-flex;
+  align-self: flex-start;
+  margin-bottom: 10px;
+  padding: 5px 9px;
+  border-radius: 999px;
+  background: rgba(25, 135, 84, .12);
+  color: #198754;
+  font-size: .76rem;
+  font-weight: 750;
+}
+
+.dashboard-mini-stats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: auto 0 18px;
+}
+
+.dashboard-mini-stats span {
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(120, 120, 120, .08);
+  font-size: .82rem;
+}
+
+.dashboard-mini-stats b {
+  color: var(--bs-primary);
+}
+
+.dashboard-resource .btn {
+  margin-top: auto;
+  border-radius: 11px;
+  font-weight: 700;
+}
+
+.dashboard-progress {
+  width: 100%;
+  height: 10px;
+  margin: 4px 0 8px;
+  border: 0;
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.dashboard-publications,
+.dashboard-plan-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.dashboard-publication,
+.dashboard-plan-item {
+  padding: 18px;
+  border-radius: 16px;
+  background: rgba(120, 120, 120, .055);
+}
+
+.dashboard-publication span,
+.dashboard-plan-item span {
+  display: block;
+  color: var(--bs-secondary-color);
+  font-size: .85rem;
+}
+
+.dashboard-publication strong,
+.dashboard-plan-item strong {
+  display: block;
+  margin-top: 4px;
+  font-size: 1.35rem;
+}
+
+.dashboard-network {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+}
+
+.dashboard-network-icons {
+  display: flex;
+  gap: 12px;
+}
+
+.dashboard-network-icons i {
+  display: flex;
+  width: 46px;
+  height: 46px;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  background: rgba(13, 110, 253, .10);
+  color: var(--bs-primary);
+  font-size: 1.15rem;
+}
+
+@media (max-width: 991.98px) {
+  .dashboard-indicators {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .dashboard-actions-grid,
+  .dashboard-resource-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 767.98px) {
+  .dashboard-page {
+    padding-inline: 2px;
+  }
+
+  .dashboard-hero {
+    flex-direction: column;
+    padding: 22px;
+    border-radius: 20px;
+  }
+
+  .dashboard-hero-actions {
+    width: 100%;
+  }
+
+  .dashboard-hero-actions .btn {
+    flex: 1;
+  }
+
+  .dashboard-indicators,
+  .dashboard-actions-grid,
+  .dashboard-resource-grid,
+  .dashboard-publications,
+  .dashboard-plan-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-section,
+  .dashboard-plan,
+  .dashboard-welcome {
+    padding: 20px;
+    border-radius: 18px;
+  }
+
+  .dashboard-section-head,
+  .dashboard-network {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
+</style>
+
+<div class="dashboard-page py-3 py-lg-4">
+
+  <header class="dashboard-hero">
+    <div>
+      <span class="dashboard-eyebrow">Minha conta BOTUKA</span>
+      <h1>
+        Olá,
+        {{ request.user.nome_exibicao|default:request.user.first_name|default:request.user.username }}
+      </h1>
+      <p>
+        Acompanhe suas empresas, serviços, vagas, candidaturas e publicações
+        em um único lugar.
+      </p>
+    </div>
+
+    <div class="dashboard-hero-actions">
+      <a class="btn btn-outline-primary" href="{% url 'painel:perfil' %}">
+        <i class="bi bi-person"></i>
+        Meu perfil
+      </a>
+    </div>
   </header>
-  {% if dashboard.is_initial %}<section class="account-welcome"><i class="bi bi-stars"></i><div><h2>Bem-vindo à BOTUKA</h2><p>Complete seu perfil e escolha o que deseja cadastrar primeiro.</p></div></section>{% endif %}
-  {% if dashboard.indicators %}<section class="account-indicators" aria-label="Resumo da conta">{% for item in dashboard.indicators %}<article><i class="bi {{ item.icon }}"></i><span>{{ item.label }}</span><strong>{{ item.value }}</strong></article>{% endfor %}</section>{% endif %}
-  {% if dashboard.actions %}<section class="account-section"><header><span class="account-eyebrow">Próximos passos</span><h2>O que você deseja fazer?</h2></header><div class="account-actions">{% for item in dashboard.actions %}<a href="{{ item.url }}"><i class="bi {{ item.icon }}"></i><span><strong>{{ item.title }}</strong><small>{{ item.description }}</small></span><i class="bi bi-arrow-right"></i></a>{% endfor %}</div></section>{% endif %}
+
+  {% if dashboard.is_initial %}
+    <section class="dashboard-welcome">
+      <span class="dashboard-welcome-icon">
+        <i class="bi bi-stars"></i>
+      </span>
+      <div>
+        <h2 class="h5 fw-bold mb-1">Bem-vindo à BOTUKA</h2>
+        <p class="mb-0 text-muted">
+          Complete seu perfil e escolha o que deseja cadastrar primeiro.
+        </p>
+      </div>
+    </section>
+  {% endif %}
+
+  {% if dashboard.indicators %}
+    <section class="dashboard-indicators" aria-label="Resumo da conta">
+      {% for item in dashboard.indicators %}
+        <article class="dashboard-indicator">
+          <span class="dashboard-indicator-icon">
+            <i class="bi {{ item.icon }}"></i>
+          </span>
+          <div>
+            <span>{{ item.label }}</span>
+            <strong>{{ item.value }}</strong>
+          </div>
+        </article>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  {% if dashboard.actions %}
+    <section class="dashboard-section">
+      <header class="dashboard-section-head">
+        <div>
+          <span class="dashboard-eyebrow">Próximos passos</span>
+          <h2>O que você deseja fazer?</h2>
+          <p>Acesse rapidamente as principais ações disponíveis para sua conta.</p>
+        </div>
+      </header>
+
+      <div class="dashboard-actions-grid">
+        {% for item in dashboard.actions %}
+          <a class="dashboard-action" href="{{ item.url }}">
+            <span class="dashboard-action-icon">
+              <i class="bi {{ item.icon }}"></i>
+            </span>
+            <h3>{{ item.title }}</h3>
+            <p>{{ item.description }}</p>
+            <span class="dashboard-action-arrow">
+              Acessar <i class="bi bi-arrow-right"></i>
+            </span>
+          </a>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
   {% if dashboard.companies or dashboard.curriculum or dashboard.services or dashboard.jobs or dashboard.applications %}
-  <section class="account-section"><header><span class="account-eyebrow">Sua atividade</span><h2>O que você já tem</h2></header><div class="account-resource-grid">
-    {% for empresa in dashboard.companies %}<article class="account-resource"><div class="account-resource__head"><div class="account-logo">{% if empresa.logo %}<img src="{{ empresa.logo.url }}" alt="" width="64" height="64">{% else %}<i class="bi bi-buildings"></i>{% endif %}</div><div><span class="city-tag">{{ empresa.get_status_display }}</span><h3>{{ empresa.nome_fantasia }}</h3><small>{{ empresa.categoria_empresa.nome|default:'Empresa' }}{% if empresa.verificada %} · Verificada{% endif %}</small></div></div><div class="account-mini-stats"><span><b>{{ empresa.qtd_servicos }}</b> serviços</span><span><b>{{ empresa.qtd_vagas }}</b> vagas</span><span><b>{{ empresa.qtd_colaboradores }}</b> colaboradores</span></div><a class="panel-btn" href="{% url 'painel:empresa_detalhe' empresa.uuid %}">Gerenciar empresa</a></article>{% endfor %}
-    {% if dashboard.curriculum %}<article class="account-resource"><span class="account-resource__icon"><i class="bi bi-file-earmark-person"></i></span><h3>Meu currículo</h3><p>{{ dashboard.curriculum.object.titulo_profissional|default:'Complete seu perfil profissional' }}</p><progress class="account-progress" value="{{ dashboard.curriculum.completion }}" max="100" aria-label="Currículo preenchido em {{ dashboard.curriculum.completion }} por cento">{{ dashboard.curriculum.completion }}%</progress><small>{{ dashboard.curriculum.completion }}% preenchido · {% if dashboard.curriculum.object.publico %}Público{% else %}Privado{% endif %}</small><div class="account-resource__actions"><a href="{% url 'painel:curriculo_editar' %}">Editar currículo</a><a href="{% url 'painel:curriculo_preview' %}">Visualizar</a></div></article>{% endif %}
-    {% if dashboard.services %}<article class="account-resource"><span class="account-resource__icon"><i class="bi bi-tools"></i></span><h3>Meus serviços</h3><p><strong>{{ dashboard.services.total }} de {{ dashboard.services.limit }}</strong> serviços utilizados</p><div class="account-mini-stats"><span><b>{{ dashboard.services.active }}</b> ativos</span><span><b>{{ dashboard.services.paused }}</b> pausados</span></div><a class="panel-btn" href="{% url 'painel:servicos_lista' %}">Gerenciar serviços</a></article>{% endif %}
-    {% if dashboard.jobs %}<article class="account-resource"><span class="account-resource__icon"><i class="bi bi-briefcase"></i></span><h3>Minhas vagas</h3><div class="account-mini-stats"><span><b>{{ dashboard.jobs.active }}</b> ativas</span><span><b>{{ dashboard.jobs.draft }}</b> rascunhos</span><span><b>{{ dashboard.jobs.applications }}</b> candidaturas</span></div><a class="panel-btn" href="{% url 'painel:vagas_lista' %}">Gerenciar vagas</a></article>{% endif %}
-    {% if dashboard.applications %}<article class="account-resource"><span class="account-resource__icon"><i class="bi bi-person-check"></i></span><h3>Minhas candidaturas</h3><p><strong>{{ dashboard.applications.total }}</strong> candidatura{{ dashboard.applications.total|pluralize }}</p><a class="panel-btn" href="{% url 'painel:minhas_candidaturas' %}">Acompanhar candidaturas</a></article>{% endif %}
-  </div></section>{% endif %}
-  {% if dashboard.publications %}<section class="account-section"><header><span class="account-eyebrow">Conteúdo</span><h2>Minhas publicações</h2></header><div class="account-publications"><span><b>{{ dashboard.publications.cultura }}</b> cultura</span><span><b>{{ dashboard.publications.esportes }}</b> esportes</span><span><b>{{ dashboard.publications.oficiais }}</b> oficiais</span><a href="{% url 'painel:publicacoes_lista' %}">Gerenciar publicações</a></div></section>{% endif %}
-  <section class="account-section account-network"><div><span class="account-eyebrow">Em breve</span><h2>Minha rede na BOTUKA</h2><p>Em breve você poderá seguir empresas e pessoas, compartilhar novidades, curtir publicações e acompanhar tudo o que acontece na cidade.</p></div><div class="account-network__icons" aria-hidden="true"><i class="bi bi-people"></i><i class="bi bi-heart"></i><i class="bi bi-chat"></i></div></section>
-  <section class="account-plan"><div><span class="account-eyebrow">Plano atual</span><h2>{{ dashboard.plan.name }}</h2>{% if dashboard.plan.valid_until %}<small>Válido até {{ dashboard.plan.valid_until|date:'d/m/Y' }}</small>{% endif %}</div><div><span>Empresas</span><strong>{{ dashboard.plan.companies_used }} de {{ dashboard.plan.companies_limit|default:'∞' }}</strong></div><div><span>Serviços</span><strong>{{ dashboard.plan.services_used }} de {{ dashboard.plan.services_limit }}</strong></div></section>
+    <section class="dashboard-section">
+      <header class="dashboard-section-head">
+        <div>
+          <span class="dashboard-eyebrow">Sua atividade</span>
+          <h2>Recursos da sua conta</h2>
+          <p>Gerencie tudo o que já está cadastrado na plataforma.</p>
+        </div>
+      </header>
+
+      <div class="dashboard-resource-grid">
+
+        {% for empresa in dashboard.companies %}
+          <article class="dashboard-resource">
+            <div class="dashboard-resource-logo">
+              {% if empresa.logo %}
+                <img src="{{ empresa.logo.url }}" alt="{{ empresa.nome_fantasia }}">
+              {% else %}
+                <i class="bi bi-buildings"></i>
+              {% endif %}
+            </div>
+
+            <span class="dashboard-status">{{ empresa.get_status_display }}</span>
+            <h3>{{ empresa.nome_fantasia }}</h3>
+
+            <p>
+              {{ empresa.categoria_empresa.nome|default:"Empresa" }}
+              {% if empresa.verificada %} · Verificada{% endif %}
+            </p>
+
+            <div class="dashboard-mini-stats">
+              <span><b>{{ empresa.qtd_servicos }}</b> serviços</span>
+              <span><b>{{ empresa.qtd_vagas }}</b> vagas</span>
+              <span><b>{{ empresa.qtd_colaboradores }}</b> colaboradores</span>
+            </div>
+
+            <a class="btn btn-outline-primary" href="{% url 'painel:empresa_detalhe' empresa.uuid %}">
+              Gerenciar empresa
+            </a>
+          </article>
+        {% endfor %}
+
+        {% if dashboard.curriculum %}
+          <article class="dashboard-resource">
+            <span class="dashboard-resource-icon">
+              <i class="bi bi-file-earmark-person"></i>
+            </span>
+
+            <h3>Meu currículo</h3>
+
+            <p>
+              {{ dashboard.curriculum.object.titulo_profissional|default:"Complete seu perfil profissional" }}
+            </p>
+
+            <progress
+              class="dashboard-progress"
+              value="{{ dashboard.curriculum.completion }}"
+              max="100"
+            >
+              {{ dashboard.curriculum.completion }}%
+            </progress>
+
+            <small class="text-muted mb-3">
+              {{ dashboard.curriculum.completion }}% preenchido ·
+              {% if dashboard.curriculum.object.publico %}Público{% else %}Privado{% endif %}
+            </small>
+
+            <div class="d-flex gap-2 mt-auto">
+              <a class="btn btn-outline-primary flex-fill" href="{% url 'painel:curriculo_editar' %}">
+                Editar
+              </a>
+              <a class="btn btn-primary flex-fill" href="{% url 'painel:curriculo_preview' %}">
+                Visualizar
+              </a>
+            </div>
+          </article>
+        {% endif %}
+
+        {% if dashboard.services %}
+          <article class="dashboard-resource">
+            <span class="dashboard-resource-icon">
+              <i class="bi bi-tools"></i>
+            </span>
+
+            <h3>Meus serviços</h3>
+            <p>
+              <strong>{{ dashboard.services.total }}</strong>
+              de {{ dashboard.services.limit }} serviços utilizados.
+            </p>
+
+            <div class="dashboard-mini-stats">
+              <span><b>{{ dashboard.services.active }}</b> ativos</span>
+              <span><b>{{ dashboard.services.paused }}</b> pausados</span>
+            </div>
+
+            <a class="btn btn-outline-primary" href="{% url 'painel:servicos_lista' %}">
+              Gerenciar serviços
+            </a>
+          </article>
+        {% endif %}
+
+        {% if dashboard.jobs %}
+          <article class="dashboard-resource">
+            <span class="dashboard-resource-icon">
+              <i class="bi bi-briefcase"></i>
+            </span>
+
+            <h3>Minhas vagas</h3>
+            <p>Acompanhe oportunidades e candidaturas recebidas.</p>
+
+            <div class="dashboard-mini-stats">
+              <span><b>{{ dashboard.jobs.active }}</b> ativas</span>
+              <span><b>{{ dashboard.jobs.draft }}</b> rascunhos</span>
+              <span><b>{{ dashboard.jobs.applications }}</b> candidaturas</span>
+            </div>
+
+            <a class="btn btn-outline-primary" href="{% url 'painel:vagas_lista' %}">
+              Gerenciar vagas
+            </a>
+          </article>
+        {% endif %}
+
+        {% if dashboard.applications %}
+          <article class="dashboard-resource">
+            <span class="dashboard-resource-icon">
+              <i class="bi bi-person-check"></i>
+            </span>
+
+            <h3>Minhas candidaturas</h3>
+
+            <p>
+              <strong>{{ dashboard.applications.total }}</strong>
+              candidatura{{ dashboard.applications.total|pluralize }}
+            </p>
+
+            <a class="btn btn-outline-primary" href="{% url 'painel:minhas_candidaturas' %}">
+              Acompanhar candidaturas
+            </a>
+          </article>
+        {% endif %}
+
+      </div>
+    </section>
+  {% endif %}
+
+  {% if dashboard.publications %}
+    <section class="dashboard-section">
+      <header class="dashboard-section-head">
+        <div>
+          <span class="dashboard-eyebrow">Conteúdo</span>
+          <h2>Minhas publicações</h2>
+          <p>Acompanhe os conteúdos publicados nos módulos da cidade.</p>
+        </div>
+
+        <a class="btn btn-outline-primary" href="{% url 'painel:publicacoes_lista' %}">
+          Gerenciar publicações
+        </a>
+      </header>
+
+      <div class="dashboard-publications">
+        <article class="dashboard-publication">
+          <span>Cultura</span>
+          <strong>{{ dashboard.publications.cultura }}</strong>
+        </article>
+
+        <article class="dashboard-publication">
+          <span>Esportes</span>
+          <strong>{{ dashboard.publications.esportes }}</strong>
+        </article>
+
+        <article class="dashboard-publication">
+          <span>Publicações oficiais</span>
+          <strong>{{ dashboard.publications.oficiais }}</strong>
+        </article>
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="dashboard-section dashboard-network">
+    <div>
+      <span class="dashboard-eyebrow">Em breve</span>
+      <h2 class="h4 fw-bold">Minha rede na BOTUKA</h2>
+      <p class="mb-0 text-muted">
+        Siga empresas e pessoas, acompanhe novidades, curta publicações
+        e participe do que acontece na cidade.
+      </p>
+    </div>
+
+    <div class="dashboard-network-icons" aria-hidden="true">
+      <i class="bi bi-people"></i>
+      <i class="bi bi-heart"></i>
+      <i class="bi bi-chat"></i>
+    </div>
+  </section>
+
+  <section class="dashboard-plan">
+    <header class="dashboard-section-head">
+      <div>
+        <span class="dashboard-eyebrow">Plano atual</span>
+        <h2>{{ dashboard.plan.name }}</h2>
+
+        {% if dashboard.plan.valid_until %}
+          <p>Válido até {{ dashboard.plan.valid_until|date:"d/m/Y" }}</p>
+        {% else %}
+          <p>Confira a utilização dos recursos disponíveis.</p>
+        {% endif %}
+      </div>
+    </header>
+
+    <div class="dashboard-plan-grid">
+      <article class="dashboard-plan-item">
+        <span>Empresas utilizadas</span>
+        <strong>
+          {{ dashboard.plan.companies_used }}
+          de {{ dashboard.plan.companies_limit|default:"∞" }}
+        </strong>
+      </article>
+
+      <article class="dashboard-plan-item">
+        <span>Serviços utilizados</span>
+        <strong>
+          {{ dashboard.plan.services_used }}
+          de {{ dashboard.plan.services_limit }}
+        </strong>
+      </article>
+
+      <article class="dashboard-plan-item">
+        <span>Status da conta</span>
+        <strong>{{ request.user.is_active|yesno:"Ativa,Inativa" }}</strong>
+      </article>
+    </div>
+  </section>
+
 </div>
 {% endblock %}

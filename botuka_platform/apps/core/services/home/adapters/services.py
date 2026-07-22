@@ -18,9 +18,6 @@ def obter_servicos_destaque():
                 empresa__perfil_publico=True,
                 empresa__status="ATIVA",
                 empresa__excluido_em__isnull=True,
-                empresa__capacidades_empresa__ativo=True,
-                empresa__capacidades_empresa__status="APROVADA",
-                empresa__capacidades_empresa__capacidade__codigo="PRESTAR_SERVICOS",
             )
         )
         .select_related("empresa", "usuario_responsavel", "setor", "profissao")

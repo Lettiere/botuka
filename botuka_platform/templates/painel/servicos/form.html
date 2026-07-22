@@ -28,7 +28,7 @@
     {% if form.non_field_errors %}<div class="col-12 alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
     <div class="col-12 d-flex gap-2">
       <button class="btn btn-primary" type="submit">Salvar</button>
-      {% if servico %}<a class="btn btn-outline-secondary" href="{% url 'painel:servico_detalhe' servico.pk %}">Cancelar</a>{% endif %}
+      {% if servico %}<a class="btn btn-outline-secondary" href="{% url 'painel:servico_detalhe' servico.uuid %}">Cancelar</a>{% endif %}
     </div>
   </form>
 </section>

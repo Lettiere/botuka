@@ -178,13 +178,13 @@
                       Sob consulta
                     </strong>
 
-                  {% elif servico.valor_inicial %}
+                  {% elif servico.preco_inicial %}
                     <span class="botuka-service-home-card__price-label">
                       A partir de
                     </span>
 
                     <strong>
-                      R$ {{ servico.valor_inicial|floatformat:2 }}
+                      R$ {{ servico.preco_inicial|floatformat:2 }}
                     </strong>
 
                   {% else %}

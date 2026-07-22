@@ -42,7 +42,7 @@
         <div class="text-md-end">
           <span class="badge text-bg-light">{{ servico.get_status_display }}</span>
           <div class="mt-3">
-            <a class="btn btn-sm btn-outline-primary" href="{% url 'painel:servico_detalhe' servico.pk %}">Abrir</a>
+            <a class="btn btn-sm btn-outline-primary" href="{% url 'painel:servico_detalhe' servico.uuid %}">Abrir</a>
           </div>
         </div>
       </article>

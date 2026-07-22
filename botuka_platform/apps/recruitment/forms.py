@@ -15,6 +15,12 @@ class VagaForm(forms.ModelForm):
     def __init__(self, *args, usuario=None, **kwargs):
         self.usuario = usuario
         super().__init__(*args, **kwargs)
+
+        for field in self.fields.values():
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs.setdefault('class', 'form-check-input')
+            else:
+                field.widget.attrs.setdefault('class', 'form-control')
         self.fields['empresa'].queryset = empresas_disponiveis_para_usuario(usuario).filter(ativo=True) if usuario else self.fields['empresa'].queryset.none()
 
     def clean_empresa(self):
@@ -27,6 +33,7 @@ class VagaForm(forms.ModelForm):
 class CurriculumBaseForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs.setdefault('class', 'form-check-input')

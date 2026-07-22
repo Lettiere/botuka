@@ -3,7 +3,7 @@
 <section class="painel-card">
   <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
     <div><h1 class="painel-title mb-1">Áreas de atendimento</h1><p class="text-muted mb-0">{{ servico.titulo }}</p></div>
-    <a class="btn btn-outline-secondary" href="{% url 'painel:servico_detalhe' servico.pk %}">Voltar</a>
+    <a class="btn btn-outline-secondary" href="{% url 'painel:servico_detalhe' servico.uuid %}">Voltar</a>
   </div>
   <form method="post" class="row g-3 mb-4">
     {% csrf_token %}
