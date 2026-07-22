@@ -11,24 +11,52 @@ document.addEventListener('change', (event) => {
   }
 
   const setor = event.target.closest('select[name="setor"]');
+  const area = event.target.closest('select[name="area"]');
+  const areaSelect = document.querySelector('select[name="area"]');
   const profissao = document.querySelector('select[name="profissao"]');
 
-  if (!setor || !profissao || !setor.value) {
+  if (setor && areaSelect && profissao) {
+    areaSelect.innerHTML = '<option value="">---------</option>';
+    profissao.innerHTML = '<option value="">---------</option>';
+
+    if (!setor.value) {
+      return;
+    }
+
+    fetch(`/painel/servicos/ajax/areas/?setor=${encodeURIComponent(setor.value)}`)
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((data) => {
+        data.results.forEach((item) => {
+          const option = document.createElement('option');
+          option.value = item.id;
+          option.textContent = item.text;
+          areaSelect.appendChild(option);
+        });
+      })
+      .catch(() => {});
+
     return;
   }
 
-  fetch(`/painel/servicos/ajax/profissoes/?setor=${encodeURIComponent(setor.value)}`)
-    .then((response) => response.ok ? response.json() : Promise.reject())
-    .then((data) => {
-      profissao.innerHTML = '<option value="">---------</option>';
-      data.results.forEach((item) => {
-        const option = document.createElement('option');
-        option.value = item.id;
-        option.textContent = item.text;
-        profissao.appendChild(option);
-      });
-    })
-    .catch(() => {});
+  if (area && profissao) {
+    profissao.innerHTML = '<option value="">---------</option>';
+
+    if (!area.value) {
+      return;
+    }
+
+    fetch(`/painel/servicos/ajax/profissoes/?area=${encodeURIComponent(area.value)}`)
+      .then((response) => response.ok ? response.json() : Promise.reject())
+      .then((data) => {
+        data.results.forEach((item) => {
+          const option = document.createElement('option');
+          option.value = item.id;
+          option.textContent = item.text;
+          profissao.appendChild(option);
+        });
+      })
+      .catch(() => {});
+  }
 });
 
 document.addEventListener('DOMContentLoaded', () => {

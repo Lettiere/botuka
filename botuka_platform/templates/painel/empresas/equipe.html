@@ -42,7 +42,7 @@
         <h1>Equipe</h1>
         <p>{{ empresa.nome_exibicao }} pode ter um proprietário e vários colaboradores autorizados.</p>
       </div>
-      <a class="equipe-btn equipe-btn-light" href="{% url 'painel:empresa_detalhe' empresa.pk %}">
+      <a class="equipe-btn equipe-btn-light" href="{% url 'painel:empresa_detalhe' empresa.uuid %}">
         <i class="bi bi-arrow-left"></i>
         Voltar
       </a>

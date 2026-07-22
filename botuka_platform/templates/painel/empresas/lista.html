@@ -803,11 +803,11 @@
                     <i class="bi bi-three-dots-vertical"></i>
                   </button>
                   <ul class="dropdown-menu dropdown-menu-end">
-                    <li><a class="dropdown-item" href="{% url 'painel:empresa_detalhe' empresa.pk %}"><i class="bi bi-eye"></i> Visualizar</a></li>
-                    <li><a class="dropdown-item" href="{% url 'painel:empresa_editar' empresa.pk %}"><i class="bi bi-pencil"></i> Editar</a></li>
-                    <li><a class="dropdown-item" href="{% url 'painel:empresa_equipe' empresa.pk %}"><i class="bi bi-people"></i> Equipe</a></li>
+                    <li><a class="dropdown-item" href="{% url 'painel:empresa_detalhe' empresa.uuid %}"><i class="bi bi-eye"></i> Visualizar</a></li>
+                    <li><a class="dropdown-item" href="{% url 'painel:empresa_editar' empresa.uuid %}"><i class="bi bi-pencil"></i> Editar</a></li>
+                    <li><a class="dropdown-item" href="{% url 'painel:empresa_equipe' empresa.uuid %}"><i class="bi bi-people"></i> Equipe</a></li>
                     <li><hr class="dropdown-divider"></li>
-                    <li><a class="dropdown-item text-danger" href="{% url 'painel:empresa_excluir' empresa.pk %}"><i class="bi bi-power"></i> Desativar</a></li>
+                    <li><a class="dropdown-item text-danger" href="{% url 'painel:empresa_excluir' empresa.uuid %}"><i class="bi bi-power"></i> Desativar</a></li>
                   </ul>
                 </div>
               </div>
@@ -841,11 +841,11 @@
             </div>
 
             <div class="empresa-card-footer">
-              <a class="empresas-button empresas-button-light" href="{% url 'painel:empresa_detalhe' empresa.pk %}">
+              <a class="empresas-button empresas-button-light" href="{% url 'painel:empresa_detalhe' empresa.uuid %}">
                 <i class="bi bi-eye"></i>
                 Visualizar
               </a>
-              <a class="empresas-button empresas-button-primary" href="{% url 'painel:empresa_editar' empresa.pk %}">
+              <a class="empresas-button empresas-button-primary" href="{% url 'painel:empresa_editar' empresa.uuid %}">
                 <i class="bi bi-pencil"></i>
                 Editar
               </a>

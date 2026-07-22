@@ -198,7 +198,7 @@ CACHES = {
     }
 }
 
-LOGIN_URL = 'home'
+LOGIN_URL = "accounts:login"
 LOGIN_REDIRECT_URL = 'gestao:dashboard'
 LOGOUT_REDIRECT_URL = 'home'
 

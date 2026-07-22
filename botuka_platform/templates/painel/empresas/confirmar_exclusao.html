@@ -27,7 +27,7 @@
 
     <form method="post" class="empresa-delete-actions">
       {% csrf_token %}
-      <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_detalhe' empresa.pk %}">Cancelar</a>
+      <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_detalhe' empresa.uuid %}">Cancelar</a>
       <button class="empresa-btn empresa-btn-danger" type="submit">
         <i class="bi bi-check-lg"></i>
         Confirmar desativação

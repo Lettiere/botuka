@@ -57,7 +57,7 @@ from apps.organizations.plans import (
     bloquear_e_validar_criacao_servico,
     validar_contexto_servico,
 )
-from apps.services.models import Profissao, Servico, ServicoArea, ServicoCaracteristica, ServicoImagem, ServicoLink
+from apps.services.models import AreaProfissional, Profissao, Servico, ServicoArea, ServicoCaracteristica, ServicoImagem, ServicoLink
 from apps.services.permissions import (
     servicos_disponiveis_para_usuario,
     usuario_pode_editar_servico,
@@ -932,16 +932,40 @@ def servico_preview(request: HttpRequest, uuid) -> HttpResponse:
 
 
 @login_required
-def servicos_ajax_profissoes(request: HttpRequest) -> JsonResponse:
+def servicos_ajax_areas(request: HttpRequest) -> JsonResponse:
     setor_id = request.GET.get('setor')
-    profissoes = Profissao.objects.filter(ativo=True)
+    areas = AreaProfissional.objects.filter(ativo=True)
+
     if setor_id:
-        profissoes = profissoes.filter(setor_id=setor_id)
+        areas = areas.filter(setor_id=setor_id)
+    else:
+        areas = areas.none()
+
+    return JsonResponse(
+        {
+            'results': [
+                {'id': area.id, 'text': area.nome}
+                for area in areas.order_by('ordem', 'nome')[:100]
+            ]
+        }
+    )
+
+
+@login_required
+def servicos_ajax_profissoes(request: HttpRequest) -> JsonResponse:
+    area_id = request.GET.get('area')
+    profissoes = Profissao.objects.filter(ativo=True)
+
+    if area_id:
+        profissoes = profissoes.filter(area_id=area_id)
+    else:
+        profissoes = profissoes.none()
+
     return JsonResponse(
         {
             'results': [
                 {'id': profissao.id, 'text': profissao.nome}
-                for profissao in profissoes.order_by('nome')[:100]
+                for profissao in profissoes.order_by('nome')[:200]
             ]
         }
     )

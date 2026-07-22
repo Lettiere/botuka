@@ -53,9 +53,83 @@ class Setor(UUIDModel):
         return self.nome
 
 
+class AreaProfissional(UUIDModel):
+    id = models.BigAutoField(
+        primary_key=True,
+        db_column='services_area_profissional_id',
+    )
+    setor = models.ForeignKey(
+        Setor,
+        on_delete=models.PROTECT,
+        db_column='services_area_profissional_fk_setor',
+        related_name='areas_profissionais',
+    )
+    nome = models.CharField(
+        max_length=120,
+        db_column='services_area_profissional_nome',
+    )
+    slug = models.SlugField(
+        max_length=180,
+        blank=True,
+        db_column='services_area_profissional_slug',
+    )
+    descricao = models.TextField(
+        blank=True,
+        db_column='services_area_profissional_descricao',
+    )
+    ordem = models.PositiveIntegerField(
+        default=0,
+        db_column='services_area_profissional_ordem',
+    )
+    ativo = models.BooleanField(
+        default=True,
+        db_column='services_area_profissional_ativo',
+    )
+    criado_em = models.DateTimeField(
+        auto_now_add=True,
+        db_column='services_area_profissional_criado_em',
+    )
+    atualizado_em = models.DateTimeField(
+        auto_now=True,
+        db_column='services_area_profissional_atualizado_em',
+    )
+
+    class Meta:
+        ordering = ['setor__nome', 'ordem', 'nome']
+        db_table = '"services"."services_area_profissional_tb"'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['setor', 'nome'],
+                name='services_area_profissional_setor_nome_uk',
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=['setor', 'slug'],
+                name='services_area_prof_idx_slug',
+            ),
+        ]
+
+    def save(self, *args, **kwargs):
+        if not self.slug:
+            self.slug = gerar_slug_unico(self, self.nome)
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.nome} ({self.setor})'
+
+
 class Profissao(UUIDModel):
     id = models.BigAutoField(primary_key=True, db_column='services_profissao_id')
     setor = models.ForeignKey(Setor, on_delete=models.PROTECT, db_column='services_profissao_fk_setor', related_name='profissoes')
+    area = models.ForeignKey(
+        AreaProfissional,
+        on_delete=models.PROTECT,
+        db_column='services_profissao_fk_area',
+        related_name='profissoes',
+        null=True,
+        blank=True,
+    )
     nome = models.CharField(max_length=120, db_column='services_profissao_nome')
     slug = models.SlugField(max_length=180, blank=True, db_column='services_profissao_slug')
     descricao = models.TextField(blank=True, db_column='services_profissao_descricao')
@@ -142,6 +216,14 @@ class Servico(UUIDModel):
     empresa = models.ForeignKey(Empresa, on_delete=models.PROTECT, null=True, blank=True, db_column='services_servico_fk_empresa', related_name='servicos')
     prestador_tipo = models.CharField(max_length=20, choices=PrestadorTipo.choices, db_column='services_servico_prestador_tipo')
     setor = models.ForeignKey(Setor, on_delete=models.PROTECT, db_column='services_servico_fk_setor', related_name='servicos')
+    area = models.ForeignKey(
+        AreaProfissional,
+        on_delete=models.PROTECT,
+        db_column='services_servico_fk_area',
+        related_name='servicos',
+        null=True,
+        blank=True,
+    )
     profissao = models.ForeignKey(Profissao, on_delete=models.PROTECT, db_column='services_servico_fk_profissao', related_name='servicos')
     tipo_servico = models.ForeignKey(TipoServico, on_delete=models.PROTECT, db_column='services_servico_fk_tipo_servico', related_name='servicos')
     forma_cobranca = models.ForeignKey(FormaCobranca, on_delete=models.PROTECT, db_column='services_servico_fk_forma_cobranca', related_name='servicos')

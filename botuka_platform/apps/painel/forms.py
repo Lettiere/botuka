@@ -13,6 +13,8 @@ from apps.organizations.models import Empresa, EmpresaLink, EmpresaUsuario
 from apps.organizations.models import EmpresaCapacidade, EmpresaSolicitacao
 from apps.organizations.permissions import empresas_disponiveis_para_usuario
 from apps.services.models import (
+    AreaProfissional,
+    Profissao,
     Servico,
     ServicoArea,
     ServicoCaracteristica,
@@ -487,6 +489,34 @@ class ServicoForm(BaseServicoForm):
     def __init__(self, *args, usuario=None, **kwargs):
         self.usuario = usuario
         super().__init__(*args, **kwargs)
+
+        self.fields['area'].queryset = AreaProfissional.objects.none()
+        self.fields['profissao'].queryset = Profissao.objects.none()
+
+        setor_id = None
+        area_id = None
+
+        if self.is_bound:
+            setor_id = self.data.get('setor')
+            area_id = self.data.get('area')
+        elif self.instance and self.instance.pk:
+            setor_id = self.instance.setor_id
+            area_id = self.instance.area_id
+
+        if setor_id:
+            self.fields['area'].queryset = (
+                AreaProfissional.objects
+                .filter(setor_id=setor_id, ativo=True)
+                .order_by('ordem', 'nome')
+            )
+
+        if area_id:
+            self.fields['profissao'].queryset = (
+                Profissao.objects
+                .filter(area_id=area_id, ativo=True)
+                .order_by('nome')
+            )
+
         if usuario is not None:
             self.fields['empresa'].queryset = (
                 empresas_disponiveis_para_usuario(usuario)
@@ -514,6 +544,7 @@ class ServicoForm(BaseServicoForm):
             'prestador_tipo',
             'empresa',
             'setor',
+            'area',
             'profissao',
             'tipo_servico',
             'forma_cobranca',
