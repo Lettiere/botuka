@@ -7,14 +7,11 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q, QuerySet
 
 from apps.organizations.models import Empresa, EmpresaUsuario
+from apps.accounts.permissions import usuario_e_master
 
 
 def _usuario_admin_global(usuario) -> bool:
-    return bool(
-        usuario
-        and usuario.is_authenticated
-        and (usuario.is_superuser or usuario.is_staff)
-    )
+    return usuario_e_master(usuario)
 
 
 def empresas_disponiveis_para_usuario(usuario) -> QuerySet[Empresa]:

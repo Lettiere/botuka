@@ -172,6 +172,55 @@ class Assinatura(models.Model):
         super().save(*args, **kwargs)
 
 
+class UsuarioLimitePersonalizado(UUIDModel):
+    """Override comercial individual, sem conceder qualquer autoridade administrativa."""
+
+    usuario = models.OneToOneField(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='limite_comercial_personalizado',
+        db_column='platform_usuario_limite_usuario_fk',
+    )
+    ativo = models.BooleanField(default=True, db_column='platform_usuario_limite_ativo')
+    empresas_ilimitadas = models.BooleanField(default=False, db_column='platform_usuario_limite_empresas_ilimitadas')
+    servicos_ilimitados = models.BooleanField(default=False, db_column='platform_usuario_limite_servicos_ilimitados')
+    limite_empresas = models.PositiveIntegerField(null=True, blank=True, db_column='platform_usuario_limite_empresas')
+    limite_servicos = models.PositiveIntegerField(null=True, blank=True, db_column='platform_usuario_limite_servicos')
+    inicio = models.DateTimeField(default=timezone.now, db_column='platform_usuario_limite_inicio')
+    fim = models.DateTimeField(null=True, blank=True, db_column='platform_usuario_limite_fim')
+    motivo = models.CharField(max_length=255, db_column='platform_usuario_limite_motivo')
+    observacoes = models.TextField(blank=True, db_column='platform_usuario_limite_observacoes')
+    concedido_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name='limites_comerciais_concedidos',
+        db_column='platform_usuario_limite_concedido_por_fk',
+    )
+    criado_em = models.DateTimeField(auto_now_add=True, db_column='platform_usuario_limite_criado_em')
+    atualizado_em = models.DateTimeField(auto_now=True, db_column='platform_usuario_limite_atualizado_em')
+
+    class Meta:
+        db_table = 'platform_usuario_limite_personalizado_tb'
+        ordering = ('-atualizado_em',)
+        indexes = [
+            models.Index(fields=('ativo', 'inicio', 'fim'), name='plat_usu_lim_vigencia_idx'),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.fim and self.fim <= self.inicio:
+            raise ValidationError({'fim': 'O fim deve ser posterior ao início.'})
+        if not self.empresas_ilimitadas and self.limite_empresas is None:
+            raise ValidationError({'limite_empresas': 'Informe o limite de empresas ou marque como ilimitado.'})
+        if not self.servicos_ilimitados and self.limite_servicos is None:
+            raise ValidationError({'limite_servicos': 'Informe o limite de serviços ou marque como ilimitado.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'Limites comerciais de {self.usuario}'
+
+
 class ContratacaoEmpresaAdicional(models.Model):
     class Status(models.TextChoices):
         PENDENTE = 'PENDENTE', 'Pendente'
@@ -251,6 +300,31 @@ class Empresa(UUIDModel):
         SUSPENSA = 'SUSPENSA', 'Suspensa'
         BLOQUEADA = 'BLOQUEADA', 'Bloqueada'
 
+    class TipoOrganizacao(models.TextChoices):
+        EMPRESA_PRIVADA = 'EMPRESA_PRIVADA', 'Empresa privada'
+        PROFISSIONAL = 'PROFISSIONAL', 'Profissional'
+        ASSOCIACAO = 'ASSOCIACAO', 'Associação'
+        ONG = 'ONG', 'ONG'
+        CLUBE = 'CLUBE', 'Clube'
+        ORGANIZADOR_ESPORTIVO = 'ORGANIZADOR_ESPORTIVO', 'Organizador esportivo'
+        INSTITUICAO_ENSINO = 'INSTITUICAO_ENSINO', 'Instituição de ensino'
+        ORGAO_PUBLICO = 'ORGAO_PUBLICO', 'Órgão público'
+        SECRETARIA = 'SECRETARIA', 'Secretaria'
+        PREFEITURA = 'PREFEITURA', 'Prefeitura'
+        AUTARQUIA = 'AUTARQUIA', 'Autarquia'
+        FUNDACAO = 'FUNDACAO', 'Fundação'
+        MIDIA = 'MIDIA', 'Mídia'
+        CANAL_YTV = 'CANAL_YTV', 'Canal YTV'
+        PARCEIRO_OFICIAL = 'PARCEIRO_OFICIAL', 'Parceiro oficial'
+        OUTRO = 'OUTRO', 'Outro'
+
+    class StatusInstitucional(models.TextChoices):
+        COMUM = 'COMUM', 'Comum'
+        EM_ANALISE = 'EM_ANALISE', 'Em análise'
+        INSTITUCIONAL = 'INSTITUCIONAL', 'Institucional'
+        OFICIAL = 'OFICIAL', 'Oficial'
+        SUSPENSA = 'SUSPENSA', 'Suspensa'
+
     class CanalLead(models.TextChoices):
         WHATSAPP = 'WHATSAPP', 'WhatsApp'
         EMAIL = 'EMAIL', 'E-mail'
@@ -279,6 +353,32 @@ class Empresa(UUIDModel):
         db_column='platform_empresa_tipo_cadastro',
         verbose_name='tipo de cadastro',
     )
+    tipo_organizacao = models.CharField(
+        max_length=30,
+        choices=TipoOrganizacao.choices,
+        default=TipoOrganizacao.EMPRESA_PRIVADA,
+        db_column='platform_empresa_tipo_organizacao',
+        verbose_name='tipo de organização',
+    )
+    status_institucional = models.CharField(
+        max_length=20,
+        choices=StatusInstitucional.choices,
+        default=StatusInstitucional.COMUM,
+        db_column='platform_empresa_status_institucional',
+        verbose_name='status institucional',
+    )
+    institucional = models.BooleanField(default=False, db_column='platform_empresa_institucional')
+    oficial = models.BooleanField(default=False, db_column='platform_empresa_oficial')
+    parceira_oficial = models.BooleanField(default=False, db_column='platform_empresa_parceira_oficial')
+    selo_oficial = models.BooleanField(default=False, db_column='platform_empresa_selo_oficial')
+    verificada_institucionalmente = models.BooleanField(default=False, db_column='platform_empresa_verificada_institucional')
+    autorizada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='empresas_institucionais_autorizadas',
+        db_column='platform_empresa_autorizada_por_fk',
+    )
+    autorizada_em = models.DateTimeField(null=True, blank=True, db_column='platform_empresa_autorizada_em')
+    observacao_institucional = models.TextField(blank=True, db_column='platform_empresa_observacao_institucional')
     razao_social = models.CharField(
         max_length=180,
         blank=True,
@@ -751,9 +851,27 @@ class EmpresaUsuario(UUIDModel):
     class Funcao(models.TextChoices):
         PROPRIETARIO = 'PROPRIETARIO', 'Proprietário'
         ADMINISTRADOR = 'ADMINISTRADOR', 'Administrador'
+        ADMINISTRADOR_INSTITUCIONAL = 'ADMINISTRADOR_INSTITUCIONAL', 'Administrador institucional'
         GERENTE = 'GERENTE', 'Gerente'
+        GESTOR = 'GESTOR', 'Gestor'
+        EDITOR = 'EDITOR', 'Editor'
+        REVISOR = 'REVISOR', 'Revisor'
         COLABORADOR = 'COLABORADOR', 'Colaborador'
         ATENDENTE = 'ATENDENTE', 'Atendente'
+        MARKETING = 'MARKETING', 'Marketing'
+        RH = 'RH', 'Recursos humanos'
+        FINANCEIRO = 'FINANCEIRO', 'Financeiro'
+        ATLETA = 'ATLETA', 'Atleta'
+        TECNICO = 'TECNICO', 'Técnico'
+        ARBITRO = 'ARBITRO', 'Árbitro'
+        ORGANIZADOR = 'ORGANIZADOR', 'Organizador'
+        MIDIA = 'MIDIA', 'Mídia'
+
+    class Escopo(models.TextChoices):
+        PROPRIO = 'PROPRIO', 'Próprio'
+        EQUIPE = 'EQUIPE', 'Equipe'
+        ORGANIZACAO = 'ORGANIZACAO', 'Organização'
+        GLOBAL = 'GLOBAL', 'Global'
 
     id = models.BigAutoField(
         primary_key=True,
@@ -774,7 +892,7 @@ class EmpresaUsuario(UUIDModel):
         verbose_name='usuário',
     )
     funcao = models.CharField(
-        max_length=20,
+        max_length=40,
         choices=Funcao.choices,
         default=Funcao.COLABORADOR,
         db_column='platform_empresa_usuario_funcao',
@@ -810,6 +928,20 @@ class EmpresaUsuario(UUIDModel):
         db_column='platform_empresa_usuario_ativo',
         verbose_name='ativo',
     )
+    entrou_em = models.DateTimeField(default=timezone.now, db_column='platform_empresa_usuario_entrou_em')
+    convidado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='membros_empresa_convidados', db_column='platform_empresa_usuario_convidado_por_fk',
+    )
+    autorizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='membros_empresa_autorizados', db_column='platform_empresa_usuario_autorizado_por_fk',
+    )
+    escopo = models.CharField(
+        max_length=20, choices=Escopo.choices, default=Escopo.ORGANIZACAO,
+        db_column='platform_empresa_usuario_escopo',
+    )
+    observacoes = models.TextField(blank=True, db_column='platform_empresa_usuario_observacoes')
     criado_em = models.DateTimeField(
         auto_now_add=True,
         db_column='platform_empresa_usuario_criado_em',

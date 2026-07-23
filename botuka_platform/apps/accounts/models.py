@@ -195,13 +195,23 @@ class Usuario(UUIDModel, TimeStampedModel, AbstractUser):
     def tem_perfil(self, nome: str) -> bool:
         """Verifica se o usuário possui o perfil informado."""
 
-        if self.is_superuser:
+        from apps.accounts.permissions import usuario_e_master
+
+        if usuario_e_master(self):
             return True
-
-        if not self.perfil_id:
-            return False
-
-        return self.perfil.nome.upper() == nome.upper()
+        nome_normalizado = nome.upper()
+        if (
+            self.perfil_id
+            and self.perfil.ativo
+            and self.perfil.removido_em is None
+            and self.perfil.nome.upper() == nome_normalizado
+        ):
+            return True
+        return self.usuario_perfis_adicionais.filter(
+            perfil__nome__iexact=nome_normalizado,
+            perfil__ativo=True,
+            perfil__removido_em__isnull=True,
+        ).exists()
 
     def permissoes_do_perfil(self) -> QuerySet:
         """Retorna permissões ativas vinculadas ao perfil principal."""
@@ -219,16 +229,9 @@ class Usuario(UUIDModel, TimeStampedModel, AbstractUser):
     def tem_permissao(self, codigo: str | None = None) -> bool:
         """Verifica permissão de domínio pelo código."""
 
-        perfis_globais = {'ROOT', 'MASTER'}
-        nomes_perfis = set()
-        if self.perfil_id:
-            nomes_perfis.add(self.perfil.nome.upper())
-        nomes_perfis.update(
-            self.usuario_perfis_adicionais.filter(perfil__ativo=True)
-            .values_list('perfil__nome', flat=True)
-        )
-        nomes_perfis = {nome.upper() for nome in nomes_perfis}
-        if self.is_superuser or nomes_perfis.intersection(perfis_globais):
+        from apps.accounts.permissions import usuario_e_master
+
+        if usuario_e_master(self) or self.tem_perfil('ROOT'):
             return True
 
         if not codigo:

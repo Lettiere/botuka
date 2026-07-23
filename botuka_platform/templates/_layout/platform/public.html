@@ -1,0 +1,17 @@
+{% extends "_layout/platform/platform_home.html" %}
+
+{% block styles %}
+  {{ block.super }}
+  {% block public_styles %}{% endblock %}
+{% endblock %}
+
+{% block content %}
+<div class="public-shell" data-public-shell>
+  {% block public_content %}{% endblock %}
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  {% block public_scripts %}{% endblock %}
+{% endblock %}

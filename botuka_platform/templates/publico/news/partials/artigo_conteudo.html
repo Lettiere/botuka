@@ -1,0 +1,20 @@
+<div class="article-richtext" data-article-body>
+  <div class="article-richtext__lead">{{ artigo.conteudo|linebreaks }}</div>
+  {% for bloco in artigo.blocos.all %}
+    <section class="article-content-block article-content-block--{{ bloco.tipo|lower }}">
+      {% if bloco.titulo %}<h2>{{ bloco.titulo }}</h2>{% endif %}
+      {% if bloco.tipo == 'CITACAO' %}
+        <blockquote>{{ bloco.conteudo|linebreaksbr }}</blockquote>
+      {% elif bloco.tipo == 'VIDEO_YOUTUBE' and bloco.identificador_externo %}
+        <div class="article-embed"><iframe loading="lazy" src="https://www.youtube-nocookie.com/embed/{{ bloco.identificador_externo }}" title="{{ bloco.titulo|default:artigo.titulo }}" allow="accelerometer; encrypted-media; picture-in-picture" allowfullscreen></iframe></div>
+        {% if bloco.conteudo %}<p>{{ bloco.conteudo }}</p>{% endif %}
+      {% elif bloco.tipo == 'IMAGEM' and bloco.url %}
+        <figure><img src="{{ bloco.url }}" alt="{{ bloco.titulo|default:artigo.titulo }}" loading="lazy" decoding="async">{% if bloco.conteudo %}<figcaption>{{ bloco.conteudo }}</figcaption>{% endif %}</figure>
+      {% elif bloco.tipo == 'LINK' and bloco.url %}
+        <a class="article-related-link" href="{{ bloco.url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right" aria-hidden="true"></i><span>{{ bloco.titulo|default:bloco.url }}{% if bloco.conteudo %}<small>{{ bloco.conteudo }}</small>{% endif %}</span></a>
+      {% else %}
+        {{ bloco.conteudo|linebreaks }}
+      {% endif %}
+    </section>
+  {% endfor %}
+</div>

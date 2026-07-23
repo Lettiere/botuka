@@ -1,11 +1,15 @@
+from math import ceil
+
 from django.core.exceptions import PermissionDenied
-from django.db.models import Q
+from django.db.models import Count, Prefetch, Q
 from django.core.paginator import Paginator
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
+from apps.accounts.permissions import usuario_tem_permissao
 from apps.core.domain import EditorialStatus
 from apps.core.domain_views import crud_views
+from apps.core.services.home.adapters.events import obter_eventos
 
 from .models import Artigo, ArtigoBloco, ArtigoFonte, CategoriaNoticia
 from apps.core.seo.page_builders import artigo_seo, listing_seo
@@ -15,7 +19,7 @@ NEWS_PERMISSIONS = {"listar": ("news.revisar",), "editar": ("news.revisar",)}
 
 
 def _editorial(user):
-    return any(user.tem_permissao(code) for code in ("news.gerenciar", "news.editar", "news.revisar", "news.publicar"))
+    return any(usuario_tem_permissao(user, code) for code in ("news.gerenciar", "news.editar", "news.revisar", "news.publicar"))
 
 
 def _article_from_object(obj):
@@ -24,7 +28,7 @@ def _article_from_object(obj):
 
 def pode_news(user, obj):
     if isinstance(obj, CategoriaNoticia):
-        return user.tem_permissao("news.gerenciar")
+        return usuario_tem_permissao(user, "news.gerenciar")
     if _editorial(user):
         return True
     artigo = _article_from_object(obj)
@@ -46,7 +50,7 @@ def filtrar_fks_news(user, form):
         form.fields["artigo"].queryset = escopo_news(user, Artigo.objects.all())
     if "categoria_pai" in form.fields:
         form.fields["categoria_pai"].queryset = CategoriaNoticia.objects.all()
-    if user.tem_permissao("news.revisar") and not any(user.tem_permissao(code) for code in ("news.editar", "news.gerenciar")):
+    if usuario_tem_permissao(user, "news.revisar") and not any(usuario_tem_permissao(user, code) for code in ("news.editar", "news.gerenciar")):
         for name, field in form.fields.items():
             if name not in {"status", "motivo_rejeicao"}:
                 field.disabled = True
@@ -64,9 +68,9 @@ def validar_estado_news(user, anterior, novo, obj):
     }
     if novo not in allowed.get(anterior, set()):
         raise PermissionDenied("Transição editorial inválida.")
-    if novo in {EditorialStatus.APROVADO, EditorialStatus.REJEITADO} and not (user.tem_permissao("news.revisar") or user.tem_permissao("news.gerenciar")):
+    if novo in {EditorialStatus.APROVADO, EditorialStatus.REJEITADO} and not (usuario_tem_permissao(user, "news.revisar") or usuario_tem_permissao(user, "news.gerenciar")):
         raise PermissionDenied
-    if novo in {EditorialStatus.PUBLICADO, EditorialStatus.PAUSADO} and not (user.tem_permissao("news.publicar") or user.tem_permissao("news.gerenciar")):
+    if novo in {EditorialStatus.PUBLICADO, EditorialStatus.PAUSADO} and not (usuario_tem_permissao(user, "news.publicar") or usuario_tem_permissao(user, "news.gerenciar")):
         raise PermissionDenied
 
 
@@ -101,6 +105,54 @@ def categoria(request, slug):
 
 
 def artigo(request, slug):
-    obj = get_object_or_404(_published_articles(), slug=slug)
-    related = _published_articles().filter(categoria=obj.categoria).exclude(pk=obj.pk)[:4]
-    return render(request, "publico/news/artigo.html", {"artigo": obj, "relacionados": related, "seo": artigo_seo(request, obj)})
+    blocos_ativos = ArtigoBloco.objects.filter(ativo=True, excluido_em__isnull=True)
+    fontes_ativas = ArtigoFonte.objects.filter(ativo=True, excluido_em__isnull=True)
+    queryset = _published_articles().prefetch_related(
+        Prefetch('blocos', queryset=blocos_ativos),
+        Prefetch('fontes', queryset=fontes_ativas),
+    )
+    obj = get_object_or_404(queryset, slug=slug)
+    relacionados = list(
+        _published_articles().filter(categoria=obj.categoria).exclude(pk=obj.pk)[:4]
+    )
+    recentes = list(_published_articles().exclude(pk=obj.pk)[:5])
+    destaques = list(
+        _published_articles().filter(destaque=True).exclude(pk=obj.pk)[:5]
+    )
+    if not destaques:
+        destaques = recentes[:5]
+
+    agora = timezone.now()
+    categorias = CategoriaNoticia.objects.filter(
+        ativo=True,
+        excluido_em__isnull=True,
+    ).annotate(
+        total_publicado=Count(
+            'artigos',
+            filter=Q(
+                artigos__status=EditorialStatus.PUBLICADO,
+                artigos__publicado_em__isnull=False,
+                artigos__publicado_em__lte=agora,
+                artigos__ativo=True,
+                artigos__excluido_em__isnull=True,
+            ),
+        ),
+    ).filter(total_publicado__gt=0)[:10]
+
+    evento_destaque, eventos_recentes = obter_eventos()
+    eventos = list(evento_destaque) + list(eventos_recentes[:3])
+    total_palavras = len(obj.conteudo.split()) + sum(
+        len(bloco.conteudo.split()) for bloco in obj.blocos.all()
+    )
+    tempo_leitura = max(1, ceil(total_palavras / 200))
+
+    return render(request, 'publico/news/artigo.html', {
+        'artigo': obj,
+        'relacionados': relacionados,
+        'recentes': recentes,
+        'destaques': destaques,
+        'categorias_sidebar': categorias,
+        'eventos_sidebar': eventos[:3],
+        'tempo_leitura': tempo_leitura,
+        'seo': artigo_seo(request, obj),
+    })

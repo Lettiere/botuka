@@ -1,0 +1,38 @@
+{% extends "painel/base.html" %}
+{% load static %}
+{% block title %}Administração da Plataforma | BOTUKA{% endblock %}
+{% block styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/painel/platform-admin.css' %}">{% endblock %}
+{% block content %}
+<main class="platform-admin container">
+  <header class="platform-admin__header">
+    <div><span class="platform-admin__eyebrow">Acesso MASTER</span><h1>Administração da Plataforma</h1></div>
+  </header>
+  <section class="platform-admin__metrics" aria-label="Resumo">
+    <article><strong>{{ total_usuarios }}</strong><span>Usuários</span></article>
+    <article><strong>{{ total_organizacoes }}</strong><span>Organizações</span></article>
+    <article><strong>{{ total_capacidades }}</strong><span>Capacidades</span></article>
+    <article><strong>{{ limites_personalizados }}</strong><span>Limites personalizados</span></article>
+    <article><strong>+{{ empresas_extras }}</strong><span>Empresas extras</span></article>
+    <article><strong>+{{ servicos_extras }}</strong><span>Serviços extras</span></article>
+    <article><strong>{{ limites_expirando }}</strong><span>Expirando em 30 dias</span></article>
+    <article><strong>{{ limites_vencidos }}</strong><span>Benefícios vencidos</span></article>
+  </section>
+  <nav class="platform-admin__modules" aria-label="Módulos administrativos">
+    <a href="{% url 'admin:accounts_usuario_changelist' %}">Usuários</a>
+    <a href="{% url 'admin:core_perfil_changelist' %}">Papéis globais</a>
+    <a href="{% url 'admin:organizations_empresa_changelist' %}">Organizações</a>
+    <a href="{% url 'admin:organizations_empresacapacidade_changelist' %}">Capacidades</a>
+    <a href="{% url 'admin:organizations_empresausuario_changelist' %}">Equipes</a>
+    <a href="{% url 'admin:core_auditoria_changelist' %}">Auditoria</a>
+    <a href="{% url 'painel:limites_comerciais_lista' %}">Limites Comerciais</a>
+  </nav>
+  <div class="platform-admin__columns">
+    <section class="platform-admin__panel"><h2>Organizações recentes</h2>
+      <ul>{% for empresa in organizacoes %}<li><a href="{% url 'painel:empresa_institucional' empresa.uuid %}">{{ empresa.nome_exibicao }}</a><span>{{ empresa.get_status_institucional_display }}</span></li>{% empty %}<li>Nenhuma organização.</li>{% endfor %}</ul>
+    </section>
+    <section class="platform-admin__panel"><h2>Auditoria recente</h2>
+      <ul>{% for item in auditorias %}<li><strong>{{ item.acao }}</strong><span>{{ item.usuario|default:"Sistema" }} · {{ item.criado_em|date:"d/m/Y H:i" }}</span></li>{% empty %}<li>Nenhum evento.</li>{% endfor %}</ul>
+    </section>
+  </div>
+</main>
+{% endblock %}

@@ -1,0 +1,3 @@
+{% extends "admin/index.html" %}
+{% load i18n %}
+{% block nav-breadcrumbs %}<nav aria-label="Breadcrumbs"><div class="breadcrumbs"><a href="{% url 'admin:index' %}">Início</a><span>/</span>{% for app in app_list %}<span>{{ app.name }}</span>{% endfor %}</div></nav>{% endblock %}

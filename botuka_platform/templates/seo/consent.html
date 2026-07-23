@@ -1,1 +1,38 @@
-<aside class="botuka-consent" data-consent-panel hidden aria-label="Preferências de privacidade"><p>Usamos cookies essenciais para o funcionamento. Analytics e marketing são opcionais.</p><div><button type="button" data-consent="essential">Somente essenciais</button><button type="button" data-consent="all">Aceitar opcionais</button></div></aside><button class="botuka-consent-review" type="button" data-consent-review>Privacidade</button>
+<aside
+  class="botuka-consent"
+  data-consent-panel
+  hidden
+  role="dialog"
+  aria-modal="false"
+  aria-labelledby="botuka-consent-title"
+  aria-describedby="botuka-consent-description"
+>
+  <div class="botuka-consent__content">
+    <strong id="botuka-consent-title">Sua privacidade importa</strong>
+    <p id="botuka-consent-description">
+      Em conformidade com a Lei Geral de Proteção de Dados (LGPD), utilizamos
+      cookies essenciais para o funcionamento da plataforma. Cookies de
+      analytics e marketing são opcionais e somente serão ativados com seu
+      consentimento. Você poderá alterar sua escolha em “Privacidade”.
+    </p>
+  </div>
+  <div class="botuka-consent__actions">
+    <button type="button" class="btn-botuka btn-soft" data-consent="essential">
+      Somente essenciais
+    </button>
+    <button type="button" class="btn-botuka btn-yellow" data-consent="all">
+      Aceitar todos
+    </button>
+  </div>
+</aside>
+
+<button
+  class="botuka-consent-review"
+  type="button"
+  data-consent-review
+  hidden
+  aria-label="Revisar preferências de cookies"
+>
+  <i class="bi bi-shield-check" aria-hidden="true"></i>
+  Privacidade
+</button>

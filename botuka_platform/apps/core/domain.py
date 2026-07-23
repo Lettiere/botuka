@@ -7,6 +7,7 @@ from django.utils import timezone
 from django.utils.html import strip_tags
 
 from apps.core.models import Auditoria
+from apps.accounts.permissions import usuario_tem_permissao
 
 
 class ActiveManager(models.Manager):
@@ -111,7 +112,7 @@ def auditar(request, acao, objeto, antes=None, depois=None, motivo=''):
 
 
 def exige_permissao(usuario, codigo):
-    if not usuario.tem_permissao(codigo):
+    if not usuario_tem_permissao(usuario, codigo):
         raise PermissionDenied
 
 

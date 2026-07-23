@@ -1,0 +1,26 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static log %}
+{% block bodyclass %}{{ block.super }} dashboard{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block content %}
+<div id="content-main" class="botuka-dashboard">
+  <section class="botuka-admin-hero">
+    <div><span class="botuka-kicker">Central administrativa</span><h1>Olá, {% firstof user.get_short_name user.get_username %}</h1><p>Acesse somente os módulos liberados para sua conta e acompanhe suas alterações recentes.</p></div>
+    <div class="botuka-hero-actions"><a class="button default" href="{% url 'painel:dashboard' %}"><i class="bi bi-speedometer2"></i> Painel BOTUKA</a>{% if user.is_superuser %}<a class="button" href="{% url 'painel:administracao_plataforma' %}"><i class="bi bi-shield-lock"></i> Administração da plataforma</a>{% endif %}</div>
+  </section>
+  {% if user.is_superuser %}
+  <nav class="botuka-master-shortcuts" aria-label="Atalhos MASTER">
+    {% for app in app_list %}{% for model in app.models %}
+      {% if model.object_name == "Usuario" or model.object_name == "Empresa" or model.object_name == "Capacidade" or model.object_name == "UsuarioLimitePersonalizado" or model.object_name == "Auditoria" or model.object_name == "PerfilPermissao" or model.object_name == "ConfiguracaoSistema" %}
+        {% if model.admin_url %}<a href="{{ model.admin_url }}"><i class="bi bi-lightning-charge"></i>{{ model.name }}</a>{% endif %}
+      {% endif %}
+    {% endfor %}{% endfor %}
+  </nav>
+  {% endif %}
+  <div class="botuka-dashboard-grid">
+    <section class="botuka-app-grid" aria-label="Módulos administrativos">{% for app in app_list %}{% include "admin/includes/app_card.html" with app=app %}{% empty %}<div class="botuka-empty"><i class="bi bi-shield-exclamation"></i><h2>Nenhum módulo disponível</h2><p>Sua conta não possui acesso a módulos administrativos.</p></div>{% endfor %}</section>
+    <aside class="botuka-recent"><h2><i class="bi bi-clock-history"></i>Ações recentes</h2>{% get_admin_log 10 as admin_log for_user user %}<ol>{% for entry in admin_log %}<li><span class="botuka-action-dot {% if entry.is_addition %}is-add{% elif entry.is_deletion %}is-delete{% else %}is-change{% endif %}"></span><div>{% if entry.is_deletion or not entry.get_admin_url %}<strong>{{ entry.object_repr }}</strong>{% else %}<a href="{{ entry.get_admin_url }}">{{ entry.object_repr }}</a>{% endif %}<small>{{ entry.content_type.name|capfirst }} · {{ entry.action_time|timesince }} atrás</small></div></li>{% empty %}<li>Nenhuma ação recente.</li>{% endfor %}</ol></aside>
+  </div>
+</div>
+{% endblock %}

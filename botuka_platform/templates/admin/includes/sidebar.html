@@ -1,0 +1,21 @@
+{% load botuka_admin %}
+<aside id="nav-sidebar" class="botuka-sidebar" aria-label="Navegação administrativa">
+  <div class="botuka-sidebar-head">
+    <label for="nav-filter"><i class="bi bi-search"></i><span class="visually-hidden">Buscar módulo</span></label>
+    <input type="search" id="nav-filter" placeholder="Buscar módulo…" autocomplete="off">
+    <button class="botuka-icon-button" id="botuka-sidebar-collapse" type="button" aria-label="Recolher menu" aria-controls="nav-sidebar" aria-expanded="true"><i class="bi bi-layout-sidebar-inset"></i></button>
+  </div>
+  <nav class="botuka-sidebar-scroll">
+    {% include "admin/includes/sidebar_group.html" with group_code="access" group_name="Acesso e usuários" group_icon="bi-people" %}
+    {% include "admin/includes/sidebar_group.html" with group_code="organizations" group_name="Empresas e organizações" group_icon="bi-buildings" %}
+    {% include "admin/includes/sidebar_group.html" with group_code="services" group_name="Serviços" group_icon="bi-tools" %}
+    {% include "admin/includes/sidebar_group.html" with group_code="recruitment" group_name="Recrutamento" group_icon="bi-briefcase" %}
+    {% include "admin/includes/sidebar_group.html" with group_code="content" group_name="Conteúdo e notícias" group_icon="bi-newspaper" %}
+    {% include "admin/includes/sidebar_group.html" with group_code="government" group_name="Prefeitura" group_icon="bi-bank" %}
+    {% include "admin/includes/sidebar_group.html" with group_code="sports" group_name="Esportes" group_icon="bi-trophy" %}
+    {% include "admin/includes/sidebar_group.html" with group_code="media" group_name="YTV e mídia" group_icon="bi-play-btn" %}
+    {% include "admin/includes/sidebar_group.html" with group_code="advertising" group_name="Publicidade" group_icon="bi-megaphone" %}
+    {% include "admin/includes/sidebar_group.html" with group_code="audit" group_name="Auditoria" group_icon="bi-journal-check" %}
+    {% include "admin/includes/sidebar_group.html" with group_code="settings" group_name="Configurações" group_icon="bi-gear" %}
+  </nav>
+</aside>

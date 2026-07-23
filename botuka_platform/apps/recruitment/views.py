@@ -121,11 +121,22 @@ def curriculo_publico_view(request, uuid):
 @login_required
 def candidatar(request, slug):
     vaga = get_object_or_404(Vaga.objects, slug=slug, status=Vaga.Status.PUBLICADA)
-    curriculo = get_object_or_404(
-        Curriculo.objects, usuario=request.user,
+    curriculo = Curriculo.objects.filter(
+        usuario=request.user, ativo=True, excluido_em__isnull=True,
         status=Curriculo.Status.CONCLUIDO,
         visibilidade__in=[Curriculo.Visibilidade.CANDIDATURAS, Curriculo.Visibilidade.PUBLICO],
-    )
+    ).first()
+    if curriculo is None:
+        request.session['candidatura_pendente_slug'] = vaga.slug
+        messages.info(
+            request,
+            'Para se candidatar, crie e publique seu currículo. A vaga ficará salva enquanto você conclui o assistente.',
+        )
+        curriculo_existente = _curriculo_usuario(request.user)
+        if curriculo_existente:
+            etapa = max(1, min(curriculo_existente.etapa_atual or 1, 10))
+            return redirect('painel:curriculo_etapa', etapa=etapa)
+        return redirect('painel:curriculo_novo')
     form = CandidaturaForm(request.POST or None)
     if request.method == 'POST' and form.is_valid():
         try:

@@ -1,6 +1,9 @@
 """Administração de organizações."""
 
 from django.contrib import admin
+from django.core.exceptions import PermissionDenied
+
+from apps.accounts.permissions import usuario_e_master
 
 from apps.organizations.models import (
     Capacidade,
@@ -22,9 +25,46 @@ from apps.organizations.models import (
     OrganizacaoUsuario,
     Unidade,
     UsuarioCapacidade,
+    UsuarioLimitePersonalizado,
 )
 
 admin.site.register(EmpresaLink)
+
+
+class MasterOnlyAdminMixin:
+    """Protege cadastros que concedem autoridade global ou institucional."""
+
+    def has_module_permission(self, request):
+        return usuario_e_master(request.user)
+
+    def has_view_permission(self, request, obj=None):
+        return usuario_e_master(request.user)
+
+    def has_add_permission(self, request):
+        return usuario_e_master(request.user)
+
+    def has_change_permission(self, request, obj=None):
+        return usuario_e_master(request.user)
+
+    def has_delete_permission(self, request, obj=None):
+        return usuario_e_master(request.user)
+
+
+@admin.register(UsuarioLimitePersonalizado)
+class UsuarioLimitePersonalizadoAdmin(MasterOnlyAdminMixin, admin.ModelAdmin):
+    list_display = (
+        'usuario', 'ativo', 'limite_empresas', 'empresas_ilimitadas',
+        'limite_servicos', 'servicos_ilimitados', 'inicio', 'fim',
+        'concedido_por',
+    )
+    list_filter = ('ativo', 'empresas_ilimitadas', 'servicos_ilimitados', 'inicio', 'fim')
+    search_fields = ('usuario__username', 'usuario__email', 'motivo')
+    autocomplete_fields = ('usuario',)
+    readonly_fields = ('uuid', 'concedido_por', 'criado_em', 'atualizado_em')
+
+    def save_model(self, request, obj, form, change):
+        obj.concedido_por = request.user
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(Empresa)
@@ -39,6 +79,8 @@ class EmpresaAdmin(admin.ModelAdmin):
         'usuario_proprietario',
         'ativo',
         'verificada',
+        'status_institucional',
+        'oficial',
     )
     list_filter = (
         'status',
@@ -48,6 +90,9 @@ class EmpresaAdmin(admin.ModelAdmin):
         'perfil_publico',
         'estado',
         'cidade',
+        'tipo_organizacao',
+        'status_institucional',
+        'oficial',
     )
     search_fields = (
         'nome_fantasia',
@@ -72,6 +117,23 @@ class EmpresaAdmin(admin.ModelAdmin):
     )
     ordering = ('nome_fantasia',)
     prepopulated_fields = {'slug': ('nome_fantasia',)}
+
+    institutional_fields = (
+        'tipo_organizacao', 'status_institucional', 'institucional', 'oficial',
+        'parceira_oficial', 'selo_oficial', 'verificada_institucionalmente',
+        'autorizada_por', 'autorizada_em', 'observacao_institucional',
+    )
+
+    def get_readonly_fields(self, request, obj=None):
+        fields = list(super().get_readonly_fields(request, obj))
+        if not usuario_e_master(request.user):
+            fields.extend(self.institutional_fields)
+        return tuple(dict.fromkeys(fields))
+
+    def save_model(self, request, obj, form, change):
+        if not usuario_e_master(request.user) and set(form.changed_data) & set(self.institutional_fields):
+            raise PermissionDenied('Somente MASTER altera identidade institucional.')
+        super().save_model(request, obj, form, change)
 
 
 @admin.register(EmpresaUsuario)
@@ -104,16 +166,24 @@ class EmpresaUsuarioAdmin(admin.ModelAdmin):
     list_select_related = ('empresa', 'usuario')
     ordering = ('empresa__nome_fantasia', 'usuario__username')
 
+    def save_model(self, request, obj, form, change):
+        if (
+            obj.funcao == EmpresaUsuario.Funcao.ADMINISTRADOR_INSTITUCIONAL
+            or obj.escopo == EmpresaUsuario.Escopo.GLOBAL
+        ) and not usuario_e_master(request.user):
+            raise PermissionDenied('Somente MASTER atribui papel institucional ou escopo global.')
+        super().save_model(request, obj, form, change)
+
 
 @admin.register(Capacidade)
-class CapacidadeAdmin(admin.ModelAdmin):
+class CapacidadeAdmin(MasterOnlyAdminMixin, admin.ModelAdmin):
     list_display = ('codigo', 'nome', 'exige_aprovacao', 'ativo')
     list_filter = ('exige_aprovacao', 'ativo')
     search_fields = ('codigo', 'nome')
 
 
 @admin.register(UsuarioCapacidade)
-class UsuarioCapacidadeAdmin(admin.ModelAdmin):
+class UsuarioCapacidadeAdmin(MasterOnlyAdminMixin, admin.ModelAdmin):
     list_display = ('usuario', 'capacidade', 'status', 'ativo')
     list_filter = ('status', 'ativo', 'capacidade')
     search_fields = ('usuario__username', 'usuario__email', 'capacidade__codigo')
@@ -121,7 +191,7 @@ class UsuarioCapacidadeAdmin(admin.ModelAdmin):
 
 
 @admin.register(EmpresaCapacidade)
-class EmpresaCapacidadeAdmin(admin.ModelAdmin):
+class EmpresaCapacidadeAdmin(MasterOnlyAdminMixin, admin.ModelAdmin):
     list_display = ('empresa', 'capacidade', 'status', 'ativo')
     list_filter = ('status', 'ativo', 'capacidade')
     search_fields = ('empresa__nome_fantasia', 'capacidade__codigo')
@@ -145,14 +215,20 @@ class EmpresaPropriedadeAdmin(admin.ModelAdmin):
 
 
 @admin.register(EmpresaFuncao)
-class EmpresaFuncaoAdmin(admin.ModelAdmin):
+class EmpresaFuncaoAdmin(MasterOnlyAdminMixin, admin.ModelAdmin):
     list_display = ('codigo', 'nome', 'ativo')
     list_filter = ('ativo',)
     search_fields = ('codigo', 'nome')
 
 
-admin.site.register(EmpresaUsuarioFuncao)
-admin.site.register(EmpresaUsuarioPermissao)
+@admin.register(EmpresaUsuarioFuncao)
+class EmpresaUsuarioFuncaoAdmin(MasterOnlyAdminMixin, admin.ModelAdmin):
+    pass
+
+
+@admin.register(EmpresaUsuarioPermissao)
+class EmpresaUsuarioPermissaoAdmin(MasterOnlyAdminMixin, admin.ModelAdmin):
+    pass
 
 
 @admin.register(CNAE)

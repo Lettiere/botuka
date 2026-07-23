@@ -1,0 +1,6 @@
+<div class="share-tools" aria-label="Compartilhar conteúdo">
+  <strong>Compartilhar</strong>
+  <button type="button" data-share-native data-share-title="{{ share_title }}" aria-label="Compartilhar"><i class="bi bi-share"></i></button>
+  <a href="https://wa.me/?text={{ share_title|urlencode }}%20{{ request.build_absolute_uri|urlencode }}" target="_blank" rel="noopener noreferrer" aria-label="Compartilhar no WhatsApp"><i class="bi bi-whatsapp"></i></a>
+  <button type="button" data-copy-url aria-label="Copiar link"><i class="bi bi-link-45deg"></i></button>
+</div>

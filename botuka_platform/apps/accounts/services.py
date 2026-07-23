@@ -4,15 +4,15 @@ from __future__ import annotations
 
 from django.urls import reverse
 
+from apps.accounts.permissions import usuario_e_master
+
 
 def obter_url_pos_login(usuario: object) -> str:
     """Retorna a URL adequada após login conforme perfil e vínculos."""
 
     tem_perfil = getattr(usuario, 'tem_perfil', None)
 
-    if getattr(usuario, 'is_superuser', False) or (
-        callable(tem_perfil) and tem_perfil('MASTER')
-    ):
+    if usuario_e_master(usuario):
         return reverse('gestao:dashboard')
 
     if callable(tem_perfil):

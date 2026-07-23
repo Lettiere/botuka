@@ -1,6 +1,7 @@
 """Administração dos modelos centrais."""
 
 from django.contrib import admin
+from apps.accounts.permissions import usuario_e_master, usuario_tem_permissao
 
 from apps.core.models import (
     Auditoria,
@@ -23,8 +24,27 @@ from apps.core.models import (
 )
 
 
+class MasterOnlyAdminMixin:
+    """Restringe configurações e RBAC globais ao MASTER."""
+
+    def has_module_permission(self, request):
+        return usuario_e_master(request.user)
+
+    def has_view_permission(self, request, obj=None):
+        return usuario_e_master(request.user)
+
+    def has_add_permission(self, request):
+        return usuario_e_master(request.user)
+
+    def has_change_permission(self, request, obj=None):
+        return usuario_e_master(request.user)
+
+    def has_delete_permission(self, request, obj=None):
+        return usuario_e_master(request.user)
+
+
 @admin.register(ConfiguracaoSistema)
-class ConfiguracaoSistemaAdmin(admin.ModelAdmin):
+class ConfiguracaoSistemaAdmin(MasterOnlyAdminMixin, admin.ModelAdmin):
     list_display = ('chave', 'ativo', 'criado_em', 'atualizado_em')
     list_filter = ('ativo', 'criado_em', 'atualizado_em')
     search_fields = ('chave', 'valor', 'descricao')
@@ -50,7 +70,7 @@ class ContatoInstitucionalAdmin(admin.ModelAdmin):
 
 
 @admin.register(Perfil)
-class PerfilAdmin(admin.ModelAdmin):
+class PerfilAdmin(MasterOnlyAdminMixin, admin.ModelAdmin):
     list_display = ('nome', 'ativo', 'criado_em', 'atualizado_em')
     list_filter = ('ativo', 'criado_em', 'atualizado_em')
     search_fields = ('nome', 'descricao')
@@ -59,7 +79,7 @@ class PerfilAdmin(admin.ModelAdmin):
 
 
 @admin.register(Permissao)
-class PermissaoAdmin(admin.ModelAdmin):
+class PermissaoAdmin(MasterOnlyAdminMixin, admin.ModelAdmin):
     list_display = ('codigo', 'nome', 'ativo', 'criado_em', 'atualizado_em')
     list_filter = ('ativo', 'criado_em', 'atualizado_em')
     search_fields = ('codigo', 'nome', 'descricao')
@@ -68,7 +88,7 @@ class PermissaoAdmin(admin.ModelAdmin):
 
 
 @admin.register(PerfilPermissao)
-class PerfilPermissaoAdmin(admin.ModelAdmin):
+class PerfilPermissaoAdmin(MasterOnlyAdminMixin, admin.ModelAdmin):
     list_display = ('perfil', 'permissao', 'ativo', 'criado_em')
     list_filter = ('ativo', 'perfil', 'permissao', 'criado_em')
     search_fields = ('perfil__nome', 'permissao__codigo', 'permissao__nome')
@@ -169,4 +189,23 @@ class AuditoriaAdmin(admin.ModelAdmin):
     list_filter = ('acao', 'entidade', 'criado_em')
     search_fields = ('acao', 'entidade', 'registro_id', 'usuario__username')
     autocomplete_fields = ('usuario',)
-    readonly_fields = ('uuid', 'criado_em')
+    readonly_fields = (
+        'uuid', 'usuario', 'acao', 'entidade', 'registro_id',
+        'dados_antes_json', 'dados_depois_json', 'motivo', 'ip',
+        'user_agent', 'organizacao_uuid', 'sucesso', 'origem', 'criado_em',
+    )
+
+    def has_module_permission(self, request):
+        return usuario_e_master(request.user) or usuario_tem_permissao(request.user, 'auditoria.global.visualizar')
+
+    def has_view_permission(self, request, obj=None):
+        return usuario_e_master(request.user) or usuario_tem_permissao(request.user, 'auditoria.global.visualizar')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+    def has_delete_permission(self, request, obj=None):
+        return False

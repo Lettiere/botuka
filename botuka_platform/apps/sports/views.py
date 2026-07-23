@@ -3,6 +3,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
+from apps.accounts.permissions import usuario_tem_permissao
 from apps.core.domain_views import crud_views
 from apps.core.seo.page_builders import listing_seo, sports_seo
 from apps.organizations.models import Empresa
@@ -19,7 +20,7 @@ def _permissions(*codes):
 
 
 def _global(user):
-    return any(user.tem_permissao(code) for code in ("sports.gerenciar", "sports.criar", "sports.editar", "sports.publicar"))
+    return any(usuario_tem_permissao(user, code) for code in ("sports.gerenciar", "sports.criar", "sports.editar", "sports.publicar"))
 
 
 def _org_from_object(obj):
@@ -36,7 +37,7 @@ def _org_from_object(obj):
 def pode_org(user, obj):
     if _global(user):
         return True
-    if isinstance(obj, Atleta) and obj.usuario_id == user.id and user.tem_permissao("sports.atleta.editar"):
+    if isinstance(obj, Atleta) and obj.usuario_id == user.id and usuario_tem_permissao(user, "sports.atleta.editar"):
         return True
     if isinstance(obj, OrganizacaoEsportiva) and obj.empresa_id and not usuario_pode_gerenciar_empresa(user, obj.empresa):
         return False
@@ -83,7 +84,7 @@ def filtrar_fks_sports(user, form):
 def validar_status_campeonato(user, anterior, novo, obj):
     if anterior == Campeonato.Status.CANCELADO and novo != anterior:
         raise PermissionDenied("Campeonato cancelado não pode ser reaberto por este fluxo.")
-    if novo in {Campeonato.Status.EM_ANDAMENTO, Campeonato.Status.FINALIZADO} and not user.tem_permissao("sports.publicar") and not user.tem_permissao("sports.gerenciar"):
+    if novo in {Campeonato.Status.EM_ANDAMENTO, Campeonato.Status.FINALIZADO} and not usuario_tem_permissao(user, "sports.publicar") and not usuario_tem_permissao(user, "sports.gerenciar"):
         raise PermissionDenied
 
 

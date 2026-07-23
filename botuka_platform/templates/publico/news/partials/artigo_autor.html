@@ -1,0 +1,8 @@
+<section class="article-author" aria-labelledby="article-author-title">
+  {% if artigo.autor.foto %}<img src="{{ artigo.autor.foto.url }}" alt="Foto de {{ artigo.autor }}" width="88" height="88" loading="lazy">{% else %}<span class="article-author__avatar" aria-hidden="true">{{ artigo.autor|stringformat:'s'|slice:':1'|upper }}</span>{% endif %}
+  <div>
+    <span class="section-kicker">Sobre quem escreveu</span>
+    <h2 id="article-author-title">{{ artigo.autor }}</h2>
+    <p>{{ artigo.autor.biografia|default:'Colaborador da rede editorial BOTUKA, dedicada à informação local de Botucatu e região.' }}</p>
+  </div>
+</section>

@@ -56,6 +56,13 @@ class SeoMetadataTests(SimpleTestCase):
 
 
 class IntegrationConsentTests(SimpleTestCase):
+    def test_banner_exibe_texto_lgpd_e_controles_de_escolha(self):
+        with patch('apps.core.views.montar_contexto_home', return_value={}):
+            response = self.client.get('/')
+        self.assertContains(response, 'Lei Geral de Proteção de Dados (LGPD)')
+        self.assertContains(response, 'data-consent="essential"')
+        self.assertContains(response, 'data-consent="all"')
+
     @override_settings(ENABLE_ANALYTICS=False, GOOGLE_TAG_MANAGER_ID='GTM-ABC123')
     def test_gtm_disabled_by_default(self):
         with patch('apps.core.views.montar_contexto_home', return_value={}):

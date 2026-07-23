@@ -2,6 +2,7 @@ from django.core.exceptions import PermissionDenied
 from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 
+from apps.accounts.permissions import usuario_tem_permissao
 from apps.core.domain import EditorialStatus
 from apps.core.domain_views import crud_views
 from apps.core.seo.page_builders import government_seo, listing_seo
@@ -16,7 +17,7 @@ GOV_PERMISSIONS = {
 
 
 def _global(user):
-    return user.tem_permissao("government.gerenciar")
+    return usuario_tem_permissao(user, "government.gerenciar")
 
 
 def _orgaos_do_usuario(user):
@@ -69,7 +70,7 @@ def filtrar_fks_government(user, form):
         form.fields["orgao"].queryset = _orgaos_do_usuario(user) if not _global(user) else OrgaoPublico.objects.all()
     if "acao" in form.fields:
         form.fields["acao"].queryset = escopo_government(user, AcaoPublica.objects.all())
-    if user.tem_permissao("government.revisar") and not any(user.tem_permissao(code) for code in ("government.editar", "government.gerenciar")):
+    if usuario_tem_permissao(user, "government.revisar") and not any(usuario_tem_permissao(user, code) for code in ("government.editar", "government.gerenciar")):
         for name, field in form.fields.items():
             if name not in {"status", "motivo_rejeicao"}:
                 field.disabled = True
@@ -87,7 +88,7 @@ def validar_estado_government(user, anterior, novo, obj):
     }
     if novo not in allowed.get(anterior, set()):
         raise PermissionDenied("Transição editorial inválida.")
-    if novo in {EditorialStatus.APROVADO, EditorialStatus.REJEITADO} and not (user.tem_permissao("government.revisar") or _global(user)):
+    if novo in {EditorialStatus.APROVADO, EditorialStatus.REJEITADO} and not (usuario_tem_permissao(user, "government.revisar") or _global(user)):
         raise PermissionDenied
     if novo in {EditorialStatus.PUBLICADO, EditorialStatus.PAUSADO}:
         if _global(user):
@@ -100,7 +101,7 @@ def validar_estado_government(user, anterior, novo, obj):
             excluido_em__isnull=True,
             pode_publicar=True,
         ).exists()
-        if not user.tem_permissao("government.publicar") or not autorizado:
+        if not usuario_tem_permissao(user, "government.publicar") or not autorizado:
             raise PermissionDenied
 
 

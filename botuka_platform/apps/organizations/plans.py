@@ -8,10 +8,12 @@ from .services.subscription_limits import (
     obter_assinatura_vigente,
     obter_limite_empresas,
     obter_limite_servicos,
+    obter_limite_personalizado_vigente,
     total_empresas_ativas,
     total_servicos_utilizados,
     usuario_pode_criar_empresa,
     usuario_pode_criar_servico,
+    LimiteUsuarioService,
     validar_contexto_servico,
 )
 
@@ -21,6 +23,7 @@ __all__ = [
     'LimitePlanoExcedido', 'ResultadoLimite', 'ResultadoLimiteEmpresa',
     'bloquear_e_validar_criacao_empresa', 'bloquear_e_validar_criacao_servico',
     'obter_assinatura_vigente', 'obter_limite_empresas', 'obter_limite_servicos',
+    'obter_limite_personalizado_vigente', 'LimiteUsuarioService',
     'total_empresas_ativas', 'total_servicos_utilizados',
     'usuario_pode_criar_empresa', 'usuario_pode_criar_servico',
     'validar_contexto_servico',

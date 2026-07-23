@@ -75,8 +75,9 @@ def artigo_seo(request, artigo):
                       'publisher': {'@id': f'{settings.SITE_URL.rstrip("/")}/#organization'}, 'mainEntityOfPage': url})
     return build_seo(request, title=artigo.titulo_seo or f'{artigo.titulo} | BOTUKA',
                      description=artigo.descricao_seo or artigo.resumo or artigo.subtitulo or artigo.conteudo,
-                     image=image, content_type='article', published_time=artigo.publicado_em,
+                     image=image, image_alt=artigo.titulo, content_type='article', published_time=artigo.publicado_em,
                      modified_time=artigo.atualizado_em, author=author, section=artigo.categoria.nome,
+                     tags=[artigo.categoria.nome],
                      breadcrumbs=[breadcrumb(request, 'Início', reverse('home')), breadcrumb(request, 'Notícias', reverse('news_public:home')), breadcrumb(request, artigo.categoria.nome, reverse('news_public:categoria', args=[artigo.categoria.slug])), breadcrumb(request, artigo.titulo, request.path)], schemas=[schema])
 
 

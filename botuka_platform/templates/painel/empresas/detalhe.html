@@ -67,11 +67,14 @@
           <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresas_lista' %}"><i class="bi bi-arrow-left"></i> Lista</a>
           {% if pode_editar %}
             <a class="empresa-btn empresa-btn-primary" href="{% url 'painel:empresa_editar' empresa.uuid %}"><i class="bi bi-pencil"></i> Editar</a>
-            <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_links' empresa.pk %}"><i class="bi bi-link-45deg"></i> Links</a>
+            <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_links' empresa.uuid %}"><i class="bi bi-link-45deg"></i> Links</a>
             <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_qrcode' empresa.uuid %}"><i class="bi bi-qr-code"></i> QR Code</a>
           {% endif %}
           {% if pode_gerenciar_equipe %}
             <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_equipe' empresa.uuid %}"><i class="bi bi-people"></i> Equipe</a>
+          {% endif %}
+          {% if pode_institucional %}
+            <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_institucional' empresa.uuid %}"><i class="bi bi-shield-check"></i> Institucional</a>
           {% endif %}
           {% if pode_gerenciar %}
             <a class="empresa-btn empresa-btn-danger" href="{% url 'painel:empresa_excluir' empresa.uuid %}"><i class="bi bi-power"></i> Desativar</a>
@@ -134,7 +137,7 @@
       <article class="empresa-card">
         <h2>Configurações</h2>
         {% if pode_gerenciar %}
-          <form class="empresa-status-form" method="post" action="{% url 'painel:empresa_alterar_status' empresa.pk %}">
+          <form class="empresa-status-form" method="post" action="{% url 'painel:empresa_alterar_status' empresa.uuid %}">
             {% csrf_token %}
             <select name="status" aria-label="Status da empresa">
               <option value="RASCUNHO" {% if empresa.status == "RASCUNHO" %}selected{% endif %}>Rascunho</option>

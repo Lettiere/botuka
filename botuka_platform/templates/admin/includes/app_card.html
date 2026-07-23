@@ -1,0 +1,9 @@
+{% load botuka_admin %}
+<article class="botuka-app-card">
+  <header><span class="botuka-app-icon"><i class="bi {{ app.app_label|admin_icon }}"></i></span><div><h2>{{ app.name }}</h2><p>Gerencie os registros disponíveis neste módulo.</p></div></header>
+  <ul>
+    {% for model in app.models %}
+    <li><div><strong>{{ model.name }}</strong></div><div class="botuka-model-actions">{% if model.add_url %}<a class="button" href="{{ model.add_url }}"><i class="bi bi-plus-lg"></i> Adicionar</a>{% endif %}{% if model.admin_url %}<a href="{{ model.admin_url }}">Ver registros <i class="bi bi-arrow-right"></i></a>{% endif %}</div></li>
+    {% endfor %}
+  </ul>
+</article>

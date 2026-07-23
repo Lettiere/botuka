@@ -694,6 +694,9 @@ class Auditoria(UUIDModel):
     motivo = models.TextField(blank=True, db_column='core_auditoria_motivo')
     ip = models.GenericIPAddressField(null=True, blank=True, db_column='core_auditoria_ip')
     user_agent = models.TextField(blank=True, db_column='core_auditoria_user_agent')
+    organizacao_uuid = models.UUIDField(null=True, blank=True, db_column='core_auditoria_organizacao_uuid')
+    sucesso = models.BooleanField(default=True, db_column='core_auditoria_sucesso')
+    origem = models.CharField(max_length=40, default='SISTEMA', db_column='core_auditoria_origem')
     criado_em = models.DateTimeField(auto_now_add=True, db_column='core_auditoria_criado_em')
 
     class Meta:

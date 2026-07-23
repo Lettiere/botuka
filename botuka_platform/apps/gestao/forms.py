@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from django import forms
 from django.contrib.auth import get_user_model
+from apps.accounts.permissions import usuario_e_master
 
 from apps.core.models import (
     ConfiguracaoSistema,
@@ -18,6 +19,7 @@ from apps.taxonomy.models import Categoria, Subcategoria
 from apps.painel.forms import cpf_valido, somente_digitos
 
 Usuario = get_user_model()
+GLOBAL_PROFILE_NAMES = ('MASTER', 'ADMIN_GLOBAL', 'SUPORTE_GLOBAL', 'AUDITOR_GLOBAL')
 
 
 class BaseGestaoModelForm(forms.ModelForm):
@@ -42,6 +44,13 @@ class UsuarioForm(BaseGestaoModelForm):
     """Formulário administrativo de usuários sem edição direta de senha."""
 
     cpf = forms.CharField(label='CPF', required=False, max_length=14)
+
+    def __init__(self, *args: object, ator=None, **kwargs: object) -> None:
+        self.ator = ator
+        super().__init__(*args, **kwargs)
+        self._era_master = usuario_e_master(self.instance)
+        if not usuario_e_master(ator):
+            self.fields['perfil'].queryset = self.fields['perfil'].queryset.exclude(nome__in=GLOBAL_PROFILE_NAMES)
 
     class Meta:
         model = Usuario
@@ -105,11 +114,25 @@ class UsuarioForm(BaseGestaoModelForm):
 
         return email
 
+    def clean_perfil(self):
+        perfil = self.cleaned_data.get('perfil')
+        if perfil and perfil.nome.upper() in GLOBAL_PROFILE_NAMES and not usuario_e_master(self.ator):
+            raise forms.ValidationError('Apenas um usuário MASTER pode atribuir papéis globais.')
+        return perfil
+
     def save(self, commit: bool = True):
         usuario = super().save(commit=False)
         is_new = usuario._state.adding
         usuario.username = usuario.email.lower()
         usuario.email = usuario.email.lower()
+
+        perfil_master = usuario.perfil and usuario.perfil.nome.upper() == 'MASTER'
+        if perfil_master:
+            usuario.is_active = True
+            usuario.is_staff = True
+            usuario.is_superuser = True
+        elif self._era_master and usuario_e_master(self.ator):
+            usuario.is_superuser = False
 
         if is_new:
             usuario.set_unusable_password()
@@ -142,7 +165,8 @@ class PerfilForm(BaseGestaoModelForm):
         model = Perfil
         fields = ['nome', 'descricao', 'ativo', 'permissoes']
 
-    def __init__(self, *args: object, **kwargs: object) -> None:
+    def __init__(self, *args: object, ator=None, **kwargs: object) -> None:
+        self.ator = ator
         super().__init__(*args, **kwargs)
 
         if self.instance.pk:
@@ -150,6 +174,12 @@ class PerfilForm(BaseGestaoModelForm):
                 perfil_permissoes__perfil=self.instance,
                 perfil_permissoes__ativo=True,
             )
+
+    def clean_nome(self) -> str:
+        nome = self.cleaned_data['nome'].strip()
+        if nome.upper() == 'MASTER' and not usuario_e_master(self.ator):
+            raise forms.ValidationError('Apenas um usuário MASTER pode criar ou alterar este perfil.')
+        return nome
 
     def save(self, commit: bool = True):
         perfil = super().save(commit=commit)

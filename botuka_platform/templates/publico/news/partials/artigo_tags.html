@@ -1,0 +1,4 @@
+<nav class="article-tags" aria-label="Assuntos relacionados">
+  <strong>Assunto</strong>
+  <a href="{% url 'news_public:categoria' artigo.categoria.slug %}">#{{ artigo.categoria.nome }}</a>
+</nav>

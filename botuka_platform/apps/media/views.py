@@ -4,6 +4,7 @@ from django.db.models import Q
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
+from apps.accounts.permissions import usuario_tem_permissao
 from apps.core.domain_views import crud_views
 from apps.core.seo.page_builders import listing_seo, media_seo
 
@@ -11,7 +12,7 @@ from .models import Canal, Episodio, Pauta, Programa, Temporada, Transmissao
 
 
 def _manager(user):
-    return user.tem_permissao("media.gerenciar")
+    return usuario_tem_permissao(user, "media.gerenciar")
 
 
 def filtrar_fks_media(user, form):
@@ -41,7 +42,7 @@ def validar_estado_episodio(user, anterior, novo, obj):
     }
     if novo not in allowed.get(anterior, set()):
         raise PermissionDenied("Transição de episódio inválida.")
-    if novo in {Episodio.Status.AGENDADO, Episodio.Status.AO_VIVO, Episodio.Status.PUBLICADO} and not (user.tem_permissao("media.publicar") or _manager(user)):
+    if novo in {Episodio.Status.AGENDADO, Episodio.Status.AO_VIVO, Episodio.Status.PUBLICADO} and not (usuario_tem_permissao(user, "media.publicar") or _manager(user)):
         raise PermissionDenied
 
 

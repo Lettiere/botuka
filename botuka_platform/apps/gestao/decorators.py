@@ -10,6 +10,7 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse
+from apps.accounts.permissions import usuario_e_master, usuario_tem_permissao
 
 
 def usuario_pode_acessar_gestao(user: object) -> bool:
@@ -18,11 +19,9 @@ def usuario_pode_acessar_gestao(user: object) -> bool:
     if not getattr(user, 'is_authenticated', False):
         return False
 
-    if getattr(user, 'is_superuser', False) or getattr(user, 'is_staff', False):
+    if usuario_e_master(user) or getattr(user, 'is_staff', False):
         return True
-
-    tem_perfil = getattr(user, 'tem_perfil', None)
-    return bool(callable(tem_perfil) and tem_perfil('MASTER'))
+    return False
 
 
 def staff_required(view_func: Callable) -> Callable:
@@ -46,8 +45,7 @@ def master_required(view_func: Callable) -> Callable:
     @login_required
     @wraps(view_func)
     def wrapper(request: HttpRequest, *args: object, **kwargs: object) -> HttpResponse:
-        tem_perfil = getattr(request.user, 'tem_perfil', None)
-        if request.user.is_superuser or (callable(tem_perfil) and tem_perfil('MASTER')):
+        if usuario_e_master(request.user):
             return view_func(request, *args, **kwargs)
 
         messages.error(request, 'Ação restrita ao perfil MASTER.')
@@ -67,8 +65,7 @@ def permission_required(codigo: str) -> Callable:
             *args: object,
             **kwargs: object,
         ) -> HttpResponse:
-            tem_permissao = getattr(request.user, 'tem_permissao', None)
-            if callable(tem_permissao) and tem_permissao(codigo):
+            if usuario_tem_permissao(request.user, codigo):
                 return view_func(request, *args, **kwargs)
 
             messages.error(request, 'Você não possui permissão para esta ação.')
@@ -94,11 +91,14 @@ class DomainPermissionRequiredMixin(StaffRequiredMixin):
     """Mixin para validar permissões de domínio em class-based views."""
 
     permission_code: str | None = None
+    master_only = False
 
     def dispatch(self, request: HttpRequest, *args: object, **kwargs: object) -> HttpResponse:
-        tem_permissao = getattr(request.user, 'tem_permissao', None)
+        if self.master_only and not usuario_e_master(request.user):
+            messages.error(request, 'Ação restrita ao perfil MASTER.')
+            raise PermissionDenied
         if self.permission_code and not (
-            callable(tem_permissao) and tem_permissao(self.permission_code)
+            usuario_tem_permissao(request.user, self.permission_code)
         ):
             messages.error(request, 'Você não possui permissão para esta ação.')
             raise PermissionDenied

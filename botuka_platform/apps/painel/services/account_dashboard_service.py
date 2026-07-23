@@ -2,11 +2,12 @@ from django.db.models import Count, Q
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.accounts.permissions import usuario_e_master, usuario_tem_permissao
 from apps.government.models import AcaoPublica
 from apps.news.models import Artigo
 from apps.organizations.models import Assinatura, Empresa
 from apps.organizations.permissions import empresas_disponiveis_para_usuario, usuario_pode_publicar_por_empresa
-from apps.organizations.plans import usuario_pode_criar_empresa, usuario_pode_criar_servico
+from apps.organizations.plans import LimiteUsuarioService, usuario_pode_criar_empresa, usuario_pode_criar_servico
 from apps.recruitment.models import Candidatura, Curriculo, Vaga
 from apps.services.models import Servico
 from apps.services.permissions import servicos_disponiveis_para_usuario
@@ -14,7 +15,7 @@ from apps.sports.models import OrganizacaoEsportiva
 
 
 def _can(user, *codes):
-    return user.is_superuser or user.is_staff or any(user.tem_permissao(code) for code in codes)
+    return usuario_e_master(user) or any(usuario_tem_permissao(user, code) for code in codes)
 
 
 def _assinatura_atual(usuario):
@@ -59,6 +60,7 @@ def montar_dashboard_conta(usuario):
     assinatura = _assinatura_atual(usuario)
     limite_empresa = usuario_pode_criar_empresa(usuario)
     limite_servico = usuario_pode_criar_servico(usuario)
+    limites_efetivos = LimiteUsuarioService.obter_limites(usuario)
 
     publicacoes = {
         "cultura": Artigo.objects.filter(autor=usuario, ativo=True, excluido_em__isnull=True).count(),
@@ -99,5 +101,8 @@ def montar_dashboard_conta(usuario):
         "publications": publicacoes if any(publicacoes.values()) or pode_publicar_conteudo else None,
         "plan": {"name": assinatura.plano.nome if assinatura else "Gratuito", "valid_until": assinatura.fim if assinatura else None,
                  "companies_used": limite_empresa.total, "companies_limit": limite_empresa.limite, "can_create_company": limite_empresa.permitido,
-                 "services_used": limite_servico.total, "services_limit": limite_servico.limite},
+                 "companies_remaining": limite_empresa.restante,
+                 "services_used": limite_servico.total, "services_limit": limite_servico.limite,
+                 "services_remaining": limite_servico.restante,
+                 "personalized": limites_efetivos.personalizado},
     }

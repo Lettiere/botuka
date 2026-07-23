@@ -1,6 +1,7 @@
 """Filtros auxiliares para templates de gestão."""
 
 from django import template
+from apps.accounts.permissions import usuario_tem_permissao
 
 register = template.Library()
 
@@ -26,5 +27,4 @@ def attr(obj: object, name: str) -> object:
 def has_perm_code(user: object, code: str) -> bool:
     """Permite checar permissão de domínio em templates."""
 
-    tem_permissao = getattr(user, 'tem_permissao', None)
-    return bool(callable(tem_permissao) and tem_permissao(code))
+    return usuario_tem_permissao(user, code)

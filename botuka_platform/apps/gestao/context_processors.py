@@ -3,6 +3,7 @@
 from django.conf import settings
 from django.core.cache import cache
 from django.urls import reverse
+from apps.accounts.permissions import usuario_tem_permissao
 
 
 SOCIAL_CONFIG_KEYS = {
@@ -93,8 +94,7 @@ def publicar_options(request):
     """Disponibiliza opções do botão publicar conforme permissões."""
 
     user = getattr(request, 'user', None)
-    tem_permissao = getattr(user, 'tem_permissao', None)
-    can = lambda code: bool(callable(tem_permissao) and tem_permissao(code))
+    can = lambda code: usuario_tem_permissao(user, code)
 
     options = [
         ('Publicar serviço', 'bi-tools', 'painel:servicos_lista', 'servicos.criar'),

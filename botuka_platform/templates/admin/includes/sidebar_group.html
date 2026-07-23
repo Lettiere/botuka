@@ -1,0 +1,13 @@
+{% load botuka_admin %}
+<section class="botuka-nav-group" data-admin-group="{{ group_code }}">
+  <h2><i class="bi {{ group_icon }}"></i><span>{{ group_name }}</span></h2>
+  <ul>
+  {% for app in available_apps %}
+    {% for model in app.models %}{% if model|admin_model_group == group_code %}
+      <li data-nav-label="{{ app.name }} {{ model.name }}">
+        {% if model.admin_url %}<a href="{{ model.admin_url }}"><i class="bi {{ app.app_label|admin_icon }}"></i><span>{{ model.name }}</span></a>{% else %}<span><i class="bi {{ app.app_label|admin_icon }}"></i><span>{{ model.name }}</span></span>{% endif %}
+      </li>
+    {% endif %}{% endfor %}
+  {% endfor %}
+  </ul>
+</section>

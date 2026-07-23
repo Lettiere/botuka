@@ -1,0 +1,24 @@
+<header class="article-editorial-header">
+  <div class="article-editorial-header__labels">
+    <a class="article-category" href="{% url 'news_public:categoria' artigo.categoria.slug %}">{{ artigo.categoria.nome }}</a>
+    {% if artigo.urgente %}<span class="article-urgent"><i class="bi bi-lightning-fill" aria-hidden="true"></i> Urgente</span>{% endif %}
+  </div>
+  <h1>{{ artigo.titulo }}</h1>
+  {% with deck=artigo.subtitulo|default:artigo.resumo %}{% if deck %}<p class="article-deck">{{ deck }}</p>{% endif %}{% endwith %}
+  <div class="article-byline">
+    <div class="article-byline__author">
+      {% if artigo.autor.foto %}
+        <img src="{{ artigo.autor.foto.url }}" alt="" width="44" height="44">
+      {% else %}
+        <span aria-hidden="true">{{ artigo.autor|stringformat:'s'|slice:':1'|upper }}</span>
+      {% endif %}
+      <div><small>Por</small><strong>{{ artigo.autor }}</strong></div>
+    </div>
+    <div class="article-byline__meta">
+      <span><i class="bi bi-calendar3" aria-hidden="true"></i><time datetime="{{ artigo.publicado_em|date:'c' }}">{{ artigo.publicado_em|date:'d/m/Y \à\s H:i' }}</time></span>
+      {% if artigo.atualizado_em > artigo.publicado_em %}<span><i class="bi bi-arrow-clockwise" aria-hidden="true"></i>Atualizada em <time datetime="{{ artigo.atualizado_em|date:'c' }}">{{ artigo.atualizado_em|date:'d/m/Y \à\s H:i' }}</time></span>{% endif %}
+      <span><i class="bi bi-clock" aria-hidden="true"></i>{{ tempo_leitura }} min de leitura</span>
+      {% if artigo.data_fato %}<span><i class="bi bi-geo-alt" aria-hidden="true"></i>Botucatu · fato em {{ artigo.data_fato|date:'d/m/Y' }}</span>{% endif %}
+    </div>
+  </div>
+</header>

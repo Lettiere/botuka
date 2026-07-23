@@ -1,0 +1,11 @@
+{% if artigo.fonte or artigo.fontes.all %}
+<section class="article-transparency" aria-labelledby="article-sources-title">
+  <span class="section-kicker">Transparência</span>
+  <h2 id="article-sources-title">Fontes e referências</h2>
+  <ul>
+    {% if artigo.fonte %}<li>{% if artigo.url_fonte %}<a href="{{ artigo.url_fonte }}" target="_blank" rel="noopener noreferrer">{{ artigo.fonte }} <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a>{% else %}{{ artigo.fonte }}{% endif %}</li>{% endif %}
+    {% for fonte in artigo.fontes.all %}<li><a href="{{ fonte.url }}" target="_blank" rel="noopener noreferrer">{{ fonte.titulo }}{% if fonte.veiculo %} — {{ fonte.veiculo }}{% endif %} <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a><small>Acesso em {{ fonte.data_acesso|date:'d/m/Y' }}</small></li>{% endfor %}
+  </ul>
+  <p>Conteúdo atualizado em <time datetime="{{ artigo.atualizado_em|date:'c' }}">{{ artigo.atualizado_em|date:'d/m/Y \à\s H:i' }}</time>.</p>
+</section>
+{% endif %}

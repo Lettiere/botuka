@@ -1,0 +1,19 @@
+{% extends "painel/base.html" %}
+{% load static %}
+{% block title %}Editar limites | BOTUKA{% endblock %}
+{% block styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/painel/platform-admin.css' %}">{% endblock %}
+{% block content %}
+<main class="platform-admin container">
+  <header class="platform-admin__header"><div><span class="platform-admin__eyebrow">Limite personalizado</span><h1>{{ usuario_limite.get_full_name|default:usuario_limite.username }}</h1><p>{{ usuario_limite.email }}</p></div><a class="btn btn-outline-secondary" href="{% url 'painel:limites_comerciais_lista' %}">Voltar</a></header>
+  <section class="platform-admin__metrics" aria-label="Situação comercial">
+    <article><strong>{{ plano.nome|default:"Gratuito" }}</strong><span>Plano atual</span></article>
+    <article><strong>{{ empresas_utilizadas }}</strong><span>Empresas cadastradas</span></article>
+    <article><strong>{{ servicos_utilizados }}</strong><span>Serviços cadastrados</span></article>
+    <article><strong>{% if efetivos.limite_empresas == None %}∞{% else %}{{ efetivos.limite_empresas }}{% endif %}</strong><span>Limite de empresas</span></article>
+    <article><strong>{% if efetivos.limite_servicos == None %}∞{% else %}{{ efetivos.limite_servicos }}{% endif %}</strong><span>Limite de serviços</span></article>
+  </section>
+  <section class="platform-admin__panel"><h2>Editar limites</h2><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary" type="submit">Salvar limites</button></form></section>
+  {% if limite and limite.ativo %}<section class="platform-admin__panel platform-admin__danger"><h2>Suspender benefício</h2><p>O usuário voltará imediatamente aos limites do plano contratado.</p><form class="platform-admin__inline-form" method="post">{% csrf_token %}<input type="hidden" name="operacao" value="suspender"><input class="form-control" name="motivo_suspensao" required placeholder="Motivo da suspensão"><button class="btn btn-danger" type="submit">Suspender</button></form></section>{% endif %}
+  {% if limite %}<section class="platform-admin__panel"><h2>Concedido por</h2><p>{{ limite.concedido_por }} · Atualizado em {{ limite.atualizado_em|date:"d/m/Y H:i" }}</p></section>{% endif %}
+</main>
+{% endblock %}

@@ -13,6 +13,9 @@ urlpatterns = [
     path('', include('apps.news.panel_urls')),
     path('', include('apps.government.panel_urls')),
     path('', views.dashboard, name='dashboard'),
+    path('administracao-plataforma/', views.administracao_plataforma, name='administracao_plataforma'),
+    path('administracao-plataforma/limites-comerciais/', views.limites_comerciais_lista, name='limites_comerciais_lista'),
+    path('administracao-plataforma/limites-comerciais/<uuid:uuid>/', views.limite_comercial_editar, name='limite_comercial_editar'),
     path('perfil/', views.perfil, name='perfil'),
     # --- Empresas ---
     path('empresas/', views.empresas_lista, name='empresas_lista'),
@@ -24,6 +27,7 @@ urlpatterns = [
     # Preferir UUID se disponível, mantendo pk apenas se dependência forte (ver instruções)
     path('empresas/<uuid:uuid>/', views.empresa_detalhe, name='empresa_detalhe'),
     path('empresas/<uuid:uuid>/editar/', views.empresa_editar, name='empresa_editar'),
+    path('empresas/<uuid:uuid>/institucional/', views.empresa_institucional, name='empresa_institucional'),
     path('empresas/<uuid:uuid>/equipe/', views.empresa_equipe, name='empresa_equipe'),
     path('empresas/<uuid:uuid>/links/', views.empresa_links, name='empresa_links'),
     path('empresas/<uuid:uuid>/qrcode/', views.empresa_qrcode, name='empresa_qrcode'),

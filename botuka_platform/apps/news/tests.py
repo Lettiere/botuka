@@ -13,7 +13,15 @@ class NewsTests(TestCase):
         with self.assertRaises(ValidationError):CategoriaNoticia.objects.create(nome='Noticiário policial')
     def test_artigo_privado_e_publicado(self):
         a=Artigo.objects.create(autor=self.user,categoria=self.cat,titulo='Cidade em pauta',conteudo='Texto seguro')
-        self.assertEqual(self.client.get(reverse('news_public:artigo',args=[a.slug])).status_code,404);a.status=EditorialStatus.PUBLICADO;a.save();self.assertEqual(self.client.get(reverse('news_public:artigo',args=[a.slug])).status_code,200)
+        self.assertEqual(self.client.get(reverse('news_public:artigo',args=[a.slug])).status_code,404);a.status=EditorialStatus.PUBLICADO;a.save();response=self.client.get(reverse('news_public:artigo',args=[a.slug]));self.assertEqual(response.status_code,200)
+        self.assertTemplateUsed(response,'publico/news/artigo.html')
+        self.assertContains(response,'article-detail-page')
+        self.assertContains(response,'data-reading-progress')
+        self.assertContains(response,'data-copy-article-url')
+        self.assertContains(response,'/static/news/css/artigo-detalhe.css')
+        self.assertContains(response,'/static/news/js/artigo-detalhe.js')
+        self.assertContains(response,'NewsArticle')
+        self.assertEqual(response.context['tempo_leitura'],1)
     def test_bloco_inseguro_rejeitado(self):
         a=Artigo.objects.create(autor=self.user,categoria=self.cat,titulo='Teste',conteudo='Seguro')
         with self.assertRaises(ValidationError):ArtigoBloco.objects.create(artigo=a,tipo=ArtigoBloco.Tipo.TEXTO,conteudo='<script>alert(1)</script>')

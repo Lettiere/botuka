@@ -8,6 +8,8 @@ from apps.core.public_links import TipoLink, normalizar_link_publico
 from apps.locations.models import Cidade, Estado, Pais
 from apps.organizations.models import Empresa, EmpresaLink
 from apps.services.models import FormaCobranca, Profissao, Servico, ServicoLink, Setor, TipoServico
+from apps.accounts.master_services import garantir_usuario_master
+from apps.services.permissions import servicos_disponiveis_para_usuario
 
 
 class LinksQrCodeTests(TestCase):
@@ -95,6 +97,11 @@ class LinksQrCodeTests(TestCase):
         resposta = self.client.post(reverse('painel:servico_criar'), self.dados_cadastro(prestador_tipo=Servico.PrestadorTipo.EMPRESA, empresa=self.empresa.pk))
         self.assertEqual(resposta.status_code, 200)
         self.assertFalse(Servico.objects.filter(titulo='Novo serviço persistente').exists())
+
+    def test_master_ve_todos_servicos_e_comum_mantem_escopo(self):
+        master, _ = garantir_usuario_master(email='master-services@example.com', senha='SenhaSegura#2026')
+        self.assertIn(self.servico, servicos_disponiveis_para_usuario(master))
+        self.assertNotIn(self.servico, servicos_disponiveis_para_usuario(self.terceiro))
 
     def test_pj_sem_empresa_rejeitado(self):
         self.client.force_login(self.usuario)

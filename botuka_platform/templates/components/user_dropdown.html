@@ -1,48 +1,15 @@
-{% load gestao_extras %}
-
-<div class="dropdown">
-  <button class="user-avatar-btn" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Abrir menu do usuário">
-    {% if request.user.foto %}
-      <img src="{{ request.user.foto.url }}" alt="{{ request.user.get_full_name|default:request.user.email }}">
-    {% else %}
-      <span>{{ request.user.first_name|default:request.user.username|first|upper }}</span>
-    {% endif %}
-  </button>
-  <div class="dropdown-menu dropdown-menu-end botuka-user-menu shadow">
-    <div class="user-menu-head">
-      <div class="user-menu-avatar">
-        {% if request.user.foto %}
-          <img src="{{ request.user.foto.url }}" alt="{{ request.user.get_full_name|default:request.user.email }}">
-        {% else %}
-          <span>{{ request.user.first_name|default:request.user.username|first|upper }}</span>
-        {% endif %}
-      </div>
-      <div class="min-w-0">
-        <strong>{{ request.user.get_full_name|default:request.user.username }}</strong>
-        <small>{{ request.user.email }}</small>
-        <small>{{ request.user.perfil|default:"Sem perfil" }}</small>
-      </div>
-    </div>
-    <div class="dropdown-divider"></div>
-    <a class="dropdown-item" href="{% url 'painel:perfil' %}"><i class="bi bi-person"></i> Meu perfil</a>
-    <a class="dropdown-item" href="{% url 'painel:dashboard' %}"><i class="bi bi-speedometer2"></i> Dashboard</a>
-    <a class="dropdown-item" href="{% url 'painel:empresas_lista' %}"><i class="bi bi-buildings"></i> Minhas empresas</a>
-    <a class="dropdown-item" href="{% url 'painel:publicacoes_lista' %}"><i class="bi bi-megaphone"></i> Publicações</a>
-    <a class="dropdown-item" href="{% url 'painel:rede_social' %}"><i class="bi bi-share"></i> Rede social</a>
-    <a class="dropdown-item" href="{% url 'painel:eventos_lista' %}"><i class="bi bi-calendar-event"></i> Eventos</a>
-    <a class="dropdown-item" href="{% url 'painel:mensagens' %}"><i class="bi bi-chat-dots"></i> Mensagens</a>
-    {% for group in painel_module_groups %}
-      <div class="dropdown-divider"></div>
-      <h2 class="dropdown-header">{{ group.label }}</h2>
-      {% for item in group.items %}
-        <a class="dropdown-item" href="{{ item.url }}"><i class="bi {{ item.icon }}"></i> {{ item.label }}</a>
-      {% endfor %}
-    {% endfor %}
-    <a class="dropdown-item" href="{% url 'painel:configuracoes' %}"><i class="bi bi-gear"></i> Configurações</a>
-    {% if request.user.is_staff or request.user.is_superuser or request.user|has_perm_code:"gestao.acessar" %}
-      <a class="dropdown-item" href="{% url 'gestao:dashboard' %}"><i class="bi bi-shield-lock"></i> Gestão</a>
-    {% endif %}
-    <div class="dropdown-divider"></div>
-    <form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button class="dropdown-item" type="submit"><i class="bi bi-box-arrow-right"></i> Sair</button></form>
-  </div>
-</div>
+<button
+  class="user-avatar-btn"
+  type="button"
+  data-navigation-open
+  aria-expanded="false"
+  aria-controls="userNavigationModal"
+  aria-haspopup="dialog"
+  aria-label="Abrir navegação da conta"
+>
+  {% if request.user.foto %}
+    <img src="{{ request.user.foto.url }}" alt="">
+  {% else %}
+    <span aria-hidden="true">{{ request.user.first_name|default:request.user.username|first|upper }}</span>
+  {% endif %}
+</button>

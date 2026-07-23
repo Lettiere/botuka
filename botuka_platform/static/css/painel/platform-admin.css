@@ -1,0 +1,17 @@
+.platform-admin{padding:2rem 1rem 4rem}
+.platform-admin__header{align-items:center;display:flex;gap:1rem;justify-content:space-between;margin-bottom:1.5rem}
+.platform-admin__header h1{font-size:clamp(1.7rem,4vw,2.6rem);margin:.2rem 0}
+.platform-admin__eyebrow{color:#806500;font-size:.75rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase}
+.platform-admin__metrics{display:grid;gap:1rem;grid-template-columns:repeat(3,minmax(0,1fr));margin-bottom:1rem}
+.platform-admin__metrics article,.platform-admin__panel,.platform-admin__modules{background:var(--surface,#fff);border:1px solid var(--border-color,#e5e7eb);border-radius:1rem;padding:1.25rem}
+.platform-admin__metrics strong{display:block;font-size:2rem}.platform-admin__metrics span{color:var(--text-muted,#667085)}
+.platform-admin__modules{display:grid;gap:.75rem;grid-template-columns:repeat(4,minmax(0,1fr));margin-bottom:1rem}
+.platform-admin__modules a{background:var(--surface-soft,#f5f7fa);border-radius:.7rem;color:inherit;font-weight:700;padding:1rem;text-decoration:none}
+.platform-admin__columns{display:grid;gap:1rem;grid-template-columns:repeat(2,minmax(0,1fr));margin-bottom:1rem}
+.platform-admin__panel h2{font-size:1.15rem;margin:0 0 1rem}.platform-admin__panel ul{display:grid;gap:.7rem;list-style:none;margin:0;padding:0}
+.platform-admin__panel li{align-items:center;border-bottom:1px solid var(--border-color,#e5e7eb);display:flex;gap:1rem;justify-content:space-between;padding-bottom:.7rem}
+.platform-admin__panel li span{color:var(--text-muted,#667085);font-size:.85rem}
+.platform-admin__inline-form{display:flex;gap:.6rem;margin-bottom:1rem}
+.platform-admin__search{display:flex;gap:.75rem;margin-bottom:1rem}.platform-admin__table-wrap{overflow-x:auto}.platform-admin__table-wrap table{min-width:760px}.platform-admin__table-wrap td small{color:var(--text-muted,#667085);display:block}.platform-admin__danger{border-color:#f1aeb5}
+@media (max-width:800px){.platform-admin__modules{grid-template-columns:repeat(2,1fr)}.platform-admin__columns{grid-template-columns:1fr}}
+@media (max-width:520px){.platform-admin__header,.platform-admin__inline-form{align-items:stretch;flex-direction:column}.platform-admin__metrics{grid-template-columns:1fr}.platform-admin__modules{grid-template-columns:1fr}}

@@ -1,0 +1,19 @@
+{% extends "painel/base.html" %}
+{% load static %}
+{% block title %}Institucional — {{ empresa.nome_exibicao }}{% endblock %}
+{% block styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/painel/platform-admin.css' %}">{% endblock %}
+{% block content %}
+<main class="platform-admin container">
+  <header class="platform-admin__header"><div><span class="platform-admin__eyebrow">Autorização institucional</span><h1>{{ empresa.nome_exibicao }}</h1></div><a class="btn btn-outline-secondary" href="{% url 'painel:empresa_detalhe' empresa.uuid %}">Voltar</a></header>
+  <div class="platform-admin__columns">
+    <section class="platform-admin__panel"><h2>Identidade e selo</h2>
+      <form method="post">{% csrf_token %}<input type="hidden" name="operacao" value="identidade">{{ form.as_p }}<button class="btn btn-primary" type="submit">Salvar autorização</button></form>
+    </section>
+    <section class="platform-admin__panel"><h2>Capacidades</h2>
+      <form class="platform-admin__inline-form" method="post">{% csrf_token %}<input type="hidden" name="operacao" value="conceder"><select class="form-control" name="capacidade" required>{% for capacidade in capacidades %}<option value="{{ capacidade.codigo }}">{{ capacidade.nome }}</option>{% endfor %}</select><button class="btn btn-primary" type="submit">Conceder</button></form>
+      <ul>{% for item in capacidades_concedidas %}<li><strong>{{ item.capacidade.nome }}</strong><form method="post">{% csrf_token %}<input type="hidden" name="operacao" value="revogar"><input type="hidden" name="capacidade" value="{{ item.capacidade.codigo }}"><button class="btn btn-sm btn-outline-danger" type="submit">Revogar</button></form></li>{% empty %}<li>Nenhuma capacidade ativa.</li>{% endfor %}</ul>
+    </section>
+  </div>
+  <section class="platform-admin__panel"><h2>Histórico de autorização</h2><ul>{% for item in historico %}<li><strong>{{ item.acao }}</strong><span>{{ item.usuario|default:"Sistema" }} · {{ item.criado_em|date:"d/m/Y H:i" }} · {{ item.sucesso|yesno:"sucesso,negado" }}</span></li>{% empty %}<li>Nenhum evento registrado.</li>{% endfor %}</ul></section>
+</main>
+{% endblock %}

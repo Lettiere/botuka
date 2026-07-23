@@ -1,0 +1,26 @@
+{% extends "admin/base_site.html" %}
+{% load i18n static %}
+{% block title %}{% if form.errors %}Erro: {% endif %}Acessar | BOTUKA Admin{% endblock %}
+{% block bodyclass %}{{ block.super }} login{% endblock %}
+{% block nav-sidebar %}{% endblock %}
+{% block nav-breadcrumbs %}{% endblock %}
+{% block content_title %}{% endblock %}
+{% block content %}
+<div class="botuka-login">
+  <section class="botuka-login-card" aria-labelledby="login-title">
+    <div class="botuka-login-brand"><span class="botuka-brand-mark">B</span><span>BOTUKA</span></div>
+    <span class="botuka-kicker">Administração segura</span>
+    <h1 id="login-title">Acesse sua conta</h1>
+    <p>Use suas credenciais administrativas para continuar.</p>
+    {% if form.errors and not form.non_field_errors %}<div class="errornote" role="alert">Confira os campos destacados abaixo.</div>{% endif %}
+    {% for error in form.non_field_errors %}<div class="errornote" role="alert">{{ error }}</div>{% endfor %}
+    {% if user.is_authenticated %}<div class="errornote" role="alert">Sua conta está autenticada, mas não possui autorização para acessar esta área.</div>{% endif %}
+    <form action="{{ app_path }}" method="post" id="login-form">{% csrf_token %}
+      <div class="form-row">{{ form.username.errors }}<label for="{{ form.username.id_for_label }}">Usuário</label><div class="botuka-input-icon"><i class="bi bi-person"></i>{{ form.username }}</div></div>
+      <div class="form-row">{{ form.password.errors }}<label for="{{ form.password.id_for_label }}">Senha</label><div class="botuka-input-icon"><i class="bi bi-lock"></i>{{ form.password }}</div><input type="hidden" name="next" value="{{ next }}"></div>
+      {% url 'admin_password_reset' as password_reset_url %}{% if password_reset_url %}<a class="botuka-forgot" href="{{ password_reset_url }}">Esqueci minhas credenciais</a>{% endif %}
+      <div class="submit-row"><input type="submit" value="Entrar"></div>
+    </form>
+  </section>
+</div>
+{% endblock %}

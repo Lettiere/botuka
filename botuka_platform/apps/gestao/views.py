@@ -7,6 +7,7 @@ from typing import Any
 
 from django.contrib import messages
 from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied
 from django.db.models import Model, Q
 from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
@@ -16,9 +17,11 @@ from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from apps.core.models import ConfiguracaoSistema, ContatoInstitucional, Perfil, Permissao
 from apps.gestao.decorators import (
     DomainPermissionRequiredMixin,
+    master_required,
     permission_required,
     staff_required,
 )
+from apps.accounts.permissions import usuario_e_master
 from apps.gestao.forms import (
     BairroForm,
     CategoriaForm,
@@ -153,6 +156,8 @@ def usuario_desativar(request: HttpRequest, pk: int) -> HttpResponse:
     """Desativa um usuário."""
 
     usuario = get_object_or_404(Usuario, pk=pk)
+    if usuario_e_master(usuario) and not usuario_e_master(request.user):
+        raise PermissionDenied('Apenas MASTER pode desativar outro usuário MASTER.')
     usuario.is_active = False
     usuario.save(update_fields=['is_active', 'atualizado_em'])
     messages.success(request, 'Usuário desativado com sucesso.')
@@ -164,6 +169,8 @@ def usuario_ativar(request: HttpRequest, pk: int) -> HttpResponse:
     """Ativa um usuário."""
 
     usuario = get_object_or_404(Usuario, pk=pk)
+    if usuario_e_master(usuario) and not usuario_e_master(request.user):
+        raise PermissionDenied('Apenas MASTER pode ativar outro usuário MASTER.')
     usuario.is_active = True
     usuario.save(update_fields=['is_active', 'atualizado_em'])
     messages.success(request, 'Usuário ativado com sucesso.')
@@ -219,6 +226,11 @@ class UsuarioCreateView(GestaoCreateView):
     list_url_name = 'gestao:usuarios_lista'
     permission_code = 'usuarios.criar'
 
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['ator'] = self.request.user
+        return kwargs
+
 
 class UsuarioUpdateView(GestaoUpdateView):
     model = Usuario
@@ -227,6 +239,17 @@ class UsuarioUpdateView(GestaoUpdateView):
     section = 'Usuários'
     list_url_name = 'gestao:usuarios_lista'
     permission_code = 'usuarios.editar'
+
+    def dispatch(self, request, *args, **kwargs):
+        alvo = self.get_object()
+        if usuario_e_master(alvo) and not usuario_e_master(request.user):
+            raise PermissionDenied('Apenas MASTER pode alterar outro usuário MASTER.')
+        return super().dispatch(request, *args, **kwargs)
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['ator'] = self.request.user
+        return kwargs
 
 
 class PerfilListView(GestaoListView):
@@ -248,6 +271,12 @@ class PerfilCreateView(GestaoCreateView):
     section = 'Perfis'
     list_url_name = 'gestao:perfis_lista'
     permission_code = 'perfis.gerenciar'
+    master_only = True
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['ator'] = self.request.user
+        return kwargs
 
 
 class PerfilUpdateView(GestaoUpdateView):
@@ -257,9 +286,15 @@ class PerfilUpdateView(GestaoUpdateView):
     section = 'Perfis'
     list_url_name = 'gestao:perfis_lista'
     permission_code = 'perfis.gerenciar'
+    master_only = True
+
+    def get_form_kwargs(self):
+        kwargs = super().get_form_kwargs()
+        kwargs['ator'] = self.request.user
+        return kwargs
 
 
-@permission_required('perfis.gerenciar')
+@master_required
 def perfil_permissoes(request: HttpRequest, pk: int) -> HttpResponse:
     """Permite vincular permissões de domínio a um perfil."""
 
@@ -322,6 +357,7 @@ class PermissaoCreateView(GestaoCreateView):
     section = 'Permissões'
     list_url_name = 'gestao:permissoes_lista'
     permission_code = 'perfis.gerenciar'
+    master_only = True
 
 
 class PermissaoUpdateView(GestaoUpdateView):
@@ -331,6 +367,7 @@ class PermissaoUpdateView(GestaoUpdateView):
     section = 'Permissões'
     list_url_name = 'gestao:permissoes_lista'
     permission_code = 'perfis.gerenciar'
+    master_only = True
 
 
 CRUD_CONFIGS = {
@@ -380,6 +417,7 @@ def build_list_view(slug: str):
         permission_code=permission_code,
         search_fields=search_fields,
         columns=columns,
+        master_only=slug == 'configuracoes',
     )
 
 
@@ -392,6 +430,7 @@ def build_create_view(slug: str):
         section=title,
         list_url_name=f'gestao:{slug}_lista',
         permission_code=CRUD_CREATE_PERMISSIONS.get(slug, permission_code),
+        master_only=slug == 'configuracoes',
     )
 
 
@@ -404,4 +443,5 @@ def build_update_view(slug: str):
         section=title,
         list_url_name=f'gestao:{slug}_lista',
         permission_code=CRUD_EDIT_PERMISSIONS.get(slug, permission_code),
+        master_only=slug == 'configuracoes',
     )

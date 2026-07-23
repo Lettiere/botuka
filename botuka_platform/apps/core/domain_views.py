@@ -8,6 +8,7 @@ from django.forms import BaseModelForm, modelform_factory
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 
+from apps.accounts.permissions import usuario_tem_permissao
 from .domain import auditar
 
 
@@ -36,7 +37,7 @@ def crud_views(
             f"{permission_prefix}.gerenciar",
             *permissions.get(action, ()),
         }
-        return any(user.tem_permissao(code) for code in codes)
+        return any(usuario_tem_permissao(user, code) for code in codes)
 
     def scoped(user):
         queryset = model.objects.all()

@@ -1,1 +1,52 @@
-{% extends '_layout/platform/platform_home.html' %}{% block content %}<main class="container py-4"><article><h1>{{ artigo.titulo }}</h1><p>{{ artigo.subtitulo }}</p><small>Por {{ artigo.autor }} · {{ artigo.publicado_em }}</small>{{ artigo.conteudo|linebreaks }}{% for b in artigo.blocos.all %}<section><h2>{{ b.titulo }}</h2>{{ b.conteudo|linebreaks }}{% if b.tipo == 'VIDEO_YOUTUBE' %}<div class="ratio ratio-16x9"><iframe loading="lazy" src="https://www.youtube-nocookie.com/embed/{{ b.identificador_externo }}" allowfullscreen></iframe></div>{% endif %}</section>{% endfor %}<h2>Fontes</h2>{% for f in artigo.fontes.all %}<a href="{{ f.url }}" rel="noopener noreferrer">{{ f.titulo }}</a>{% endfor %}</article><aside>{% for r in relacionados %}<a href="{% url 'news_public:artigo' r.slug %}">{{ r.titulo }}</a>{% endfor %}</aside></main>{% endblock %}
+{% extends "_layout/platform/public.html" %}
+{% load static %}
+
+{% block public_styles %}
+<link rel="stylesheet" href="{% static 'news/css/artigo-detalhe.css' %}">
+{% endblock %}
+
+{% block public_content %}
+<div class="article-reading-progress" data-reading-progress aria-hidden="true"><span></span></div>
+<main id="conteudo-principal" class="article-detail-page">
+  <div class="article-detail-page__container">
+    {% include "publico/news/includes/breadcrumb_news.html" %}
+    {% include "publico/includes/ad_slot.html" with format="leaderboard" %}
+
+    <div class="article-detail-page__grid">
+      <article class="article-detail-page__main" data-article-content>
+        {% include "publico/news/partials/artigo_header.html" %}
+        {% include "publico/news/partials/artigo_compartilhamento.html" %}
+
+        {% if artigo.imagem_capa %}
+          <figure class="article-hero-image">
+            <img src="{{ artigo.imagem_capa.url }}" alt="{{ artigo.titulo }}" width="1200" height="675" loading="eager" fetchpriority="high" decoding="async">
+            {% if artigo.credito_imagem %}<figcaption>Imagem: {{ artigo.credito_imagem }}</figcaption>{% endif %}
+          </figure>
+        {% endif %}
+
+        <nav class="article-toc" data-article-toc hidden aria-label="Índice da matéria">
+          <button type="button" data-toc-toggle aria-expanded="true" aria-controls="article-toc-list">
+            Nesta matéria <i class="bi bi-chevron-up" aria-hidden="true"></i>
+          </button>
+          <ol id="article-toc-list" data-toc-list></ol>
+        </nav>
+
+        {% include "publico/news/partials/artigo_conteudo.html" %}
+        {% include "publico/includes/ad_slot.html" with format="in-content" %}
+        {% include "publico/news/partials/artigo_fontes.html" %}
+        {% include "publico/news/partials/artigo_tags.html" %}
+        {% include "publico/news/partials/artigo_autor.html" %}
+        {% include "publico/news/partials/artigo_comentarios.html" %}
+      </article>
+
+      {% include "publico/news/partials/artigo_sidebar.html" %}
+    </div>
+
+    {% include "publico/news/partials/artigo_relacionados.html" %}
+  </div>
+</main>
+{% endblock %}
+
+{% block public_scripts %}
+<script src="{% static 'news/js/artigo-detalhe.js' %}" defer></script>
+{% endblock %}

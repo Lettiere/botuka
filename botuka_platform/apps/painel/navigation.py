@@ -1,10 +1,11 @@
 """Navegação do painel derivada das permissões reais de domínio."""
 
 from django.urls import reverse
+from apps.accounts.permissions import usuario_tem_permissao
 
 
 def _can(user, *codes):
-    return any(user.tem_permissao(code) for code in codes)
+    return any(usuario_tem_permissao(user, code) for code in codes)
 
 
 def painel_navigation(request):
@@ -18,7 +19,7 @@ def painel_navigation(request):
     if _can(user, "news.gerenciar", "news.criar", "news.editar", "news.revisar", "news.publicar"):
         content.append({"label": "BOTUKA News", "icon": "bi-newspaper", "url": reverse("painel:news_dashboard")})
     if _can(user, "media.gerenciar", "media.criar", "media.editar", "media.apresentar", "media.transmitir", "media.publicar"):
-        route = "painel:media_transmissao_lista" if user.tem_permissao("media.transmitir") and not _can(user, "media.gerenciar", "media.criar", "media.editar", "media.apresentar", "media.publicar") else "painel:ytv_dashboard"
+        route = "painel:media_transmissao_lista" if usuario_tem_permissao(user, "media.transmitir") and not _can(user, "media.gerenciar", "media.criar", "media.editar", "media.apresentar", "media.publicar") else "painel:ytv_dashboard"
         content.append({"label": "YTv Botuka", "icon": "bi-play-btn-fill", "url": reverse(route)})
     if _can(user, "government.gerenciar", "government.criar", "government.editar", "government.revisar", "government.publicar"):
         content.append({"label": "Prefeitura", "icon": "bi-bank2", "url": reverse("painel:government_dashboard")})
@@ -39,7 +40,7 @@ def painel_navigation(request):
         "sports.clube.gerenciar", "sports.equipe.gerenciar", "sports.disputa.arbitrar",
         "sports.disputa.registrar", "sports.atleta.editar",
     ):
-        route = "painel:sports_atleta_lista" if user.tem_permissao("sports.atleta.editar") and not _can(
+        route = "painel:sports_atleta_lista" if usuario_tem_permissao(user, "sports.atleta.editar") and not _can(
             user, "sports.gerenciar", "sports.criar", "sports.editar", "sports.publicar",
             "sports.clube.gerenciar", "sports.equipe.gerenciar", "sports.disputa.arbitrar",
             "sports.disputa.registrar",

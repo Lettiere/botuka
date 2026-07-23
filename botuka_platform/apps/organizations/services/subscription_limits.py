@@ -5,7 +5,10 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Q, Sum
 from django.utils import timezone
 
-from apps.organizations.models import Assinatura, ContratacaoEmpresaAdicional, Empresa, Plano
+from apps.organizations.models import (
+    Assinatura, ContratacaoEmpresaAdicional, Empresa, Plano,
+    UsuarioLimitePersonalizado,
+)
 from apps.organizations.permissions import usuario_pode_gerenciar_empresa
 
 
@@ -31,6 +34,15 @@ class ResultadoLimite:
         return self.total
 
 
+@dataclass(frozen=True)
+class LimitesComerciais:
+    limite_empresas: int | None
+    limite_servicos: int | None
+    plano_codigo: str
+    personalizado: bool
+    beneficio: UsuarioLimitePersonalizado | None = None
+
+
 def obter_assinatura_vigente(usuario):
     agora = timezone.now()
     return (Assinatura.objects.select_related('plano', 'empresa_contratante')
@@ -46,7 +58,16 @@ def _plano_contexto(usuario):
     return assinatura, assinatura.plano if assinatura else None
 
 
-def obter_limite_servicos(usuario):
+def obter_limite_personalizado_vigente(usuario):
+    if not usuario or not getattr(usuario, 'is_authenticated', False):
+        return None
+    agora = timezone.now()
+    return (UsuarioLimitePersonalizado.objects.filter(
+        usuario=usuario, ativo=True, inicio__lte=agora,
+    ).filter(Q(fim__isnull=True) | Q(fim__gt=agora)).first())
+
+
+def _obter_limite_servicos_plano(usuario):
     assinatura, plano = _plano_contexto(usuario)
     if not plano:
         return LIMITE_SERVICOS_GRATUITO
@@ -55,6 +76,13 @@ def obter_limite_servicos(usuario):
     if assinatura.limite_servicos_contratado is not None:
         return assinatura.limite_servicos_contratado
     return plano.limite_servicos if plano.limite_servicos is not None else LIMITE_SERVICOS_GRATUITO
+
+
+def obter_limite_servicos(usuario):
+    personalizado = obter_limite_personalizado_vigente(usuario)
+    if personalizado:
+        return None if personalizado.servicos_ilimitados else personalizado.limite_servicos
+    return _obter_limite_servicos_plano(usuario)
 
 
 def total_servicos_utilizados(usuario):
@@ -121,6 +149,13 @@ def _slots_empresas_adicionais(assinatura):
 
 
 def obter_limite_empresas(usuario):
+    personalizado = obter_limite_personalizado_vigente(usuario)
+    if personalizado:
+        return None if personalizado.empresas_ilimitadas else personalizado.limite_empresas
+    return _obter_limite_empresas_plano(usuario)
+
+
+def _obter_limite_empresas_plano(usuario):
     assinatura, plano = _plano_contexto(usuario)
     inclusas = plano.empresas_inclusas if plano else EMPRESAS_INCLUSAS_PADRAO
     if plano and plano.ilimitado_empresas:
@@ -150,3 +185,45 @@ def bloquear_e_validar_criacao_empresa(usuario):
     if not resultado.permitido:
         raise LimitePlanoExcedido(resultado.motivo)
     return resultado
+
+
+class LimiteUsuarioService:
+    """Fonte única dos limites comerciais efetivos do usuário."""
+
+    @staticmethod
+    def obter_limites(usuario):
+        assinatura = obter_assinatura_vigente(usuario)
+        beneficio = obter_limite_personalizado_vigente(usuario)
+        return LimitesComerciais(
+            limite_empresas=obter_limite_empresas(usuario),
+            limite_servicos=obter_limite_servicos(usuario),
+            plano_codigo=assinatura.plano.codigo if assinatura else Plano.Codigo.GRATUITO,
+            personalizado=beneficio is not None,
+            beneficio=beneficio,
+        )
+
+    @staticmethod
+    def obter_limites_do_plano(usuario):
+        assinatura = obter_assinatura_vigente(usuario)
+        return LimitesComerciais(
+            limite_empresas=_obter_limite_empresas_plano(usuario),
+            limite_servicos=_obter_limite_servicos_plano(usuario),
+            plano_codigo=assinatura.plano.codigo if assinatura else Plano.Codigo.GRATUITO,
+            personalizado=False,
+        )
+
+    @staticmethod
+    def pode_criar_empresa(usuario):
+        return usuario_pode_criar_empresa(usuario)
+
+    @staticmethod
+    def pode_criar_servico(usuario, prestador_tipo=None, empresa=None):
+        return usuario_pode_criar_servico(usuario, prestador_tipo, empresa)
+
+    @staticmethod
+    def empresas_restantes(usuario):
+        return usuario_pode_criar_empresa(usuario).restante
+
+    @staticmethod
+    def servicos_restantes(usuario, prestador_tipo=None, empresa=None):
+        return usuario_pode_criar_servico(usuario, prestador_tipo, empresa).restante

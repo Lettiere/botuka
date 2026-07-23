@@ -1,0 +1,8 @@
+<nav class="article-breadcrumb" aria-label="Navegação estrutural">
+  <ol>
+    <li><a href="{% url 'home' %}">Início</a></li>
+    <li><a href="{% url 'news_public:home' %}">Notícias</a></li>
+    <li><a href="{% url 'news_public:categoria' artigo.categoria.slug %}">{{ artigo.categoria.nome }}</a></li>
+    <li aria-current="page"><span>{{ artigo.titulo|truncatechars:55 }}</span></li>
+  </ol>
+</nav>

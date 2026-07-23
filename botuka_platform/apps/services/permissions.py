@@ -4,14 +4,11 @@ from django.db.models import Q, QuerySet
 
 from apps.organizations.permissions import usuario_pode_publicar_por_empresa
 from apps.services.models import Servico
+from apps.accounts.permissions import usuario_e_master
 
 
 def _usuario_admin_global(usuario) -> bool:
-    return bool(
-        usuario
-        and usuario.is_authenticated
-        and (usuario.is_staff or usuario.is_superuser)
-    )
+    return usuario_e_master(usuario)
 
 
 def servicos_disponiveis_para_usuario(usuario) -> QuerySet[Servico]:

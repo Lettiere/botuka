@@ -5,12 +5,14 @@ from __future__ import annotations
 from functools import wraps
 from io import BytesIO
 import re
+from datetime import timedelta
 
 import qrcode
 from PIL import Image, UnidentifiedImageError
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
+from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.db.models import Count, Q
@@ -20,6 +22,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.accounts.permissions import usuario_e_master, usuario_tem_permissao
 from apps.painel.forms import (
     ApresentacaoUsuarioForm,
     ContatoUsuarioForm,
@@ -30,10 +33,12 @@ from apps.painel.forms import (
     EmpresaDocumentoForm,
     EmpresaEnderecoForm,
     EmpresaForm,
+    EmpresaInstitucionalForm,
     EmpresaLinkForm,
     EmpresaSolicitacaoAnaliseForm,
     EmpresaUsuarioForm,
     FotoPerfilForm,
+    UsuarioLimitePersonalizadoForm,
     ServicoAreaForm,
     ServicoCaracteristicaForm,
     ServicoForm,
@@ -43,7 +48,17 @@ from apps.painel.forms import (
 from apps.core.models import Auditoria
 from apps.integrations.cnpj.exceptions import CNPJError
 from apps.integrations.cnpj.services import consultar_cnpj
-from apps.organizations.models import Empresa, EmpresaCapacidade, EmpresaEndereco, EmpresaLink, EmpresaSolicitacao, EmpresaUsuario
+from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade, EmpresaEndereco, EmpresaLink, EmpresaSolicitacao, EmpresaUsuario, UsuarioLimitePersonalizado
+from apps.organizations.plans import (
+    LimiteUsuarioService, obter_assinatura_vigente,
+    total_empresas_ativas, total_servicos_utilizados,
+)
+from apps.organizations.services.commercial_limits import (
+    salvar_limite_personalizado, suspender_limite_personalizado,
+)
+from apps.organizations.services.institutional import (
+    atualizar_identidade_institucional, conceder_capacidade, revogar_capacidade,
+)
 from apps.organizations.permissions import (
     empresas_disponiveis_para_usuario,
     usuario_pode_editar_empresa,
@@ -87,7 +102,10 @@ def painel_permission_required(codigo: str):
 @login_required
 def dashboard(request: HttpRequest) -> HttpResponse:
     from apps.painel.services import montar_dashboard_conta
-    return render(request, 'painel/dashboard.html', {"dashboard": montar_dashboard_conta(request.user)})
+    return render(request, 'painel/dashboard.html', {
+        "dashboard": montar_dashboard_conta(request.user),
+        "usuario_master": usuario_e_master(request.user),
+    })
 
 
 @login_required
@@ -218,7 +236,7 @@ def empresa_criar(request: HttpRequest) -> HttpResponse:
             request.POST,
             request.FILES,
             usuario=request.user,
-            pode_alterar_status=request.user.is_staff or request.user.is_superuser,
+            pode_alterar_status=usuario_e_master(request.user),
         )
 
         if form.is_valid():
@@ -279,8 +297,167 @@ def empresa_detalhe(request: HttpRequest, uuid) -> HttpResponse:
             'pode_editar': usuario_pode_editar_empresa(request.user, empresa),
             'pode_gerenciar': usuario_pode_gerenciar_empresa(request.user, empresa),
             'pode_gerenciar_equipe': usuario_pode_gerenciar_equipe(request.user, empresa),
+            'pode_institucional': (
+                usuario_e_master(request.user)
+                or usuario_tem_permissao(request.user, 'institucional.gerenciar')
+            ),
         },
     )
+
+
+@login_required
+def administracao_plataforma(request: HttpRequest) -> HttpResponse:
+    if not usuario_e_master(request.user):
+        raise PermissionDenied
+    Usuario = get_user_model()
+    agora = timezone.now()
+    beneficios_vigentes = UsuarioLimitePersonalizado.objects.filter(
+        ativo=True, inicio__lte=agora,
+    ).filter(Q(fim__isnull=True) | Q(fim__gt=agora))
+    beneficios = list(beneficios_vigentes.select_related('usuario'))
+    empresas_extras = 0
+    servicos_extras = 0
+    for beneficio in beneficios:
+        base = LimiteUsuarioService.obter_limites_do_plano(beneficio.usuario)
+        if not beneficio.empresas_ilimitadas and beneficio.limite_empresas is not None:
+            empresas_extras += max(beneficio.limite_empresas - (base.limite_empresas or 0), 0)
+        if not beneficio.servicos_ilimitados and beneficio.limite_servicos is not None:
+            servicos_extras += max(beneficio.limite_servicos - (base.limite_servicos or 0), 0)
+    return render(request, 'painel/administracao/index.html', {
+        'total_usuarios': Usuario.objects.count(),
+        'total_organizacoes': Empresa.objects.count(),
+        'total_capacidades': Capacidade.objects.filter(ativo=True).count(),
+        'auditorias': Auditoria.objects.select_related('usuario')[:20],
+        'organizacoes': Empresa.objects.order_by('-atualizado_em')[:12],
+        'limites_personalizados': beneficios_vigentes.count(),
+        'empresas_extras': empresas_extras,
+        'servicos_extras': servicos_extras,
+        'limites_expirando': UsuarioLimitePersonalizado.objects.filter(
+            ativo=True, fim__gt=agora,
+            fim__lte=agora + timedelta(days=30),
+        ).count(),
+        'limites_vencidos': UsuarioLimitePersonalizado.objects.filter(
+            fim__lte=agora,
+        ).count(),
+    })
+
+
+@login_required
+def limites_comerciais_lista(request: HttpRequest) -> HttpResponse:
+    if not usuario_e_master(request.user):
+        raise PermissionDenied
+    Usuario = get_user_model()
+    usuarios = Usuario.objects.select_related(
+        'perfil', 'limite_comercial_personalizado',
+    ).order_by('first_name', 'username')
+    termo = request.GET.get('q', '').strip()
+    if termo:
+        usuarios = usuarios.filter(
+            Q(first_name__icontains=termo) | Q(last_name__icontains=termo)
+            | Q(username__icontains=termo) | Q(email__icontains=termo)
+        )
+    pagina = Paginator(usuarios, 30).get_page(request.GET.get('page'))
+    linhas = []
+    for usuario in pagina.object_list:
+        assinatura = obter_assinatura_vigente(usuario)
+        limites = LimiteUsuarioService.obter_limites(usuario)
+        linhas.append({
+            'usuario': usuario,
+            'plano': assinatura.plano.nome if assinatura else 'Gratuito',
+            'empresas': total_empresas_ativas(usuario),
+            'servicos': total_servicos_utilizados(usuario),
+            'limites': limites,
+        })
+    return render(request, 'painel/administracao/limites/lista.html', {
+        'pagina': pagina, 'linhas': linhas, 'termo': termo,
+    })
+
+
+@login_required
+def limite_comercial_editar(request: HttpRequest, uuid) -> HttpResponse:
+    if not usuario_e_master(request.user):
+        raise PermissionDenied
+    Usuario = get_user_model()
+    usuario = get_object_or_404(Usuario, uuid=uuid)
+    limite = UsuarioLimitePersonalizado.objects.filter(usuario=usuario).first()
+    instancia = limite or UsuarioLimitePersonalizado(
+        usuario=usuario, concedido_por=request.user,
+    )
+    form = UsuarioLimitePersonalizadoForm(request.POST or None, instance=instancia)
+    if request.method == 'POST':
+        if request.POST.get('operacao') == 'suspender' and limite:
+            suspender_limite_personalizado(
+                executor=request.user, usuario=usuario,
+                motivo=request.POST.get('motivo_suspensao', ''),
+                request=request,
+            )
+            messages.success(request, 'Limite personalizado suspenso.')
+            return redirect('painel:limites_comerciais_lista')
+        if form.is_valid():
+            salvar_limite_personalizado(
+                executor=request.user, usuario=usuario,
+                dados=form.cleaned_data, request=request,
+            )
+            messages.success(request, 'Limites comerciais atualizados.')
+            return redirect('painel:limites_comerciais_lista')
+    assinatura = obter_assinatura_vigente(usuario)
+    efetivos = LimiteUsuarioService.obter_limites(usuario)
+    return render(request, 'painel/administracao/limites/editar.html', {
+        'usuario_limite': usuario, 'limite': limite, 'form': form,
+        'plano': assinatura.plano if assinatura else None,
+        'efetivos': efetivos,
+        'empresas_utilizadas': total_empresas_ativas(usuario),
+        'servicos_utilizados': total_servicos_utilizados(usuario),
+    })
+
+
+@login_required
+def empresa_institucional(request: HttpRequest, uuid) -> HttpResponse:
+    empresa = get_object_or_404(Empresa, uuid=uuid)
+    autorizado = (
+        usuario_e_master(request.user)
+        or usuario_tem_permissao(request.user, 'institucional.gerenciar')
+        or usuario_tem_permissao(request.user, 'capacidades.gerenciar')
+    )
+    if not autorizado:
+        raise PermissionDenied
+
+    form = EmpresaInstitucionalForm(request.POST or None, instance=empresa)
+    if request.method == 'POST':
+        operacao = request.POST.get('operacao', 'identidade')
+        if operacao == 'identidade' and form.is_valid():
+            atualizar_identidade_institucional(
+                executor=request.user, empresa=empresa,
+                dados=form.cleaned_data, request=request,
+            )
+            messages.success(request, 'Identidade institucional atualizada.')
+            return redirect('painel:empresa_institucional', uuid=empresa.uuid)
+        codigo = request.POST.get('capacidade', '').strip().upper()
+        if operacao == 'conceder' and codigo:
+            conceder_capacidade(
+                executor=request.user, empresa=empresa, codigo=codigo, request=request,
+            )
+            messages.success(request, 'Capacidade concedida.')
+            return redirect('painel:empresa_institucional', uuid=empresa.uuid)
+        if operacao == 'revogar' and codigo:
+            revogar_capacidade(
+                executor=request.user, empresa=empresa, codigo=codigo,
+                motivo=request.POST.get('motivo', ''), request=request,
+            )
+            messages.success(request, 'Capacidade revogada.')
+            return redirect('painel:empresa_institucional', uuid=empresa.uuid)
+
+    return render(request, 'painel/empresas/institucional.html', {
+        'empresa': empresa,
+        'form': form,
+        'capacidades': Capacidade.objects.filter(ativo=True).order_by('nome'),
+        'capacidades_concedidas': EmpresaCapacidade.objects.filter(
+            empresa=empresa, ativo=True,
+        ).select_related('capacidade'),
+        'historico': Auditoria.objects.filter(
+            organizacao_uuid=empresa.uuid,
+        ).select_related('usuario')[:30],
+    })
 
 
 @login_required
@@ -339,13 +516,13 @@ def empresa_equipe(request: HttpRequest, uuid) -> HttpResponse:
                 messages.success(request, 'Vínculo atualizado com sucesso.')
             return redirect('painel:empresa_equipe', uuid=empresa.uuid)
 
-        form = EmpresaUsuarioForm(request.POST, empresa=empresa)
+        form = EmpresaUsuarioForm(request.POST, empresa=empresa, ator=request.user)
         if form.is_valid():
             form.save()
             messages.success(request, 'Usuário vinculado à empresa com sucesso.')
             return redirect('painel:empresa_equipe', uuid=empresa.uuid)
     else:
-        form = EmpresaUsuarioForm(empresa=empresa)
+        form = EmpresaUsuarioForm(empresa=empresa, ator=request.user)
 
     vinculos = empresa.usuarios_vinculados.select_related('usuario').order_by(
         '-proprietario',
@@ -509,7 +686,7 @@ def empresa_solicitacoes(request: HttpRequest, uuid) -> HttpResponse:
 
 @login_required
 def empresa_solicitacoes_lista(request: HttpRequest) -> HttpResponse:
-    if not (request.user.is_staff or request.user.is_superuser):
+    if not usuario_tem_permissao(request.user, 'empresas.gerenciar'):
         raise PermissionDenied
 
     solicitacoes = EmpresaSolicitacao.objects.select_related('empresa', 'usuario_solicitante').order_by('-criado_em')
@@ -518,7 +695,7 @@ def empresa_solicitacoes_lista(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def empresa_solicitacao_analisar(request: HttpRequest, pk: int) -> HttpResponse:
-    if not (request.user.is_staff or request.user.is_superuser):
+    if not usuario_tem_permissao(request.user, 'empresas.gerenciar'):
         raise PermissionDenied
 
     solicitacao = get_object_or_404(EmpresaSolicitacao, pk=pk)

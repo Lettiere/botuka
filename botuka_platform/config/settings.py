@@ -178,6 +178,9 @@ TEMPLATES = [
         'DIRS': [BASE_DIR / 'templates'],
         'APP_DIRS': True,
         'OPTIONS': {
+            'libraries': {
+                'botuka_admin': 'apps.core.templatetags.botuka_admin',
+            },
             'context_processors': [
                 'django.template.context_processors.request',
                 'django.contrib.auth.context_processors.auth',
@@ -267,7 +270,9 @@ USE_TZ = True
 # Arquivos Estáticos
 # =============================================================================
 
-STATIC_URL = 'static/'
+# Deve ser absoluto: caminhos relativos quebram CSS/JS em rotas aninhadas,
+# como /empresas/, /servicos/ e páginas de detalhe.
+STATIC_URL = '/static/'
 
 STATICFILES_DIRS = [
     BASE_DIR / 'static',

@@ -13,6 +13,8 @@ from apps.organizations.plans import obter_limite_empresas, total_empresas_ativa
 from .models import (Candidatura, Curriculo, CurriculoPrivacidade, Experiencia,
                      Formacao, Curso, Habilidade, Idioma, Projeto, Vaga)
 from .services import calcular_progresso, curriculo_publico
+from apps.accounts.master_services import garantir_usuario_master
+from apps.organizations.permissions import empresas_disponiveis_para_usuario
 
 
 class BaseRecruitmentTests(TestCase):
@@ -134,6 +136,32 @@ class CurriculoCandidaturaTests(BaseRecruitmentTests):
     def test_curriculo_de_terceiro_bloqueado(self):
         vaga=self.vaga(status=Vaga.Status.PUBLICADA); outro=Curriculo.objects.create(usuario=self.outro)
         with self.assertRaises(ValidationError): Candidatura.objects.create(vaga=vaga, usuario=self.dono, curriculo=outro)
+
+    def test_candidatura_sem_curriculo_publicado_abre_assistente(self):
+        vaga = self.vaga(status=Vaga.Status.PUBLICADA)
+        self.client.force_login(self.outro)
+        response = self.client.get(reverse('recruitment_public:candidatar', args=[vaga.slug]))
+        self.assertRedirects(response, reverse('painel:curriculo_novo'))
+        self.assertEqual(self.client.session['candidatura_pendente_slug'], vaga.slug)
+
+    def test_candidatura_com_curriculo_incompleto_retorna_a_etapa(self):
+        vaga = self.vaga(status=Vaga.Status.PUBLICADA)
+        self.curriculo.etapa_atual = 4
+        self.curriculo.save(update_fields=['etapa_atual'])
+        self.client.force_login(self.dono)
+        response = self.client.get(reverse('recruitment_public:candidatar', args=[vaga.slug]))
+        self.assertRedirects(response, reverse('painel:curriculo_etapa', args=[4]))
+
+    def test_master_ve_empresas_vagas_curriculos_e_candidaturas(self):
+        master, _ = garantir_usuario_master(email='master-recruitment@example.com', senha='SenhaSegura#2026')
+        vaga = self.vaga(status=Vaga.Status.PUBLICADA)
+        Candidatura.objects.create(vaga=vaga, usuario=self.dono, curriculo=self.curriculo)
+        self.assertIn(self.empresa, empresas_disponiveis_para_usuario(master))
+        self.assertNotIn(self.empresa_outro, empresas_disponiveis_para_usuario(self.dono))
+        self.client.force_login(master)
+        self.assertContains(self.client.get(reverse('painel:vagas_lista')), vaga.titulo)
+        self.assertContains(self.client.get(reverse('admin:recruitment_curriculo_changelist')), self.curriculo.usuario.username)
+        self.assertContains(self.client.get(reverse('admin:recruitment_candidatura_changelist')), vaga.titulo)
 
 
 class CurriculumWizardTests(BaseRecruitmentTests):

@@ -10,7 +10,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 
 from apps.core.models import EnderecoCore, PessoaDocumento
 from apps.organizations.models import Empresa, EmpresaLink, EmpresaUsuario
-from apps.organizations.models import EmpresaCapacidade, EmpresaSolicitacao
+from apps.organizations.models import EmpresaCapacidade, EmpresaSolicitacao, UsuarioLimitePersonalizado
 from apps.organizations.permissions import empresas_disponiveis_para_usuario
 from apps.services.models import (
     AreaProfissional,
@@ -317,8 +317,9 @@ class EmpresaUsuarioForm(forms.ModelForm):
             'ativo',
         ]
 
-    def __init__(self, *args: object, empresa=None, **kwargs: object) -> None:
+    def __init__(self, *args: object, empresa=None, ator=None, **kwargs: object) -> None:
         self.empresa = empresa
+        self.ator = ator
         super().__init__(*args, **kwargs)
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
@@ -329,6 +330,24 @@ class EmpresaUsuarioForm(forms.ModelForm):
         if self.instance.pk:
             self.fields['email'].initial = self.instance.usuario.email
             self.fields['email'].disabled = True
+
+        from apps.accounts.permissions import usuario_e_master
+        if not usuario_e_master(self.ator):
+            bloqueados = {EmpresaUsuario.Funcao.ADMINISTRADOR_INSTITUCIONAL}
+            self.fields['funcao'].choices = [
+                choice for choice in self.fields['funcao'].choices
+                if choice[0] not in bloqueados
+            ]
+
+    def clean_funcao(self):
+        from apps.accounts.permissions import usuario_e_master
+        funcao = self.cleaned_data['funcao']
+        if (
+            funcao == EmpresaUsuario.Funcao.ADMINISTRADOR_INSTITUCIONAL
+            and not usuario_e_master(self.ator)
+        ):
+            raise forms.ValidationError('Somente MASTER pode atribuir este papel.')
+        return funcao
 
     def clean_email(self) -> str:
         email = self.cleaned_data['email'].strip().lower()
@@ -365,6 +384,48 @@ class EmpresaUsuarioForm(forms.ModelForm):
             vinculo.save()
 
         return vinculo
+
+
+class EmpresaInstitucionalForm(forms.ModelForm):
+    """Campos críticos, usados apenas pela tela autorizada da plataforma."""
+
+    class Meta:
+        model = Empresa
+        fields = (
+            'tipo_organizacao', 'status_institucional', 'institucional',
+            'oficial', 'parceira_oficial', 'selo_oficial',
+            'verificada_institucionalmente', 'observacao_institucional',
+        )
+        widgets = {'observacao_institucional': forms.Textarea(attrs={'rows': 4})}
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        for field in self.fields.values():
+            css = 'form-check-input' if isinstance(field.widget, forms.CheckboxInput) else 'form-control'
+            field.widget.attrs.setdefault('class', css)
+
+
+class UsuarioLimitePersonalizadoForm(forms.ModelForm):
+    class Meta:
+        model = UsuarioLimitePersonalizado
+        fields = (
+            'empresas_ilimitadas', 'servicos_ilimitados',
+            'limite_empresas', 'limite_servicos', 'inicio', 'fim',
+            'motivo', 'observacoes', 'ativo',
+        )
+        widgets = {
+            'inicio': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+            'fim': forms.DateTimeInput(attrs={'type': 'datetime-local'}, format='%Y-%m-%dT%H:%M'),
+            'observacoes': forms.Textarea(attrs={'rows': 4}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['inicio'].input_formats = ('%Y-%m-%dT%H:%M',)
+        self.fields['fim'].input_formats = ('%Y-%m-%dT%H:%M',)
+        for field in self.fields.values():
+            css = 'form-check-input' if isinstance(field.widget, forms.CheckboxInput) else 'form-control'
+            field.widget.attrs.setdefault('class', css)
 
 
 class EmpresaCNPJConsultaForm(forms.Form):

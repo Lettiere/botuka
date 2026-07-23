@@ -1,0 +1,3 @@
+{% extends "admin/base.html" %}
+{% block title %}{% if subtitle %}{{ subtitle }} | {% endif %}{{ title }} | BOTUKA Admin{% endblock %}
+{% block branding %}<div id="site-name"><a href="{% url 'admin:index' %}"><span class="botuka-brand-mark">B</span><span>BOTUKA <b>Admin</b></span></a></div>{% endblock %}

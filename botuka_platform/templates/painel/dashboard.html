@@ -404,6 +404,12 @@
     </div>
 
     <div class="dashboard-hero-actions">
+      {% if usuario_master %}
+      <a class="btn btn-primary" href="{% url 'painel:administracao_plataforma' %}">
+        <i class="bi bi-shield-lock"></i>
+        Administração da Plataforma
+      </a>
+      {% endif %}
       <a class="btn btn-outline-primary" href="{% url 'painel:perfil' %}">
         <i class="bi bi-person"></i>
         Meu perfil
@@ -668,6 +674,7 @@
       <div>
         <span class="dashboard-eyebrow">Plano atual</span>
         <h2>{{ dashboard.plan.name }}</h2>
+        {% if dashboard.plan.personalized %}<span class="badge text-bg-warning">Limite personalizado ativo</span>{% endif %}
 
         {% if dashboard.plan.valid_until %}
           <p>Válido até {{ dashboard.plan.valid_until|date:"d/m/Y" }}</p>
@@ -682,16 +689,18 @@
         <span>Empresas utilizadas</span>
         <strong>
           {{ dashboard.plan.companies_used }}
-          de {{ dashboard.plan.companies_limit|default:"∞" }}
+          de {% if dashboard.plan.companies_limit == None %}∞{% else %}{{ dashboard.plan.companies_limit }}{% endif %}
         </strong>
+        <small>Restantes: {% if dashboard.plan.companies_remaining == None %}∞{% else %}{{ dashboard.plan.companies_remaining }}{% endif %}</small>
       </article>
 
       <article class="dashboard-plan-item">
         <span>Serviços utilizados</span>
         <strong>
           {{ dashboard.plan.services_used }}
-          de {{ dashboard.plan.services_limit }}
+          de {% if dashboard.plan.services_limit == None %}∞{% else %}{{ dashboard.plan.services_limit }}{% endif %}
         </strong>
+        <small>Restantes: {% if dashboard.plan.services_remaining == None %}∞{% else %}{{ dashboard.plan.services_remaining }}{% endif %}</small>
       </article>
 
       <article class="dashboard-plan-item">

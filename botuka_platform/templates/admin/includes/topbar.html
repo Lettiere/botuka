@@ -1,0 +1,15 @@
+<header id="header" class="botuka-topbar">
+  <button class="botuka-icon-button botuka-menu-button" id="botuka-menu-toggle" type="button" aria-label="Abrir navegação" aria-controls="nav-sidebar" aria-expanded="false"><i class="bi bi-list"></i></button>
+  <div id="branding">{% block branding %}<div id="site-name"><a href="{% url 'admin:index' %}"><span class="botuka-brand-mark">B</span><span>BOTUKA <b>Admin</b></span></a></div>{% endblock %}</div>
+  {% if has_permission %}
+  <div id="user-tools" class="botuka-user-tools">
+    <span class="botuka-user"><i class="bi bi-person-circle"></i><span>{% firstof user.get_short_name user.get_username %}</span></span>
+    {% if site_url %}<a href="{{ site_url }}" aria-label="Abrir site"><i class="bi bi-box-arrow-up-right"></i><span>Site</span></a>{% endif %}
+    <a href="{% url 'painel:dashboard' %}"><i class="bi bi-speedometer2"></i><span>Painel</span></a>
+    <button class="botuka-icon-button" id="botuka-theme-toggle" type="button" aria-label="Alternar tema"><i class="bi bi-moon-stars"></i></button>
+    <form id="logout-form" method="post" action="{% url 'admin:logout' %}">{% csrf_token %}<button type="submit"><i class="bi bi-box-arrow-right"></i><span>Sair</span></button></form>
+  </div>
+  {% else %}
+  <button class="botuka-icon-button" id="botuka-theme-toggle" type="button" aria-label="Alternar tema"><i class="bi bi-moon-stars"></i></button>
+  {% endif %}
+</header>
