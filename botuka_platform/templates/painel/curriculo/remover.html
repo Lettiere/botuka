@@ -1,1 +1,21 @@
-{% extends 'painel/base.html' %}{% block content %}<div class="profile-page"><div class="profile-container"><section class="profile-content-card"><div class="profile-content-body"><h1>Remover registro</h1><p>Deseja remover <strong>{{ item.titulo|default:item.nome }}</strong>?</p><form method="post">{% csrf_token %}<div class="profile-form-actions"><a class="profile-button" href="{% url 'painel:curriculo' %}">Voltar</a><button class="profile-button profile-button-danger" type="submit">Remover</button></div></form></div></section></div></div>{% endblock %}
+{% extends 'painel/base.html' %}
+{% block title %}Remover registro · Currículo | BOTUKA{% endblock %}
+{% block content %}
+<div class="profile-page">
+  <div class="profile-container">
+    {% include 'painel/components/page_header.html' with title='Remover registro' subtitle=titulo breadcrumb='Currículo' back_url_name=lista_url_name %}
+    <section class="profile-content-card">
+      <div class="profile-content-body">
+        <p>Deseja remover <strong>{{ item_nome }}</strong>?</p>
+        <form method="post">
+          {% csrf_token %}
+          <div class="profile-form-actions">
+            <a class="profile-button" href="{% url lista_url_name %}">Cancelar</a>
+            <button class="profile-button profile-button-danger" type="submit">Remover</button>
+          </div>
+        </form>
+      </div>
+    </section>
+  </div>
+</div>
+{% endblock %}

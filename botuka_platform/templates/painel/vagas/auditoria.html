@@ -1,0 +1,8 @@
+{% extends 'painel/base.html' %}{% load static %}
+{% block title %}Auditoria · {{ vaga.titulo }} | BOTUKA{% endblock %}
+{% block styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'painel/css/vagas.css' %}">{% endblock %}
+{% block content %}<div class="jobs-page"><div class="jobs-wrap">
+<ol class="jobs-breadcrumb"><li><a href="{% url 'painel:dashboard' %}">Painel</a></li><li><a href="{% url 'painel:vagas_lista' %}">Vagas</a></li><li><a href="{% url 'painel:vaga_detalhe' vaga.uuid %}">{{ vaga.titulo }}</a></li><li>Auditoria</li></ol>
+<header class="jobs-hero"><div><span class="jobs-eyebrow"><i class="bi bi-clock-history"></i> Histórico administrativo</span><h1>Auditoria da vaga</h1><p>Acompanhe alterações relevantes, responsáveis e contexto operacional de {{ vaga.titulo }}.</p></div><a class="jobs-button jobs-button--light" href="{% url 'painel:vaga_detalhe' vaga.uuid %}">Voltar à vaga</a></header>
+<section class="jobs-card"><h2>Linha do tempo</h2>{% if registros %}<ol class="jobs-timeline">{% for registro in registros %}<li><strong>{{ registro.acao|title }}</strong><div>{{ registro.usuario }} · {{ registro.criado_em|date:"d/m/Y H:i:s" }}</div>{% if registro.contexto %}<small>{{ registro.contexto }}</small>{% endif %}{% if request.user.is_superuser and registro.ip %}<div><small>IP: {{ registro.ip }}</small></div>{% endif %}</li>{% endfor %}</ol>{% else %}<div class="jobs-empty"><i class="bi bi-clock"></i><h2>Nenhum evento registrado</h2><p>Novas ações administrativas aparecerão nesta linha do tempo.</p></div>{% endif %}</section>
+</div></div>{% endblock %}

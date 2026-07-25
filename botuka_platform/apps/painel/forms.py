@@ -7,6 +7,7 @@ import re
 from django import forms
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.utils import timezone
 
 from apps.core.models import EnderecoCore, PessoaDocumento
 from apps.organizations.models import Empresa, EmpresaLink, EmpresaUsuario
@@ -107,14 +108,41 @@ class ContatoUsuarioForm(BasePerfilForm):
         disabled=True,
         help_text='A alteração de e-mail será feita em fluxo próprio.',
     )
+    aceitar_termos_contratante = forms.BooleanField(
+        label='Aceito os termos para publicar oportunidades como pessoa física',
+        required=False,
+        help_text='CPF e endereço serão usados apenas para validação, segurança e responsabilização.',
+    )
 
     class Meta:
         model = Usuario
-        fields = ['email', 'telefone', 'celular']
+        fields = [
+            'email', 'telefone', 'celular', 'bairro', 'endereco', 'numero',
+            'complemento', 'cep', 'visibilidade_localizacao',
+        ]
         help_texts = {
             'telefone': 'Telefone para contato.',
             'celular': 'Celular ou WhatsApp pessoal.',
+            'endereco': 'Dado privado: nunca será exibido em páginas públicas.',
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['aceitar_termos_contratante'].widget.attrs['class'] = 'form-check-input'
+        self.fields['aceitar_termos_contratante'].initial = bool(
+            self.instance and self.instance.termos_contratante_aceitos_em
+        )
+
+    def save(self, commit=True):
+        usuario = super().save(commit=False)
+        if self.cleaned_data.get('aceitar_termos_contratante'):
+            usuario.termos_contratante_aceitos_em = (
+                usuario.termos_contratante_aceitos_em or timezone.now()
+            )
+        if commit:
+            usuario.save()
+            self.save_m2m()
+        return usuario
 
 
 class FotoPerfilForm(BasePerfilForm):
@@ -155,6 +183,15 @@ class DocumentoUsuarioForm(BasePerfilForm):
             raise forms.ValidationError('Este CPF já está vinculado a outro usuário.')
 
         return cpf
+
+    def save(self, commit=True):
+        usuario = super().save(commit=False)
+        if usuario.cpf:
+            usuario.cpf_validado_em = timezone.now()
+        if commit:
+            usuario.save()
+            self.save_m2m()
+        return usuario
 
 
 class ApresentacaoUsuarioForm(BasePerfilForm):

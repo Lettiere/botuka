@@ -1,0 +1,10 @@
+<article>
+  <div>
+    <strong>{{ registro.titulo }}</strong>
+    <small>{{ registro.descricao|truncatewords:18|default:'Sem descrição' }}</small>
+  </div>
+  <div>
+    <a href="{% url editar_url_name registro.uuid %}">Editar</a>
+    <a href="{% url remover_url_name registro.uuid %}">Remover</a>
+  </div>
+</article>

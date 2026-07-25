@@ -82,17 +82,26 @@ def artigo_seo(request, artigo):
 
 
 def vaga_seo(request, vaga):
+    contratante = vaga.responsavel_publico
     url = safe_absolute_url(request, request.path)
+    contratante_url = (
+        safe_absolute_url(request, reverse('publico:empresa', args=[vaga.empresa.slug]))
+        if vaga.empresa_id else None
+    )
+    imagem = (
+        vaga.empresa.logo or vaga.empresa.imagem_capa
+        if vaga.empresa_id else None
+    )
     schema = compact({'@type': 'JobPosting', '@id': f'{url}#job', 'title': vaga.titulo,
                       'description': text(vaga.descricao, 5000),
                       'datePosted': vaga.publicado_em.isoformat() if vaga.publicado_em else None,
                       'validThrough': vaga.encerramento.isoformat() if vaga.encerramento else None,
                       'employmentType': vaga.tipo_contrato,
-                      'hiringOrganization': {'@type': 'Organization', 'name': vaga.empresa.nome_fantasia,
-                                             'sameAs': safe_absolute_url(request, reverse('publico:empresa', args=[vaga.empresa.slug]))},
+        'hiringOrganization': {'@type': 'Organization', 'name': contratante,
+                                             'sameAs': contratante_url},
                       'jobLocation': {'@type': 'Place', 'address': {'@type': 'PostalAddress', 'addressLocality': vaga.cidade, 'addressRegion': vaga.estado, 'addressCountry': 'BR'}}})
     return build_seo(request, title=f'{vaga.titulo} em {vaga.cidade} | BOTUKA', description=vaga.descricao,
-                     image=vaga.empresa.logo or vaga.empresa.imagem_capa,
+                     image=imagem,
                      breadcrumbs=[breadcrumb(request, 'Início', reverse('home')), breadcrumb(request, 'Vagas', reverse('recruitment_public:vagas')), breadcrumb(request, vaga.titulo, request.path)],
                      schemas=[schema], published_time=vaga.publicado_em, modified_time=vaga.atualizado_em)
 

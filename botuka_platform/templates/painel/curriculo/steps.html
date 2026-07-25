@@ -1,12 +1,12 @@
 <nav class="curriculum-steps" aria-label="Etapas do currículo">
-  <a href="{% url 'painel:curriculo_etapa' 1 %}"><b>1</b><span>Perfil</span></a>
-  <a href="{% url 'painel:curriculo_etapa' 2 %}"><b>2</b><span>Contato</span></a>
-  <a href="{% url 'painel:curriculo_experiencias' %}"><b>3</b><span>Experiências</span></a>
-  <a href="{% url 'painel:curriculo_formacoes' %}"><b>4</b><span>Formações</span></a>
-  <a href="{% url 'painel:curriculo_cursos' %}"><b>5</b><span>Cursos</span></a>
-  <a href="{% url 'painel:curriculo_habilidades' %}"><b>6</b><span>Habilidades</span></a>
-  <a href="{% url 'painel:curriculo_idiomas' %}"><b>7</b><span>Idiomas</span></a>
-  <a href="{% url 'painel:curriculo_projetos' %}"><b>8</b><span>Projetos</span></a>
-  <a href="{% url 'painel:curriculo_etapa' 9 %}"><b>9</b><span>Adicionais</span></a>
-  <a href="{% url 'painel:curriculo_etapa' 10 %}"><b>10</b><span>Privacidade</span></a>
+  <a href="{% url 'painel:curriculo_etapa' 1 %}"{% if etapa == 1 %} class="is-current" aria-current="step"{% endif %}><b>1</b><span>Dados pessoais</span></a>
+  <a href="{% url 'painel:curriculo_etapa' 2 %}"{% if etapa == 2 %} class="is-current" aria-current="step"{% endif %}><b>2</b><span>Objetivo profissional</span></a>
+  <a href="{% url 'painel:curriculo_experiencias' %}"{% if etapa == 3 %} class="is-current" aria-current="step"{% endif %}><b>3</b><span>Experiências</span></a>
+  <a href="{% url 'painel:curriculo_formacoes' %}"{% if etapa == 4 %} class="is-current" aria-current="step"{% endif %}><b>4</b><span>Formação acadêmica</span></a>
+  <a href="{% url 'painel:curriculo_cursos' %}"{% if etapa == 5 %} class="is-current" aria-current="step"{% endif %}><b>5</b><span>Cursos e certificações</span></a>
+  <a href="{% url 'painel:curriculo_habilidades' %}"{% if etapa == 6 %} class="is-current" aria-current="step"{% endif %}><b>6</b><span>Habilidades</span></a>
+  <a href="{% url 'painel:curriculo_idiomas' %}"{% if etapa == 7 %} class="is-current" aria-current="step"{% endif %}><b>7</b><span>Idiomas</span></a>
+  <a href="{% url 'painel:curriculo_projetos' %}"{% if etapa == 8 %} class="is-current" aria-current="step"{% endif %}><b>8</b><span>Projetos</span></a>
+  <a href="{% url 'painel:curriculo_etapa' 9 %}"{% if etapa == 9 %} class="is-current" aria-current="step"{% endif %}><b>9</b><span>Informações adicionais</span></a>
+  <a href="{% url 'painel:curriculo_etapa' 10 %}"{% if etapa == 10 %} class="is-current" aria-current="step"{% endif %}><b>10</b><span>Privacidade e publicação</span></a>
 </nav>

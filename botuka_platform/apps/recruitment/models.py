@@ -37,13 +37,29 @@ class BaseAtiva(models.Model):
 class Vaga(BaseAtiva):
     class Status(models.TextChoices):
         RASCUNHO = 'RASCUNHO', 'Rascunho'
-        PENDENTE = 'PENDENTE', 'Pendente'
+        EM_ANALISE = 'EM_ANALISE', 'Em análise'
         PUBLICADA = 'PUBLICADA', 'Publicada'
         PAUSADA = 'PAUSADA', 'Pausada'
         ENCERRADA = 'ENCERRADA', 'Encerrada'
+        EXPIRADA = 'EXPIRADA', 'Expirada'
         REJEITADA = 'REJEITADA', 'Rejeitada'
 
-    empresa = models.ForeignKey(Empresa, on_delete=models.PROTECT, related_name='vagas')
+    class VisibilidadeLocalizacao(models.TextChoices):
+        PUBLICA = 'PUBLICA', 'Cidade e estado'
+        APROXIMADA = 'APROXIMADA', 'Cidade, estado e bairro/região'
+        PRIVADA = 'PRIVADA', 'Localização privada'
+
+    empresa = models.ForeignKey(
+        Empresa, on_delete=models.PROTECT, related_name='vagas', null=True, blank=True,
+    )
+    perfil_pessoa_fisica = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
+        related_name='vagas_como_pessoa_fisica',
+    )
+    usuario_criador = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name='vagas_criadas',
+    )
     usuario_responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='vagas_responsavel')
     titulo = models.CharField(max_length=180)
     slug = models.SlugField(max_length=220, unique=True, blank=True)
@@ -60,6 +76,16 @@ class Vaga(BaseAtiva):
     cidade = models.CharField(max_length=120)
     estado = models.CharField(max_length=2)
     bairro = models.CharField(max_length=120, blank=True)
+    endereco_privado = models.CharField(max_length=255, blank=True)
+    visibilidade_localizacao = models.CharField(
+        max_length=12, choices=VisibilidadeLocalizacao.choices,
+        default=VisibilidadeLocalizacao.PUBLICA,
+    )
+    ocultar_salario = models.BooleanField(default=False)
+    destaque = models.BooleanField(default=False)
+    aceita_candidatura_simplificada = models.BooleanField(default=False)
+    categoria = models.CharField(max_length=120, blank=True)
+    area_atuacao = models.CharField(max_length=120, blank=True)
     aceita_pcd = models.BooleanField(default=False)
     experiencia = models.CharField(max_length=120, blank=True)
     escolaridade = models.CharField(max_length=120, blank=True)
@@ -73,6 +99,15 @@ class Vaga(BaseAtiva):
         db_table = 'recruitment_vaga_tb'
         ordering = ['-criado_em']
         indexes = [models.Index(fields=['empresa', 'status', 'ativo'], name='recruit_vaga_emp_status_idx'), models.Index(fields=['slug'], name='recruit_vaga_slug_idx')]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    (Q(empresa__isnull=False) & Q(perfil_pessoa_fisica__isnull=True))
+                    | (Q(empresa__isnull=True) & Q(perfil_pessoa_fisica__isnull=False))
+                ),
+                name='recruit_vaga_responsavel_xor_ck',
+            ),
+        ]
 
     def clean(self):
         errors = {}
@@ -80,11 +115,30 @@ class Vaga(BaseAtiva):
             errors['salario_maximo'] = 'O salário máximo deve ser maior ou igual ao mínimo.'
         if self.inicio and self.encerramento and self.encerramento < self.inicio:
             errors['encerramento'] = 'O encerramento deve ser posterior ou igual ao início.'
+        if bool(self.empresa_id) == bool(self.perfil_pessoa_fisica_id):
+            errors['empresa'] = 'Informe somente uma empresa ou um contratante pessoa física.'
+        if self.empresa_id and self.status == self.Status.PUBLICADA:
+            from apps.integrations.cnpj.services import cnpj_valido
+            if (
+                not self.empresa.ativo
+                or self.empresa.status != Empresa.Status.ATIVA
+                or not cnpj_valido(self.empresa.cpf_cnpj)
+            ):
+                errors['empresa'] = 'A empresa deve estar ativa e possuir CNPJ válido.'
+        if self.perfil_pessoa_fisica_id and not self.perfil_pessoa_fisica.perfil_contratante_completo:
+            errors['perfil_pessoa_fisica'] = 'O perfil do contratante deve estar completo e validado.'
+        if self.status == self.Status.PUBLICADA:
+            required = ('titulo', 'descricao', 'tipo_contrato', 'modalidade', 'cidade', 'estado')
+            missing = [field for field in required if not getattr(self, field)]
+            if missing:
+                errors['status'] = 'Complete os campos obrigatórios antes de publicar.'
         if errors:
             raise ValidationError(errors)
 
     def save(self, *args, **kwargs):
         from apps.core.utils import gerar_slug_unico
+        if not self.usuario_criador_id:
+            self.usuario_criador_id = self.usuario_responsavel_id
         if not self.slug:
             self.slug = gerar_slug_unico(self, self.titulo)
         if self.status == self.Status.PUBLICADA and not self.publicado_em:
@@ -94,6 +148,19 @@ class Vaga(BaseAtiva):
 
     def __str__(self):
         return self.titulo
+
+    @property
+    def responsavel_publico(self):
+        if self.empresa_id:
+            return self.empresa.nome_fantasia or self.empresa.razao_social
+        perfil = self.perfil_pessoa_fisica
+        return perfil.nome_exibicao or 'Contratante verificado'
+
+    @property
+    def contratante_verificado(self):
+        return bool(self.empresa_id or (
+            self.perfil_pessoa_fisica_id and self.perfil_pessoa_fisica.cpf_validado_em
+        ))
 
 
 class Curriculo(BaseAtiva):
@@ -169,6 +236,12 @@ class Experiencia(ItemCurriculo):
     estado = models.CharField(max_length=2, blank=True)
     resultados_responsabilidades = models.TextField(blank=True)
     tecnologias_habilidades = models.TextField(blank=True)
+
+    def clean(self):
+        super().clean()
+        if self.atual and self.fim:
+            raise ValidationError({'fim': 'Uma experiência atual não pode ter data final.'})
+
     class Meta:
         db_table = 'recruitment_experiencia_tb'
         ordering = ['-inicio']
@@ -280,6 +353,12 @@ class CurriculoInformacaoAdicional(BaseAtiva):
     class Meta:
         db_table = 'recruitment_curriculo_info_adicional_tb'
 
+    def clean(self):
+        if self.categorias_cnh and not self.possui_cnh:
+            raise ValidationError({
+                'categorias_cnh': 'Marque que possui CNH para informar as categorias.',
+            })
+
 
 class Candidatura(BaseAtiva):
     class Status(models.TextChoices):
@@ -305,7 +384,7 @@ class Candidatura(BaseAtiva):
 
     def clean(self):
         errors = {}
-        if self.vaga_id and self.vaga.status != Vaga.Status.PUBLICADA:
+        if not self.pk and self.vaga_id and self.vaga.status != Vaga.Status.PUBLICADA:
             errors['vaga'] = 'Somente vagas publicadas aceitam candidatura.'
         if self.curriculo_id and self.usuario_id and self.curriculo.usuario_id != self.usuario_id:
             errors['curriculo'] = 'O currículo deve pertencer ao candidato.'
@@ -328,3 +407,29 @@ class Candidatura(BaseAtiva):
             self.consentimento_compartilhamento_em = timezone.now()
         self.full_clean()
         super().save(*args, **kwargs)
+
+
+class VagaAuditoria(models.Model):
+    vaga = models.ForeignKey(Vaga, on_delete=models.PROTECT, related_name='auditoria')
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    acao = models.CharField(max_length=40)
+    contexto = models.JSONField(default=dict, blank=True)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'recruitment_vaga_auditoria_tb'
+        ordering = ['-criado_em']
+
+
+class CandidaturaHistorico(models.Model):
+    candidatura = models.ForeignKey(Candidatura, on_delete=models.CASCADE, related_name='historico')
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT)
+    status_anterior = models.CharField(max_length=20, blank=True)
+    status_novo = models.CharField(max_length=20)
+    observacao = models.TextField(blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'recruitment_candidatura_historico_tb'
+        ordering = ['-criado_em']

@@ -75,7 +75,7 @@ def seed_services_demo():
             defaults={
                 "usuario_proprietario": user, "tipo_cadastro": Empresa.TipoCadastro.EMPRESA,
                 "razao_social": f"Empresa Demonstração {i:02d} Ltda.", "nome_fantasia": f"Empresa Demo {i:02d}",
-                "cpf_cnpj": f"99000000{i:06d}", "descricao_curta": "Empresa fictícia criada para demonstração local.",
+                "cpf_cnpj": _cnpj_demo(i), "descricao_curta": "Empresa fictícia criada para demonstração local.",
                 "email": f"empresa{i:02d}@example.invalid", "status": Empresa.Status.ATIVA,
                 "cidade": cidade, "estado": cidade.estado,
                 "categoria_empresa": gastronomia if i <= 6 else None,
@@ -119,9 +119,9 @@ def seed_recruitment_demo():
         seed_services_demo(); empresas = list(Empresa.objects.filter(slug__startswith="empresa-demo-")[:15])
     hoje = timezone.localdate()
     for i, empresa in enumerate(empresas, 1):
-        status = Vaga.Status.PUBLICADA if i <= 12 else Vaga.Status.PENDENTE if i == 13 else Vaga.Status.PAUSADA if i == 14 else Vaga.Status.RASCUNHO
+        status = Vaga.Status.PUBLICADA if i <= 12 else Vaga.Status.EM_ANALISE if i == 13 else Vaga.Status.PAUSADA if i == 14 else Vaga.Status.RASCUNHO
         Vaga.all_objects.update_or_create(
-            slug=f"vaga-demo-{i:02d}", defaults={"empresa": empresa, "usuario_responsavel": user,
+            slug=f"vaga-demo-{i:02d}", defaults={"empresa": empresa, "usuario_criador": user, "usuario_responsavel": user,
             "titulo": f"Oportunidade demonstrativa {i:02d}", "descricao": "Vaga fictícia para testes locais.",
             "tipo_contrato": "CLT", "modalidade": "PRESENCIAL", "cidade": "Botucatu", "estado": "SP",
             "inicio": hoje - timedelta(days=2), "encerramento": hoje + timedelta(days=30),
@@ -207,3 +207,9 @@ def seed_government_demo():
 def seed_home_demo():
     assert_demo_database()
     return {**seed_services_demo(), **seed_recruitment_demo(), **seed_sports_demo(), **seed_media_demo(), **seed_news_demo(), **seed_government_demo()}
+def _cnpj_demo(indice):
+    base = [int(char) for char in f'99000000{indice:04d}']
+    for pesos in ((5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2), (6, 5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2)):
+        resto = sum(numero * peso for numero, peso in zip(base, pesos)) % 11
+        base.append(0 if resto < 2 else 11 - resto)
+    return ''.join(map(str, base))

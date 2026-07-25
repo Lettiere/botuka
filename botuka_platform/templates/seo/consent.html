@@ -1,6 +1,8 @@
 <aside
   class="botuka-consent"
   data-consent-panel
+  data-policy-version="{{ consent_policy_version }}"
+  data-consent-max-age-days="{{ consent_max_age_days }}"
   hidden
   role="dialog"
   aria-modal="false"
@@ -25,14 +27,3 @@
     </button>
   </div>
 </aside>
-
-<button
-  class="botuka-consent-review"
-  type="button"
-  data-consent-review
-  hidden
-  aria-label="Revisar preferências de cookies"
->
-  <i class="bi bi-shield-check" aria-hidden="true"></i>
-  Privacidade
-</button>

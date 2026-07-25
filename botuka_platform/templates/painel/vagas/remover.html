@@ -1,0 +1,8 @@
+{% extends 'painel/base.html' %}{% load static %}
+{% block title %}Remover {{ vaga.titulo }} | BOTUKA{% endblock %}
+{% block styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'painel/css/vagas.css' %}">{% endblock %}
+{% block content %}<div class="jobs-page"><div class="jobs-wrap">
+<ol class="jobs-breadcrumb"><li><a href="{% url 'painel:dashboard' %}">Painel</a></li><li><a href="{% url 'painel:vagas_lista' %}">Vagas</a></li><li><a href="{% url 'painel:vaga_detalhe' vaga.uuid %}">{{ vaga.titulo }}</a></li><li>Remover</li></ol>
+<section class="jobs-card"><h1>Remover vaga</h1><p>Você está prestes a remover <strong>{{ vaga.titulo }}</strong>. A exclusão é lógica: o registro e sua auditoria serão preservados, mas a vaga deixará de aparecer nas áreas administrativas e públicas.</p><form class="jobs-actions" method="post" data-job-confirm="Confirma a remoção desta vaga?">{% csrf_token %}<a class="jobs-button jobs-button--light" href="{% url 'painel:vaga_detalhe' vaga.uuid %}">Cancelar</a><button class="jobs-button jobs-button--danger"><i class="bi bi-trash"></i> Confirmar remoção</button></form></section>
+</div></div>{% endblock %}
+{% block scripts %}{{ block.super }}<script src="{% static 'painel/js/vagas.js' %}" defer></script>{% endblock %}

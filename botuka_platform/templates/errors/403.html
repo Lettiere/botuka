@@ -1,0 +1,14 @@
+{% extends "_layout/platform/public.html" %}
+{% block public_content %}
+<main class="public-directory container-botuka" id="conteudo-principal">
+  {% include "public/components/breadcrumb.html" with current_label="Acesso não autorizado" %}
+  <article class="public-page-header">
+    <div class="public-page-header__content">
+      <span class="section-kicker">Erro 403</span>
+      <h1>Acesso não autorizado</h1>
+      <p>Você não possui permissão para acessar este conteúdo.</p>
+      <div class="public-actions mt-4"><a class="btn-botuka btn-yellow" href="{% url 'home' %}">Voltar ao início</a></div>
+    </div>
+  </article>
+</main>
+{% endblock %}

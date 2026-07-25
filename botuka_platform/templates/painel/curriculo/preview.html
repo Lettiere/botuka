@@ -1,1 +1,61 @@
-{% extends 'painel/base.html' %}{% block title %}Visualizar currículo | BOTUKA{% endblock %}{% block content %}<div class="profile-page curriculum-page"><div class="profile-container">{% include 'painel/components/page_header.html' with title='Visualizar currículo' subtitle='Esta é a versão que empresas poderão visualizar.' breadcrumb='Currículo' back_url_name='painel:curriculo' %}<article class="profile-content-card curriculum-preview"><div class="profile-content-body"><span class="profile-eyebrow">{{ objeto.get_visibilidade_display }}</span><h1>{{ curriculo.titulo_profissional|default:'Currículo' }}</h1><p>{{ curriculo.resumo }}</p><dl><dt>Área profissional</dt><dd>{{ curriculo.area_profissional|default:'Não informada' }}</dd>{% if curriculo.cidade %}<dt>Localização</dt><dd>{{ curriculo.cidade }} {{ curriculo.estado }}</dd>{% endif %}</dl>{% if curriculo.experiencias %}<h2>Experiências</h2>{% for item in curriculo.experiencias %}<section><h3>{{ item.cargo }}</h3><p>{{ item.empresa }}</p><p>{{ item.descricao }}</p></section>{% endfor %}{% endif %}<div class="profile-form-actions"><a class="profile-button profile-button-primary" href="{% url 'painel:curriculo_etapa' 1 %}">Editar currículo</a><a class="profile-button" href="{% url 'painel:curriculo_etapa' 10 %}">Alterar privacidade</a></div></div></article></div></div>{% endblock %}
+{% extends 'painel/base.html' %}
+{% block title %}Visualizar currículo | BOTUKA{% endblock %}
+{% block content %}
+<div class="profile-page curriculum-page">
+  <div class="profile-container">
+    {% include 'painel/components/page_header.html' with title='Visualizar currículo' subtitle='Esta é a versão que empresas poderão visualizar.' breadcrumb='Currículo' back_url_name='painel:curriculo' %}
+    <article class="profile-content-card curriculum-preview">
+      <div class="profile-content-body">
+        <span class="profile-eyebrow">{{ objeto.get_visibilidade_display }}</span>
+        <h1>{{ curriculo.titulo_profissional|default:'Currículo' }}</h1>
+        {% if curriculo.objetivo_profissional %}<h2>Objetivo</h2><p>{{ curriculo.objetivo_profissional }}</p>{% endif %}
+        {% if curriculo.resumo %}<h2>Resumo profissional</h2><p>{{ curriculo.resumo }}</p>{% endif %}
+        <dl>
+          <dt>Área profissional</dt><dd>{{ curriculo.area_profissional|default:'Não informada' }}</dd>
+          {% if curriculo.cidade or curriculo.estado %}<dt>Localização</dt><dd>{{ curriculo.cidade }}{% if curriculo.cidade and curriculo.estado %} · {% endif %}{{ curriculo.estado }}</dd>{% endif %}
+          {% if curriculo.email %}<dt>E-mail</dt><dd>{{ curriculo.email }}</dd>{% endif %}
+          {% if curriculo.telefone %}<dt>Telefone</dt><dd>{{ curriculo.telefone }}</dd>{% endif %}
+        </dl>
+
+        {% if curriculo.experiencias %}
+          <h2>Experiências</h2>
+          {% for item in curriculo.experiencias %}
+            <section><h3>{{ item.cargo }}</h3><p>{{ item.empresa }}</p>{% if item.descricao %}<p>{{ item.descricao }}</p>{% endif %}</section>
+          {% endfor %}
+        {% endif %}
+        {% if curriculo.formacoes %}
+          <h2>Formação</h2>
+          {% for item in curriculo.formacoes %}
+            <section><h3>{{ item.curso }}</h3><p>{{ item.instituicao }}{% if item.nivel %} · {{ item.nivel }}{% endif %}</p></section>
+          {% endfor %}
+        {% endif %}
+        {% if curriculo.cursos %}
+          <h2>Cursos e certificações</h2>
+          {% for item in curriculo.cursos %}
+            <section><h3>{{ item.nome }}</h3><p>{{ item.instituicao }}{% if item.carga_horaria %} · {{ item.carga_horaria }} horas{% endif %}</p></section>
+          {% endfor %}
+        {% endif %}
+        {% if curriculo.habilidades %}
+          <h2>Habilidades</h2>
+          {% for item in curriculo.habilidades %}<p>{{ item.nome }}{% if item.nivel %} · {{ item.nivel }}{% endif %}{% if item.categoria %} · {{ item.categoria }}{% endif %}</p>{% endfor %}
+        {% endif %}
+        {% if curriculo.idiomas %}
+          <h2>Idiomas</h2>
+          {% for item in curriculo.idiomas %}<p>{{ item.nome }} · {{ item.nivel }}</p>{% endfor %}
+        {% endif %}
+        {% if curriculo.projetos %}
+          <h2>Projetos</h2>
+          {% for item in curriculo.projetos %}
+            <section><h3>{{ item.titulo }}</h3>{% if item.descricao %}<p>{{ item.descricao }}</p>{% endif %}{% if item.url %}<a href="{{ item.url }}" rel="noopener noreferrer">Ver projeto</a>{% endif %}</section>
+          {% endfor %}
+        {% endif %}
+
+        <div class="profile-form-actions">
+          <a class="profile-button profile-button-primary" href="{% url 'painel:curriculo_etapa' 1 %}">Editar currículo</a>
+          <a class="profile-button" href="{% url 'painel:curriculo_etapa' 10 %}">Alterar privacidade</a>
+        </div>
+      </div>
+    </article>
+  </div>
+</div>
+{% endblock %}

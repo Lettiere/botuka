@@ -1,0 +1,10 @@
+<article>
+  <div>
+    <strong>{{ registro.cargo }}</strong>
+    <small>{{ registro.titulo }}{% if registro.inicio or registro.fim %} · {{ registro.inicio|date:'m/Y'|default:'Início não informado' }} – {% if registro.atual %}Atual{% else %}{{ registro.fim|date:'m/Y'|default:'Atual' }}{% endif %}{% endif %}</small>
+  </div>
+  <div>
+    <a href="{% url editar_url_name registro.uuid %}">Editar</a>
+    <a href="{% url remover_url_name registro.uuid %}">Remover</a>
+  </div>
+</article>

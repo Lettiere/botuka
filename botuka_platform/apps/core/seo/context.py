@@ -1,5 +1,6 @@
 import json
 import re
+import time
 from urllib.parse import unquote
 
 from django.conf import settings
@@ -18,10 +19,16 @@ def _consent(request):
         value = json.loads(unquote(request.COOKIES.get('botuka_consent', '{}')))
     except (TypeError, ValueError):
         value = {}
+    expires_at = value.get('expiresAt')
+    valid = (
+        value.get('version') == settings.CONSENT_POLICY_VERSION
+        and isinstance(expires_at, (int, float))
+        and expires_at > time.time() * 1000
+    )
     return {
-        'analytics': value.get('analytics') is True,
-        'marketing': value.get('marketing') is True,
-        'personalization': value.get('personalization') is True,
+        'analytics': valid and value.get('analytics') is True,
+        'marketing': valid and value.get('marketing') is True,
+        'personalization': valid and value.get('personalization') is True,
     }
 
 
@@ -53,5 +60,7 @@ def seo_context(request):
         'seo_default': default_seo,
         'tracking': integrations,
         'consent': consent,
+        'consent_policy_version': settings.CONSENT_POLICY_VERSION,
+        'consent_max_age_days': settings.CONSENT_MAX_AGE_DAYS,
         'seo_config': public_config,
     }

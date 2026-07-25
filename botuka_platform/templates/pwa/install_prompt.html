@@ -1,0 +1,22 @@
+{% load static %}
+<div class="botuka-pwa-prompt" data-pwa-install-prompt hidden>
+  <button class="botuka-pwa-prompt__backdrop" type="button" data-pwa-dismiss aria-label="Fechar convite de instalação"></button>
+  <section class="botuka-pwa-prompt__dialog" role="dialog" aria-modal="true" aria-labelledby="botuka-pwa-title" aria-describedby="botuka-pwa-description">
+    <button class="botuka-pwa-prompt__close" type="button" data-pwa-dismiss aria-label="Agora não">×</button>
+    <img class="botuka-pwa-prompt__icon" src="{% static 'img/icons/botuka-icon.svg' %}" width="64" height="64" alt="">
+    <div>
+      <span class="section-kicker">Aplicativo BOTUKA</span>
+      <h2 id="botuka-pwa-title">Instale o BOTUKA</h2>
+      <p id="botuka-pwa-description">Tenha acesso mais rápido ao BOTUKA diretamente da tela inicial do seu celular.</p>
+    </div>
+    <ul class="botuka-pwa-prompt__benefits">
+      <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Acesso rápido</li>
+      <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Melhor desempenho</li>
+      <li><i class="bi bi-check-circle-fill" aria-hidden="true"></i> Experiência semelhante a um aplicativo</li>
+    </ul>
+    <div class="botuka-pwa-prompt__actions">
+      <button class="btn-botuka btn-yellow" type="button" data-pwa-install>Instalar agora</button>
+      <button class="btn-botuka btn-soft" type="button" data-pwa-dismiss>Agora não</button>
+    </div>
+  </section>
+</div>

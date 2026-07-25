@@ -1,8 +1,10 @@
 import json
 import re
+import time
 from types import SimpleNamespace
 from unittest.mock import patch
 
+from django.conf import settings
 from django.test import Client, RequestFactory, SimpleTestCase, override_settings
 from django.urls import reverse
 
@@ -71,11 +73,25 @@ class IntegrationConsentTests(SimpleTestCase):
 
     @override_settings(ENABLE_ANALYTICS=True, GOOGLE_TAG_MANAGER_ID='GTM-ABC123')
     def test_gtm_requires_explicit_analytics_consent(self):
-        self.client.cookies['botuka_consent'] = json.dumps({'analytics': True, 'marketing': False})
+        self.client.cookies['botuka_consent'] = json.dumps({
+            'analytics': True,
+            'marketing': False,
+            'version': settings.CONSENT_POLICY_VERSION,
+            'expiresAt': (time.time() + 3600) * 1000,
+        })
         with patch('apps.core.views.montar_contexto_home', return_value={}):
             response = self.client.get('/')
         self.assertContains(response, 'googletagmanager.com/gtm.js')
         self.assertNotContains(response, 'connect.facebook.net')
+
+    @override_settings(ENABLE_ANALYTICS=True, GOOGLE_TAG_MANAGER_ID='GTM-ABC123')
+    def test_consentimento_de_politica_antiga_nao_libera_analytics(self):
+        self.client.cookies['botuka_consent'] = json.dumps({
+            'analytics': True, 'marketing': True, 'version': 'politica-antiga',
+        })
+        with patch('apps.core.views.montar_contexto_home', return_value={}):
+            response = self.client.get('/')
+        self.assertNotContains(response, 'googletagmanager.com/gtm.js')
 
     def test_data_layer_helper_has_field_allowlist(self):
         with patch('apps.core.views.montar_contexto_home', return_value={}):

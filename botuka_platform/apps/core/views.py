@@ -29,6 +29,11 @@ def not_found(request, exception):
     return render(request, 'errors/404.html', {'seo': seo}, status=404)
 
 
+def permission_denied(request, exception=None):
+    seo = build_seo(request, title='Acesso não autorizado | BOTUKA', description='Você não tem permissão para acessar esta página.', robots='noindex,nofollow')
+    return render(request, 'errors/403.html', {'seo': seo}, status=403)
+
+
 def server_error(request):
     seo = build_seo(request, title='Erro interno | BOTUKA', description='Não foi possível carregar esta página.', robots='noindex,nofollow')
     return render(request, 'errors/500.html', {'seo': seo}, status=500)
@@ -47,7 +52,9 @@ def home(request):
 def pwa_manifest(request):
     """Manifesto PWA da plataforma BOTUKA."""
 
-    icon_url = request.build_absolute_uri(static('img/icons/botuka-icon.svg'))
+    icon_192 = request.build_absolute_uri(static('img/icons/botuka-icon-192.png'))
+    icon_512 = request.build_absolute_uri(static('img/icons/botuka-icon-512.png'))
+    maskable_512 = request.build_absolute_uri(static('img/icons/botuka-maskable-512.png'))
 
     return JsonResponse(
         {
@@ -70,10 +77,22 @@ def pwa_manifest(request):
             'dir': 'ltr',
             'icons': [
                 {
-                    'src': icon_url,
-                    'sizes': 'any',
-                    'type': 'image/svg+xml',
-                    'purpose': 'any maskable',
+                    'src': icon_192,
+                    'sizes': '192x192',
+                    'type': 'image/png',
+                    'purpose': 'any',
+                },
+                {
+                    'src': icon_512,
+                    'sizes': '512x512',
+                    'type': 'image/png',
+                    'purpose': 'any',
+                },
+                {
+                    'src': maskable_512,
+                    'sizes': '512x512',
+                    'type': 'image/png',
+                    'purpose': 'maskable',
                 },
             ],
             'shortcuts': [
@@ -84,9 +103,9 @@ def pwa_manifest(request):
                     'url': '/painel/',
                     'icons': [
                         {
-                            'src': icon_url,
-                            'sizes': 'any',
-                            'type': 'image/svg+xml',
+                            'src': icon_192,
+                            'sizes': '192x192',
+                            'type': 'image/png',
                         },
                     ],
                 },
@@ -97,9 +116,9 @@ def pwa_manifest(request):
                     'url': '/painel/empresas/',
                     'icons': [
                         {
-                            'src': icon_url,
-                            'sizes': 'any',
-                            'type': 'image/svg+xml',
+                            'src': icon_192,
+                            'sizes': '192x192',
+                            'type': 'image/png',
                         },
                     ],
                 },

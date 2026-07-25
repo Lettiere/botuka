@@ -3,20 +3,26 @@
 
   const COOKIE_NAME = 'botuka_consent';
   const STORAGE_KEY = 'botuka_consent';
-  const MAX_AGE = 60 * 60 * 24 * 365;
   const panel = document.querySelector('[data-consent-panel]');
-  const review = document.querySelector('[data-consent-review]');
 
   if (!panel) return;
 
+  const policyVersion = panel.dataset.policyVersion;
+  const maxAgeDays = Number.parseInt(panel.dataset.consentMaxAgeDays, 10) || 365;
+  const maxAgeSeconds = maxAgeDays * 24 * 60 * 60;
+
   function normalize(value) {
     if (!value || typeof value !== 'object') return null;
+    if (value.version !== policyVersion) return null;
     if (typeof value.analytics !== 'boolean' || typeof value.marketing !== 'boolean') return null;
+    if (value.expiresAt && Date.now() >= value.expiresAt) return null;
     return {
       analytics: value.analytics,
       marketing: value.marketing,
       personalization: value.personalization === true,
-      version: 1,
+      version: policyVersion,
+      consentedAt: value.consentedAt || Date.now(),
+      expiresAt: value.expiresAt || Date.now() + (maxAgeSeconds * 1000),
     };
   }
 
@@ -47,7 +53,7 @@
     const serialized = JSON.stringify(choice);
     const secure = window.location.protocol === 'https:' ? '; Secure' : '';
     document.cookie = COOKIE_NAME + '=' + encodeURIComponent(serialized)
-      + '; Max-Age=' + MAX_AGE + '; Path=/; SameSite=Lax' + secure;
+      + '; Max-Age=' + maxAgeSeconds + '; Path=/; SameSite=Lax' + secure;
     try {
       window.localStorage.setItem(STORAGE_KEY, serialized);
     } catch (_error) {
@@ -55,39 +61,42 @@
     }
   }
 
-  function setVisibility(hasChoice) {
-    panel.hidden = hasChoice;
-    if (review) review.hidden = !hasChoice;
+  function hideCompletely() {
+    panel.hidden = true;
+    panel.setAttribute('aria-hidden', 'true');
+  }
+
+  function show() {
+    panel.hidden = false;
+    panel.removeAttribute('aria-hidden');
   }
 
   function save(allowOptional) {
+    const now = Date.now();
     const choice = {
       analytics: allowOptional,
       marketing: allowOptional,
       personalization: allowOptional,
-      version: 1,
+      version: policyVersion,
+      consentedAt: now,
+      expiresAt: now + (maxAgeSeconds * 1000),
     };
     writeChoice(choice);
-    setVisibility(true);
+    hideCompletely();
     window.dispatchEvent(new CustomEvent('botuka:consent-updated', {detail: choice}));
   }
 
   const storedChoice = readCookie() || readStorage();
-  if (storedChoice && !readCookie()) writeChoice(storedChoice);
-  setVisibility(Boolean(storedChoice));
+  if (storedChoice) {
+    if (!readCookie()) writeChoice(storedChoice);
+    hideCompletely();
+  } else {
+    show();
+  }
 
   panel.addEventListener('click', function (event) {
     const button = event.target.closest('[data-consent]');
     if (!button) return;
     save(button.dataset.consent === 'all');
   });
-
-  if (review) {
-    review.addEventListener('click', function () {
-      panel.hidden = false;
-      review.hidden = true;
-      const firstButton = panel.querySelector('[data-consent]');
-      if (firstButton) firstButton.focus();
-    });
-  }
 })();

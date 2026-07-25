@@ -8,6 +8,7 @@ from django.db import models
 from django.utils import timezone
 
 from apps.core.models import TimeStampedModel, UUIDModel
+from apps.accounts.validators import normalizar_cpf, validar_cpf
 
 
 class UsuarioManager(UserManager):
@@ -107,7 +108,26 @@ class Usuario(UUIDModel, TimeStampedModel, AbstractUser):
         max_length=11,
         blank=True,
         db_index=True,
+        validators=[validar_cpf],
         verbose_name='CPF',
+    )
+    cpf_validado_em = models.DateTimeField(blank=True, null=True, verbose_name='CPF validado em')
+    bairro = models.CharField(max_length=120, blank=True, verbose_name='bairro ou região')
+    endereco = models.CharField(max_length=180, blank=True, verbose_name='endereço')
+    numero = models.CharField(max_length=20, blank=True, verbose_name='número')
+    complemento = models.CharField(max_length=120, blank=True, verbose_name='complemento')
+    cep = models.CharField(max_length=8, blank=True, verbose_name='CEP')
+    termos_contratante_aceitos_em = models.DateTimeField(
+        blank=True, null=True, verbose_name='termos de contratante aceitos em',
+    )
+    class VisibilidadeLocalizacao(models.TextChoices):
+        PUBLICA = 'PUBLICA', 'Cidade e estado'
+        APROXIMADA = 'APROXIMADA', 'Cidade, estado e região'
+        PRIVADA = 'PRIVADA', 'Privada'
+
+    visibilidade_localizacao = models.CharField(
+        max_length=12, choices=VisibilidadeLocalizacao.choices,
+        default=VisibilidadeLocalizacao.PUBLICA,
     )
     data_nascimento = models.DateField(
         blank=True,
@@ -152,6 +172,12 @@ class Usuario(UUIDModel, TimeStampedModel, AbstractUser):
             models.Index(fields=['cpf'], name='platform_usuario_cpf_idx'),
             models.Index(fields=['cidade'], name='platform_usuario_cidade_idx'),
         ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['cpf'], condition=~models.Q(cpf=''),
+                name='platform_usuario_cpf_uk',
+            ),
+        ]
 
     def __str__(self) -> str:
         return self.nome_exibicao or self.get_full_name() or self.username
@@ -186,11 +212,32 @@ class Usuario(UUIDModel, TimeStampedModel, AbstractUser):
         preenchidos = len([campo for campo in campos if campo])
         return round((preenchidos / len(campos)) * 100)
 
+    @property
+    def perfil_contratante_completo(self) -> bool:
+        return all((
+            self.first_name, self.last_name, self.cpf, self.cpf_validado_em,
+            self.telefone or self.celular, self.cidade_id, self.estado_id,
+            self.bairro, self.termos_contratante_aceitos_em,
+        ))
+
     def registrar_acesso(self) -> None:
         """Atualiza o marcador de último acesso do domínio."""
 
         self.ultimo_acesso = timezone.now()
         self.save(update_fields=['ultimo_acesso', 'atualizado_em'])
+
+    def save(self, *args, **kwargs):
+        self.cpf = normalizar_cpf(self.cpf)
+        if self.pk:
+            anterior = type(self).objects.filter(pk=self.pk).values(
+                'cpf', 'cpf_validado_em',
+            ).first()
+            if (
+                anterior is not None and anterior['cpf'] != self.cpf
+                and self.cpf_validado_em == anterior['cpf_validado_em']
+            ):
+                self.cpf_validado_em = None
+        super().save(*args, **kwargs)
 
     def tem_perfil(self, nome: str) -> bool:
         """Verifica se o usuário possui o perfil informado."""

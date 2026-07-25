@@ -52,12 +52,33 @@ def _montar(curriculo, respeitar_privacidade=True):
         curriculo.portfolio if permite('mostrar_portfolio') else '',
         curriculo.site_profissional, curriculo.github,
         str(salario) if isinstance(salario, Decimal) else None,
-        tuple({'uuid': str(x.uuid), 'empresa': x.titulo, 'cargo': x.cargo, 'descricao': x.descricao} for x in curriculo.experiencia_set.filter(ativo=True, excluido_em__isnull=True)),
-        tuple({'uuid': str(x.uuid), 'curso': x.titulo, 'instituicao': x.instituicao, 'nivel': x.nivel} for x in curriculo.formacao_set.filter(ativo=True, excluido_em__isnull=True)),
-        tuple({'uuid': str(x.uuid), 'nome': x.titulo, 'instituicao': x.instituicao, 'tipo': x.tipo} for x in curriculo.curso_set.filter(ativo=True, excluido_em__isnull=True)),
-        tuple({'nome': x.nome, 'nivel': x.nivel} for x in curriculo.habilidades.filter(ativo=True, excluido_em__isnull=True)),
-        tuple({'nome': x.nome, 'nivel': x.nivel} for x in curriculo.idiomas.filter(ativo=True, excluido_em__isnull=True)),
-        tuple({'uuid': str(x.uuid), 'titulo': x.titulo, 'descricao': x.descricao, 'url': x.url} for x in curriculo.projetos.filter(ativo=True, excluido_em__isnull=True)),
+        tuple({
+            'uuid': str(x.uuid), 'empresa': x.titulo, 'cargo': x.cargo,
+            'descricao': x.descricao,
+            'inicio': x.inicio.isoformat() if x.inicio else None,
+            'fim': x.fim.isoformat() if x.fim else None,
+            'atual': x.atual,
+        } for x in curriculo.experiencia_set.filter(ativo=True, excluido_em__isnull=True)),
+        tuple({
+            'uuid': str(x.uuid), 'curso': x.titulo, 'instituicao': x.instituicao,
+            'nivel': x.nivel,
+            'inicio': x.inicio.isoformat() if x.inicio else None,
+            'fim': x.fim.isoformat() if x.fim else None,
+        } for x in curriculo.formacao_set.filter(ativo=True, excluido_em__isnull=True)),
+        tuple({
+            'uuid': str(x.uuid), 'nome': x.titulo, 'instituicao': x.instituicao,
+            'tipo': x.tipo, 'carga_horaria': x.carga_horaria,
+        } for x in curriculo.curso_set.filter(ativo=True, excluido_em__isnull=True)),
+        tuple({
+            'nome': x.nome, 'nivel': x.nivel, 'categoria': x.categoria,
+        } for x in curriculo.habilidades.filter(ativo=True, excluido_em__isnull=True)),
+        tuple({
+            'nome': x.nome, 'nivel': x.nivel,
+        } for x in curriculo.idiomas.filter(ativo=True, excluido_em__isnull=True)),
+        tuple({
+            'uuid': str(x.uuid), 'titulo': x.titulo, 'descricao': x.descricao,
+            'url': x.url, 'tecnologias': x.tecnologias,
+        } for x in curriculo.projetos.filter(ativo=True, excluido_em__isnull=True)),
     )
 
 

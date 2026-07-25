@@ -9,6 +9,7 @@ from apps.organizations.models import Assinatura, Empresa
 from apps.organizations.permissions import empresas_disponiveis_para_usuario, usuario_pode_publicar_por_empresa
 from apps.organizations.plans import LimiteUsuarioService, usuario_pode_criar_empresa, usuario_pode_criar_servico
 from apps.recruitment.models import Candidatura, Curriculo, Vaga
+from apps.recruitment.services import calcular_progresso
 from apps.services.models import Servico
 from apps.services.permissions import servicos_disponiveis_para_usuario
 from apps.sports.models import OrganizacaoEsportiva
@@ -23,13 +24,6 @@ def _assinatura_atual(usuario):
     return (Assinatura.objects.select_related("plano")
         .filter(usuario=usuario, ativo=True, excluido_em__isnull=True, status=Assinatura.Status.ATIVA, inicio__lte=agora)
         .filter(Q(fim__isnull=True) | Q(fim__gt=agora)).order_by("-inicio").first())
-
-
-def _percentual_curriculo(curriculo):
-    if not curriculo:
-        return 0
-    values = [curriculo.titulo_profissional, curriculo.resumo, curriculo.cidade, curriculo.estado, curriculo.linkedin or curriculo.portfolio]
-    return round(sum(bool(value) for value in values) / len(values) * 100)
 
 
 def montar_dashboard_conta(usuario):
@@ -56,7 +50,10 @@ def montar_dashboard_conta(usuario):
 
     candidaturas = Candidatura.objects.filter(usuario=usuario).select_related("vaga", "vaga__empresa")
     candidaturas_total = candidaturas.count()
-    curriculo = Curriculo.objects.filter(usuario=usuario).first()
+    curriculo = Curriculo.objects.filter(
+        usuario=usuario, ativo=True, excluido_em__isnull=True,
+    ).first()
+    progresso_curriculo = calcular_progresso(curriculo) if curriculo else None
     assinatura = _assinatura_atual(usuario)
     limite_empresa = usuario_pode_criar_empresa(usuario)
     limite_servico = usuario_pode_criar_servico(usuario)
@@ -87,14 +84,19 @@ def montar_dashboard_conta(usuario):
     if servicos_ativos: indicators.append({"label": "Serviços ativos", "value": servicos_ativos, "icon": "bi-tools"})
     if vagas_ativas: indicators.append({"label": "Vagas ativas", "value": vagas_ativas, "icon": "bi-briefcase"})
     if candidaturas_recebidas: indicators.append({"label": "Candidaturas recebidas", "value": candidaturas_recebidas, "icon": "bi-people"})
-    if not empresas and not servicos_ativos and curriculo: indicators.append({"label": "Currículo preenchido", "value": f"{_percentual_curriculo(curriculo)}%", "icon": "bi-file-earmark-person"})
+    if not empresas and not servicos_ativos and curriculo: indicators.append({"label": "Currículo preenchido", "value": f"{progresso_curriculo.percentual}%", "icon": "bi-file-earmark-person"})
     if candidaturas_total and len(indicators) < 4: indicators.append({"label": "Minhas candidaturas", "value": candidaturas_total, "icon": "bi-person-check"})
 
     return {
         "is_initial": not empresas and not curriculo and not total_servicos,
         "indicators": indicators[:4], "actions": actions,
         "companies": empresas,
-        "curriculum": {"object": curriculo, "completion": _percentual_curriculo(curriculo), "applications": candidaturas_total} if curriculo else None,
+        "curriculum": {
+            "object": curriculo,
+            "completion": progresso_curriculo.percentual,
+            "status": curriculo.get_status_display(),
+            "applications": candidaturas_total,
+        } if curriculo else None,
         "services": {"total": total_servicos, "active": servicos_ativos, "paused": servicos_pausados, "limit": limite_servico.limite, "can_create": limite_servico.permitido} if total_servicos else None,
         "jobs": {"total": vagas_total, "active": vagas_ativas, "draft": vagas_rascunho, "closed": vagas_encerradas, "applications": candidaturas_recebidas} if vagas_total else None,
         "applications": {"total": candidaturas_total} if candidaturas_total else None,

@@ -1,0 +1,9 @@
+<nav class="public-breadcrumb" aria-label="Navegação estrutural">
+  <a href="{% url 'home' %}">Início</a>
+  <i class="bi bi-chevron-right" aria-hidden="true"></i>
+  {% if parent_url %}
+    <a href="{{ parent_url }}">{{ parent_label }}</a>
+    <i class="bi bi-chevron-right" aria-hidden="true"></i>
+  {% endif %}
+  <span aria-current="page">{{ current_label }}</span>
+</nav>

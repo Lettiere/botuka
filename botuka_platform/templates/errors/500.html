@@ -1,1 +1,14 @@
-{% extends "_layout/platform/platform_home.html" %}{% block content %}<main class="container py-5"><article class="panel panel-pad"><h1>Não foi possível carregar esta página</h1><p>Tente novamente em alguns instantes.</p><a class="btn-botuka" href="{% url 'home' %}">Voltar ao início</a></article></main>{% endblock %}
+{% extends "_layout/platform/public.html" %}
+{% block public_content %}
+<main class="public-directory container-botuka" id="conteudo-principal">
+  {% include "public/components/breadcrumb.html" with current_label="Erro interno" %}
+  <article class="public-page-header">
+    <div class="public-page-header__content">
+      <span class="section-kicker">Erro 500</span>
+      <h1>Não foi possível carregar esta página</h1>
+      <p>Tente novamente em alguns instantes. Nenhuma ação adicional é necessária.</p>
+      <div class="public-actions mt-4"><a class="btn-botuka btn-yellow" href="{% url 'home' %}">Voltar ao início</a></div>
+    </div>
+  </article>
+</main>
+{% endblock %}

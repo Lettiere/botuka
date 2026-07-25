@@ -1,5 +1,6 @@
 # Ambientes e dependências locais
 .venv/
+.python312/
 venv/
 env/
 ENV/

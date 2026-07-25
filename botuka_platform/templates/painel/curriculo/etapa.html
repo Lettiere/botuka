@@ -1,11 +1,69 @@
 {% extends 'painel/base.html' %}
 {% block title %}Etapa {{ etapa }} · Currículo | BOTUKA{% endblock %}
 {% block content %}
-<div class="profile-page curriculum-page"><div class="profile-container">
-  {% include 'painel/components/page_header.html' with title=titulo|default:'Perfil profissional' subtitle='Salve esta etapa e continue quando quiser.' breadcrumb='Currículo' back_url_name='painel:curriculo' %}
-  {% if curriculo %}{% include 'painel/curriculo/steps.html' %}{% endif %}
-  <div class="curriculum-layout"><aside class="profile-sidebar curriculum-progress"><strong>Etapa {{ etapa }} de 10</strong><progress value="{{ progresso.percentual|default:0 }}" max="100">{{ progresso.percentual|default:0 }}%</progress><span>{{ progresso.percentual|default:0 }}% preenchido</span></aside>
-    <section class="profile-content-card"><div class="profile-content-head"><div><span class="profile-eyebrow">Etapa {{ etapa }}</span><h2 class="profile-content-title">{{ titulo|default:'Perfil profissional' }}</h2></div></div><div class="profile-content-body"><form method="post" enctype="multipart/form-data" class="profile-form">{% csrf_token %}<div class="profile-form-grid">{% for field in form %}<div class="profile-field {% if field.field.widget.input_type == 'checkbox' %}profile-field--check{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field.errors }}{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</div>{% endfor %}{% if privacy_form %}{% for field in privacy_form %}<div class="profile-field profile-field--check"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field.errors }}{{ field }}</div>{% endfor %}{% endif %}</div><div class="profile-form-actions"><button class="profile-button" name="acao" value="rascunho" type="submit">Salvar como rascunho</button><button class="profile-button profile-button-primary" name="acao" value="{% if etapa == 10 %}concluir{% else %}continuar{% endif %}" type="submit">{% if etapa == 10 %}Concluir currículo{% else %}Salvar e continuar{% endif %}</button></div></form></div></section>
+<div class="profile-page curriculum-page">
+  <div class="profile-container">
+    {% include 'painel/components/page_header.html' with title='Currículo' subtitle=header_subtitle breadcrumb_parent='Currículo' breadcrumb_parent_url_name='painel:curriculo' breadcrumb_current=breadcrumb_atual back_url_name='painel:curriculo' %}
+    {% include 'painel/curriculo/steps.html' %}
+
+    <div class="curriculum-layout">
+      <aside class="profile-sidebar curriculum-progress">
+        <strong>Etapa {{ etapa }} de {{ total_etapas }}</strong>
+        <progress value="{{ progresso.percentual|default:0 }}" max="100">{{ progresso.percentual|default:0 }}%</progress>
+        <span>{{ progresso.percentual|default:0 }}% preenchido</span>
+        {% if etapa_anterior_nome %}<small>Anterior: {{ etapa_anterior_nome }}</small>{% endif %}
+        {% if proxima_etapa_nome %}<small>Próxima: {{ proxima_etapa_nome }}</small>{% else %}<small>Última etapa</small>{% endif %}
+      </aside>
+
+      <section class="profile-content-card">
+        <div class="profile-content-head">
+          <div>
+            <span class="profile-eyebrow">Etapa {{ etapa }}</span>
+            <h2 class="profile-content-title">{{ titulo }}</h2>
+            <p>{{ descricao }}</p>
+          </div>
+        </div>
+        <div class="profile-content-body">
+          <form method="post" enctype="multipart/form-data" class="profile-form">
+            {% csrf_token %}
+            {{ form.non_field_errors }}
+            {% if privacy_form %}{{ privacy_form.non_field_errors }}{% endif %}
+            <div class="profile-form-grid">
+              {% for field in form %}
+                <div class="profile-field {% if field.field.widget.input_type == 'checkbox' %}profile-field--check{% endif %}">
+                  <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                  {{ field.errors }}
+                  {{ field }}
+                  {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                </div>
+              {% endfor %}
+              {% if privacy_form %}
+                {% for field in privacy_form %}
+                  <div class="profile-field profile-field--check">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field.errors }}
+                    {{ field }}
+                    {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                  </div>
+                {% endfor %}
+              {% endif %}
+            </div>
+            <div class="profile-form-actions">
+              {% if back_url_usa_etapa %}
+                <a class="profile-button" href="{% url back_url_name back_etapa %}">Voltar</a>
+              {% else %}
+                <a class="profile-button" href="{% url back_url_name %}">Voltar</a>
+              {% endif %}
+              <a class="profile-button" href="{% url 'painel:curriculo' %}">Cancelar</a>
+              <button class="profile-button" name="acao" value="salvar" type="submit">Salvar</button>
+              <button class="profile-button profile-button-primary" name="acao" value="{% if etapa == 10 %}concluir{% else %}continuar{% endif %}" type="submit">
+                {% if etapa == 10 %}Concluir e visualizar{% else %}Salvar e continuar{% endif %}
+              </button>
+            </div>
+          </form>
+        </div>
+      </section>
+    </div>
   </div>
-</div></div>
+</div>
 {% endblock %}

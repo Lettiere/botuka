@@ -5,7 +5,7 @@ from django.contrib import admin
 from apps.recruitment.models import (
     Candidatura, Curso, Curriculo, CurriculoInformacaoAdicional,
     CurriculoPrivacidade, Experiencia, Formacao, Habilidade, Idioma, Projeto,
-    Vaga,
+    CandidaturaHistorico, Vaga, VagaAuditoria,
 )
 
 
@@ -14,8 +14,8 @@ class VagaAdmin(admin.ModelAdmin):
     list_display = ('titulo', 'empresa', 'status', 'modalidade', 'publicado_em', 'encerramento')
     list_filter = ('status', 'modalidade', 'tipo_contrato', 'aceita_pcd')
     search_fields = ('titulo', 'empresa__nome_fantasia', 'cidade', 'bairro')
-    autocomplete_fields = ('empresa', 'usuario_responsavel')
-    readonly_fields = ('uuid', 'criado_em', 'atualizado_em', 'publicado_em', 'excluido_em')
+    autocomplete_fields = ('empresa', 'perfil_pessoa_fisica', 'usuario_criador', 'usuario_responsavel')
+    readonly_fields = ('uuid', 'usuario_criador', 'criado_em', 'atualizado_em', 'publicado_em', 'excluido_em')
 
 
 @admin.register(Curriculo)
@@ -44,3 +44,20 @@ admin.site.register(Idioma)
 admin.site.register(Projeto)
 admin.site.register(CurriculoPrivacidade)
 admin.site.register(CurriculoInformacaoAdicional)
+
+
+@admin.register(VagaAuditoria)
+class VagaAuditoriaAdmin(admin.ModelAdmin):
+    list_display = ('vaga', 'usuario', 'acao', 'criado_em')
+    list_filter = ('acao', 'criado_em')
+    search_fields = ('vaga__titulo', 'usuario__username')
+    readonly_fields = ('vaga', 'usuario', 'acao', 'contexto', 'ip', 'criado_em')
+
+    def has_add_permission(self, request):
+        return False
+
+    def has_change_permission(self, request, obj=None):
+        return False
+
+
+admin.site.register(CandidaturaHistorico)

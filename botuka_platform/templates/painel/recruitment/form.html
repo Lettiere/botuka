@@ -1,188 +1,36 @@
-{% extends 'painel/base.html' %}
-
-{% block title %}{{ titulo }} | BOTUKA{% endblock %}
-
-{% block content %}
-<style>
-.vaga-page{max-width:1180px;margin:auto;padding:24px 0}
-.vaga-header{display:flex;justify-content:space-between;align-items:flex-start;gap:20px;padding:28px;margin-bottom:24px;border:1px solid rgba(13,110,253,.14);border-radius:24px;background:linear-gradient(135deg,rgba(13,110,253,.12),rgba(111,66,193,.08))}
-.vaga-header h1{margin:0 0 8px;font-size:clamp(1.8rem,4vw,2.5rem);font-weight:800}
-.vaga-header p{margin:0;color:var(--bs-secondary-color);max-width:700px}
-.vaga-card{padding:26px;margin-bottom:22px;border:1px solid rgba(120,120,120,.16);border-radius:22px;background:var(--bs-body-bg);box-shadow:0 12px 30px rgba(0,0,0,.05)}
-.vaga-card-title{display:flex;gap:14px;align-items:flex-start;margin-bottom:22px}
-.vaga-number{display:flex;align-items:center;justify-content:center;width:38px;height:38px;flex:0 0 38px;border-radius:12px;background:var(--bs-primary);color:#fff;font-weight:800}
-.vaga-card-title h2{margin:0 0 4px;font-size:1.16rem;font-weight:750}
-.vaga-card-title p{margin:0;color:var(--bs-secondary-color);font-size:.92rem}
-.vaga-page .form-label{font-weight:650}
-.vaga-page .form-control,.vaga-page select{min-height:48px;border-radius:12px}
-.vaga-page textarea{min-height:140px;resize:vertical}
-.vaga-checkbox{padding:16px;border:1px solid rgba(120,120,120,.16);border-radius:14px;background:rgba(120,120,120,.04)}
-.vaga-actions{position:sticky;bottom:16px;z-index:20;display:flex;justify-content:flex-end;gap:12px;padding:16px;border:1px solid rgba(120,120,120,.16);border-radius:18px;background:var(--bs-body-bg);box-shadow:0 12px 30px rgba(0,0,0,.08)}
-.vaga-actions .btn{min-height:46px;padding:10px 22px;border-radius:12px;font-weight:700}
-@media(max-width:767px){.vaga-header{flex-direction:column;padding:20px}.vaga-card{padding:20px}.vaga-actions{flex-direction:column-reverse}.vaga-actions .btn{width:100%}}
-</style>
-
-<div class="vaga-page">
-  <header class="vaga-header">
-    <div>
-      <span class="badge text-bg-primary mb-3">Recrutamento</span>
-      <h1>{{ titulo }}</h1>
-      <p>Cadastre uma oportunidade completa para encontrar profissionais alinhados às necessidades da empresa.</p>
-    </div>
-    <a href="{% url 'painel:vagas_lista' %}" class="btn btn-outline-secondary">Voltar para vagas</a>
-  </header>
-
-  <form method="post" novalidate>
-    {% csrf_token %}
-
-    {% if form.non_field_errors %}
-      <div class="alert alert-danger">{{ form.non_field_errors }}</div>
-    {% endif %}
-
-    <section class="vaga-card">
-      <div class="vaga-card-title">
-        <span class="vaga-number">1</span>
-        <div>
-          <h2>Empresa e identificação</h2>
-          <p>Informe a empresa responsável e os dados principais da oportunidade.</p>
-        </div>
-      </div>
-
-      <div class="row g-3">
-        {% for field in form %}
-          {% if field.name == 'empresa' or field.name == 'titulo' or field.name == 'tipo_contrato' or field.name == 'modalidade' or field.name == 'jornada' %}
-            <div class="{% if field.name == 'empresa' or field.name == 'titulo' %}col-lg-6{% else %}col-md-4{% endif %}">
-              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-              {{ field }}
-              {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-          {% endif %}
-        {% endfor %}
-      </div>
-    </section>
-
-    <section class="vaga-card">
-      <div class="vaga-card-title">
-        <span class="vaga-number">2</span>
-        <div>
-          <h2>Descrição da oportunidade</h2>
-          <p>Apresente as atividades, responsabilidades, requisitos e benefícios.</p>
-        </div>
-      </div>
-
-      <div class="row g-3">
-        {% for field in form %}
-          {% if field.name == 'descricao' or field.name == 'responsabilidades' or field.name == 'requisitos' or field.name == 'beneficios' %}
-            <div class="{% if field.name == 'responsabilidades' or field.name == 'requisitos' %}col-lg-6{% else %}col-12{% endif %}">
-              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-              {{ field }}
-              {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-          {% endif %}
-        {% endfor %}
-      </div>
-    </section>
-
-    <section class="vaga-card">
-      <div class="vaga-card-title">
-        <span class="vaga-number">3</span>
-        <div>
-          <h2>Localização e quantidade</h2>
-          <p>Defina onde a vaga está disponível e quantas posições serão abertas.</p>
-        </div>
-      </div>
-
-      <div class="row g-3">
-        {% for field in form %}
-          {% if field.name == 'cidade' or field.name == 'estado' or field.name == 'bairro' or field.name == 'quantidade' %}
-            <div class="{% if field.name == 'cidade' %}col-md-5{% elif field.name == 'estado' or field.name == 'quantidade' %}col-md-2{% else %}col-md-3{% endif %}">
-              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-              {{ field }}
-              {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-          {% endif %}
-        {% endfor %}
-      </div>
-    </section>
-
-    <section class="vaga-card">
-      <div class="vaga-card-title">
-        <span class="vaga-number">4</span>
-        <div>
-          <h2>Perfil profissional</h2>
-          <p>Informe experiência, escolaridade e condições de inclusão.</p>
-        </div>
-      </div>
-
-      <div class="row g-3">
-        {% for field in form %}
-          {% if field.name == 'experiencia' or field.name == 'escolaridade' %}
-            <div class="col-md-6">
-              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-              {{ field }}
-              {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-          {% endif %}
-        {% endfor %}
-
-        <div class="col-12">
-          <div class="vaga-checkbox">
-            <div class="form-check">
-              {{ form.aceita_pcd }}
-              <label class="form-check-label" for="{{ form.aceita_pcd.id_for_label }}">
-                {{ form.aceita_pcd.label }}
-              </label>
-            </div>
-            {% for error in form.aceita_pcd.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <section class="vaga-card">
-      <div class="vaga-card-title">
-        <span class="vaga-number">5</span>
-        <div>
-          <h2>Remuneração e período</h2>
-          <p>Informe a faixa salarial e as datas previstas para a oportunidade.</p>
-        </div>
-      </div>
-
-      <div class="row g-3">
-        {% for field in form %}
-          {% if field.name == 'salario_minimo' or field.name == 'salario_maximo' or field.name == 'inicio' or field.name == 'encerramento' %}
-            <div class="col-md-3">
-              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-              {{ field }}
-              {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-            </div>
-          {% endif %}
-        {% endfor %}
-      </div>
-    </section>
-
-    <section class="vaga-card">
-      <div class="vaga-card-title">
-        <span class="vaga-number">6</span>
-        <div>
-          <h2>Publicação</h2>
-          <p>Defina o estado inicial da vaga.</p>
-        </div>
-      </div>
-
-      <div class="row g-3">
-        <div class="col-md-6">
-          <label class="form-label" for="{{ form.status.id_for_label }}">{{ form.status.label }}</label>
-          {{ form.status }}
-          {% for error in form.status.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
-        </div>
-      </div>
-    </section>
-
-    <div class="vaga-actions">
-      <a href="{% url 'painel:vagas_lista' %}" class="btn btn-outline-secondary">Cancelar</a>
-      <button class="btn btn-primary" type="submit">Salvar vaga</button>
-    </div>
+{% extends 'painel/base.html' %}{% load static %}
+{% block title %}{{ titulo }} | Painel BOTUKA{% endblock %}
+{% block styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'painel/css/vagas.css' %}">{% endblock %}
+{% block content %}<div class="jobs-page"><div class="jobs-wrap">
+  <ol class="jobs-breadcrumb"><li><a href="{% url 'painel:dashboard' %}">Painel</a></li><li><a href="{% url 'painel:vagas_lista' %}">Vagas</a></li><li aria-current="page">{{ titulo }}</li></ol>
+  <header class="jobs-hero"><div><span class="jobs-eyebrow"><i class="bi bi-pencil-square"></i> Cadastro administrativo</span><h1>{{ titulo }}</h1><p>Organize responsável, contratação, localização, conteúdo e publicação. CPF, CNPJ e endereço privado nunca serão exibidos publicamente.</p></div><a class="jobs-button jobs-button--light" href="{% url 'painel:vagas_lista' %}"><i class="bi bi-arrow-left"></i> Voltar</a></header>
+  <form method="post" class="jobs-form-layout" novalidate>{% csrf_token %}
+    <aside class="jobs-panel jobs-form-nav" aria-label="Seções do formulário"><a href="#identificacao"><i class="bi bi-card-text"></i> Identificação</a><a href="#responsavel"><i class="bi bi-person-badge"></i> Responsável</a><a href="#contratacao"><i class="bi bi-briefcase"></i> Contratação</a><a href="#localizacao"><i class="bi bi-geo-alt"></i> Localização</a><a href="#conteudo"><i class="bi bi-file-text"></i> Conteúdo</a><a href="#publicacao"><i class="bi bi-broadcast"></i> Publicação</a></aside>
+    <main class="jobs-panel jobs-panel__body">
+      {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+      <section class="jobs-form-section" id="identificacao"><h2>Identificação</h2><div class="jobs-form-grid">
+        {% for field in form %}{% if field.name == 'titulo' or field.name == 'area_atuacao' or field.name == 'categoria' or field.name == 'quantidade' %}<div class="jobs-field {% if field.name == 'titulo' %}jobs-field--full{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field.errors }}{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</div>{% endif %}{% endfor %}
+      </div></section>
+      <section class="jobs-form-section" id="responsavel"><h2>Responsável</h2><div class="jobs-form-grid">
+        <div class="jobs-field"><label for="{{ form.tipo_responsavel.id_for_label }}">{{ form.tipo_responsavel.label }}</label>{{ form.tipo_responsavel.errors }}{{ form.tipo_responsavel }}</div><div class="jobs-field"><label for="{{ form.empresa.id_for_label }}">{{ form.empresa.label }}</label>{{ form.empresa.errors }}{{ form.empresa }}<small>Somente empresas que você pode administrar.</small></div>
+        <div class="jobs-field jobs-field--full"><small>O usuário criador é registrado automaticamente. Ao escolher pessoa física, o sistema valida CPF, contato, localização e aceite dos termos sem expor esses dados.</small></div>
+      </div></section>
+      <section class="jobs-form-section" id="contratacao"><h2>Contratação</h2><div class="jobs-form-grid">
+        {% for field in form %}{% if field.name == 'tipo_contrato' or field.name == 'modalidade' or field.name == 'jornada' or field.name == 'salario_minimo' or field.name == 'salario_maximo' or field.name == 'experiencia' or field.name == 'escolaridade' %}<div class="jobs-field"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field.errors }}{{ field }}</div>{% endif %}{% endfor %}
+        <label class="jobs-check">{{ form.ocultar_salario }} {{ form.ocultar_salario.label }}</label><label class="jobs-check">{{ form.aceita_pcd }} {{ form.aceita_pcd.label }}</label>
+      </div></section>
+      <section class="jobs-form-section" id="localizacao"><h2>Localização</h2><div class="jobs-form-grid">
+        {% for field in form %}{% if field.name == 'cidade' or field.name == 'estado' or field.name == 'bairro' or field.name == 'endereco_privado' or field.name == 'visibilidade_localizacao' %}<div class="jobs-field {% if field.name == 'endereco_privado' %}jobs-field--full{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field.errors }}{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}</div>{% endif %}{% endfor %}
+      </div></section>
+      <section class="jobs-form-section" id="conteudo"><h2>Conteúdo</h2><div class="jobs-form-grid">
+        {% for field in form %}{% if field.name == 'descricao' or field.name == 'responsabilidades' or field.name == 'requisitos' or field.name == 'beneficios' %}<div class="jobs-field jobs-field--full"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field.errors }}{{ field }}</div>{% endif %}{% endfor %}
+      </div></section>
+      <section class="jobs-form-section" id="publicacao"><h2>Publicação</h2><div class="jobs-form-grid">
+        {% for field in form %}{% if field.name == 'inicio' or field.name == 'encerramento' %}<div class="jobs-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field.errors }}{{ field }}</div>{% endif %}{% endfor %}
+        <label class="jobs-check">{{ form.aceita_candidatura_simplificada }} {{ form.aceita_candidatura_simplificada.label }}</label>
+      </div></section>
+      <div class="jobs-form-actions"><a class="jobs-button jobs-button--light" href="{% url 'painel:vagas_lista' %}">Cancelar</a><button class="jobs-button jobs-button--light" type="submit" name="acao" value="rascunho">Salvar rascunho</button><button class="jobs-button jobs-button--primary" type="submit" name="acao" value="publicar"><i class="bi bi-broadcast"></i> Salvar e publicar</button></div>
+    </main>
   </form>
-</div>
-{% endblock %}
+</div></div>{% endblock %}
+{% block scripts %}{{ block.super }}<script src="{% static 'painel/js/vagas.js' %}" defer></script>{% endblock %}

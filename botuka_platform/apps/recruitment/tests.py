@@ -26,8 +26,8 @@ class BaseRecruitmentTests(TestCase):
         pais = Pais.objects.create(nome='Brasil', codigo_iso_2='BR', codigo_iso_3='BRA')
         estado = Estado.objects.create(pais=pais, nome='São Paulo', sigla='SP')
         cidade = Cidade.objects.create(estado=estado, nome='Botucatu')
-        cls.empresa = Empresa.objects.create(usuario_proprietario=cls.dono, nome_fantasia='Empresa A', cidade=cidade, estado=estado, status=Empresa.Status.ATIVA)
-        cls.empresa_outro = Empresa.objects.create(usuario_proprietario=cls.outro, nome_fantasia='Empresa B', cidade=cidade, estado=estado, status=Empresa.Status.ATIVA)
+        cls.empresa = Empresa.objects.create(usuario_proprietario=cls.dono, nome_fantasia='Empresa A', cpf_cnpj='11222333000181', cidade=cidade, estado=estado, status=Empresa.Status.ATIVA)
+        cls.empresa_outro = Empresa.objects.create(usuario_proprietario=cls.outro, nome_fantasia='Empresa B', cpf_cnpj='11444777000161', cidade=cidade, estado=estado, status=Empresa.Status.ATIVA)
 
     def vaga(self, **kwargs):
         dados = dict(empresa=self.empresa, usuario_responsavel=self.dono, titulo='Desenvolvedor', descricao='Descrição', tipo_contrato='CLT', modalidade='Remoto', cidade='Botucatu', estado='SP')
@@ -150,7 +150,7 @@ class CurriculoCandidaturaTests(BaseRecruitmentTests):
         self.curriculo.save(update_fields=['etapa_atual'])
         self.client.force_login(self.dono)
         response = self.client.get(reverse('recruitment_public:candidatar', args=[vaga.slug]))
-        self.assertRedirects(response, reverse('painel:curriculo_etapa', args=[4]))
+        self.assertRedirects(response, reverse('painel:curriculo_formacoes'))
 
     def test_master_ve_empresas_vagas_curriculos_e_candidaturas(self):
         master, _ = garantir_usuario_master(email='master-recruitment@example.com', senha='SenhaSegura#2026')
@@ -181,19 +181,20 @@ class CurriculumWizardTests(BaseRecruitmentTests):
         novo = get_user_model().objects.create_user('wizard_post', password='senha')
         self.client.force_login(novo)
         response = self.client.post(reverse('painel:curriculo_novo'), {
-            'titulo_profissional': 'Analista', 'area_profissional': 'Tecnologia',
-            'resumo': 'Perfil profissional',
+            'cidade': 'Botucatu', 'estado': 'SP',
+            'email_publico': 'wizard@example.com',
         })
         self.assertRedirects(response, reverse('painel:curriculo_etapa', args=[2]))
         self.assertTrue(Curriculo.objects.filter(usuario=novo).exists())
 
     def test_steps_save_independently_and_preserve_data(self):
         self.client.post(reverse('painel:curriculo_etapa', args=[1]), {
-            'titulo_profissional': 'Desenvolvedor', 'area_profissional': 'Tecnologia',
-            'resumo': 'Resumo salvo', 'acao': 'continuar',
+            'cidade': 'Botucatu', 'estado': 'SP', 'email_publico': 'publico@example.com',
+            'acao': 'continuar',
         })
         self.client.post(reverse('painel:curriculo_etapa', args=[2]), {
-            'cidade': 'Botucatu', 'estado': 'SP', 'email_publico': 'publico@example.com',
+            'titulo_profissional': 'Desenvolvedor', 'area_profissional': 'Tecnologia',
+            'resumo': 'Resumo salvo',
             'acao': 'rascunho',
         })
         self.curriculo.refresh_from_db()
@@ -253,3 +254,107 @@ class CurriculumWizardTests(BaseRecruitmentTests):
             response = self.client.get(reverse(route, args=args))
             self.assertEqual(response.status_code, 200)
             self.assertContains(response, 'Voltar')
+
+    def test_all_item_lists_render_their_own_fields(self):
+        Experiencia.objects.create(curriculo=self.curriculo, titulo='Empresa A', cargo='Pessoa desenvolvedora')
+        Formacao.objects.create(curriculo=self.curriculo, titulo='Sistemas', instituicao='Faculdade A', nivel='Superior')
+        Curso.objects.create(curriculo=self.curriculo, titulo='Django', instituicao='Escola A', carga_horaria=20)
+        Habilidade.objects.create(curriculo=self.curriculo, nome='Python', nivel='Avançado', categoria='Tecnologia')
+        Idioma.objects.create(curriculo=self.curriculo, nome='Inglês', nivel='Intermediário')
+        Projeto.objects.create(curriculo=self.curriculo, titulo='Portal', descricao='Projeto de portfólio')
+        expected = (
+            ('painel:curriculo_experiencias', 'Pessoa desenvolvedora'),
+            ('painel:curriculo_formacoes', 'Faculdade A'),
+            ('painel:curriculo_cursos', '20 horas'),
+            ('painel:curriculo_habilidades', 'Tecnologia'),
+            ('painel:curriculo_idiomas', 'Intermediário'),
+            ('painel:curriculo_projetos', 'Projeto de portfólio'),
+        )
+        for route, text in expected:
+            with self.subTest(route=route):
+                response = self.client.get(reverse(route))
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, text)
+
+    def test_save_and_continue_uses_the_next_stage_for_every_item_type(self):
+        cases = (
+            ('painel:curriculo_experiencia_nova', {'titulo': 'Empresa', 'cargo': 'Dev'}, 'painel:curriculo_formacoes', ()),
+            ('painel:curriculo_formacao_nova', {'titulo': 'Graduação'}, 'painel:curriculo_cursos', ()),
+            ('painel:curriculo_curso_novo', {'tipo': Curso.Tipo.CURSO, 'titulo': 'Django'}, 'painel:curriculo_habilidades', ()),
+            ('painel:curriculo_habilidade_nova', {'nome': 'Python'}, 'painel:curriculo_idiomas', ()),
+            ('painel:curriculo_idioma_novo', {'nome': 'Inglês', 'nivel': 'Básico'}, 'painel:curriculo_projetos', ()),
+            ('painel:curriculo_projeto_novo', {'titulo': 'Portal'}, 'painel:curriculo_etapa', (9,)),
+        )
+        for route, data, next_route, args in cases:
+            with self.subTest(route=route):
+                response = self.client.post(reverse(route), {**data, 'acao': 'continuar'})
+                self.assertRedirects(response, reverse(next_route, args=args))
+
+    def test_save_returns_to_list_and_cancel_is_available(self):
+        response = self.client.post(reverse('painel:curriculo_habilidade_nova'), {
+            'nome': 'Comunicação', 'acao': 'salvar',
+        })
+        self.assertRedirects(response, reverse('painel:curriculo_habilidades'))
+        response = self.client.get(reverse('painel:curriculo_habilidade_nova'))
+        self.assertContains(response, 'Cancelar')
+        self.assertContains(response, 'Salvar e continuar')
+
+    def test_current_experience_rejects_an_end_date(self):
+        response = self.client.post(reverse('painel:curriculo_experiencia_nova'), {
+            'titulo': 'Empresa', 'cargo': 'Dev', 'atual': 'on',
+            'fim': date.today().isoformat(),
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Uma experiência atual não pode ter data final.')
+        self.assertFalse(Experiencia.objects.filter(curriculo=self.curriculo).exists())
+
+    def test_privacy_get_does_not_persist_configuration(self):
+        CurriculoPrivacidade.all_objects.filter(curriculo=self.curriculo).delete()
+        self.assertEqual(self.client.get(reverse('painel:curriculo_etapa', args=[10])).status_code, 200)
+        self.assertFalse(CurriculoPrivacidade.objects.filter(curriculo=self.curriculo).exists())
+
+    def test_invalid_steps_and_foreign_uuids_are_safe(self):
+        self.assertEqual(self.client.get(reverse('painel:curriculo_etapa', args=[11])).status_code, 404)
+        foreign_curriculum = Curriculo.objects.create(usuario=self.outro)
+        foreign_item = Projeto.objects.create(curriculo=foreign_curriculum, titulo='Privado')
+        self.assertEqual(
+            self.client.get(reverse('painel:curriculo_projeto_editar', args=[foreign_item.uuid])).status_code,
+            404,
+        )
+
+    def test_all_ten_steps_show_context_description_and_current_indicator(self):
+        routes = (
+            ('painel:curriculo_etapa', (1,), 'Dados pessoais'),
+            ('painel:curriculo_etapa', (2,), 'Objetivo profissional'),
+            ('painel:curriculo_experiencias', (), 'Experiências'),
+            ('painel:curriculo_formacoes', (), 'Formação acadêmica'),
+            ('painel:curriculo_cursos', (), 'Cursos e certificações'),
+            ('painel:curriculo_habilidades', (), 'Habilidades'),
+            ('painel:curriculo_idiomas', (), 'Idiomas'),
+            ('painel:curriculo_projetos', (), 'Projetos'),
+            ('painel:curriculo_etapa', (9,), 'Informações adicionais'),
+            ('painel:curriculo_etapa', (10,), 'Privacidade e publicação'),
+        )
+        descriptions = set()
+        for number, (route, args, title) in enumerate(routes, start=1):
+            with self.subTest(step=number):
+                response = self.client.get(reverse(route, args=args))
+                self.assertEqual(response.status_code, 200)
+                self.assertContains(response, 'Painel')
+                self.assertContains(response, 'Currículo')
+                self.assertContains(response, title)
+                self.assertContains(response, f'Etapa {number} de 10')
+                self.assertContains(response, 'aria-current="step"', html=False)
+                self.assertTrue(response.context['descricao'])
+                descriptions.add(response.context['descricao'])
+        self.assertEqual(len(descriptions), 10)
+
+    def test_stage_footers_keep_consistent_actions(self):
+        simple = self.client.get(reverse('painel:curriculo_etapa', args=[2]))
+        item_form = self.client.get(reverse('painel:curriculo_experiencia_nova'))
+        for response in (simple, item_form):
+            with self.subTest(path=response.request['PATH_INFO']):
+                self.assertContains(response, 'Voltar')
+                self.assertContains(response, 'Cancelar')
+                self.assertContains(response, '>Salvar<', html=False)
+                self.assertContains(response, 'Salvar e continuar')

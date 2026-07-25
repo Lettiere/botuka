@@ -1,0 +1,10 @@
+<article>
+  <div>
+    <strong>{{ registro.titulo }}</strong>
+    <small>{{ registro.instituicao|default:'Instituição não informada' }}{% if registro.carga_horaria %} · {{ registro.carga_horaria }} horas{% endif %}</small>
+  </div>
+  <div>
+    <a href="{% url editar_url_name registro.uuid %}">Editar</a>
+    <a href="{% url remover_url_name registro.uuid %}">Remover</a>
+  </div>
+</article>

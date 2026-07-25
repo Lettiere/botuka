@@ -1,7 +1,9 @@
 {% extends "_layout/platform/platform_home.html" %}
+{% load static %}
 
 {% block styles %}
   {{ block.super }}
+  <link rel="stylesheet" href="{% static 'css/public/public-system.css' %}">
   {% block public_styles %}{% endblock %}
 {% endblock %}
 

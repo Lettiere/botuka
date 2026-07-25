@@ -538,12 +538,18 @@
 
             <small class="text-muted mb-3">
               {{ dashboard.curriculum.completion }}% preenchido ·
-              {% if dashboard.curriculum.object.publico %}Público{% else %}Privado{% endif %}
+              {{ dashboard.curriculum.status }} ·
+              {{ dashboard.curriculum.object.get_visibilidade_display }}
+              <br>
+              Atualizado em {{ dashboard.curriculum.object.atualizado_em|date:"d/m/Y H:i" }}
             </small>
 
             <div class="d-flex gap-2 mt-auto">
               <a class="btn btn-outline-primary flex-fill" href="{% url 'painel:curriculo_editar' %}">
                 Editar
+              </a>
+              <a class="btn btn-outline-primary flex-fill" href="{% url 'painel:curriculo_editar' %}">
+                Atualizar
               </a>
               <a class="btn btn-primary flex-fill" href="{% url 'painel:curriculo_preview' %}">
                 Visualizar

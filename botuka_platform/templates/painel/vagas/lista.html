@@ -1,1 +1,60 @@
-{% extends 'painel/base.html' %}{% block content %}<div class="container py-4"><div class="d-flex justify-content-between"><h1>Vagas</h1><a href="{% url 'painel:vaga_criar' %}">Nova vaga</a></div>{% for vaga in vagas %}<article><a href="{% url 'painel:vaga_detalhe' vaga.uuid %}">{{ vaga.titulo }}</a> — {{ vaga.empresa }} — {{ vaga.get_status_display }}</article>{% empty %}<p>Nenhuma vaga cadastrada.</p>{% endfor %}</div>{% endblock %}
+{% extends 'painel/base.html' %}{% load static %}
+{% block title %}Gerenciar vagas | Painel BOTUKA{% endblock %}
+{% block styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'painel/css/vagas.css' %}">{% endblock %}
+{% block content %}
+<div class="jobs-page"><div class="jobs-wrap">
+  <ol class="jobs-breadcrumb" aria-label="Breadcrumb"><li><a href="{% url 'painel:dashboard' %}">Painel</a></li><li aria-current="page">Vagas</li></ol>
+  <header class="jobs-hero">
+    <div><span class="jobs-eyebrow"><i class="bi bi-briefcase"></i> Recrutamento</span><h1>Gerenciar vagas</h1><p>Cadastre, publique e acompanhe as oportunidades vinculadas às suas empresas ou ao seu perfil.</p></div>
+    <div class="jobs-actions"><a class="jobs-button jobs-button--light" href="{% url 'painel:vagas_lista' %}"><i class="bi bi-arrow-clockwise"></i> Atualizar</a><a class="jobs-button jobs-button--light" href="{% url 'painel:vagas_exportar' %}"><i class="bi bi-download"></i> Exportar</a><a class="jobs-button jobs-button--primary" href="{% url 'painel:vaga_criar' %}"><i class="bi bi-plus-lg"></i> Nova vaga</a></div>
+  </header>
+
+  <section class="jobs-stats" aria-label="Resumo de vagas">
+    <a class="jobs-stat" href="{% url 'painel:vagas_lista' %}"><i class="jobs-stat__icon bi bi-collection"></i><span>Total<strong>{{ indicadores.total }}</strong></span></a>
+    <a class="jobs-stat" href="?status=PUBLICADA"><i class="jobs-stat__icon bi bi-broadcast"></i><span>Publicadas<strong>{{ indicadores.publicadas }}</strong></span></a>
+    <a class="jobs-stat" href="?status=EM_ANALISE"><i class="jobs-stat__icon bi bi-hourglass-split"></i><span>Em análise<strong>{{ indicadores.em_analise }}</strong></span></a>
+    <a class="jobs-stat" href="?status=RASCUNHO"><i class="jobs-stat__icon bi bi-pencil-square"></i><span>Rascunhos<strong>{{ indicadores.rascunhos }}</strong></span></a>
+    <a class="jobs-stat" href="?status=PAUSADA"><i class="jobs-stat__icon bi bi-pause-circle"></i><span>Pausadas<strong>{{ indicadores.pausadas }}</strong></span></a>
+    <a class="jobs-stat" href="?status=ENCERRADA"><i class="jobs-stat__icon bi bi-check-circle"></i><span>Encerradas<strong>{{ indicadores.encerradas }}</strong></span></a>
+    <a class="jobs-stat" href="?status=EXPIRADA"><i class="jobs-stat__icon bi bi-calendar-x"></i><span>Expiradas<strong>{{ indicadores.expiradas }}</strong></span></a>
+    <div class="jobs-stat"><i class="jobs-stat__icon bi bi-people"></i><span>Candidaturas<strong>{{ indicadores.candidaturas }}</strong></span></div>
+    <div class="jobs-stat"><i class="jobs-stat__icon bi bi-person-plus"></i><span>Novas<strong>{{ indicadores.candidaturas_novas }}</strong></span></div>
+  </section>
+
+  <section class="jobs-panel {% if request.GET %}is-open{% endif %}" id="jobsFilters">
+    <header class="jobs-panel__head"><h2><i class="bi bi-sliders"></i> Filtros</h2><button class="jobs-filter-toggle" type="button" data-jobs-filter-toggle aria-expanded="{% if request.GET %}true{% else %}false{% endif %}"><i class="bi bi-sliders"></i> <span>Mostrar filtros</span></button></header>
+    <div class="jobs-panel__body" data-collapsible><form class="jobs-filter-grid">
+      <div class="jobs-field"><label for="jobs-q">Buscar</label><input id="jobs-q" type="search" name="q" value="{{ request.GET.q }}" placeholder="Título, empresa ou descrição"></div>
+      <div class="jobs-field"><label for="jobs-status">Status</label><select id="jobs-status" name="status"><option value="">Todos</option>{% for value,label in status_opcoes %}<option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+      <div class="jobs-field"><label for="jobs-empresa">Empresa</label><select id="jobs-empresa" name="empresa"><option value="">Todas e pessoa física</option>{% for empresa in empresas %}<option value="{{ empresa.uuid }}" {% if request.GET.empresa == empresa.uuid|stringformat:"s" %}selected{% endif %}>{{ empresa.nome_exibicao }}</option>{% endfor %}</select></div>
+      <div class="jobs-field"><label for="jobs-responsavel">Responsável</label><input id="jobs-responsavel" name="responsavel" value="{{ request.GET.responsavel }}"></div>
+      <div class="jobs-field"><label for="jobs-modalidade">Modalidade</label><input id="jobs-modalidade" name="modalidade" value="{{ request.GET.modalidade }}"></div>
+      <div class="jobs-field"><label for="jobs-contrato">Contratação</label><input id="jobs-contrato" name="contrato" value="{{ request.GET.contrato }}"></div>
+      <div class="jobs-field"><label for="jobs-cidade">Cidade</label><input id="jobs-cidade" name="cidade" value="{{ request.GET.cidade }}"></div>
+      <div class="jobs-field"><label for="jobs-periodo">Data</label><select id="jobs-periodo" name="periodo"><option value="">Qualquer período</option><option value="7" {% if request.GET.periodo == "7" %}selected{% endif %}>Últimos 7 dias</option><option value="30" {% if request.GET.periodo == "30" %}selected{% endif %}>Últimos 30 dias</option><option value="90" {% if request.GET.periodo == "90" %}selected{% endif %}>Últimos 90 dias</option></select></div>
+      <div class="jobs-actions"><a class="jobs-button jobs-button--light" href="{% url 'painel:vagas_lista' %}">Limpar</a><button class="jobs-button jobs-button--primary" type="submit"><i class="bi bi-search"></i> Filtrar</button></div>
+    </form></div>
+  </section>
+
+  <div class="jobs-results-head"><div><h2>Oportunidades cadastradas</h2><span>{{ total_filtrado }} registro{{ total_filtrado|pluralize }} encontrado{{ total_filtrado|pluralize }}</span></div></div>
+  {% if vagas %}<section class="jobs-list" aria-label="Lista administrativa de vagas">
+    {% for vaga in vagas %}<article class="job-record">
+      <div class="job-record__title"><span class="jobs-badge jobs-badge--{{ vaga.status|lower }}">{{ vaga.get_status_display }}</span><h3>{{ vaga.titulo }}</h3><p>{{ vaga.responsavel_publico }} · {{ vaga.tipo_contrato }}</p></div>
+      <div class="job-record__meta"><small>Local e modalidade</small><strong>{{ vaga.cidade }}/{{ vaga.estado }} · {{ vaga.modalidade }}</strong></div>
+      <div class="job-record__meta"><small>Candidaturas</small><strong>{{ vaga.total_candidaturas }}</strong></div>
+      <div class="job-record__meta job-record__optional"><small>Publicação</small><strong>{{ vaga.publicado_em|date:"d/m/Y"|default:"Não publicada" }}</strong></div>
+      <div class="job-record__meta job-record__optional"><small>Vencimento / atualização</small><strong>{{ vaga.encerramento|date:"d/m/Y"|default:"Sem prazo" }} · {{ vaga.atualizado_em|date:"d/m/Y" }}</strong></div>
+      <div class="dropdown job-record__actions"><button class="jobs-button jobs-button--light jobs-button--small" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Ações de {{ vaga.titulo }}"><i class="bi bi-three-dots-vertical"></i> Ações</button><ul class="dropdown-menu dropdown-menu-end">
+        <li><a class="dropdown-item" href="{% url 'painel:vaga_detalhe' vaga.uuid %}"><i class="bi bi-eye"></i> Visualizar</a></li><li><a class="dropdown-item" href="{% url 'painel:vaga_editar' vaga.uuid %}"><i class="bi bi-pencil"></i> Editar</a></li>
+        {% if vaga.status == 'RASCUNHO' or vaga.status == 'PAUSADA' or vaga.status == 'ENCERRADA' or vaga.status == 'EXPIRADA' %}<li><form method="post" action="{% url 'painel:vaga_publicar' vaga.uuid %}">{% csrf_token %}<button class="dropdown-item"><i class="bi bi-broadcast"></i> Publicar</button></form></li>{% endif %}
+        {% if vaga.status == 'PUBLICADA' %}<li><form method="post" action="{% url 'painel:vaga_pausar' vaga.uuid %}">{% csrf_token %}<button class="dropdown-item"><i class="bi bi-pause"></i> Pausar</button></form></li><li><form method="post" action="{% url 'painel:vaga_encerrar' vaga.uuid %}">{% csrf_token %}<button class="dropdown-item"><i class="bi bi-stop-circle"></i> Encerrar</button></form></li>{% endif %}
+        <li><a class="dropdown-item" href="{% url 'painel:candidaturas_empresa' vaga.uuid %}"><i class="bi bi-people"></i> Candidaturas</a></li><li><a class="dropdown-item" href="{% url 'painel:vaga_auditoria' vaga.uuid %}"><i class="bi bi-clock-history"></i> Auditoria</a></li>
+        <li><form method="post" action="{% url 'painel:vaga_duplicar' vaga.uuid %}">{% csrf_token %}<button class="dropdown-item"><i class="bi bi-copy"></i> Duplicar</button></form></li><li><hr class="dropdown-divider"></li><li><a class="dropdown-item text-danger" href="{% url 'painel:vaga_remover' vaga.uuid %}"><i class="bi bi-trash"></i> Remover</a></li>
+      </ul></div>
+    </article>{% endfor %}
+  </section>
+  {% if page_obj.has_other_pages %}<nav class="jobs-actions justify-content-center mt-4" aria-label="Paginação">{% if page_obj.has_previous %}<a class="jobs-button jobs-button--light" href="?{{ querystring }}{% if querystring %}&{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %}<span class="jobs-button">Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }}</span>{% if page_obj.has_next %}<a class="jobs-button jobs-button--light" href="?{{ querystring }}{% if querystring %}&{% endif %}page={{ page_obj.next_page_number }}">Próxima</a>{% endif %}</nav>{% endif %}
+  {% else %}<section class="jobs-empty"><i class="bi bi-briefcase"></i><h2>Nenhuma vaga cadastrada</h2><p>Cadastre sua primeira oportunidade para começar a receber candidaturas.</p><a class="jobs-button jobs-button--primary" href="{% url 'painel:vaga_criar' %}">Cadastrar primeira vaga</a></section>{% endif %}
+</div></div>
+{% endblock %}
+{% block scripts %}{{ block.super }}<script src="{% static 'painel/js/vagas.js' %}" defer></script>{% endblock %}

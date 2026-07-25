@@ -10,6 +10,7 @@ from apps.core.seo.sitemaps import SITEMAPS
 from apps.core.seo.views import robots_txt
 
 handler404 = 'apps.core.views.not_found'
+handler403 = 'apps.core.views.permission_denied'
 handler500 = 'apps.core.views.server_error'
 
 urlpatterns = [

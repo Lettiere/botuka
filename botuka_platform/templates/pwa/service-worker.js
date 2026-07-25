@@ -1,14 +1,15 @@
 {% load static %}
-const BOTUKA_CACHE_VERSION = "botuka-pwa-v1";
+const BOTUKA_CACHE_VERSION = "botuka-pwa-v2";
 const BOTUKA_STATIC_CACHE = `${BOTUKA_CACHE_VERSION}-static`;
-const BOTUKA_PAGE_CACHE = `${BOTUKA_CACHE_VERSION}-pages`;
 
 const APP_SHELL = [
-  "{% url 'home' %}",
   "{% url 'offline' %}",
   "{% static 'css/platform/style.css' %}",
+  "{% static 'css/platform/public-shell.css' %}",
   "{% static 'js/platform/pwa.js' %}",
-  "{% static 'img/icons/botuka-icon.svg' %}"
+  "{% static 'img/icons/botuka-icon.svg' %}",
+  "{% static 'img/icons/botuka-icon-192.png' %}",
+  "{% static 'img/icons/botuka-icon-512.png' %}"
 ];
 
 self.addEventListener("install", (event) => {
@@ -35,6 +36,12 @@ self.addEventListener("activate", (event) => {
   );
 });
 
+self.addEventListener("message", (event) => {
+  if (event.data && event.data.type === "SKIP_WAITING") {
+    self.skipWaiting();
+  }
+});
+
 function isSameOrigin(request) {
   return new URL(request.url).origin === self.location.origin;
 }
@@ -45,25 +52,19 @@ function shouldIgnore(request) {
     request.method !== "GET" ||
     !isSameOrigin(request) ||
     url.pathname.startsWith("/admin/") ||
+    url.pathname.startsWith("/painel/") ||
+    url.pathname.startsWith("/gestao/") ||
+    url.pathname.startsWith("/conta/") ||
     url.pathname.startsWith("/media/") ||
     url.pathname === "/service-worker.js"
   );
 }
 
 async function networkFirst(request) {
-  const cache = await caches.open(BOTUKA_PAGE_CACHE);
-
   try {
-    const response = await fetch(request);
-    if (response.ok) {
-      cache.put(request, response.clone());
-    }
-    return response;
+    return await fetch(request);
   } catch (error) {
-    return (
-      (await cache.match(request)) ||
-      (await caches.match("{% url 'offline' %}"))
-    );
+    return await caches.match("{% url 'offline' %}");
   }
 }
 
@@ -94,5 +95,7 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  event.respondWith(staleWhileRevalidate(request));
+  if (["style", "script", "image", "font"].includes(request.destination)) {
+    event.respondWith(staleWhileRevalidate(request));
+  }
 });

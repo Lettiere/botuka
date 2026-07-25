@@ -1,1 +1,24 @@
-{% extends "_layout/platform/public.html" %}{% block title %}Serviços em Botucatu · BOTUKA{% endblock %}{% block public_content %}<main class="public-directory container-botuka"><nav class="public-breadcrumb"><a href="{% url 'home' %}">Início</a> / Serviços</nav><header><span class="section-kicker">Serviços locais</span><h1>Serviços em Botucatu</h1><p>Prestadores e empresas com serviços publicados.</p><strong>{{ total }} resultado{{ total|pluralize }}</strong></header><form class="public-filters"><label>Buscar<input name="q" value="{{ request.GET.q }}" placeholder="Serviço, profissão ou empresa"></label><label>Categoria<select name="categoria"><option value="">Todas</option>{% for item in categorias %}<option value="{{ item.slug }}">{{ item.nome }}</option>{% endfor %}</select></label><label>Prestador<select name="prestador"><option value="">Todos</option><option value="PESSOA_FISICA">Pessoa física</option><option value="EMPRESA">Empresa</option></select></label><label><input type="checkbox" name="remoto" value="1"> Remoto</label><label><input type="checkbox" name="presencial" value="1"> Presencial</label><button class="btn-botuka">Filtrar</button></form><section class="public-card-grid">{% for servico in servicos %}<article class="public-card"><div class="public-card__media">{% with imagem=servico.imagens.all|first %}{% if imagem %}<img src="{{ imagem.imagem.url }}" alt="" loading="lazy" decoding="async">{% else %}<i class="bi bi-tools"></i>{% endif %}{% endwith %}</div><div><span class="city-tag">{{ servico.setor.nome }}</span><h2>{{ servico.titulo }}</h2><p>{{ servico.descricao_curta }}</p><small>{% if servico.empresa %}{{ servico.empresa.nome_fantasia }}{% else %}Prestador autônomo{% endif %}</small><a href="{% url 'publico:servico' servico.slug %}">Ver serviço</a></div></article>{% empty %}<div class="public-empty"><h2>Nenhum serviço encontrado</h2><p>Tente outros termos ou filtros.</p></div>{% endfor %}</section>{% include 'publico/includes/pagination.html' %}</main>{% endblock %}
+{% extends "_layout/platform/public.html" %}
+{% block title %}Serviços em Botucatu · BOTUKA{% endblock %}
+{% block public_content %}
+<main class="public-directory container-botuka" id="conteudo-principal">
+  {% include "public/components/breadcrumb.html" with current_label="Serviços" %}
+  {% include "public/components/page_header.html" with kicker="Serviços locais" title="Serviços em Botucatu" description="Prestadores e empresas com serviços publicados." count=total count_label="resultados" %}
+  <form class="public-filters" method="get" aria-label="Filtros de serviços">
+    <label>Buscar<input name="q" value="{{ request.GET.q }}" placeholder="Serviço, profissão ou empresa"></label>
+    <label>Categoria<select name="categoria"><option value="">Todas</option>{% for item in categorias %}<option value="{{ item.slug }}" {% if request.GET.categoria == item.slug %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label>
+    <label>Prestador<select name="prestador"><option value="">Todos</option><option value="PESSOA_FISICA" {% if request.GET.prestador == "PESSOA_FISICA" %}selected{% endif %}>Pessoa física</option><option value="EMPRESA" {% if request.GET.prestador == "EMPRESA" %}selected{% endif %}>Empresa</option></select></label>
+    <label><input type="checkbox" name="remoto" value="1" {% if request.GET.remoto %}checked{% endif %}> Remoto</label>
+    <label><input type="checkbox" name="presencial" value="1" {% if request.GET.presencial %}checked{% endif %}> Presencial</label>
+    <button class="btn-botuka btn-yellow" type="submit">Filtrar</button>
+  </form>
+  <section class="public-card-grid" aria-label="Serviços encontrados">
+    {% for servico in servicos %}
+      <article class="public-card"><div class="public-card__media">{% with imagem=servico.imagens.all|first %}{% if imagem %}<img src="{{ imagem.imagem.url }}" alt="{{ imagem.legenda|default:servico.titulo }}" loading="lazy" decoding="async">{% else %}<i class="bi bi-tools" aria-hidden="true"></i>{% endif %}{% endwith %}</div><div><span class="city-tag">{{ servico.setor.nome }}</span><h2>{{ servico.titulo }}</h2><p>{{ servico.descricao_curta }}</p><small>{% if servico.empresa %}{{ servico.empresa.nome_fantasia }}{% else %}Prestador autônomo{% endif %}</small><a href="{% url 'publico:servico' servico.slug %}" aria-label="Ver serviço {{ servico.titulo }}">Ver serviço</a></div></article>
+    {% empty %}
+      {% include "public/components/empty_state.html" with title="Nenhum serviço encontrado" description="Tente outros termos ou filtros." icon="bi-tools" %}
+    {% endfor %}
+  </section>
+  {% include "publico/includes/pagination.html" %}
+</main>
+{% endblock %}

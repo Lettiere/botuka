@@ -1,0 +1,13 @@
+<header class="public-page-header">
+  <div class="public-page-header__content">
+    {% if kicker %}<span class="section-kicker">{{ kicker }}</span>{% endif %}
+    <h1>{{ title }}</h1>
+    {% if description %}<p>{{ description }}</p>{% endif %}
+    {% if count != None %}<span class="public-page-header__count">{{ count }} {{ count_label }}</span>{% endif %}
+  </div>
+  {% if action_url %}
+    <div class="public-page-header__actions">
+      <a class="btn-botuka btn-yellow" href="{{ action_url }}">{{ action_label }}</a>
+    </div>
+  {% endif %}
+</header>

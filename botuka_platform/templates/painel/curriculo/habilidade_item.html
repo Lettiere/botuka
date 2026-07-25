@@ -1,0 +1,10 @@
+<article>
+  <div>
+    <strong>{{ registro.nome }}</strong>
+    <small>{{ registro.nivel|default:'Nível não informado' }}{% if registro.categoria %} · {{ registro.categoria }}{% endif %}</small>
+  </div>
+  <div>
+    <a href="{% url editar_url_name registro.uuid %}">Editar</a>
+    <a href="{% url remover_url_name registro.uuid %}">Remover</a>
+  </div>
+</article>

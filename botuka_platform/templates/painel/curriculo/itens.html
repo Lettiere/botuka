@@ -1,12 +1,83 @@
 {% extends 'painel/base.html' %}
 {% block title %}{{ titulo }} · Currículo | BOTUKA{% endblock %}
-{% block content %}<div class="profile-page curriculum-page"><div class="profile-container">
-{% include 'painel/components/page_header.html' with title=titulo subtitle='Adicione, edite ou remova seus registros.' breadcrumb='Currículo' back_url_name='painel:curriculo' %}
-{% include 'painel/curriculo/steps.html' %}
-<div class="curriculum-layout"><aside class="profile-sidebar curriculum-progress"><strong>Etapa {{ etapa }} de 10</strong><progress value="{{ progresso.percentual }}" max="100">{{ progresso.percentual }}%</progress><span>{{ progresso.percentual }}% preenchido</span></aside><section class="profile-content-card"><div class="profile-content-body">
-{% if item or request.resolver_match.url_name|slice:'-5:' == '_novo' or request.resolver_match.url_name|slice:'-5:' == '_nova' %}
-<form method="post" enctype="multipart/form-data" class="profile-form">{% csrf_token %}<div class="profile-form-grid">{% for field in form %}<div class="profile-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field.errors }}{{ field }}</div>{% endfor %}</div><div class="profile-form-actions"><a class="profile-button" href="{% url lista_url_name %}">Voltar</a><button class="profile-button profile-button-primary" type="submit">Salvar</button></div></form>
-{% else %}
-<div class="profile-form-actions"><a class="profile-button profile-button-primary" href="{% url novo_url_name %}">Adicionar registro</a></div><div class="curriculum-items">{% for registro in itens %}<article><div><strong>{{ registro.titulo|default:registro.nome }}</strong><small>{{ registro.instituicao|default:registro.nivel }}</small></div><div><a href="{% url editar_url_name registro.uuid %}">Editar</a><a href="{% url remover_url_name registro.uuid %}">Remover</a></div></article>{% empty %}<div class="profile-empty">Nenhum registro cadastrado nesta etapa.</div>{% endfor %}</div><div class="profile-form-actions"><a class="profile-button" href="{% url 'painel:curriculo_etapa' etapa|add:'1' %}">Continuar</a></div>
-{% endif %}</div></section></div>
-</div></div>{% endblock %}
+{% block content %}
+<div class="profile-page curriculum-page">
+  <div class="profile-container">
+    {% include 'painel/components/page_header.html' with title='Currículo' subtitle=header_subtitle breadcrumb_parent='Currículo' breadcrumb_parent_url_name='painel:curriculo' breadcrumb_current=breadcrumb_atual back_url_name='painel:curriculo' %}
+    {% include 'painel/curriculo/steps.html' %}
+
+    <div class="curriculum-layout">
+      <aside class="profile-sidebar curriculum-progress">
+        <strong>Etapa {{ etapa }} de 10</strong>
+        <progress value="{{ progresso.percentual }}" max="100">{{ progresso.percentual }}%</progress>
+        <span>{{ progresso.percentual }}% preenchido</span>
+        <small>Anterior: {{ etapa_anterior_nome }}</small>
+        <small>Próxima: {{ proxima_etapa_nome }}</small>
+      </aside>
+
+      <section class="profile-content-card">
+        <div class="profile-content-body">
+          <div class="profile-content-head">
+            <div>
+              <span class="profile-eyebrow">Etapa {{ etapa }}</span>
+              <h2 class="profile-content-title">{{ titulo }}</h2>
+              <p>{{ descricao }}</p>
+            </div>
+          </div>
+          {% if modo_formulario %}
+            <form method="post" enctype="multipart/form-data" class="profile-form">
+              {% csrf_token %}
+              {{ form.non_field_errors }}
+              <div class="profile-form-grid">
+                {% for field in form %}
+                  <div class="profile-field {% if field.field.widget.input_type == 'checkbox' %}profile-field--check{% endif %}">
+                    <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+                    {{ field.errors }}
+                    {{ field }}
+                    {% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}
+                  </div>
+                {% endfor %}
+              </div>
+              <div class="profile-form-actions">
+                {% if back_etapa %}
+                  <a class="profile-button" href="{% url back_url_name back_etapa %}">Voltar</a>
+                {% else %}
+                  <a class="profile-button" href="{% url back_url_name %}">Voltar</a>
+                {% endif %}
+                <a class="profile-button" href="{% url lista_url_name %}">Cancelar</a>
+                <button class="profile-button" type="submit" name="acao" value="salvar">Salvar</button>
+                <button class="profile-button profile-button-primary" type="submit" name="acao" value="continuar">Salvar e continuar</button>
+              </div>
+            </form>
+          {% else %}
+            <div class="profile-form-actions">
+              <a class="profile-button profile-button-primary" href="{% url novo_url_name %}">Adicionar registro</a>
+            </div>
+            <div class="curriculum-items">
+              {% for registro in itens %}
+                {% include item_partial with registro=registro %}
+              {% empty %}
+                <div class="profile-empty">Nenhum registro cadastrado nesta etapa.</div>
+              {% endfor %}
+            </div>
+            <div class="profile-form-actions">
+              {% if back_etapa %}
+                <a class="profile-button" href="{% url back_url_name back_etapa %}">Voltar</a>
+              {% else %}
+                <a class="profile-button" href="{% url back_url_name %}">Voltar</a>
+              {% endif %}
+              <a class="profile-button" href="{% url 'painel:curriculo' %}">Cancelar</a>
+              <a class="profile-button" href="{% url lista_url_name %}">Salvar</a>
+              {% if next_etapa %}
+                <a class="profile-button profile-button-primary" href="{% url next_url_name next_etapa %}">Salvar e continuar</a>
+              {% else %}
+                <a class="profile-button profile-button-primary" href="{% url next_url_name %}">Salvar e continuar</a>
+              {% endif %}
+            </div>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}

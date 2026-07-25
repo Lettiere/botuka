@@ -4,6 +4,8 @@ from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
 
+from apps.recruitment.models import Curriculo
+
 
 class AccountDashboardTests(TestCase):
     def setUp(self):
@@ -44,3 +46,17 @@ class AccountDashboardTests(TestCase):
             self.assertNotIn("<style", content.lower())
             self.assertNotIn("style=", content.lower())
             self.assertNotIn("<script>", content.lower())
+
+    def test_existing_curriculum_replaces_create_action_with_management_card(self):
+        Curriculo.objects.create(
+            usuario=self.user, titulo_profissional="Pessoa desenvolvedora",
+            area_profissional="Tecnologia", resumo="Resumo profissional",
+        )
+        self.client.force_login(self.user)
+        response = self.client.get(reverse("painel:dashboard"))
+        self.assertContains(response, "Meu currículo")
+        self.assertContains(response, "Visualizar")
+        self.assertContains(response, "Editar")
+        self.assertContains(response, "Atualizar")
+        self.assertContains(response, "Atualizado em")
+        self.assertNotContains(response, ">Criar currículo<")
