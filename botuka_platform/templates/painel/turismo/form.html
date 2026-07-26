@@ -1,0 +1,15 @@
+{% extends "painel/base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} | BOTUKA{% endblock %}
+{% block styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'painel/css/turismo.css' %}">{% endblock %}
+{% block painel_content %}
+<main class="tour-page"><div class="tour-wrap tour-wrap-narrow">
+  <nav class="tour-breadcrumb"><a href="{% url 'painel:dashboard' %}">Painel</a><i class="bi bi-chevron-right"></i><a href="{% url 'painel:turismo_dashboard' %}">Turismo</a><i class="bi bi-chevron-right"></i><a href="{% url 'painel:turismo_entidade_lista' entidade %}">{{ config.plural }}</a><i class="bi bi-chevron-right"></i><span>{{ titulo }}</span></nav>
+  <header class="tour-hero tour-hero-compact"><div><span class="tour-kicker">{{ config.label }}</span><h1>{{ titulo }}</h1><p>Preencha somente informações públicas, corretas e verificáveis. O conteúdo será salvo inicialmente como rascunho.</p></div></header>
+  <form class="tour-form" method="post" enctype="multipart/form-data" novalidate>{% csrf_token %}
+    {% if form.non_field_errors %}<div class="tour-alert">{{ form.non_field_errors }}</div>{% endif %}
+    <section class="tour-form-card"><div class="tour-form-grid">{% for field in form %}<div class="tour-field {% if field.field.widget.input_type == 'checkbox' %}tour-field-check{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span aria-hidden="true">*</span>{% endif %}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</div>{% endfor %}</div></section>
+    <footer class="tour-form-actions"><a class="tour-btn tour-btn-light" href="{% if objeto %}{% url 'painel:turismo_entidade_detalhe' entidade objeto.uuid %}{% else %}{% url 'painel:turismo_entidade_lista' entidade %}{% endif %}">Cancelar</a><button class="tour-btn tour-btn-primary" type="submit"><i class="bi bi-check2"></i> Salvar</button></footer>
+  </form>
+</div></main>
+{% endblock %}

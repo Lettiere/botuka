@@ -1,0 +1,24 @@
+{% extends "_layout/platform/public.html" %}{% load static %}
+{% block title %}YuBotuka{% endblock %}
+{% block public_styles %}<link rel="stylesheet" href="{% static 'public/css/yubotuka.css' %}">{% endblock %}
+{% block public_content %}
+<main class="yu-public">
+  <section class="yu-public-hero">
+    <div class="container-botuka">
+      <nav class="public-breadcrumb"><a href="{% url 'home' %}">Início</a> / YuBotuka</nav>
+      <div class="yu-public-hero__content"><div><span class="section-kicker">Botucatu em vídeo</span><h1>{{ configuracao.titulo_publico|default:'YuBotuka' }}</h1><p>{{ configuracao.descricao_publica|default:'Vídeos, programas e histórias da nossa cidade.' }}</p></div>
+      <form class="yu-public-search"><label class="visually-hidden" for="yu-search">Buscar</label><input id="yu-search" name="q" value="{{ request.GET.q }}" placeholder="Busque vídeos, canais ou programas"><button>Buscar</button></form></div>
+    </div>
+  </section>
+  <div class="container-botuka">
+    {% if destaque %}<section class="yu-feature"><div class="yu-feature__media">{% if destaque.thumbnail %}<img src="{{ destaque.thumbnail }}" alt="" width="960" height="540">{% endif %}<button type="button" data-video-src="{{ destaque.embed_url }}" aria-label="Carregar vídeo {{ destaque.titulo }}"><i class="bi bi-play-circle"></i></button></div><div><span>{{ destaque.categoria|default:destaque.get_tipo_display }}</span><h2>{{ destaque.titulo }}</h2><p>{{ destaque.descricao_curta|default:destaque.descricao }}</p><a class="btn-botuka" href="{{ destaque.public_url }}">Assistir agora</a></div></section>{% endif %}
+    {% if categorias %}<section class="yu-section"><header><div><span class="section-kicker">Explore por assunto</span><h2>Categorias</h2></div></header><div class="yu-chips">{% for categoria in categorias %}<a href="{% url 'media_public:categoria' categoria.slug %}">{% if categoria.icone %}<i class="{{ categoria.icone }}"></i>{% endif %} {{ categoria.nome }} <small>{{ categoria.total_videos }}</small></a>{% endfor %}</div></section>{% endif %}
+    <section class="yu-section"><header><div><span class="section-kicker">Publicações</span><h2>Últimos vídeos</h2></div><strong>{{ total }} conteúdo{{ total|pluralize }}</strong></header><div class="yu-public-grid">{% for video in videos %}{% include 'publico/yubotuka/_video_card.html' %}{% empty %}<div class="yu-empty"><i class="bi bi-camera-video"></i><h2>Nenhum vídeo publicado</h2><p>Novos conteúdos aparecerão aqui após aprovação editorial.</p></div>{% endfor %}</div>{% include 'publico/includes/pagination.html' %}</section>
+    {% if shorts %}<section class="yu-section"><header><div><span class="section-kicker">Formato vertical</span><h2>Shorts</h2></div></header><div class="yu-shorts">{% for video in shorts %}{% include 'publico/yubotuka/_video_card.html' %}{% endfor %}</div></section>{% endif %}
+    {% if playlists %}<section class="yu-section"><header><div><span class="section-kicker">Assista em sequência</span><h2>Playlists</h2></div></header><div class="yu-directory-grid">{% for playlist in playlists %}<a href="{% url 'media_public:playlist' playlist.slug %}"><i class="bi bi-collection-play"></i><strong>{{ playlist.caminho }}</strong><small>{{ playlist.total_videos }} vídeo{{ playlist.total_videos|pluralize }}</small></a>{% endfor %}</div></section>{% endif %}
+    {% if canais %}<section class="yu-section"><header><div><span class="section-kicker">Produtores</span><h2>Canais</h2></div></header><div class="yu-directory-grid">{% for canal in canais %}<a href="{% url 'media_public:canal' canal.slug %}">{% if canal.logotipo %}<img src="{{ canal.logotipo.url }}" alt="" width="56" height="56" loading="lazy">{% else %}<i class="bi bi-broadcast"></i>{% endif %}<strong>{{ canal.nome }}</strong><small>{{ canal.total_videos }} vídeo{{ canal.total_videos|pluralize }}</small></a>{% endfor %}</div></section>{% endif %}
+    {% for categoria, itens in recentes_por_categoria %}{% if itens %}<section class="yu-section"><header><div><span class="section-kicker">{{ categoria.caminho }}</span><h2>Mais de {{ categoria.nome }}</h2></div><a href="{% url 'media_public:categoria' categoria.slug %}">Ver todos</a></header><div class="yu-public-grid">{% for video in itens %}{% include 'publico/yubotuka/_video_card.html' %}{% endfor %}</div></section>{% endif %}{% endfor %}
+  </div>
+</main>
+{% endblock %}
+{% block public_scripts %}<script src="{% static 'public/js/yubotuka.js' %}" defer></script>{% endblock %}

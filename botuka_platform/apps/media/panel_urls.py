@@ -1,7 +1,71 @@
 from django.urls import path
 from . import views
+from . import yubotuka_views
+from . import phase3_views
 def routes(prefix,name,views3):
     l,n,e=views3;return [path(f'ytv/{prefix}/',l,name=f'media_{name}_lista'),path(f'ytv/{prefix}/novo/',n,name=f'media_{name}_novo'),path(f'ytv/{prefix}/<uuid:uuid>/editar/',e,name=f'media_{name}_editar')]
 urlpatterns=[]
-for args in [('canais','canal',(views.canal_lista,views.canal_novo,views.canal_editar)),('programas','programa',(views.programa_lista,views.programa_novo,views.programa_editar)),('temporadas','temporada',(views.temporada_lista,views.temporada_novo,views.temporada_editar)),('episodios','episodio',(views.episodio_lista,views.episodio_novo,views.episodio_editar)),('transmissoes','transmissao',(views.transmissao_lista,views.transmissao_novo,views.transmissao_editar)),('pautas','pauta',(views.pauta_lista,views.pauta_novo,views.pauta_editar))]:urlpatterns+=routes(*args)
-urlpatterns += [path('ytv/',views.episodio_lista,name='ytv_dashboard')]
+for args in [('canais','canal',(views.canal_lista,views.canal_novo,views.canal_editar)),('programas','programa',(phase3_views.programa_lista,phase3_views.programa_form,phase3_views.programa_form)),('temporadas','temporada',(phase3_views.temporada_lista,phase3_views.temporada_form,phase3_views.temporada_form)),('episodios','episodio',(phase3_views.episodio_lista,phase3_views.episodio_form,phase3_views.episodio_form)),('transmissoes','transmissao',(phase3_views.transmissao_lista,phase3_views.transmissao_form,phase3_views.transmissao_form)),('pautas','pauta',(views.pauta_lista,views.pauta_novo,views.pauta_editar))]:urlpatterns+=routes(*args)
+urlpatterns += [path('ytv/', yubotuka_views.dashboard, name='ytv_dashboard')]
+urlpatterns += [
+    path('yubotuka/', yubotuka_views.dashboard, name='yubotuka_dashboard'),
+    path('yubotuka/videos/', yubotuka_views.video_lista, name='yubotuka_videos'),
+    path('yubotuka/videos/novo/', yubotuka_views.video_novo, name='yubotuka_video_novo'),
+    path('yubotuka/videos/<uuid:uuid>/editar/', yubotuka_views.video_editar, name='yubotuka_video_editar'),
+    path('yubotuka/videos/<uuid:uuid>/', yubotuka_views.video_detalhe, name='yubotuka_video_detalhe'),
+    path('yubotuka/videos/<uuid:uuid>/enviar-analise/', yubotuka_views.video_enviar_analise, name='yubotuka_video_enviar_analise'),
+    path('yubotuka/videos/<uuid:uuid>/aprovar/', yubotuka_views.video_aprovar, name='yubotuka_video_aprovar'),
+    path('yubotuka/videos/<uuid:uuid>/rejeitar/', yubotuka_views.video_rejeitar, name='yubotuka_video_rejeitar'),
+    path('yubotuka/videos/<uuid:uuid>/agendar/', yubotuka_views.video_agendar, name='yubotuka_video_agendar'),
+    path('yubotuka/videos/<uuid:uuid>/publicar/', yubotuka_views.video_publicar, name='yubotuka_video_publicar'),
+    path('yubotuka/videos/<uuid:uuid>/arquivar/', yubotuka_views.video_arquivar, name='yubotuka_video_arquivar'),
+    path('yubotuka/videos/<uuid:uuid>/restaurar/', yubotuka_views.video_restaurar, name='yubotuka_video_restaurar'),
+    path('yubotuka/aprovacoes/', yubotuka_views.fila_aprovacao, name='yubotuka_fila'),
+    path('yubotuka/aprovacoes/<uuid:uuid>/', yubotuka_views.revisao_detalhe, name='yubotuka_revisao'),
+    path('yubotuka/categorias/', yubotuka_views.categoria_lista, name='yubotuka_categorias'),
+    path('yubotuka/categorias/nova/', yubotuka_views.categoria_form, name='yubotuka_categoria_nova'),
+    path('yubotuka/categorias/<uuid:uuid>/editar/', yubotuka_views.categoria_form, name='yubotuka_categoria_editar'),
+    path('yubotuka/categorias/<uuid:uuid>/', yubotuka_views.categoria_detalhe, name='yubotuka_categoria_detalhe'),
+    path('yubotuka/categorias/<uuid:uuid>/alternar/', yubotuka_views.categoria_alternar, name='yubotuka_categoria_alternar'),
+    path('yubotuka/playlists/', yubotuka_views.playlist_lista, name='yubotuka_playlists'),
+    path('yubotuka/playlists/nova/', yubotuka_views.playlist_form, name='yubotuka_playlist_nova'),
+    path('yubotuka/playlists/<uuid:uuid>/editar/', yubotuka_views.playlist_form, name='yubotuka_playlist_editar'),
+    path('yubotuka/playlists/<uuid:uuid>/', yubotuka_views.playlist_detalhe, name='yubotuka_playlist_detalhe'),
+    path('yubotuka/playlists/<uuid:uuid>/reordenar/', yubotuka_views.playlist_reordenar, name='yubotuka_playlist_reordenar'),
+    path('yubotuka/canais/', yubotuka_views.canal_lista, name='yubotuka_canais'),
+    path('yubotuka/canais/novo/', yubotuka_views.canal_form, name='yubotuka_canal_novo'),
+    path('yubotuka/canais/<uuid:uuid>/editar/', yubotuka_views.canal_form, name='yubotuka_canal_editar'),
+    path('yubotuka/cadastros/<slug:tipo>/', yubotuka_views.auxiliar_lista, name='yubotuka_auxiliar_lista'),
+    path('yubotuka/cadastros/<slug:tipo>/novo/', yubotuka_views.auxiliar_form, name='yubotuka_auxiliar_novo'),
+    path('yubotuka/cadastros/<slug:tipo>/<uuid:uuid>/editar/', yubotuka_views.auxiliar_form, name='yubotuka_auxiliar_editar'),
+    path('yubotuka/configuracoes/', yubotuka_views.configuracao, name='yubotuka_configuracao'),
+    path('yubotuka/auditoria/', yubotuka_views.auditoria_lista, name='yubotuka_auditoria'),
+    path('yubotuka/programas/', phase3_views.programa_lista, name='yubotuka_programas'),
+    path('yubotuka/programas/novo/', phase3_views.programa_form, name='yubotuka_programa_novo'),
+    path('yubotuka/programas/<uuid:uuid>/', phase3_views.programa_detalhe, name='yubotuka_programa_detalhe'),
+    path('yubotuka/programas/<uuid:uuid>/editar/', phase3_views.programa_form, name='yubotuka_programa_editar'),
+    path('yubotuka/programas/<uuid:uuid>/alternar/', phase3_views.programa_alternar, name='yubotuka_programa_alternar'),
+    path('yubotuka/temporadas/', phase3_views.temporada_lista, name='yubotuka_temporadas'),
+    path('yubotuka/temporadas/nova/', phase3_views.temporada_form, name='yubotuka_temporada_nova'),
+    path('yubotuka/temporadas/<uuid:uuid>/', phase3_views.temporada_detalhe, name='yubotuka_temporada_detalhe'),
+    path('yubotuka/temporadas/<uuid:uuid>/editar/', phase3_views.temporada_form, name='yubotuka_temporada_editar'),
+    path('yubotuka/episodios/', phase3_views.episodio_lista, name='yubotuka_episodios'),
+    path('yubotuka/episodios/novo/', phase3_views.episodio_form, name='yubotuka_episodio_novo'),
+    path('yubotuka/episodios/<uuid:uuid>/', phase3_views.episodio_detalhe, name='yubotuka_episodio_detalhe'),
+    path('yubotuka/episodios/<uuid:uuid>/editar/', phase3_views.episodio_form, name='yubotuka_episodio_editar'),
+    path('yubotuka/transmissoes/', phase3_views.transmissao_lista, name='yubotuka_transmissoes'),
+    path('yubotuka/transmissoes/nova/', phase3_views.transmissao_form, name='yubotuka_transmissao_nova'),
+    path('yubotuka/transmissoes/<uuid:uuid>/', phase3_views.transmissao_detalhe, name='yubotuka_transmissao_detalhe'),
+    path('yubotuka/transmissoes/<uuid:uuid>/editar/', phase3_views.transmissao_form, name='yubotuka_transmissao_editar'),
+    path('yubotuka/transmissoes/<uuid:uuid>/enviar/', phase3_views.transmissao_enviar, name='yubotuka_transmissao_enviar'),
+    path('yubotuka/transmissoes/<uuid:uuid>/aprovar/', phase3_views.transmissao_aprovar, name='yubotuka_transmissao_aprovar'),
+    path('yubotuka/transmissoes/<uuid:uuid>/agendar/', phase3_views.transmissao_agendar, name='yubotuka_transmissao_agendar'),
+    path('yubotuka/transmissoes/<uuid:uuid>/iniciar/', phase3_views.transmissao_iniciar, name='yubotuka_transmissao_iniciar'),
+    path('yubotuka/transmissoes/<uuid:uuid>/encerrar/', phase3_views.transmissao_encerrar, name='yubotuka_transmissao_encerrar'),
+    path('yubotuka/transmissoes/<uuid:uuid>/publicar/', phase3_views.transmissao_publicar, name='yubotuka_transmissao_publicar'),
+    path('yubotuka/transmissoes/<uuid:uuid>/cancelar/', phase3_views.transmissao_cancelar, name='yubotuka_transmissao_cancelar'),
+    path('yubotuka/atribuicoes/canais/', phase3_views.atribuicao_canais, name='yubotuka_atribuicao_canais'),
+    path('yubotuka/atribuicoes/canais/<uuid:uuid>/', phase3_views.atribuicao_canal, name='yubotuka_atribuicao_canal'),
+    path('yubotuka/homologacao-legado/', phase3_views.homologacao_lista, name='yubotuka_homologacao_lista'),
+    path('yubotuka/homologacao-legado/<uuid:uuid>/', phase3_views.homologacao_detalhe, name='yubotuka_homologacao_detalhe'),
+]

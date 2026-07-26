@@ -8,6 +8,7 @@
     <div class="actions">
       <a class="btn btn-muted" href="{% url 'gestao:usuarios_lista' %}">Voltar</a>
       <a class="btn btn-primary" href="{% url 'gestao:usuarios_editar' object.pk %}">Editar</a>
+      <a class="btn btn-muted" href="{% url 'gestao:usuario_permissoes' object.uuid %}">Permissões</a>
     </div>
   </div>
   <div class="grid-cards">

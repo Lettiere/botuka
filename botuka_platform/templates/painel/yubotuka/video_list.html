@@ -1,0 +1,28 @@
+{% extends 'painel/yubotuka/base.html' %}
+{% block breadcrumb_item %}<li class="breadcrumb-item active">Vídeos</li>{% endblock %}
+{% block page_title %}Vídeos{% endblock %}
+{% block page_description %}Acompanhe seus rascunhos, conteúdos em análise e publicações.{% endblock %}
+{% block yubotuka_content %}
+<div class="d-flex flex-column flex-md-row justify-content-between gap-3 mb-3">
+  <form class="row g-2 flex-grow-1">
+    <div class="col-12 col-md"><input class="form-control" name="q" value="{{ termo }}" placeholder="Buscar vídeo ou canal"></div>
+    <div class="col-12 col-md-4"><select class="form-select" name="status"><option value="">Todos os status</option>{% for valor, nome in status_choices %}<option value="{{ valor }}" {% if status_atual == valor %}selected{% endif %}>{{ nome }}</option>{% endfor %}</select></div>
+    <div class="col-12 col-md-auto"><button class="btn btn-outline-dark w-100">Filtrar</button></div>
+  </form>
+  {% if pode_criar_video %}<a class="btn btn-warning" href="{% url 'painel:yubotuka_video_novo' %}">+ Novo vídeo</a>{% endif %}
+</div>
+<div class="row g-3">
+  {% for video in videos %}
+  <div class="col-12 col-lg-6"><article class="card h-100"><div class="card-body">
+    <div class="d-flex justify-content-between gap-3"><div><span class="badge text-bg-secondary">{{ video.get_status_display }}</span><h2 class="h5 mt-2">{{ video.titulo }}</h2></div><small class="text-muted">{{ video.atualizado_em|date:'d/m/Y' }}</small></div>
+    <p class="text-muted mb-2">{{ video.categoria|default:'Sem categoria' }} · {{ video.canal }}</p>
+    <p>{{ video.descricao_curta|default:video.descricao|truncatechars:130 }}</p>
+    <div class="d-flex flex-wrap gap-2"><a class="btn btn-sm btn-outline-secondary" href="{% url 'painel:yubotuka_video_detalhe' video.uuid %}">Detalhes</a>
+      {% if video.status == 'RASCUNHO' or video.status == 'CORRECAO' or video.status == 'REJEITADO' %}<a class="btn btn-sm btn-outline-dark" href="{% url 'painel:yubotuka_video_editar' video.uuid %}">Editar</a>{% endif %}
+      {% if video.status == 'RASCUNHO' or video.status == 'CORRECAO' or video.status == 'REJEITADO' %}<form method="post" action="{% url 'painel:yubotuka_video_enviar_analise' video.uuid %}">{% csrf_token %}<button class="btn btn-sm btn-dark">Enviar para análise</button></form>{% endif %}
+      {% if pode_publicar and video.status == 'APROVADO' %}<form method="post" action="{% url 'painel:yubotuka_video_publicar' video.uuid %}">{% csrf_token %}<button class="btn btn-sm btn-warning">Publicar</button></form>{% endif %}
+    </div>
+  </div></article></div>
+  {% empty %}<div class="col-12"><div class="card"><div class="card-body text-center py-5"><h2 class="h5">Nenhum vídeo encontrado</h2><p class="text-muted mb-0">Crie um rascunho ou ajuste os filtros.</p></div></div></div>{% endfor %}
+</div>
+{% endblock %}

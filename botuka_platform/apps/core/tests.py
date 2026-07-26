@@ -24,7 +24,7 @@ class CityModulePermissionTests(TestCase):
         self.assertTrue(self.user.tem_permissao('news.criar'))
 
     def test_root_administra_todos_os_modulos(self):
-        perfil = Perfil.objects.create(nome='ROOT')
+        perfil, _ = Perfil.objects.get_or_create(nome='ROOT')
         self.user.perfil = perfil
         self.user.save(update_fields=['perfil'])
         self.assertTrue(self.user.tem_permissao('sports.publicar'))
@@ -36,7 +36,7 @@ class CityModulePermissionTests(TestCase):
 class HomeProfileRegressionTests(TestCase):
     def setUp(self):
         self.user = get_user_model().objects.create_user('home-comum', password='x')
-        self.master_profile = Perfil.objects.create(nome='MASTER')
+        self.master_profile, _ = Perfil.objects.get_or_create(nome='MASTER')
         self.master = get_user_model().objects.create_user(
             'home-master', password='x', perfil=self.master_profile,
         )

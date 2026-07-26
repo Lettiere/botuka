@@ -1,0 +1,21 @@
+{% extends 'painel/yubotuka/base.html' %}
+{% block breadcrumb_item %}<li class="breadcrumb-item active">Detalhes do vídeo</li>{% endblock %}
+{% block page_title %}{{ video.titulo }}{% endblock %}
+{% block page_description %}Status: {{ video.get_status_display }} · Slug: {{ video.slug }}{% endblock %}
+{% block yubotuka_content %}
+{% if video.status == 'REJEITADO' %}<div class="alert alert-danger"><strong>{{ video.motivo_rejeicao }}</strong><p class="mb-0">{{ video.observacao_rejeicao }}</p></div>{% endif %}
+{% if video.status == 'ARQUIVADO' %}<div class="alert alert-secondary"><strong>Conteúdo arquivado:</strong> {{ video.motivo_arquivamento }}</div>{% endif %}
+<div class="row g-4"><section class="col-12 col-xl-8">
+  <div class="card"><div class="yu-admin-video">{% if video.thumbnail %}<img src="{{ video.thumbnail }}" alt="" width="960" height="540">{% endif %}<button data-video-src="{{ video.embed_url }}" aria-label="Carregar prévia"><i class="bi bi-play-circle"></i></button></div><div class="card-body"><p class="lead">{{ video.descricao_curta }}</p>{{ video.descricao|linebreaks }}</div></div>
+  <div class="card mt-4"><div class="card-header"><strong>Histórico editorial</strong></div><div class="list-group list-group-flush">{% for item in historico %}<div class="list-group-item"><strong>{{ item.get_acao_display }}</strong><small class="d-block text-muted">{{ item.usuario|default:'Sistema' }} · {{ item.criado_em|date:'d/m/Y H:i' }} · {{ item.status_anterior }} → {{ item.status_novo }}</small>{% if item.descricao %}<p class="mb-0 mt-1">{{ item.descricao }}</p>{% endif %}</div>{% empty %}<div class="list-group-item text-muted">Sem eventos registrados.</div>{% endfor %}</div></div>
+</section><aside class="col-12 col-xl-4">
+  <div class="card"><div class="card-body"><dl class="yu-details"><dt>Canal</dt><dd>{{ video.canal }}</dd><dt>Categoria</dt><dd>{{ video.categoria|default:'Não informada' }}</dd><dt>Programa</dt><dd>{{ video.programa|default:'Não informado' }}</dd><dt>Autor</dt><dd>{{ video.autor|default:'Legado sem autor' }}</dd><dt>Tipo</dt><dd>{{ video.get_tipo_display }}</dd><dt>Publicação</dt><dd>{{ video.publicado_em|date:'d/m/Y H:i'|default:'Não publicado' }}</dd><dt>Agendamento</dt><dd>{{ video.data_agendamento|date:'d/m/Y H:i'|default:'Não agendado' }}</dd><dt>Playlists</dt><dd>{% for relacao in video.itens_playlist.all %}{{ relacao.playlist.caminho }}{% if not forloop.last %}, {% endif %}{% empty %}Nenhuma{% endfor %}</dd></dl>
+  {% if video.status == 'PUBLICADO' %}<a class="btn btn-outline-dark w-100 mb-2" href="{{ video.public_url }}" target="_blank" rel="noopener">Abrir página pública</a>{% endif %}
+  {% if pode_editar %}<a class="btn btn-warning w-100 mb-2" href="{% url 'painel:yubotuka_video_editar' video.uuid %}">Editar</a>{% endif %}
+  {% if video.status == 'RASCUNHO' or video.status == 'CORRECAO' or video.status == 'REJEITADO' %}<form method="post" action="{% url 'painel:yubotuka_video_enviar_analise' video.uuid %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn btn-dark w-100 mb-2">Enviar para análise</button></form>{% endif %}
+  {% if pode_publicar and video.status == 'APROVADO' or pode_publicar and video.status == 'AGENDADO' %}<form method="post" action="{% url 'painel:yubotuka_video_publicar' video.uuid %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn btn-success w-100 mb-2">Publicar</button></form>{% endif %}
+  {% if pode_arquivar and video.status != 'ARQUIVADO' %}<a class="btn btn-outline-danger w-100 mb-2" href="{% url 'painel:yubotuka_video_arquivar' video.uuid %}">Arquivar</a>{% endif %}
+  {% if pode_arquivar and video.status == 'ARQUIVADO' %}<form method="post" action="{% url 'painel:yubotuka_video_restaurar' video.uuid %}">{% csrf_token %}<input type="hidden" name="next" value="{{ request.path }}"><button class="btn btn-outline-success w-100">Restaurar</button></form>{% endif %}
+  </div></div>
+</aside></div>
+{% endblock %}

@@ -5,7 +5,8 @@ from django.utils import timezone
 
 from apps.core.domain import EditorialStatus
 from apps.government.models import AcaoPublica, OrgaoPublico
-from apps.media.models import Episodio, Programa
+from apps.media.models import Canal, CategoriaYuBotuka, Episodio, Playlist, Programa
+from apps.media.selectors import videos_publicos
 from apps.news.models import Artigo, CategoriaNoticia
 from apps.organizations.models import Empresa
 from apps.recruitment.models import Vaga
@@ -21,6 +22,7 @@ class StaticSitemap(HttpsSitemap):
     routes = ['home', 'publico:empresas', 'publico:servicos', 'events:lista',
               'news_public:home', 'recruitment_public:vagas', 'sports_public:home',
               'media_public:home', 'government_public:home']
+    routes.append('media_public:yubotuka_home')
 
     def items(self): return self.routes
     def location(self, item): return reverse(item)
@@ -69,6 +71,30 @@ class ProgramaSitemap(HttpsSitemap):
 class EpisodioSitemap(HttpsSitemap):
     def items(self): return Episodio.objects.filter(ativo=True, excluido_em__isnull=True, status=EditorialStatus.PUBLICADO, publicado_em__lte=timezone.now(), programa__ativo=True, programa__excluido_em__isnull=True, programa__canal__ativo=True, programa__canal__excluido_em__isnull=True).only('slug', 'atualizado_em')
     def location(self, item): return reverse('media_public:episodio', args=[item.slug])
+    def lastmod(self, item): return item.atualizado_em
+
+
+class VideoYuBotukaSitemap(HttpsSitemap):
+    def items(self): return videos_publicos()
+    def location(self, item): return reverse('media_public:video', args=[item.slug])
+    def lastmod(self, item): return item.atualizado_em
+
+
+class CategoriaYuBotukaSitemap(HttpsSitemap):
+    def items(self): return CategoriaYuBotuka.objects.filter(ativo=True, excluido_em__isnull=True, videos__in=videos_publicos()).distinct()
+    def location(self, item): return reverse('media_public:categoria', args=[item.slug])
+    def lastmod(self, item): return item.atualizado_em
+
+
+class PlaylistYuBotukaSitemap(HttpsSitemap):
+    def items(self): return Playlist.objects.filter(ativo=True, excluido_em__isnull=True, itens__video__in=videos_publicos()).distinct()
+    def location(self, item): return reverse('media_public:playlist', args=[item.slug])
+    def lastmod(self, item): return item.atualizado_em
+
+
+class CanalYuBotukaSitemap(HttpsSitemap):
+    def items(self): return Canal.objects.filter(ativo=True, excluido_em__isnull=True, videos_editoriais__in=videos_publicos()).distinct()
+    def location(self, item): return reverse('media_public:canal', args=[item.slug])
     def lastmod(self, item): return item.atualizado_em
 
 
@@ -123,6 +149,10 @@ SITEMAPS = {
     'vagas': VagaSitemap,
     'ytv-programas': ProgramaSitemap,
     'ytv-episodios': EpisodioSitemap,
+    'yubotuka-videos': VideoYuBotukaSitemap,
+    'yubotuka-categorias': CategoriaYuBotukaSitemap,
+    'yubotuka-playlists': PlaylistYuBotukaSitemap,
+    'yubotuka-canais': CanalYuBotukaSitemap,
     'esportes-modalidades': ModalidadeSitemap,
     'esportes-equipes': EquipeSitemap,
     'esportes-atletas': AtletaSitemap,

@@ -119,6 +119,14 @@ if IS_PRODUCTION and (not CSRF_COOKIE_SECURE or not SESSION_COOKIE_SECURE):
 
 CSRF_FAILURE_VIEW = 'apps.core.views.csrf_failure'
 
+WEATHER_API_URL = config('WEATHER_API_URL', default='')
+WEATHER_API_KEY = config('WEATHER_API_KEY', default='')
+WEATHER_CITY = config('WEATHER_CITY', default='Botucatu')
+WEATHER_LATITUDE = config('WEATHER_LATITUDE', default='-22.8858')
+WEATHER_LONGITUDE = config('WEATHER_LONGITUDE', default='-48.4451')
+WEATHER_CACHE_SECONDS = config('WEATHER_CACHE_SECONDS', default=1200, cast=int)
+MAP_PROVIDER = config('MAP_PROVIDER', default='openstreetmap')
+
 # =============================================================================
 # Aplicações
 # =============================================================================
@@ -143,6 +151,7 @@ INSTALLED_APPS = [
     'apps.organizations.apps.OrganizationsConfig',
     'apps.services.apps.ServicesConfig',
     'apps.recruitment.apps.RecruitmentConfig',
+    'apps.tourism.apps.TourismConfig',
     'apps.sports.apps.SportsConfig',
     'apps.media.apps.MediaConfig',
     'apps.news.apps.NewsConfig',
@@ -191,6 +200,7 @@ TEMPLATES = [
                 'apps.gestao.context_processors.publicar_options',
                 'apps.painel.navigation.painel_navigation',
                 'apps.core.context_processors.seo.seo_context',
+                'apps.core.context_processors.weather.weather',
             ],
         },
     },

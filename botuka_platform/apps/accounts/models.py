@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from django.conf import settings
 from django.contrib.auth.models import AbstractUser, Group, Permission, UserManager
 from django.db.models import QuerySet
 from django.db import models
@@ -283,6 +284,14 @@ class Usuario(UUIDModel, TimeStampedModel, AbstractUser):
 
         if not codigo:
             return False
+        if self.concessoes_permissao.filter(
+            permissao__codigo=codigo,
+            permissao__ativo=True,
+            revogada_em__isnull=True,
+        ).filter(
+            models.Q(valida_ate__isnull=True) | models.Q(valida_ate__gt=timezone.now())
+        ).exists():
+            return True
         from apps.core.models import PerfilPermissao
         return PerfilPermissao.objects.filter(
             perfil__in=self.perfis_adicionais.all() if not self.perfil_id else self.perfis_adicionais.all() | type(self.perfil).objects.filter(pk=self.perfil_id),
@@ -290,6 +299,67 @@ class Usuario(UUIDModel, TimeStampedModel, AbstractUser):
             permissao__ativo=True,
             permissao__codigo=codigo,
         ).exists()
+
+
+class ConcessaoPermissao(UUIDModel, TimeStampedModel):
+    """Concessão individual, temporal e auditável de permissão de domínio."""
+
+    id = models.BigAutoField(primary_key=True)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='concessoes_permissao',
+    )
+    permissao = models.ForeignKey(
+        'core.Permissao', on_delete=models.PROTECT,
+        related_name='concessoes_usuarios',
+    )
+    concedida_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name='permissoes_concedidas',
+    )
+    valida_ate = models.DateTimeField(null=True, blank=True)
+    revogada_em = models.DateTimeField(null=True, blank=True)
+    revogada_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        null=True, blank=True, related_name='permissoes_revogadas',
+    )
+    justificativa = models.TextField()
+    observacao = models.TextField(blank=True)
+
+    class Meta:
+        ordering = ['usuario', 'permissao__codigo']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['usuario', 'permissao'],
+                condition=models.Q(revogada_em__isnull=True),
+                name='accounts_concessao_ativa_uk',
+            ),
+        ]
+
+
+class AuditoriaPermissao(UUIDModel, TimeStampedModel):
+    class Acao(models.TextChoices):
+        CONCEDER = 'CONCEDER', 'Conceder'
+        REVOGAR = 'REVOGAR', 'Revogar'
+
+    id = models.BigAutoField(primary_key=True)
+    usuario_beneficiado = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name='auditorias_permissao_recebidas',
+    )
+    permissao = models.ForeignKey('core.Permissao', on_delete=models.PROTECT)
+    ator = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name='auditorias_permissao_executadas',
+    )
+    acao = models.CharField(max_length=12, choices=Acao.choices)
+    ip = models.GenericIPAddressField(null=True, blank=True)
+    justificativa = models.TextField()
+    estado_anterior = models.JSONField(default=dict)
+    estado_posterior = models.JSONField(default=dict)
+
+    class Meta:
+        ordering = ['-criado_em']
 
 
 class UsuarioGrupo(UUIDModel, TimeStampedModel):

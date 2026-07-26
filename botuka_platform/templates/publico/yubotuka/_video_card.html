@@ -1,0 +1,12 @@
+<article class="yu-public-card">
+  <a class="yu-public-card__media" href="{{ video.public_url }}">
+    {% if video.thumbnail %}<img src="{{ video.thumbnail }}" alt="" width="640" height="360" loading="lazy" decoding="async">{% else %}<span class="bi bi-play-circle" aria-hidden="true"></span>{% endif %}
+    <span class="yu-public-card__play bi bi-play-fill" aria-hidden="true"></span>
+  </a>
+  <div class="yu-public-card__body">
+    <div class="yu-public-card__meta"><span>{{ video.categoria|default:video.get_tipo_display }}</span><time>{{ video.publicado_em|date:'d/m/Y' }}</time></div>
+    <h3><a href="{{ video.public_url }}">{{ video.titulo }}</a></h3>
+    <p>{{ video.descricao_curta|default:video.descricao|truncatechars:120 }}</p>
+    <small>{{ video.canal.nome }}{% if video.duracao %} · {{ video.duracao }}{% endif %}</small>
+  </div>
+</article>

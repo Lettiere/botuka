@@ -107,17 +107,23 @@ def vaga_seo(request, vaga):
 
 
 def media_seo(request, obj, *, kind='programa'):
-    title = getattr(obj, 'titulo', None) or getattr(obj, 'nome', 'YTv Botuka')
-    description = getattr(obj, 'descricao', '')
-    image = getattr(obj, 'thumbnail', None) or getattr(obj, 'imagem', None)
+    title = getattr(obj, 'titulo_seo', None) or getattr(obj, 'titulo', None) or getattr(obj, 'nome', 'YuBotuka')
+    description = getattr(obj, 'descricao_seo', None) or getattr(obj, 'descricao_curta', None) or getattr(obj, 'descricao', '')
+    image = getattr(obj, 'imagem_compartilhamento', None) or getattr(obj, 'thumbnail', None) or getattr(obj, 'imagem', None)
     schemas = []
-    if kind == 'episodio' and getattr(obj, 'embed_url', ''):
+    if kind in {'episodio', 'video'} and getattr(obj, 'embed_url', ''):
+        published_at = (
+            getattr(obj, 'publicado_em', None)
+            or getattr(obj, 'inicio', None)
+            or getattr(obj, 'data_prevista', None)
+        )
         schemas.append(compact({'@type': 'VideoObject', 'name': title, 'description': text(description),
                                 'thumbnailUrl': [image_url(request, image)],
-                                'uploadDate': obj.publicado_em.isoformat() if obj.publicado_em else None,
-                                'embedUrl': obj.embed_url, 'duration': str(obj.duracao) if obj.duracao else None}))
-    return build_seo(request, title=f'{title} | YTv Botuka', description=description or 'Conteúdo audiovisual local da YTv Botuka.', image=image,
-                     breadcrumbs=[breadcrumb(request, 'Início', reverse('home')), breadcrumb(request, 'YTv Botuka', reverse('media_public:home')), breadcrumb(request, title, request.path)], schemas=schemas,
+                                'uploadDate': published_at.isoformat() if published_at else None,
+                                'embedUrl': obj.embed_url,
+                                'duration': str(getattr(obj, 'duracao', '')) or None}))
+    return build_seo(request, title=f'{title} | YuBotuka', description=description or 'Conteúdo audiovisual local do YuBotuka.', image=image,
+                     breadcrumbs=[breadcrumb(request, 'Início', reverse('home')), breadcrumb(request, 'YuBotuka', reverse('media_public:yubotuka_home')), breadcrumb(request, title, request.path)], schemas=schemas,
                      published_time=getattr(obj, 'publicado_em', None), modified_time=getattr(obj, 'atualizado_em', None))
 
 

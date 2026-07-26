@@ -1,0 +1,40 @@
+{% extends 'painel/base.html' %}{% load static %}
+{% block styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'painel/css/yubotuka.css' %}">{% endblock %}
+{% block content %}
+<main class="container py-4 yu-admin">
+  {% if messages %}{% for message in messages %}<div class="alert alert-{{ message.tags|default:'info' }}">{{ message }}</div>{% endfor %}{% endif %}
+  <nav class="yu-admin__breadcrumb" aria-label="breadcrumb">
+    <ol class="breadcrumb mb-0">
+      <li class="breadcrumb-item"><a href="{% url 'painel:dashboard' %}">Painel</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'painel:yubotuka_dashboard' %}">YuBotuka</a></li>
+      {% block breadcrumb_item %}{% endblock %}
+    </ol>
+  </nav>
+  <header class="card yu-admin__hero">
+    <div class="card-body p-4">
+      <span class="yu-admin__kicker"><i class="bi bi-play-btn-fill" aria-hidden="true"></i> Conteúdo audiovisual BOTUKA</span>
+      <h1 class="h2 mt-2 mb-1">{% block page_title %}YuBotuka{% endblock %}</h1>
+      <p class="text-white-50 mb-0">{% block page_description %}Gerencie vídeos, categorias, playlists e publicação editorial.{% endblock %}</p>
+    </div>
+  </header>
+  <nav class="yu-admin__nav d-flex flex-wrap gap-2 mb-4" aria-label="Navegação do YuBotuka">
+    <a class="btn btn-outline-dark" href="{% url 'painel:yubotuka_dashboard' %}">Dashboard</a>
+    <a class="btn btn-outline-dark" href="{% url 'painel:yubotuka_videos' %}">Vídeos</a>
+    {% if pode_gerenciar_categoria %}<a class="btn btn-outline-dark" href="{% url 'painel:yubotuka_categorias' %}">Categorias</a>{% endif %}
+    {% if pode_gerenciar_playlist %}<a class="btn btn-outline-dark" href="{% url 'painel:yubotuka_playlists' %}">Playlists</a>{% endif %}
+    {% if pode_gerenciar_canal %}<a class="btn btn-outline-dark" href="{% url 'painel:yubotuka_canais' %}">Canais</a>{% endif %}
+    {% if pode_gerenciar_programa %}<a class="btn btn-outline-dark" href="{% url 'painel:yubotuka_programas' %}">Programas</a>{% endif %}
+    {% if pode_gerenciar_temporada %}<a class="btn btn-outline-dark" href="{% url 'painel:yubotuka_temporadas' %}">Temporadas</a>{% endif %}
+    {% if pode_gerenciar_episodio %}<a class="btn btn-outline-dark" href="{% url 'painel:yubotuka_episodios' %}">Episódios</a>{% endif %}
+    {% if pode_ver_transmissao %}<a class="btn btn-outline-dark" href="{% url 'painel:yubotuka_transmissoes' %}">Transmissões</a>{% endif %}
+    {% if pode_moderar %}<a class="btn btn-warning" href="{% url 'painel:yubotuka_fila' %}">Fila de aprovação</a>{% endif %}
+    {% for item in auxiliares_menu %}<a class="btn btn-outline-secondary" href="{% url 'painel:yubotuka_auxiliar_lista' item.tipo %}">{{ item.titulo }}</a>{% endfor %}
+    {% if pode_configurar %}<a class="btn btn-outline-secondary" href="{% url 'painel:yubotuka_configuracao' %}">Configurações</a>{% endif %}
+    {% if pode_ver_auditoria %}<a class="btn btn-outline-secondary" href="{% url 'painel:yubotuka_auditoria' %}">Auditoria</a>{% endif %}
+    {% if pode_atribuir_canal %}<a class="btn btn-outline-secondary" href="{% url 'painel:yubotuka_atribuicao_canais' %}">Atribuir canais</a>{% endif %}
+    {% if pode_homologar_legado %}<a class="btn btn-outline-secondary" href="{% url 'painel:yubotuka_homologacao_lista' %}">Homologar legado</a>{% endif %}
+  </nav>
+  {% block yubotuka_content %}{% endblock %}
+</main>
+{% endblock %}
+{% block scripts %}{{ block.super }}<script src="{% static 'painel/js/yubotuka.js' %}" defer></script>{% endblock %}

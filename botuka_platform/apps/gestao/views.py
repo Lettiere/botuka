@@ -22,6 +22,10 @@ from apps.gestao.decorators import (
     staff_required,
 )
 from apps.accounts.permissions import usuario_e_master
+from apps.accounts.models import ConcessaoPermissao
+from apps.accounts.permission_services import (
+    conceder_permissao, pode_administrar_permissoes, revogar_permissao,
+)
 from apps.gestao.forms import (
     BairroForm,
     CategoriaForm,
@@ -39,6 +43,44 @@ from apps.gestao.forms import (
     UsuarioCreateForm,
     UsuarioForm,
 )
+
+
+@staff_required
+def usuario_permissoes(request, uuid):
+    if not pode_administrar_permissoes(request.user):
+        raise PermissionDenied
+    usuario = get_object_or_404(get_user_model(), uuid=uuid)
+    if request.method == 'POST':
+        justificativa = request.POST.get('justificativa', '')
+        if request.POST.get('acao') == 'revogar':
+            concessao = get_object_or_404(
+                ConcessaoPermissao, uuid=request.POST.get('concessao'),
+                usuario=usuario,
+            )
+            revogar_permissao(
+                ator=request.user, concessao=concessao,
+                justificativa=justificativa, request=request,
+            )
+            messages.success(request, 'Permissão revogada e auditada.')
+        else:
+            permissao = get_object_or_404(
+                Permissao.objects, uuid=request.POST.get('permissao'),
+            )
+            conceder_permissao(
+                ator=request.user, beneficiado=usuario,
+                permissao=permissao, justificativa=justificativa,
+                observacao=request.POST.get('observacao', ''), request=request,
+            )
+            messages.success(request, 'Permissão concedida e auditada.')
+        return redirect('gestao:usuario_permissoes', uuid=usuario.uuid)
+    return render(request, 'gestao/usuarios/permissoes.html', {
+        'usuario_alvo': usuario,
+        'permissoes': Permissao.objects.order_by('modulo', 'grupo', 'codigo'),
+        'concessoes': ConcessaoPermissao.objects.filter(
+            usuario=usuario, revogada_em__isnull=True,
+        ).select_related('permissao', 'concedida_por'),
+        'section': 'Permissões individuais',
+    })
 from apps.locations.models import Bairro, Cidade, Estado, Pais
 from apps.organizations.models import Endereco, Organizacao, Unidade
 from apps.taxonomy.models import Categoria, Subcategoria

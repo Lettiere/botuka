@@ -8,6 +8,7 @@ from apps.recruitment import views as recruitment_views
 app_name = 'painel'
 
 urlpatterns = [
+    path('', include('apps.tourism.panel_urls')),
     path('', include('apps.sports.panel_urls')),
     path('', include('apps.media.panel_urls')),
     path('', include('apps.news.panel_urls')),

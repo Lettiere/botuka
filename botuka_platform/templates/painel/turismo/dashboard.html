@@ -1,0 +1,41 @@
+{% extends "painel/base.html" %}
+{% load static %}
+{% block title %}Gestão de Turismo | Painel BOTUKA{% endblock %}
+{% block styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'painel/css/turismo.css' %}">{% endblock %}
+{% block painel_content %}
+<main class="tour-page"><div class="tour-wrap">
+  <nav class="tour-breadcrumb" aria-label="Navegação estrutural"><a href="{% url 'painel:dashboard' %}">Painel</a><i class="bi bi-chevron-right"></i><span>Turismo</span></nav>
+  <header class="tour-hero">
+    <div><span class="tour-kicker">Administração da cidade</span><h1>Gestão de Turismo</h1><p>Cadastre, organize, publique e acompanhe locais, guias, empresas turísticas, vídeos, playlists, roteiros e experiências.</p></div>
+    <div class="tour-hero-actions">
+      {% for acao in acoes|slice:":3" %}<a class="tour-btn {% if forloop.first %}tour-btn-primary{% else %}tour-btn-light{% endif %}" href="{% url acao.url_name %}"><i class="bi bi-{{ acao.icon }}"></i> {{ acao.label }}</a>{% endfor %}
+    </div>
+  </header>
+
+  <section aria-labelledby="acoes-title"><div class="tour-section-head"><div><span>Acesso direto</span><h2 id="acoes-title">Ações rápidas</h2></div></div>
+    <div class="tour-actions-grid">
+      {% for acao in acoes %}<a class="tour-action" href="{% url acao.url_name %}"><i class="bi bi-{{ acao.icon }}"></i><div><h3>{{ acao.label }}</h3><p>{{ acao.description }}</p></div><i class="bi bi-arrow-right"></i></a>
+      {% empty %}<div class="tour-empty"><i class="bi bi-shield-lock"></i><h3>Sem ações de cadastro</h3><p>Seu acesso permite consulta, mas não criação.</p></div>{% endfor %}
+    </div>
+  </section>
+
+  <section aria-labelledby="resumo-title"><div class="tour-section-head"><div><span>Visão geral</span><h2 id="resumo-title">Resumo administrativo</h2></div></div>
+    <div class="tour-stats">{% for item in indicadores %}
+      <a class="tour-stat" href="{% url 'painel:turismo_entidade_lista' item.slug %}"><i class="bi bi-{{ item.icon }}"></i><div><strong>{{ item.total }}</strong><span>{{ item.label }}</span><small>{{ item.publicados }} publicados · {{ item.analise }} em análise · {{ item.rascunhos }} rascunhos</small></div></a>
+    {% endfor %}</div>
+  </section>
+
+  <div class="tour-columns">
+    <section class="tour-panel" aria-labelledby="recentes-title"><div class="tour-section-head"><div><span>Seus cadastros</span><h2 id="recentes-title">Atualizações recentes</h2></div></div>
+      <div class="tour-list">{% for data, slug, config, obj in recentes %}
+        <article class="tour-row"><div><span class="tour-badge tour-badge-{{ obj.status|lower }}">{{ obj.get_status_display }}</span><h3>{{ obj }}</h3><p>{{ config.label }} · Cadastrado por: {{ obj.usuario_criador }} · Última atualização por: {{ obj.usuario_atualizador }}</p><p>Atualizado em {{ data|date:"d/m/Y H:i" }}</p>{% if slug == 'locais' and obj.status == 'RASCUNHO' %}<small>Cadastro {{ obj.progresso_cadastro }}% concluído · Última etapa: {{ obj.nome_etapa_atual }}</small>{% endif %}</div>{% if slug == 'locais' and obj.status == 'RASCUNHO' %}<a class="tour-btn tour-btn-primary" href="{% url 'painel:turismo_local_etapa' obj.uuid obj.etapa_atual %}">Continuar cadastro</a>{% else %}<a class="tour-btn tour-btn-light" href="{% url 'painel:turismo_entidade_detalhe' slug obj.uuid %}">Gerenciar</a>{% endif %}</article>
+      {% empty %}<div class="tour-empty"><i class="bi bi-folder2-open"></i><h3>Nenhum conteúdo cadastrado</h3><p>Use uma das ações rápidas para começar.</p></div>{% endfor %}</div>
+    </section>
+    <section class="tour-panel" aria-labelledby="pendentes-title"><div class="tour-section-head"><div><span>Moderação</span><h2 id="pendentes-title">Pendentes de análise</h2></div></div>
+      <div class="tour-list">{% for data, slug, config, obj in pendentes %}
+        <article class="tour-row"><div><span class="tour-badge tour-badge-em_analise">Em análise</span><h3>{{ obj }}</h3><p>{{ config.label }} · enviado por {{ obj.usuario_criador }}</p></div><a class="tour-btn tour-btn-primary" href="{% url 'painel:turismo_entidade_detalhe' slug obj.uuid %}">Revisar</a></article>
+      {% empty %}<div class="tour-empty"><i class="bi bi-check2-circle"></i><h3>Tudo em dia</h3><p>Não há itens aguardando sua análise.</p></div>{% endfor %}</div>
+    </section>
+  </div>
+</div></main>
+{% endblock %}

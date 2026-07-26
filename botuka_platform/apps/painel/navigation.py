@@ -18,11 +18,40 @@ def painel_navigation(request):
     content = []
     if _can(user, "news.gerenciar", "news.criar", "news.editar", "news.revisar", "news.publicar"):
         content.append({"label": "BOTUKA News", "icon": "bi-newspaper", "url": reverse("painel:news_dashboard")})
-    if _can(user, "media.gerenciar", "media.criar", "media.editar", "media.apresentar", "media.transmitir", "media.publicar"):
-        route = "painel:media_transmissao_lista" if usuario_tem_permissao(user, "media.transmitir") and not _can(user, "media.gerenciar", "media.criar", "media.editar", "media.apresentar", "media.publicar") else "painel:ytv_dashboard"
-        content.append({"label": "YTv Botuka", "icon": "bi-play-btn-fill", "url": reverse(route)})
+    if _can(
+        user,
+        "yubotuka.dashboard.visualizar", "yubotuka.video.criar",
+        "yubotuka.video.editar_proprio", "yubotuka.video.editar_todos",
+        "yubotuka.video.aprovar", "yubotuka.video.publicar",
+        "yubotuka.programa.gerenciar", "yubotuka.temporada.gerenciar",
+        "yubotuka.episodio.gerenciar", "yubotuka.transmissao.criar",
+        "yubotuka.transmissao.editar_propria", "yubotuka.transmissao.editar_todas",
+        "yubotuka.transmissao.aprovar", "yubotuka.transmissao.publicar",
+        "yubotuka.canal.atribuir", "yubotuka.legado.homologar",
+        "media.gerenciar", "media.criar", "media.editar",
+        "media.apresentar", "media.transmitir", "media.publicar",
+    ):
+        somente_transmissao = (
+            usuario_tem_permissao(user, "media.transmitir")
+            and not _can(
+                user,
+                "yubotuka.dashboard.visualizar", "yubotuka.video.criar",
+                "yubotuka.video.editar_proprio", "yubotuka.video.editar_todos",
+                "yubotuka.video.aprovar", "yubotuka.video.publicar",
+                "media.gerenciar", "media.criar", "media.editar",
+                "media.apresentar", "media.publicar",
+            )
+        )
+        route = "painel:media_transmissao_lista" if somente_transmissao else "painel:yubotuka_dashboard"
+        content.append({"label": "YuBotuka", "icon": "bi-play-btn-fill", "url": reverse(route)})
     if _can(user, "government.gerenciar", "government.criar", "government.editar", "government.revisar", "government.publicar"):
         content.append({"label": "Prefeitura", "icon": "bi-bank2", "url": reverse("painel:government_dashboard")})
+    if _can(
+        user, "TURISMO_LOCAL_VISUALIZAR_PAINEL", "TURISMO_GUIA_VISUALIZAR_PAINEL",
+        "TURISMO_LOCAL_CADASTRAR", "TURISMO_GUIA_CADASTRAR",
+        "TURISMO_VIDEO_CADASTRAR", "TURISMO_PLAYLIST_CADASTRAR",
+    ):
+        content.append({"label": "Turismo", "icon": "bi-binoculars-fill", "url": reverse("painel:turismo_dashboard")})
     if content:
         groups.append({"label": "Conteúdo da cidade", "items": content})
 

@@ -1,0 +1,52 @@
+{% extends 'painel/yubotuka/base.html' %}
+{% block page_title %}Gestão YuBotuka{% endblock %}
+{% block page_description %}Cadastre, organize, modere e publique o conteúdo audiovisual da cidade.{% endblock %}
+{% block yubotuka_content %}
+<details class="card mb-4 yu-filters" {% if request.GET %}open{% endif %}><summary class="card-header fw-semibold">Filtros do dashboard</summary><form class="card-body row g-3">
+  <div class="col-12 col-md-3"><label class="form-label">Período</label><select class="form-select" name="periodo"><option value="">Todo o período</option><option value="7">7 dias</option><option value="30">30 dias</option><option value="90">90 dias</option></select></div>
+  <div class="col-12 col-md-3"><label class="form-label">Canal</label><select class="form-select" name="canal"><option value="">Todos</option>{% for item in canais_filtro %}<option value="{{ item.uuid }}">{{ item.nome }}</option>{% endfor %}</select></div>
+  <div class="col-12 col-md-3"><label class="form-label">Categoria</label><select class="form-select" name="categoria"><option value="">Todas</option>{% for item in categorias_filtro %}<option value="{{ item.uuid }}">{{ item.caminho }}</option>{% endfor %}</select></div>
+  <div class="col-12 col-md-3"><label class="form-label">Status</label><select class="form-select" name="status"><option value="">Todos</option>{% for valor,nome in status.choices %}<option value="{{ valor }}">{{ nome }}</option>{% endfor %}</select></div>
+  <div class="col-12 d-flex justify-content-end gap-2"><a class="btn btn-outline-secondary" href="{% url 'painel:yubotuka_dashboard' %}">Limpar</a><button class="btn btn-dark">Aplicar</button></div>
+</form></details>
+<section class="row g-3 mb-4" aria-label="Indicadores editoriais">
+  <div class="col-6 col-lg-3"><div class="card h-100 yu-metric"><div class="card-body"><strong class="fs-3">{{ total_videos }}</strong><span class="d-block">Total de vídeos</span></div></div></div>
+  <div class="col-6 col-lg"><a class="card h-100 text-decoration-none text-dark" href="{% url 'painel:yubotuka_videos' %}?status=RASCUNHO"><div class="card-body"><strong class="fs-3">{{ contagens.RASCUNHO|default:0 }}</strong><span class="d-block">Rascunhos</span></div></a></div>
+  <div class="col-6 col-lg"><a class="card h-100 text-decoration-none text-dark" href="{% url 'painel:yubotuka_videos' %}?status=EM_ANALISE"><div class="card-body"><strong class="fs-3">{{ contagens.EM_ANALISE|default:0 }}</strong><span class="d-block">Em análise</span></div></a></div>
+  <div class="col-6 col-lg"><a class="card h-100 text-decoration-none text-dark" href="{% url 'painel:yubotuka_videos' %}?status=APROVADO"><div class="card-body"><strong class="fs-3">{{ contagens.APROVADO|default:0 }}</strong><span class="d-block">Aprovados</span></div></a></div>
+  <div class="col-6 col-lg"><a class="card h-100 text-decoration-none text-dark" href="{% url 'painel:yubotuka_videos' %}?status=REJEITADO"><div class="card-body"><strong class="fs-3">{{ contagens.REJEITADO|default:0 }}</strong><span class="d-block">Rejeitados</span></div></a></div>
+  <div class="col-6 col-lg"><a class="card h-100 text-decoration-none text-dark" href="{% url 'painel:yubotuka_videos' %}?status=PUBLICADO"><div class="card-body"><strong class="fs-3">{{ contagens.PUBLICADO|default:0 }}</strong><span class="d-block">Publicados</span></div></a></div>
+  <div class="col-6 col-lg"><a class="card h-100 text-decoration-none text-dark" href="{% url 'painel:yubotuka_videos' %}?status=CORRECAO"><div class="card-body"><strong class="fs-3">{{ contagens.CORRECAO|default:0 }}</strong><span class="d-block">Em correção</span></div></a></div>
+  <div class="col-6 col-lg"><a class="card h-100 text-decoration-none text-dark" href="{% url 'painel:yubotuka_videos' %}?status=AGENDADO"><div class="card-body"><strong class="fs-3">{{ contagens.AGENDADO|default:0 }}</strong><span class="d-block">Agendados</span></div></a></div>
+  <div class="col-6 col-lg"><a class="card h-100 text-decoration-none text-dark" href="{% url 'painel:yubotuka_videos' %}?status=ARQUIVADO"><div class="card-body"><strong class="fs-3">{{ contagens.ARQUIVADO|default:0 }}</strong><span class="d-block">Arquivados</span></div></a></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body"><strong class="fs-3">{{ total_categorias }}</strong><span class="d-block">Categorias</span></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body"><strong class="fs-3">{{ total_playlists }}</strong><span class="d-block">Playlists</span></div></div></div>
+  <div class="col-6 col-lg"><div class="card h-100"><div class="card-body"><strong class="fs-3">{{ total_canais }}</strong><span class="d-block">Canais</span></div></div></div>
+</section>
+<section class="row g-3 mb-4">
+  {% if pode_criar_video %}<div class="col-12 col-md-4"><a class="btn btn-warning w-100 py-3" href="{% url 'painel:yubotuka_video_novo' %}">+ Novo vídeo</a></div>{% endif %}
+  {% if pode_gerenciar_categoria %}<div class="col-12 col-md-4"><a class="btn btn-outline-dark w-100 py-3" href="{% url 'painel:yubotuka_categoria_nova' %}">+ Nova categoria</a></div>{% endif %}
+  {% if pode_gerenciar_playlist %}<div class="col-12 col-md-4"><a class="btn btn-outline-dark w-100 py-3" href="{% url 'painel:yubotuka_playlist_nova' %}">+ Nova playlist</a></div>{% endif %}
+</section>
+<div class="row g-4">
+  {% if pode_moderar %}
+  <section class="col-12 col-xl-7">
+    <div class="card h-100"><div class="card-header d-flex justify-content-between"><strong>Aguardando moderação</strong><a href="{% url 'painel:yubotuka_fila' %}">Ver fila</a></div><div class="list-group list-group-flush">
+      {% for video in pendentes %}<a class="list-group-item list-group-item-action" href="{% url 'painel:yubotuka_fila' %}"><strong>{{ video.titulo }}</strong><small class="d-block text-muted">{{ video.autor|default:'Legado sem autor' }} · {{ video.atualizado_em|date:'d/m/Y H:i' }}</small></a>
+      {% empty %}<div class="list-group-item text-muted">Nenhum conteúdo aguardando análise.</div>{% endfor %}
+    </div></div>
+  </section>
+  {% endif %}
+  <section class="col">
+    <div class="card h-100"><div class="card-header"><strong>Vídeos incompletos</strong></div><div class="list-group list-group-flush">
+      {% for video in incompletos %}<a class="list-group-item list-group-item-action" href="{% url 'painel:yubotuka_video_editar' video.uuid %}"><strong>{{ video.titulo }}</strong><small class="d-block text-muted">Revise URL, categoria e metadados.</small></a>
+      {% empty %}<div class="list-group-item text-muted">Nenhum alerta de preenchimento.</div>{% endfor %}
+    </div></div>
+  </section>
+</div>
+<div class="row g-4 mt-1">
+  <section class="col-12 col-xl-4"><div class="card h-100"><div class="card-header"><strong>Últimos cadastrados</strong></div><div class="list-group list-group-flush">{% for video in ultimos %}<a class="list-group-item list-group-item-action" href="{% url 'painel:yubotuka_video_detalhe' video.uuid %}">{{ video.titulo }}<small class="d-block text-muted">{{ video.get_status_display }} · {{ video.criado_em|date:'d/m/Y' }}</small></a>{% empty %}<div class="list-group-item text-muted">Nenhum cadastro recente.</div>{% endfor %}</div></div></section>
+  <section class="col-12 col-xl-4"><div class="card h-100"><div class="card-header"><strong>Rejeitados</strong></div><div class="list-group list-group-flush">{% for video in rejeitados %}<a class="list-group-item list-group-item-action" href="{% url 'painel:yubotuka_video_detalhe' video.uuid %}">{{ video.titulo }}<small class="d-block text-danger">{{ video.observacao_rejeicao|truncatechars:80 }}</small></a>{% empty %}<div class="list-group-item text-muted">Nenhum conteúdo rejeitado.</div>{% endfor %}</div></div></section>
+  <section class="col-12 col-xl-4"><div class="card h-100"><div class="card-header"><strong>Próximos agendamentos</strong></div><div class="list-group list-group-flush">{% for video in agendados %}<a class="list-group-item list-group-item-action" href="{% url 'painel:yubotuka_video_detalhe' video.uuid %}">{{ video.titulo }}<small class="d-block text-muted">{{ video.data_agendamento|date:'d/m/Y H:i' }}</small></a>{% empty %}<div class="list-group-item text-muted">Nenhum vídeo agendado.</div>{% endfor %}</div></div></section>
+</div>
+{% endblock %}

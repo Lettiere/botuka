@@ -2,7 +2,7 @@ import logging
 
 from django.core.cache import cache
 
-from .adapters import culture, events, gastronomy, government, media, news, organizations, places, recruitment, services, sports
+from .adapters import culture, events, gastronomy, government, media, news, organizations, places, recruitment, services, sports, tourism
 
 logger = logging.getLogger(__name__)
 CACHE_TIMEOUT = 300
@@ -30,13 +30,17 @@ def montar_contexto_home(usuario=None):
         [],
     )
     noticias = _secao("home:news", news.obter_noticias, ([], []))
-    ytv = _secao("home:ytv", media.obter_ytv, ([], [], []))
+    # Chave versionada evita manter a estrutura legada em cache após a migração
+    # das consultas públicas para Video e Transmissao.
+    ytv = _secao("home:yubotuka:v3", media.obter_ytv, ([], [], []))
     esportes = _secao("home:sports", sports.obter_esportes, ([], [], [], []))
     prefeitura = _secao("home:government", government.obter_prefeitura, ([], []))
     eventos = _secao("home:events", events.obter_eventos, ([], []))
     cultura = _secao("home:culture", culture.obter_cultura, ([], []))
     gastronomia = _secao("home:gastronomy", gastronomy.obter_gastronomia, [])
     parques = _secao("home:places", places.obter_parques, [])
+    turismo_destaque = _secao("home:tourism", tourism.obter_turismo, [])
+    turismo_secoes = _secao("home:tourism:sections", tourism.obter_secoes_turismo, {})
 
     contexto = {
         "empresas_destaque": empresas,
@@ -59,6 +63,8 @@ def montar_contexto_home(usuario=None):
         "cultura_recentes": cultura[1],
         "gastronomia_destaque": gastronomia,
         "parques_destaque": parques,
+        "turismo_destaque": turismo_destaque,
+        "turismo_secoes": turismo_secoes,
     }
     contexto["estatisticas_home"] = {
         "empresas": len(empresas),
@@ -68,5 +74,6 @@ def montar_contexto_home(usuario=None):
         "episodios": len(ytv[1]),
         "campeonatos": len(esportes[1]),
         "acoes_publicas": len(prefeitura[0]),
+        "turismo": len(turismo_destaque),
     }
     return contexto

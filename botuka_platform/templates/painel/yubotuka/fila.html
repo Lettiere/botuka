@@ -1,0 +1,21 @@
+{% extends 'painel/yubotuka/base.html' %}
+{% block breadcrumb_item %}<li class="breadcrumb-item active">Fila de aprovação</li>{% endblock %}
+{% block page_title %}Fila de aprovação{% endblock %}
+{% block page_description %}Revise o conteúdo enviado antes de aprovar, rejeitar, agendar ou publicar.{% endblock %}
+{% block yubotuka_content %}
+<details class="card mb-3 yu-filters"><summary class="card-header fw-semibold">Buscar e filtrar</summary><form class="card-body row g-2"><div class="col-12 col-md"><input class="form-control" name="q" value="{{ request.GET.q }}" placeholder="Título ou autor"></div><div class="col-12 col-md-3"><select class="form-select" name="canal"><option value="">Todos os canais</option>{% for item in canais %}<option value="{{ item.uuid }}">{{ item.nome }}</option>{% endfor %}</select></div><div class="col-12 col-md-3"><select class="form-select" name="categoria"><option value="">Todas as categorias</option>{% for item in categorias %}<option value="{{ item.uuid }}">{{ item.caminho }}</option>{% endfor %}</select></div><div class="col-12 col-md-auto"><button class="btn btn-dark w-100">Filtrar</button></div></form></details>
+<div class="row g-3">
+  {% for video in videos %}
+  <div class="col-12"><article class="card"><div class="card-body">
+    <div class="row g-3 align-items-center"><div class="col">
+      <span class="badge text-bg-warning">Em análise</span>{% if video.thumbnail %}<img class="yu-queue-thumb" src="{{ video.thumbnail }}" alt="" width="160" height="90" loading="lazy">{% endif %}<h2 class="h5 mt-2">{{ video.titulo }}</h2>
+      <p class="mb-1">{{ video.descricao_curta|default:video.descricao|truncatechars:180 }}</p>
+      <small class="text-muted">{{ video.autor|default:'Conteúdo legado' }} · {{ video.canal }} · {{ video.categoria|default:'Sem categoria' }} · {{ video.total_rejeicoes }} rejeição{{ video.total_rejeicoes|pluralize }}</small>
+    </div><div class="col-12 col-lg-auto"><div class="d-flex flex-column flex-sm-row gap-2">
+      <a class="btn btn-outline-secondary" href="{% url 'painel:yubotuka_revisao' video.uuid %}">Revisar</a><a class="btn btn-outline-danger" href="{% url 'painel:yubotuka_video_rejeitar' video.uuid %}">Rejeitar</a>
+      <form method="post" action="{% url 'painel:yubotuka_video_aprovar' video.uuid %}">{% csrf_token %}<input type="hidden" name="next" value="{% url 'painel:yubotuka_fila' %}"><button class="btn btn-warning w-100">Aprovar</button></form>
+    </div></div></div>
+  </div></article></div>
+  {% empty %}<div class="col-12"><div class="card"><div class="card-body text-center py-5"><h2 class="h5">Fila vazia</h2><p class="text-muted">Não há vídeos aguardando análise.</p></div></div></div>{% endfor %}
+</div>
+{% endblock %}

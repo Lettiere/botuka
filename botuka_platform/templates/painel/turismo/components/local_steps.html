@@ -1,0 +1,14 @@
+<nav class="local-steps" aria-label="Etapas do cadastro">
+  {% for numero, nome, descricao in etapas %}
+    {% if local %}
+      <a class="local-step {% if numero == etapa %}is-current{% elif numero < etapa %}is-complete{% elif numero > local.etapa_atual|add:'1' %}is-locked{% endif %}"
+         href="{% if numero <= local.etapa_atual|add:'1' %}{% url 'painel:turismo_local_etapa' local.uuid numero %}{% else %}#{% endif %}"
+         {% if numero > local.etapa_atual|add:'1' %}aria-disabled="true" tabindex="-1"{% endif %}>
+        <span>{% if numero < etapa %}<i class="bi bi-check-lg"></i>{% else %}{{ numero }}{% endif %}</span>
+        <strong>{{ nome }}</strong>
+      </a>
+    {% else %}
+      <span class="local-step {% if numero == 1 %}is-current{% else %}is-locked{% endif %}"><span>{{ numero }}</span><strong>{{ nome }}</strong></span>
+    {% endif %}
+  {% endfor %}
+</nav>

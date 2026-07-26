@@ -20,6 +20,7 @@ urlpatterns = [
     path("", include("apps.core.events_urls")),
     path("", include("apps.services.urls")),
     path("", include("apps.recruitment.public_urls")),
+    path("", include("apps.tourism.public_urls")),
     path("", include("apps.sports.public_urls")),
     path("", include("apps.media.public_urls")),
     path("", include("apps.news.public_urls")),

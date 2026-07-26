@@ -19,7 +19,12 @@ def usuario_pode_acessar_gestao(user: object) -> bool:
     if not getattr(user, 'is_authenticated', False):
         return False
 
-    if usuario_e_master(user) or getattr(user, 'is_staff', False):
+    if (
+        usuario_e_master(user)
+        or getattr(user, 'is_staff', False)
+        or (callable(getattr(user, 'tem_perfil', None)) and user.tem_perfil('GESTOR'))
+        or usuario_tem_permissao(user, 'gestao.acessar')
+    ):
         return True
     return False
 

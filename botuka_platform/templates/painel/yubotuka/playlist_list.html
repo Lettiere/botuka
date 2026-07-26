@@ -1,0 +1,8 @@
+{% extends 'painel/yubotuka/base.html' %}
+{% block breadcrumb_item %}<li class="breadcrumb-item active">Playlists</li>{% endblock %}
+{% block page_title %}Playlists hierárquicas{% endblock %}
+{% block page_description %}Monte sequências como Esporte › Vôlei › Amador e ordene seus vídeos.{% endblock %}
+{% block yubotuka_content %}
+<div class="d-flex justify-content-end mb-3"><a class="btn btn-warning" href="{% url 'painel:yubotuka_playlist_nova' %}">+ Nova playlist</a></div>
+<div class="row g-3">{% for playlist in playlists %}<div class="col-12 col-md-6"><a class="card h-100 text-decoration-none text-dark" href="{% url 'painel:yubotuka_playlist_detalhe' playlist.uuid %}"><div class="card-body"><span class="badge text-bg-secondary">{{ playlist.categoria|default:'Sem categoria' }}</span><h2 class="h5 mt-2">{{ playlist.caminho }}</h2><p class="text-muted mb-0">{{ playlist.canal }} · {{ playlist.itens.count }} vídeos</p></div></a></div>{% empty %}<div class="col-12"><div class="card"><div class="card-body">Nenhuma playlist cadastrada.</div></div></div>{% endfor %}</div>
+{% endblock %}

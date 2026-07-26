@@ -85,6 +85,7 @@
 .botuka-topbar-inner { min-height:34px;display:flex;align-items:center;justify-content:space-between;gap:14px; }
 .botuka-topbar a { color:#fff;text-decoration:none;display:inline-flex;align-items:center;gap:6px; }
 .botuka-topbar-contacts,.botuka-topbar-social { display:flex;align-items:center;gap:14px; }
+.botuka-weather { display:inline-flex;align-items:center;gap:5px;color:#fff;white-space:nowrap; }
 .botuka-topbar-social a { width:28px;height:28px;justify-content:center;border-radius:50%;background:rgba(255,255,255,.08); }
 .botuka-toast-layer { z-index:1080; }
 

@@ -1,0 +1,8 @@
+{% extends 'painel/yubotuka/base.html' %}
+{% block breadcrumb_item %}<li class="breadcrumb-item active">Playlist</li>{% endblock %}
+{% block page_title %}{{ playlist.caminho }}{% endblock %}
+{% block page_description %}{{ playlist.canal }} · {{ playlist.categoria|default:'Sem categoria' }}{% endblock %}
+{% block yubotuka_content %}
+<div class="d-flex justify-content-end mb-3"><a class="btn btn-warning" href="{% url 'painel:yubotuka_playlist_editar' playlist.uuid %}">Editar playlist</a></div>
+<form method="post" action="{% url 'painel:yubotuka_playlist_reordenar' playlist.uuid %}" data-reorder-form>{% csrf_token %}<div class="yu-reorder-list" data-reorder-list>{% for item in itens %}<article class="card yu-reorder-item" data-reorder-item><input type="hidden" name="video_ids" value="{{ item.video_id }}"><div class="card-body d-flex align-items-center gap-3">{% if item.video.thumbnail %}<img src="{{ item.video.thumbnail }}" alt="" width="120" height="68">{% endif %}<div class="flex-grow-1"><strong>{{ item.video.titulo }}</strong><small class="d-block text-muted">Posição {{ item.ordem }}</small></div><div class="btn-group"><button class="btn btn-outline-secondary" type="button" data-move="up" aria-label="Mover para cima">↑</button><button class="btn btn-outline-secondary" type="button" data-move="down" aria-label="Mover para baixo">↓</button></div></div></article>{% empty %}<div class="card"><div class="card-body text-muted">Adicione vídeos editando o cadastro de cada vídeo.</div></div>{% endfor %}</div>{% if itens %}<div class="yu-sticky-actions"><button class="btn btn-warning" type="submit">Salvar nova ordem</button></div>{% endif %}</form>
+{% endblock %}

@@ -204,7 +204,10 @@ class PerfilForm(BaseGestaoModelForm):
 class PermissaoForm(BaseGestaoModelForm):
     class Meta:
         model = Permissao
-        fields = ['nome', 'codigo', 'descricao', 'ativo']
+        fields = [
+            'modulo', 'grupo', 'nome', 'codigo', 'descricao',
+            'criticidade', 'protegida', 'ativo',
+        ]
 
 
 class OrganizacaoForm(BaseGestaoModelForm):

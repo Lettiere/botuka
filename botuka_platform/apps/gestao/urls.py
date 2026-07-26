@@ -14,6 +14,7 @@ urlpatterns = [
     path('usuarios/<int:pk>/editar/', views.UsuarioUpdateView.as_view(), name='usuarios_editar'),
     path('usuarios/<int:pk>/ativar/', views.usuario_ativar, name='usuarios_ativar'),
     path('usuarios/<int:pk>/desativar/', views.usuario_desativar, name='usuarios_desativar'),
+    path('usuarios/<uuid:uuid>/permissoes/', views.usuario_permissoes, name='usuario_permissoes'),
     path('perfis/', views.PerfilListView.as_view(), name='perfis_lista'),
     path('perfis/novo/', views.PerfilCreateView.as_view(), name='perfis_novo'),
     path('perfis/<int:pk>/editar/', views.PerfilUpdateView.as_view(), name='perfis_editar'),

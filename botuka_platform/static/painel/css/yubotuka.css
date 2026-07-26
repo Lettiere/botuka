@@ -1,0 +1,126 @@
+/* YuBotuka administrativo — extensão isolada do design system BOTUKA. */
+.yu-admin {
+  --yu-primary: var(--botuka-blue, #13293d);
+  --yu-primary-2: var(--botuka-blue-2, #1e3a54);
+  --yu-accent: var(--botuka-yellow, #ffb703);
+  --yu-accent-2: var(--botuka-yellow-2, #f2a000);
+  --yu-surface: var(--surface, #fff);
+  --yu-surface-soft: var(--surface-2, #fff9ea);
+  --yu-text: var(--text, #20201d);
+  --yu-muted: var(--muted, #746e60);
+  --yu-border: var(--border, #e8deca);
+  color: var(--yu-text);
+  font-family: var(--font-body, "Inter", system-ui, sans-serif);
+}
+.yu-admin h1,.yu-admin h2,.yu-admin h3,.yu-admin h4 {
+  color: var(--yu-primary);
+  font-family: var(--font-title, "Baloo 2", system-ui, sans-serif);
+  font-weight: 800;
+  letter-spacing: -.02em;
+}
+.yu-admin__breadcrumb { color: var(--yu-muted); font-size: .84rem; margin-bottom: 1rem; }
+.yu-admin__breadcrumb a { color: var(--yu-primary); font-weight: 700; text-decoration: none; }
+.yu-admin__hero {
+  background:
+    radial-gradient(circle at 88% 12%, rgba(255,183,3,.22), transparent 28%),
+    linear-gradient(135deg, var(--yu-primary), var(--yu-primary-2));
+  border: 0;
+  border-radius: var(--radius-lg, 28px);
+  box-shadow: var(--shadow, 0 10px 28px -18px rgba(19,41,61,.28));
+  color: #fff;
+  margin-bottom: 1.25rem;
+  overflow: hidden;
+}
+.yu-admin__hero .card-body { padding: clamp(1.35rem, 3vw, 2.25rem); }
+.yu-admin__hero h1 { color: #fff; font-size: clamp(1.8rem, 4vw, 2.7rem); margin: .25rem 0; }
+.yu-admin__hero p { color: #dce6ef; max-width: 760px; }
+.yu-admin__kicker {
+  align-items: center; color: var(--yu-accent); display: inline-flex; font-size: .78rem;
+  font-weight: 800; gap: .4rem; letter-spacing: .08em; text-transform: uppercase;
+}
+.yu-admin__nav {
+  background: var(--yu-surface); border: 1px solid var(--yu-border);
+  border-radius: var(--radius, 18px); box-shadow: var(--shadow); padding: .7rem;
+}
+.yu-admin .card {
+  background: var(--yu-surface); border: 1px solid var(--yu-border) !important;
+  border-radius: var(--radius, 18px); box-shadow: var(--shadow); color: var(--yu-text);
+}
+.yu-admin .card:hover { box-shadow: var(--shadow-hover, 0 18px 46px -24px rgba(19,41,61,.35)); }
+.yu-admin .card-body { padding: 1.2rem; }
+.yu-admin .btn {
+  align-items: center; border-radius: 999px; display: inline-flex; font-family: var(--font-body);
+  font-weight: 750; gap: .4rem; justify-content: center; min-height: 42px; padding: .58rem 1rem;
+}
+.yu-admin .btn-warning,.yu-admin .btn-primary {
+  background: var(--yu-accent); border-color: var(--yu-accent); color: var(--yu-primary);
+}
+.yu-admin .btn-warning:hover,.yu-admin .btn-primary:hover {
+  background: var(--yu-accent-2); border-color: var(--yu-accent-2); color: var(--yu-primary);
+}
+.yu-admin .btn-dark { background: var(--yu-primary); border-color: var(--yu-primary); color: #fff; }
+.yu-admin .btn-outline-dark { border-color: var(--yu-primary); color: var(--yu-primary); }
+.yu-admin .btn-outline-dark:hover { background: var(--yu-primary); color: #fff; }
+.yu-admin .badge { border-radius: 999px; font-weight: 750; padding: .42rem .65rem; }
+.yu-admin .table { color: var(--yu-text); --bs-table-bg: transparent; }
+.yu-admin .table > :not(caption) > * > * { border-bottom-color: var(--yu-border); padding: .8rem; }
+.yu-admin form input:not([type=checkbox]):not([type=radio]):not([type=hidden]),
+.yu-admin form select,.yu-admin form textarea {
+  background: var(--yu-surface); border: 1px solid var(--yu-border); border-radius: 12px;
+  color: var(--yu-text); display: block; min-height: 44px; padding: .7rem .8rem; width: 100%;
+}
+.yu-admin form textarea { min-height: 120px; }
+.yu-admin form input:focus,.yu-admin form select:focus,.yu-admin form textarea:focus {
+  border-color: var(--yu-accent-2); box-shadow: 0 0 0 3px rgba(255,183,3,.18); outline: 0;
+}
+.yu-admin .form-label { color: var(--yu-primary); font-weight: 750; }
+.yu-admin .alert { border: 0; border-radius: 14px; }
+.yu-filters { background: var(--yu-surface); border: 1px solid var(--yu-border); border-radius: 16px; }
+.yu-filters summary { color: var(--yu-primary); cursor: pointer; font-weight: 800; }
+.yu-metric { border-left: 4px solid var(--yu-accent) !important; }
+.yu-queue-thumb,.yu-transmission-thumb { border-radius: 12px; float: left; margin-right: 1rem; object-fit: cover; }
+.yu-cover { aspect-ratio: 16/9; object-fit: cover; }
+.yu-admin-video {
+  aspect-ratio: 16/9; background: var(--yu-primary); overflow: hidden; position: relative;
+}
+.yu-admin-video img { height: 100%; object-fit: cover; width: 100%; }
+.yu-admin-video button {
+  background: rgba(19,41,61,.46); border: 0; color: #fff; font-size: 4rem; inset: 0; position: absolute;
+}
+.yu-details,.yu-compare { display: grid; gap: .6rem 1rem; grid-template-columns: 110px 1fr; }
+.yu-details dt,.yu-compare dt { color: var(--yu-muted); }
+.yu-details dd,.yu-compare dd { margin: 0; min-width: 0; }
+.yu-reorder-list { display: grid; gap: .75rem; }
+.yu-reorder-item img { border-radius: 10px; object-fit: cover; }
+.yu-sticky-actions {
+  background: var(--yu-surface); border-top: 1px solid var(--yu-border); bottom: 0;
+  display: flex; justify-content: flex-end; padding: 1rem; position: sticky; z-index: 5;
+}
+.yu-channel-logo { border-radius: 50%; object-fit: cover; }
+.yu-empty-admin {
+  background: var(--yu-surface-soft); border: 1px dashed var(--yu-border); border-radius: 18px;
+  color: var(--yu-muted); grid-column: 1/-1; padding: 2.5rem; text-align: center;
+}
+.yu-admin :focus-visible { outline: 3px solid var(--yu-accent); outline-offset: 3px; }
+.yu-admin img { max-width: 100%; }
+.yu-admin .card,.yu-admin main { min-width: 0; }
+
+@media (max-width: 767px) {
+  .yu-admin__hero { border-radius: 20px; }
+  .yu-admin__nav { flex-wrap: nowrap !important; margin-inline: -18px; overflow-x: auto; padding-inline: 18px; scrollbar-width: thin; }
+  .yu-admin__nav .btn { flex: 0 0 auto; white-space: nowrap; }
+  .yu-details,.yu-compare { gap: .15rem; grid-template-columns: 1fr; }
+  .yu-details dd,.yu-compare dd { margin-bottom: .65rem; }
+  .yu-queue-thumb,.yu-transmission-thumb { float: none; height: auto; margin: 0 0 .75rem; width: 100%; }
+  .yu-reorder-item .card-body { align-items: flex-start !important; }
+  .yu-reorder-item img { height: 50px; width: 88px; }
+  .yu-sticky-actions { flex-direction: column; }
+  .yu-sticky-actions .btn,.yu-admin .d-flex.flex-wrap .btn { min-height: 44px; }
+}
+@media (max-width: 575px) {
+  .yu-admin { font-size: .95rem; }
+  .yu-admin__hero h1 { font-size: 1.85rem; }
+  .yu-admin .card-body { padding: 1rem; }
+  .yu-admin .btn { width: 100%; }
+  .yu-admin__nav .btn { width: auto; }
+}

@@ -267,7 +267,16 @@ class Perfil(UUIDModel, TimeStampedModel, SoftDeleteModel):
 class Permissao(UUIDModel, TimeStampedModel, SoftDeleteModel):
     """Permissão granular da plataforma."""
 
+    class Criticidade(models.IntegerChoices):
+        BASICA = 10, 'Básica'
+        OPERACIONAL = 20, 'Operacional'
+        MODERACAO = 30, 'Moderação'
+        ADMINISTRATIVA = 40, 'Administrativa'
+        PROTEGIDA = 50, 'Protegida'
+
     id = models.BigAutoField(primary_key=True, db_column='core_permissao_id')
+    modulo = models.CharField(max_length=60, blank=True, db_index=True, verbose_name='módulo')
+    grupo = models.CharField(max_length=80, blank=True, db_index=True, verbose_name='grupo')
     codigo = models.CharField(
         max_length=120,
         unique=True,
@@ -275,6 +284,11 @@ class Permissao(UUIDModel, TimeStampedModel, SoftDeleteModel):
     )
     nome = models.CharField(max_length=120, verbose_name='nome')
     descricao = models.TextField(blank=True, verbose_name='descrição')
+    criticidade = models.PositiveSmallIntegerField(
+        choices=Criticidade.choices, default=Criticidade.BASICA,
+        verbose_name='criticidade',
+    )
+    protegida = models.BooleanField(default=False, verbose_name='protegida')
 
     class Meta:
         ordering = ['codigo']

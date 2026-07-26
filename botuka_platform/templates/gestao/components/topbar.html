@@ -3,6 +3,11 @@
     <strong>{{ section|default:"Gestão" }}</strong>
   </div>
   <div>
-    {{ request.user.get_full_name|default:request.user.email }}
+    <a class="gestao-return-site" href="{% url 'home' %}">
+      <i class="bi bi-house-door" aria-hidden="true"></i>
+      <span class="gestao-return-site__desktop">Retornar ao site</span>
+      <span class="gestao-return-site__mobile">Site</span>
+    </a>
+    <span>{{ request.user.get_full_name|default:request.user.email }}</span>
   </div>
 </header>

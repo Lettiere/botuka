@@ -1,82 +1,12 @@
-<!-- TURISMO + AVISOS -->
-  <section class="showcase-section">
-    <div class="container-botuka">
-      <div class="main-layout">
-
-        <section id="turismo">
-          <div class="section-title">
-            <div>
-              <h2>Turismo regional</h2>
-              <small>Experiências para moradores e visitantes</small>
-            </div>
-          </div>
-
-          <article class="feed-card reveal">
-            <div class="feed-photo photo-tour">
-              <div class="photo-label">Trilha guiada domingo</div>
-            </div>
-            <div class="feed-inner">
-              <div class="feed-head">
-                <div class="feed-icon" style="background:var(--botuka-green-2)">
-                  <i class="bi bi-binoculars-fill"></i>
-                </div>
-                <div class="feed-meta">
-                  <div class="feed-type">Cuesta</div>
-                  <div class="feed-place">Domingo · 8h</div>
-                </div>
-              </div>
-              <h3 class="feed-title">Passeio no mirante com café rural incluso</h3>
-              <p class="feed-text">Experiência para família, visitantes e moradores redescobrirem a região.</p>
-              <a href="{% url 'news_public:home' %}?q=turismo" class="feed-link">Ver experiência <i class="bi bi-arrow-right"></i></a>
-            </div>
-          </article>
-        </section>
-
-        <aside id="avisos">
-          <div class="section-title">
-            <div>
-              <h2>Avisos úteis</h2>
-              <small>Informações públicas e campanhas</small>
-            </div>
-          </div>
-
-          <div class="feed-list">
-            <article class="feed-card reveal">
-              <div class="feed-inner">
-                <div class="feed-head">
-                  <div class="feed-icon" style="background:var(--botuka-earth)">
-                    <i class="bi bi-bank2"></i>
-                  </div>
-                  <div>
-                    <div class="feed-type">Utilidade pública</div>
-                    <div class="feed-place">Prefeitura · há 1h</div>
-                  </div>
-                </div>
-                <h3 class="feed-title">Cursos gratuitos com inscrições abertas</h3>
-                <p class="feed-text">Qualificação para moradores da região.</p>
-                <span class="badge-official"><i class="bi bi-shield-lock-fill"></i> Oficial</span>
-              </div>
-            </article>
-
-            <article class="feed-card reveal">
-              <div class="feed-inner">
-                <div class="feed-head">
-                  <div class="feed-icon" style="background:var(--botuka-blue-2)">
-                    <i class="bi bi-cone-striped"></i>
-                  </div>
-                  <div>
-                    <div class="feed-type">Trânsito</div>
-                    <div class="feed-place">Atualizado hoje</div>
-                  </div>
-                </div>
-                <h3 class="feed-title">Alteração temporária em via central</h3>
-                <p class="feed-text">Confira rotas alternativas e horários.</p>
-                <a href="{% url 'news_public:home' %}?q=turismo" class="feed-link">Saiba mais</a>
-              </div>
-            </article>
-          </div>
-        </aside>
-
-      </div>
-    </div>
-  </section>
+{% if turismo_destaque or turismo_secoes.guias or turismo_secoes.empresas or turismo_secoes.roteiros or turismo_secoes.experiencias or turismo_secoes.videos or turismo_secoes.playlists %}
+<section class="city-section" id="turismo" aria-labelledby="turismo-title">
+  <div class="container-botuka">
+    <header class="city-section__header">
+      <div><span class="section-kicker"><i class="bi bi-binoculars"></i> Descubra a Cuesta</span><h2 id="turismo-title">Turismo em Botucatu</h2><p>Locais publicados e revisados para moradores e visitantes.</p></div>
+      <a class="btn-botuka btn-botuka-outline" href="{% url 'tourism_public:home' %}">Ver todos</a>
+    </header>
+    <div class="public-card-grid">{% for item in turismo_destaque %}<article class="public-card"><div class="public-card__media">{% if item.imagem_url %}<img src="{{ item.imagem_url }}" alt="" width="560" height="340" loading="lazy" decoding="async">{% else %}<i class="bi bi-binoculars" aria-hidden="true"></i>{% endif %}</div><div><span class="city-tag">{{ item.categoria }}</span><h3>{{ item.titulo }}</h3><p>{{ item.resumo }}</p><small>{{ item.local }}</small><a href="{{ item.url }}">Conhecer</a></div></article>{% endfor %}</div>
+    {% for nome, itens in turismo_secoes.items %}{% if itens %}<div class="tourism-home-group"><h3>{% if nome == 'guias' %}Guias oficiais{% elif nome == 'empresas' %}Empresas turísticas{% elif nome == 'roteiros' %}Roteiros recomendados{% elif nome == 'experiencias' %}Experiências{% elif nome == 'videos' %}Vídeos de Botucatu{% else %}Playlists{% endif %}</h3><div class="public-card-grid">{% for item in itens %}<article class="public-card"><div class="public-card__media">{% if item.imagem_url %}<img src="{{ item.imagem_url }}" alt="" width="560" height="340" loading="lazy" decoding="async">{% else %}<i class="bi bi-compass" aria-hidden="true"></i>{% endif %}</div><div><span class="city-tag">{{ item.categoria }}</span><h4>{{ item.titulo }}</h4><p>{{ item.resumo }}</p>{% if item.local %}<small>{{ item.local }}</small>{% endif %}<a href="{{ item.url }}">Conhecer</a></div></article>{% endfor %}</div></div>{% endif %}{% endfor %}
+  </div>
+</section>
+{% endif %}

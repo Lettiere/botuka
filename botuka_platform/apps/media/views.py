@@ -1,6 +1,6 @@
 from django.core.exceptions import PermissionDenied
 from django.core.paginator import Paginator
-from django.db.models import Q
+from django.db.models import Count, Prefetch, Q
 from django.shortcuts import get_object_or_404, render
 from django.utils import timezone
 
@@ -8,7 +8,19 @@ from apps.accounts.permissions import usuario_tem_permissao
 from apps.core.domain_views import crud_views
 from apps.core.seo.page_builders import listing_seo, media_seo
 
-from .models import Canal, Episodio, Pauta, Programa, Temporada, Transmissao
+from .models import (
+    Canal,
+    CategoriaYuBotuka,
+    ConfiguracaoYuBotuka,
+    Episodio,
+    Pauta,
+    Playlist,
+    Programa,
+    Temporada,
+    Transmissao,
+    Video,
+)
+from .selectors import transmissoes_publicas, videos_em_destaque, videos_publicos
 
 
 def _manager(user):
@@ -67,30 +79,208 @@ def _visible_episodes():
 
 
 def home(request):
-    episodes = _public_episodes().order_by("-destaque", "-publicado_em")
+    return public_home(request)
+
+
+def public_home(request):
+    videos = videos_publicos().order_by("-destaque", "-publicado_em")
     q = request.GET.get("q", "").strip()[:100]
     categoria = request.GET.get("categoria", "").strip()[:80]
-    if q: episodes = episodes.filter(Q(titulo__icontains=q) | Q(descricao__icontains=q) | Q(programa__nome__icontains=q))
-    if categoria: episodes = episodes.filter(programa__categoria__iexact=categoria)
-    page = Paginator(episodes, 12).get_page(request.GET.get("page"))
-    programas = Programa.objects.filter(ativo=True, excluido_em__isnull=True, canal__ativo=True, canal__excluido_em__isnull=True).select_related("canal")
-    categorias = programas.exclude(categoria="").values_list("categoria", flat=True).distinct().order_by("categoria")
-    seo = listing_seo(request, 'YTv Botuka | Vídeos de Botucatu', 'Programas, entrevistas, vídeos e transmissões locais da YTv Botuka.')
-    return render(request, "publico/ytv/home.html", {"programas": programas[:12], "episodios": page.object_list, "page_obj": page, "total": page.paginator.count, "categorias": categorias, "destaque": page.object_list[0] if page.object_list else None, "seo": seo})
+    if q:
+        videos = videos.filter(
+            Q(titulo__icontains=q) | Q(descricao__icontains=q)
+            | Q(programa__nome__icontains=q) | Q(canal__nome__icontains=q)
+        )
+    if categoria:
+        videos = videos.filter(categoria__slug=categoria)
+    configuracao = ConfiguracaoYuBotuka.objects.first()
+    por_pagina = configuracao.quantidade_pagina if configuracao else 12
+    page = Paginator(videos, por_pagina).get_page(request.GET.get("page"))
+    categorias = CategoriaYuBotuka.objects.filter(
+        ativo=True, excluido_em__isnull=True, videos__in=videos_publicos(),
+    ).annotate(total_videos=Count('videos', distinct=True)).distinct().order_by('ordem', 'nome')
+    playlists = Playlist.objects.filter(
+        ativo=True, excluido_em__isnull=True,
+        canal__ativo=True, itens__video__in=videos_publicos(),
+    ).annotate(total_videos=Count('itens', distinct=True)).distinct().order_by('ordem', 'nome')[:8]
+    canais = Canal.objects.filter(
+        ativo=True, excluido_em__isnull=True,
+        videos_editoriais__in=videos_publicos(),
+    ).annotate(total_videos=Count('videos_editoriais', distinct=True)).distinct().order_by('ordem', 'nome')[:8]
+    programas = Programa.objects.filter(
+        ativo=True, excluido_em__isnull=True,
+        videos_editoriais__in=videos_publicos(),
+    ).select_related('canal').annotate(total_videos=Count('videos_editoriais', distinct=True)).distinct()[:8]
+    shorts = videos_publicos().filter(tipo=Video.Tipo.SHORT).order_by('-publicado_em')[:6]
+    recentes_por_categoria = [
+        (item, list(videos_publicos().filter(categoria=item).order_by('-publicado_em')[:4]))
+        for item in categorias[:4]
+    ]
+    seo = listing_seo(
+        request, 'YuBotuka | Vídeos de Botucatu',
+        'Vídeos, programas, entrevistas e transmissões de Botucatu.',
+    )
+    destaque_editorial = videos_em_destaque('YUBOTUKA').first()
+    return render(request, "publico/yubotuka/home.html", {
+        "videos": page.object_list, "page_obj": page, "total": page.paginator.count,
+        "categorias": categorias, "playlists": playlists, "canais": canais,
+        "programas": programas, "shorts": shorts,
+        "recentes_por_categoria": recentes_por_categoria,
+        "destaque": destaque_editorial or (page.object_list[0] if page.object_list else None),
+        "configuracao": configuracao, "seo": seo,
+    })
 
 
 def programa(request, slug):
-    queryset = Programa.objects.filter(ativo=True, excluido_em__isnull=True, canal__ativo=True, canal__excluido_em__isnull=True).select_related("canal")
-    programa_obj = get_object_or_404(queryset, slug=slug)
-    episodios = _public_episodes().filter(programa=programa_obj).order_by("-publicado_em")
-    page = Paginator(episodios, 12).get_page(request.GET.get("page"))
-    return render(request, "publico/ytv/programa.html", {"programa": programa_obj, "episodios": page.object_list, "page_obj": page, "total": page.paginator.count, "seo": media_seo(request, programa_obj)})
+    return programa_publico(request, slug)
 
 
 def episodio(request, slug):
     episodio_obj = get_object_or_404(_visible_episodes(), slug=slug)
+    if episodio_obj.video_editorial_id:
+        video = get_object_or_404(videos_publicos(), pk=episodio_obj.video_editorial_id)
+        return _render_video_publico(request, video)
     relacionados = _public_episodes().filter(programa=episodio_obj.programa).exclude(pk=episodio_obj.pk).order_by("-publicado_em")[:4]
     return render(request, "publico/ytv/episodio.html", {"episodio": episodio_obj, "relacionados": relacionados, "seo": media_seo(request, episodio_obj, kind='episodio')})
+
+
+def _render_video_publico(request, video):
+    relacionados = videos_publicos().filter(
+        Q(categoria=video.categoria) | Q(programa=video.programa),
+    ).exclude(pk=video.pk).distinct().order_by('-publicado_em')[:6]
+    return render(request, 'publico/yubotuka/video.html', {
+        'video': video, 'relacionados': relacionados,
+        'seo': media_seo(request, video, kind='video'),
+    })
+
+
+def video_publico(request, slug):
+    video = get_object_or_404(videos_publicos(), slug=slug)
+    return _render_video_publico(request, video)
+
+
+def categoria_publica(request, slug):
+    categoria = get_object_or_404(
+        CategoriaYuBotuka.objects.filter(ativo=True, excluido_em__isnull=True),
+        slug=slug,
+    )
+    videos = videos_publicos().filter(
+        Q(categoria=categoria) | Q(categoria__categoria_pai=categoria),
+    ).order_by('-publicado_em')
+    page = Paginator(videos, 12).get_page(request.GET.get('page'))
+    return render(request, 'publico/yubotuka/listing.html', {
+        'titulo': categoria.nome, 'descricao': f'Vídeos da categoria {categoria.caminho}.',
+        'videos': page.object_list, 'page_obj': page,
+        'seo': media_seo(request, categoria),
+    })
+
+
+def playlist_publica(request, slug):
+    playlist = get_object_or_404(
+        Playlist.objects.filter(
+            ativo=True, excluido_em__isnull=True, canal__ativo=True,
+        ).select_related('canal', 'categoria', 'playlist_pai'),
+        slug=slug,
+    )
+    videos = videos_publicos().filter(
+        itens_playlist__playlist=playlist,
+    ).order_by('itens_playlist__ordem')
+    return render(request, 'publico/yubotuka/listing.html', {
+        'titulo': playlist.nome, 'descricao': playlist.descricao,
+        'videos': videos, 'playlist': playlist,
+        'seo': media_seo(request, playlist),
+    })
+
+
+def canal_publico(request, slug):
+    canal = get_object_or_404(
+        Canal.objects.filter(ativo=True, excluido_em__isnull=True), slug=slug,
+    )
+    videos = videos_publicos().filter(canal=canal).order_by('-publicado_em')
+    page = Paginator(videos, 12).get_page(request.GET.get('page'))
+    return render(request, 'publico/yubotuka/listing.html', {
+        'titulo': canal.nome, 'descricao': canal.descricao,
+        'videos': page.object_list, 'page_obj': page, 'canal': canal,
+        'seo': media_seo(request, canal),
+    })
+
+
+def programa_publico(request, slug):
+    programa_obj = get_object_or_404(
+        Programa.objects.filter(
+            ativo=True, excluido_em__isnull=True,
+            canal__ativo=True, canal__excluido_em__isnull=True,
+        ).select_related('canal'),
+        slug=slug,
+    )
+    videos = videos_publicos().filter(programa=programa_obj).order_by('-publicado_em')
+    page = Paginator(videos, 12).get_page(request.GET.get('page'))
+    return render(request, 'publico/yubotuka/listing.html', {
+        'titulo': programa_obj.nome, 'descricao': programa_obj.descricao,
+        'videos': page.object_list, 'page_obj': page, 'programa': programa_obj,
+        'seo': media_seo(request, programa_obj),
+    })
+
+
+def temporada_publica(request, programa_slug, numero):
+    temporada = get_object_or_404(
+        Temporada.objects.filter(
+            ativo=True, excluido_em__isnull=True,
+            programa__slug=programa_slug, programa__ativo=True,
+            programa__canal__ativo=True,
+        ).select_related('programa', 'programa__canal'),
+        numero=numero,
+    )
+    videos = videos_publicos().filter(temporada=temporada).order_by('numero_episodio', 'publicado_em')
+    return render(request, 'publico/yubotuka/listing.html', {
+        'titulo': temporada.titulo or f'Temporada {temporada.numero}',
+        'descricao': temporada.descricao,
+        'videos': videos, 'temporada': temporada,
+        'seo': media_seo(request, temporada),
+    })
+
+
+def transmissoes_publicas_lista(request):
+    agora = timezone.now()
+    transmissoes = transmissoes_publicas()
+    return render(request, 'publico/yubotuka/transmissions.html', {
+        'ao_vivo': transmissoes.filter(
+            status=Transmissao.Status.AO_VIVO,
+            inicio__lte=agora,
+        ).filter(Q(fim__isnull=True) | Q(fim__gt=agora)),
+        'proximas': transmissoes.filter(
+            status=Transmissao.Status.AGENDADA, data_prevista__gte=agora,
+        ).order_by('data_prevista'),
+        'encerradas': transmissoes.filter(
+            status__in=[Transmissao.Status.ENCERRADA, Transmissao.Status.PUBLICADA],
+        ).order_by('-fim', '-atualizado_em')[:20],
+        'seo': listing_seo(
+            request, 'Transmissões | YuBotuka',
+            'Lives, próximas transmissões e gravações de Botucatu.',
+        ),
+    })
+
+
+def transmissao_ao_vivo_publica(request):
+    agora = timezone.now()
+    transmissao = transmissoes_publicas().filter(
+        status=Transmissao.Status.AO_VIVO, inicio__lte=agora,
+    ).filter(Q(fim__isnull=True) | Q(fim__gt=agora)).order_by('-inicio').first()
+    proximas = transmissoes_publicas().filter(
+        status=Transmissao.Status.AGENDADA, data_prevista__gte=agora,
+    ).order_by('data_prevista')[:6]
+    return render(request, 'publico/yubotuka/live.html', {
+        'transmissao': transmissao, 'proximas': proximas,
+        'seo': listing_seo(request, 'Ao vivo | YuBotuka', 'Acompanhe transmissões ao vivo de Botucatu.'),
+    })
+
+
+def transmissao_publica(request, slug):
+    transmissao = get_object_or_404(transmissoes_publicas(), slug=slug)
+    return render(request, 'publico/yubotuka/transmission.html', {
+        'transmissao': transmissao,
+        'seo': media_seo(request, transmissao, kind='video'),
+    })
 
 
 def ao_vivo(request):
