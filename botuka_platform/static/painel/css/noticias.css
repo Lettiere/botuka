@@ -1,4 +1,8 @@
 .news-admin__hero{border:0;color:#fff;background:linear-gradient(135deg,#102a43,#0b7285)}
 .news-admin__nav{scrollbar-width:thin;white-space:nowrap}
-.news-admin .card{border-color:rgba(15,23,42,.1);box-shadow:0 .35rem 1.2rem rgba(15,23,42,.05)}
+.news-form-section{padding:1.25rem;margin-bottom:1rem}
+.news-form-section h2{font-size:1.05rem;margin:0 0 1rem}
+.news-editor__actions{position:sticky;bottom:0;z-index:5;display:flex;flex-wrap:wrap;gap:.65rem;padding:1rem;background:rgba(255,255,255,.96);border-top:1px solid rgba(15,23,42,.1)}
+.news-media-preview img{display:block;max-width:320px;max-height:200px;margin-top:1rem;border-radius:.6rem;object-fit:cover}
+.news-dashboard{padding:1rem;margin-bottom:1rem}
 @media(max-width:575.98px){.news-admin{padding-inline:.75rem}.news-admin__hero .card-body{padding:1.25rem!important}}

@@ -9,14 +9,11 @@ MASTER_PROFILE_NAME = 'MASTER'
 
 
 def usuario_tem_permissao(usuario: Any, codigo: str | None) -> bool:
-    """Consulta permissões sem presumir um model de usuário autenticado."""
+    """Ponto público compatível, encaminhado à autorização central."""
 
-    if not usuario or not getattr(usuario, 'is_authenticated', False):
-        return False
-    metodo = getattr(usuario, 'tem_permissao', None)
-    if not callable(metodo):
-        return False
-    return bool(metodo(codigo))
+    from apps.accounts.authorization import pode
+
+    return pode(usuario, codigo)
 
 
 def usuario_e_master(usuario: Any) -> bool:

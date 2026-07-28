@@ -36,6 +36,34 @@ def empresas_disponiveis_para_usuario(usuario) -> QuerySet[Empresa]:
     ).distinct()
 
 
+def empresas_gerenciaveis_para_usuario(usuario) -> QuerySet[Empresa]:
+    """Retorna somente empresas que o usuário pode administrar."""
+
+    queryset = Empresa.objects.select_related(
+        'usuario_proprietario',
+        'categoria_empresa',
+        'cidade',
+        'estado',
+    )
+    if _usuario_admin_global(usuario):
+        return queryset
+    if not usuario or not usuario.is_authenticated:
+        return Empresa.objects.none()
+    return queryset.filter(
+        Q(usuario_proprietario=usuario)
+        | Q(
+            usuarios_vinculados__usuario=usuario,
+            usuarios_vinculados__ativo=True,
+            usuarios_vinculados__proprietario=True,
+        )
+        | Q(
+            usuarios_vinculados__usuario=usuario,
+            usuarios_vinculados__ativo=True,
+            usuarios_vinculados__administrador=True,
+        )
+    ).distinct()
+
+
 def _vinculo_ativo(usuario, empresa: Empresa) -> EmpresaUsuario | None:
     if not usuario or not usuario.is_authenticated:
         return None

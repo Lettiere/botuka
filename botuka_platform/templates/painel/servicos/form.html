@@ -11,9 +11,15 @@
     </div>
     <a class="btn btn-outline-secondary" href="{% url 'painel:servicos_lista' %}">Voltar</a>
   </div>
-  <form method="post" enctype="multipart/form-data" class="row g-3">
+  <form method="post" enctype="multipart/form-data" class="service-form" novalidate>
     {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    {% include "painel/servicos/_responsavel_classificacao.html" %}
+    <section class="service-step">
+      <div class="service-step-heading"><div><h2>Dados do serviço</h2></div></div>
+      <div class="row g-3">
     {% for field in form %}
+      {% if field.name != "prestador_tipo" and field.name != "empresa" and field.name != "setor" and field.name != "area" and field.name != "profissao" and field.name != "tipo_servico" and field.name != "forma_cobranca" %}
       <div class="{% if field.field.widget.input_type == 'checkbox' %}col-12{% else %}col-md-6{% endif %}">
         {% if field.field.widget.input_type == 'checkbox' %}
           <div class="form-check">{{ field }} <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label></div>
@@ -24,13 +30,15 @@
         {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
         {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
       </div>
+      {% endif %}
     {% endfor %}
-    {% if form.non_field_errors %}<div class="col-12 alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
-    <div class="col-12 d-flex gap-2">
+      </div>
+    </section>
+    <div class="d-flex gap-2">
       <button class="btn btn-primary" type="submit">Salvar</button>
       {% if servico %}<a class="btn btn-outline-secondary" href="{% url 'painel:servico_detalhe' servico.uuid %}">Cancelar</a>{% endif %}
     </div>
   </form>
 </section>
-<script src="{% static 'painel/js/servicos.js' %}"></script>
+<script src="{% static 'painel/js/servicos.js' %}?v=20260728-1"></script>
 {% endblock %}

@@ -10,7 +10,8 @@ from django.contrib.auth.decorators import login_required
 from django.contrib.auth.mixins import LoginRequiredMixin
 from django.core.exceptions import PermissionDenied
 from django.http import HttpRequest, HttpResponse
-from apps.accounts.permissions import usuario_e_master, usuario_tem_permissao
+from apps.accounts.authorization import pode
+from apps.accounts.permissions import usuario_e_master
 
 
 def usuario_pode_acessar_gestao(user: object) -> bool:
@@ -21,9 +22,7 @@ def usuario_pode_acessar_gestao(user: object) -> bool:
 
     if (
         usuario_e_master(user)
-        or getattr(user, 'is_staff', False)
-        or (callable(getattr(user, 'tem_perfil', None)) and user.tem_perfil('GESTOR'))
-        or usuario_tem_permissao(user, 'gestao.acessar')
+        or pode(user, 'gestao.acessar')
     ):
         return True
     return False
@@ -70,7 +69,7 @@ def permission_required(codigo: str) -> Callable:
             *args: object,
             **kwargs: object,
         ) -> HttpResponse:
-            if usuario_tem_permissao(request.user, codigo):
+            if pode(request.user, codigo):
                 return view_func(request, *args, **kwargs)
 
             messages.error(request, 'Você não possui permissão para esta ação.')
@@ -103,7 +102,7 @@ class DomainPermissionRequiredMixin(StaffRequiredMixin):
             messages.error(request, 'Ação restrita ao perfil MASTER.')
             raise PermissionDenied
         if self.permission_code and not (
-            usuario_tem_permissao(request.user, self.permission_code)
+            pode(request.user, self.permission_code)
         ):
             messages.error(request, 'Você não possui permissão para esta ação.')
             raise PermissionDenied

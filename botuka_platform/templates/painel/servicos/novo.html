@@ -16,34 +16,16 @@
       <div class="alert alert-danger">{{ form.non_field_errors }}</div>
     {% endif %}
 
+    {% include "painel/servicos/_responsavel_classificacao.html" with numero_etapa="1" %}
+
     <section class="service-step">
       <div class="service-step-heading">
-        <span class="service-step-number">1</span>
-        <div><h2>Responsável e classificação</h2></div>
+        <span class="service-step-number">2</span>
+        <div><h2>Apresentação, preço e contato</h2></div>
       </div>
       <div class="row g-3">
-
-        <!-- Campo prestador_tipo isolado -->
-        <div class="col-md-6">
-          <label class="form-label" for="{{ form.prestador_tipo.id_for_label }}">{{ form.prestador_tipo.label }}</label>
-          {{ form.prestador_tipo }}
-          {% for error in form.prestador_tipo.errors %}
-            <div class="invalid-feedback d-block">{{ error }}</div>
-          {% endfor %}
-        </div>
-
-        <!-- Campo empresa isolado + Wrapper identificável -->
-        <div class="col-md-6" id="empresaFieldWrapper" data-empresa-field>
-          <label class="form-label" for="{{ form.empresa.id_for_label }}">{{ form.empresa.label }}</label>
-          {{ form.empresa }}
-          {% for error in form.empresa.errors %}
-            <div class="invalid-feedback d-block">{{ error }}</div>
-          {% endfor %}
-        </div>
-
-        <!-- Demais campos do form exceto prestador_tipo e empresa -->
         {% for field in form %}
-          {% if field.name != "prestador_tipo" and field.name != "empresa" %}
+          {% if field.name != "prestador_tipo" and field.name != "empresa" and field.name != "setor" and field.name != "area" and field.name != "profissao" and field.name != "tipo_servico" and field.name != "forma_cobranca" %}
             <div class="{% if field.field.widget.input_type == 'checkbox' %}col-md-4{% else %}col-md-6{% endif %}">
               {% if field.field.widget.input_type == 'checkbox' %}
                 <div class="form-check mt-4">{{ field }} <label for="{{ field.id_for_label }}">{{ field.label }}</label></div>
@@ -62,7 +44,7 @@
 
     <section class="service-step">
       <div class="service-step-heading">
-        <span class="service-step-number">2</span>
+        <span class="service-step-number">3</span>
         <div><h2>Área de atendimento</h2><p>Opcional; informe uma área estruturada.</p></div>
       </div>
       <div class="row g-3">
@@ -80,7 +62,7 @@
 
     <section class="service-step">
       <div class="service-step-heading">
-        <span class="service-step-number">3</span>
+        <span class="service-step-number">4</span>
         <div><h2>Imagens</h2><p>Até 8 arquivos JPG, PNG ou WebP, com no máximo 5 MB cada.</p></div>
       </div>
       <div class="row g-3">
@@ -97,7 +79,7 @@
 
     <section class="service-step">
       <div class="service-step-heading">
-        <span class="service-step-number">4</span>
+        <span class="service-step-number">5</span>
         <div><h2>Links, redes sociais e vídeos</h2><p>Até 15 links ativos e 6 vídeos.</p></div>
       </div>
       <div data-link-list></div>
@@ -139,5 +121,5 @@
     </div>
   </form>
 </section>
-<script src="{% static 'painel/js/servicos.js' %}?v=20260722-2"></script>
+<script src="{% static 'painel/js/servicos.js' %}?v=20260728-1"></script>
 {% endblock %}

@@ -7,7 +7,7 @@ from django.urls import reverse
 from apps.core.public_links import TipoLink, normalizar_link_publico
 from apps.locations.models import Cidade, Estado, Pais
 from apps.organizations.models import Empresa, EmpresaLink
-from apps.services.models import FormaCobranca, Profissao, Servico, ServicoLink, Setor, TipoServico
+from apps.services.models import AreaProfissional, FormaCobranca, Profissao, Servico, ServicoLink, Setor, TipoServico
 from apps.accounts.master_services import garantir_usuario_master
 from apps.services.permissions import servicos_disponiveis_para_usuario
 
@@ -30,13 +30,15 @@ class LinksQrCodeTests(TestCase):
             perfil_publico=True,
         )
         setor = Setor.objects.create(nome='Tecnologia')
-        profissao = Profissao.objects.create(setor=setor, nome='Desenvolvedor')
+        cls.area_profissional = AreaProfissional.objects.create(setor=setor, nome='Desenvolvimento')
+        profissao = Profissao.objects.create(setor=setor, area=cls.area_profissional, nome='Desenvolvedor')
         tipo = TipoServico.objects.create(nome='Consultoria')
         cobranca = FormaCobranca.objects.create(nome='Por hora')
         cls.servico = Servico.objects.create(
             usuario_responsavel=cls.usuario,
             prestador_tipo=Servico.PrestadorTipo.PESSOA_FISICA,
             setor=setor,
+            area=cls.area_profissional,
             profissao=profissao,
             tipo_servico=tipo,
             forma_cobranca=cobranca,
@@ -47,7 +49,8 @@ class LinksQrCodeTests(TestCase):
     def dados_cadastro(self, **alteracoes):
         dados = {
             'prestador_tipo': Servico.PrestadorTipo.PESSOA_FISICA,
-            'empresa': '', 'setor': self.servico.setor_id, 'profissao': self.servico.profissao_id,
+            'empresa': '', 'setor': self.servico.setor_id, 'area': self.area_profissional.pk,
+            'profissao': self.servico.profissao_id,
             'tipo_servico': self.servico.tipo_servico_id, 'forma_cobranca': self.servico.forma_cobranca_id,
             'titulo': 'Novo serviço persistente', 'descricao_curta': 'Descrição curta',
             'descricao_completa': 'Descrição completa', 'experiencia': '', 'preco_inicial': '100.00',
@@ -97,6 +100,66 @@ class LinksQrCodeTests(TestCase):
         resposta = self.client.post(reverse('painel:servico_criar'), self.dados_cadastro(prestador_tipo=Servico.PrestadorTipo.EMPRESA, empresa=self.empresa.pk))
         self.assertEqual(resposta.status_code, 200)
         self.assertFalse(Servico.objects.filter(titulo='Novo serviço persistente').exists())
+
+    def test_formulario_lista_apenas_empresa_administrada(self):
+        outra_empresa = Empresa.objects.create(
+            usuario_proprietario=self.terceiro,
+            nome_fantasia='Empresa de terceiro',
+            cidade=self.empresa.cidade,
+            estado=self.empresa.estado,
+            status=Empresa.Status.ATIVA,
+            perfil_publico=True,
+        )
+        self.client.force_login(self.usuario)
+        resposta = self.client.get(reverse('painel:servico_criar'))
+        self.assertContains(resposta, self.empresa.nome_fantasia)
+        self.assertNotContains(resposta, outra_empresa.nome_fantasia)
+
+    def test_edicao_troca_empresa_por_autonomo_e_remove_empresa(self):
+        self.servico.prestador_tipo = Servico.PrestadorTipo.EMPRESA
+        self.servico.empresa = self.empresa
+        self.servico.save()
+        self.client.force_login(self.usuario)
+        resposta = self.client.post(
+            reverse('painel:servico_editar', kwargs={'uuid': self.servico.uuid}),
+            self.dados_cadastro(titulo=self.servico.titulo, acao='salvar'),
+        )
+        self.assertEqual(resposta.status_code, 302)
+        self.servico.refresh_from_db()
+        self.assertEqual(self.servico.prestador_tipo, Servico.PrestadorTipo.PESSOA_FISICA)
+        self.assertIsNone(self.servico.empresa_id)
+        self.assertEqual(self.servico.usuario_responsavel, self.usuario)
+
+    def test_area_de_outro_setor_rejeitada(self):
+        outro_setor = Setor.objects.create(nome='Saúde')
+        outra_area = AreaProfissional.objects.create(setor=outro_setor, nome='Clínica')
+        self.client.force_login(self.usuario)
+        resposta = self.client.post(
+            reverse('painel:servico_criar'),
+            self.dados_cadastro(area=outra_area.pk),
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, 'A área profissional não pertence ao setor selecionado.')
+
+    def test_ajax_respeita_hierarquia_e_rejeita_id_invalido(self):
+        self.client.force_login(self.usuario)
+        resposta = self.client.get(
+            reverse('painel:servicos_ajax_areas'),
+            {'setor': self.servico.setor_id},
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertEqual(resposta.json()['results'][0]['id'], self.area_profissional.pk)
+        invalida = self.client.get(reverse('painel:servicos_ajax_areas'), {'setor': 'invalido'})
+        self.assertEqual(invalida.status_code, 400)
+
+    def test_formulario_edicao_preserva_classificacao(self):
+        self.client.force_login(self.usuario)
+        resposta = self.client.get(
+            reverse('painel:servico_editar', kwargs={'uuid': self.servico.uuid}),
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, self.area_profissional.nome)
+        self.assertContains(resposta, self.servico.profissao.nome)
 
     def test_master_ve_todos_servicos_e_comum_mantem_escopo(self):
         master, _ = garantir_usuario_master(email='master-services@example.com', senha='SenhaSegura#2026')

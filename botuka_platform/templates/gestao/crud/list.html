@@ -43,6 +43,7 @@
                     <a class="btn btn-soft" href="{% url 'gestao:perfil_permissoes' object.pk %}">Permissões</a>
                   {% endif %}
                   {% if title == "Usuários" %}
+                    <a class="btn btn-soft" href="{% url 'gestao:usuario_acessos' object.uuid %}">Gerenciar acessos</a>
                     {% if object.is_active %}
                       <a class="btn btn-danger" href="{% url 'gestao:usuarios_desativar' object.pk %}">Desativar</a>
                     {% else %}

@@ -141,7 +141,7 @@ def episodio(request, slug):
         video = get_object_or_404(videos_publicos(), pk=episodio_obj.video_editorial_id)
         return _render_video_publico(request, video)
     relacionados = _public_episodes().filter(programa=episodio_obj.programa).exclude(pk=episodio_obj.pk).order_by("-publicado_em")[:4]
-    return render(request, "publico/ytv/episodio.html", {"episodio": episodio_obj, "relacionados": relacionados, "seo": media_seo(request, episodio_obj, kind='episodio')})
+    return render(request, "publico/ytv/episodio.html", {"episodio": episodio_obj, "share_object": episodio_obj, "share_type": "episodio", "relacionados": relacionados, "seo": media_seo(request, episodio_obj, kind='episodio')})
 
 
 def _render_video_publico(request, video):
@@ -149,7 +149,7 @@ def _render_video_publico(request, video):
         Q(categoria=video.categoria) | Q(programa=video.programa),
     ).exclude(pk=video.pk).distinct().order_by('-publicado_em')[:6]
     return render(request, 'publico/yubotuka/video.html', {
-        'video': video, 'relacionados': relacionados,
+        'video': video, 'relacionados': relacionados, 'share_object': video, 'share_type': 'video',
         'seo': media_seo(request, video, kind='video'),
     })
 

@@ -1,0 +1,9 @@
+{% load static %}<!doctype html>
+<html lang="pt-br"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width"><title>{{ share.titulo }} · Divulgação BOTUKA</title><link rel="stylesheet" href="{% static 'public/css/share-print.css' %}"></head>
+<body><main class="print-sheet print-sheet--{{ tipo_publico }}">
+  <header><strong>BOTUKA</strong><span>Informação pública atualizada</span></header>
+  <article><p class="print-kind">{{ share.tipo }}</p><h1>{{ share.titulo }}</h1>
+  {% if tipo_publico == "vaga" %}<p class="print-lead">{{ objeto.empresa }}{% if objeto.cidade %} · {{ objeto.cidade }}{% endif %}</p><dl>{% if objeto.modalidade %}<div><dt>Modalidade</dt><dd>{{ objeto.modalidade }}</dd></div>{% endif %}{% if objeto.tipo_contrato %}<div><dt>Contratação</dt><dd>{{ objeto.tipo_contrato }}</dd></div>{% endif %}{% if not objeto.ocultar_salario and objeto.salario_minimo %}<div><dt>Faixa salarial</dt><dd>R$ {{ objeto.salario_minimo }}{% if objeto.salario_maximo %} a R$ {{ objeto.salario_maximo }}{% endif %}</dd></div>{% endif %}</dl><section><h2>Resumo</h2><p>{{ objeto.descricao|striptags|truncatewords:90 }}</p><h2>Requisitos principais</h2><p>{{ objeto.requisitos|striptags|truncatewords:70 }}</p></section>{% elif tipo_publico == "empresa" %}<p class="print-lead">{{ objeto.nome_fantasia }}</p><p>{{ objeto.descricao_curta|striptags|truncatewords:100 }}</p>{% elif tipo_publico == "servico" %}<p class="print-lead">{{ objeto.empresa|default:objeto.usuario_responsavel }}</p><p>{{ objeto.descricao_curta|striptags }}</p>{% endif %}
+  </article><aside><img src="{% url 'sharing:png' tipo_publico objeto.uuid %}" alt="QR Code" width="260" height="260"><p>Aponte a câmera e consulte os dados atualizados.</p><small>{{ share.url }}</small></aside>
+  <footer>Consulte disponibilidade, requisitos e informações atualizadas no BOTUKA.</footer>
+</main><button class="print-button" onclick="window.print()">Imprimir</button></body></html>

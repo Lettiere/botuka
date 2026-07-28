@@ -51,7 +51,7 @@ def servico_publico(request, slug):
     if servico.empresa_id and not servico.empresa.pode_publicar_servico:
         raise Http404
     links = servico.links.filter(ativo=True, excluido_em__isnull=True).order_by('-destaque', 'ordem')
-    return render(request, 'publico/servicos/detalhe.html', {'servico': servico, 'links': links, 'videos': [link for link in links if link.url_embed][:6], 'seo': servico_seo(request, servico)})
+    return render(request, 'publico/servicos/detalhe.html', {'servico': servico, 'share_object': servico, 'share_type': 'servico', 'links': links, 'videos': [link for link in links if link.url_embed][:6], 'seo': servico_seo(request, servico)})
 
 
 def empresa_publica(request, slug):
@@ -63,7 +63,7 @@ def empresa_publica(request, slug):
         status=Empresa.Status.ATIVA,
     )
     links = empresa.links.filter(ativo=True, excluido_em__isnull=True).order_by('-destaque', 'ordem')
-    return render(request, 'publico/empresas/detalhe.html', {'empresa': empresa, 'links': links, 'videos': [link for link in links if link.url_embed][:6], 'seo': empresa_seo(request, empresa)})
+    return render(request, 'publico/empresas/detalhe.html', {'empresa': empresa, 'share_object': empresa, 'share_type': 'empresa', 'links': links, 'videos': [link for link in links if link.url_embed][:6], 'seo': empresa_seo(request, empresa)})
 
 
 def qrcode_servico_redirect(request, token):

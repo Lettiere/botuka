@@ -236,7 +236,7 @@ def vaga_publica(request, slug):
             Q(encerramento__isnull=True) | Q(encerramento__gte=timezone.localdate())
         ), slug=slug, status=Vaga.Status.PUBLICADA,
     )
-    return render(request, 'publico/vagas/detalhe.html', {'vaga': vaga, 'seo': vaga_seo(request, vaga)})
+    return render(request, 'publico/vagas/detalhe.html', {'vaga': vaga, 'share_object': vaga, 'share_type': 'vaga', 'seo': vaga_seo(request, vaga)})
 
 
 def curriculo_publico_view(request, uuid):

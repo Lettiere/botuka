@@ -5,18 +5,18 @@
   <nav class="yu-admin__breadcrumb" aria-label="breadcrumb">
     <ol class="breadcrumb mb-0">
       <li class="breadcrumb-item"><a href="{% url 'painel:dashboard' %}">Painel</a></li>
-      <li class="breadcrumb-item"><a href="{% url 'painel:yubotuka_dashboard' %}">YuBotuka</a></li>
+      <li class="breadcrumb-item"><a href="{% url 'painel:yubotuka_dashboard' %}">YoBotuka</a></li>
       {% block breadcrumb_item %}{% endblock %}
     </ol>
   </nav>
   <header class="panel-module-hero panel-module-header--media yu-admin__hero">
     <div>
       <span class="panel-module-kicker yu-admin__kicker"><i class="bi bi-play-btn-fill" aria-hidden="true"></i> Conteúdo audiovisual BOTUKA</span>
-      <h1>{% block page_title %}YuBotuka{% endblock %}</h1>
+      <h1>{% block page_title %}YoBotuka{% endblock %}</h1>
       <p>{% block page_description %}Gerencie vídeos, categorias, playlists e publicação editorial.{% endblock %}</p>
     </div>
   </header>
-  <nav class="panel-module-nav yu-admin__nav" aria-label="Navegação do YuBotuka">
+  <nav class="panel-module-nav yu-admin__nav" aria-label="Navegação do YoBotuka">
     <a class="panel-btn panel-btn--soft" href="{% url 'painel:yubotuka_dashboard' %}">Dashboard</a>
     <a class="panel-btn panel-btn--soft" href="{% url 'painel:yubotuka_videos' %}">Vídeos</a>
     {% if pode_gerenciar_categoria %}<a class="panel-btn panel-btn--soft" href="{% url 'painel:yubotuka_categorias' %}">Categorias</a>{% endif %}

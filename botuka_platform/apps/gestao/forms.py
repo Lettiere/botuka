@@ -5,6 +5,7 @@ from __future__ import annotations
 from django import forms
 from django.contrib.auth import get_user_model
 from apps.accounts.permissions import usuario_e_master
+from apps.accounts.models import AcessoModulo
 
 from apps.core.models import (
     ConfiguracaoSistema,
@@ -20,6 +21,7 @@ from apps.painel.forms import cpf_valido, somente_digitos
 
 Usuario = get_user_model()
 GLOBAL_PROFILE_NAMES = ('MASTER', 'ADMIN_GLOBAL', 'SUPORTE_GLOBAL', 'AUDITOR_GLOBAL')
+MODULE_ALIASES = {'yubotuka': 'media', 'eventos': 'events', 'esportes': 'sports'}
 
 
 class BaseGestaoModelForm(forms.ModelForm):
@@ -38,6 +40,76 @@ class BaseGestaoModelForm(forms.ModelForm):
                 widget.attrs.setdefault('class', 'form-select')
             else:
                 widget.attrs.setdefault('class', 'form-control')
+
+
+class AcessoModuloForm(forms.ModelForm):
+    """Valida módulo, perfil e matriz sem consultar UUIDs vazios manualmente."""
+
+    modulo = forms.ChoiceField(label='Módulo')
+    perfil = forms.ModelChoiceField(
+        queryset=Perfil.objects.none(), required=False,
+        empty_label='Sem perfil predefinido',
+    )
+    permissoes = forms.ModelMultipleChoiceField(
+        queryset=Permissao.objects.none(), required=False,
+        widget=forms.CheckboxSelectMultiple,
+    )
+
+    class Meta:
+        model = AcessoModulo
+        fields = ['modulo', 'perfil', 'escopo', 'valida_ate', 'justificativa', 'observacao']
+        widgets = {'valida_ate': forms.DateTimeInput(attrs={'type': 'datetime-local'})}
+
+    def __init__(self, *args, modulo='', **kwargs):
+        super().__init__(*args, **kwargs)
+        modules = list(
+            Permissao.objects.exclude(modulo='').values_list('modulo', flat=True)
+            .distinct().order_by('modulo')
+        )
+        self.fields['modulo'].choices = [(value, value.title()) for value in modules]
+        selected = MODULE_ALIASES.get(
+            (self.data.get('modulo') if self.is_bound else modulo or getattr(self.instance, 'modulo', '')),
+            (self.data.get('modulo') if self.is_bound else modulo or getattr(self.instance, 'modulo', '')),
+        )
+        self.selected_module = selected
+        self.fields['perfil'].queryset = Perfil.objects.filter(
+            ativo=True, perfil_permissoes__permissao__modulo=selected,
+        ).distinct()
+        self.fields['permissoes'].queryset = Permissao.objects.filter(
+            ativo=True, modulo=selected,
+        ).order_by('grupo', 'nome')
+        if self.instance.pk and not self.is_bound:
+            self.fields['permissoes'].initial = self.instance.concessoes.filter(
+                revogada_em__isnull=True,
+            ).values_list('permissao_id', flat=True)
+        for field in self.fields.values():
+            if not isinstance(field.widget, forms.CheckboxSelectMultiple):
+                field.widget.attrs.setdefault('class', 'form-control')
+
+    def clean_modulo(self):
+        modulo = MODULE_ALIASES.get(self.cleaned_data['modulo'], self.cleaned_data['modulo'])
+        if not Permissao.objects.filter(modulo=modulo, ativo=True).exists():
+            raise forms.ValidationError('Selecione um módulo válido.')
+        if self.instance.pk and modulo != self.instance.modulo:
+            raise forms.ValidationError('O módulo de um acesso existente não pode ser alterado.')
+        return modulo
+
+    def clean(self):
+        cleaned = super().clean()
+        modulo = cleaned.get('modulo')
+        perfil = cleaned.get('perfil')
+        if perfil and not PerfilPermissao.objects.filter(
+            perfil=perfil, ativo=True, permissao__modulo=modulo,
+        ).exists():
+            self.add_error('perfil', 'O perfil selecionado não pertence a este módulo.')
+        permissoes = cleaned.get('permissoes') or ()
+        if not perfil and not permissoes:
+            self.add_error('permissoes', 'Selecione ao menos uma permissão ou um perfil inicial.')
+        for permissao in permissoes:
+            if permissao.modulo != modulo:
+                self.add_error('permissoes', 'Todas as permissões devem pertencer ao módulo selecionado.')
+                break
+        return cleaned
 
 
 class UsuarioForm(BaseGestaoModelForm):

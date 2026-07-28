@@ -14,6 +14,8 @@ from django.utils import timezone
 from django.views.decorators.http import require_POST
 
 from apps.accounts.permissions import usuario_tem_permissao
+from apps.accounts.authorization import escopo_da_permissao, pode
+from apps.accounts.models import AcessoModulo
 from apps.core.domain import auditar
 from apps.core.seo.page_builders import artigo_seo, listing_seo
 from apps.core.services.home.adapters.events import obter_eventos
@@ -24,7 +26,10 @@ from .models import (
     HistoricoEditorial, ImagemPublicacao, LinkRelacionado, MidiaIncorporada,
     SerieEditorial, Tag, Tema,
 )
-from .services import alterar_status, pode_editar_artigo
+from .services import (
+    PERMISSAO_TRANSICAO, TRANSICOES, alterar_status, pode_editar_artigo,
+)
+from .forms import ArtigoForm
 from .selectors import artigos_publicos, obter_home_noticias
 
 NEWS_AUX_MENU = [
@@ -38,7 +43,7 @@ NEWS_AUX_MENU = [
 
 def _can(user, *codes):
     return any(
-        usuario_tem_permissao(user, code)
+        pode(user, code)
         for code in (*codes, "news.gerenciar")
     )
 
@@ -207,6 +212,8 @@ def artigo(request, slug):
     )
     return render(request, "publico/news/artigo.html", {
         "artigo": obj,
+        "share_object": obj,
+        "share_type": "noticia",
         "relacionados": relacionados,
         "recentes": recentes,
         "destaques": destaques,
@@ -218,17 +225,17 @@ def artigo(request, slug):
 
 
 def _require_panel(user):
-    if not _can(
-        user, "news.acessar_painel", "news.criar", "news.editar_propria",
-        "news.editar_qualquer", "news.revisar", "news.publicar",
-    ):
+    if not pode(user, "news.acessar_modulo"):
         raise PermissionDenied
 
 
 def _article_scope(user, *, all_objects=False):
     manager = Artigo.all_objects if all_objects else Artigo.objects
     queryset = manager.select_related("categoria", "autor_editorial", "autor")
-    if _can(user, "news.editar_qualquer", "news.revisar", "news.publicar"):
+    if (
+        pode(user, "news.visualizar_artigo_terceiro")
+        and escopo_da_permissao(user, "news.visualizar_artigo_terceiro") == AcessoModulo.Escopo.TODOS
+    ):
         return queryset
     return queryset.filter(
         Q(autor=user) | Q(autor_editorial__usuario=user)
@@ -248,10 +255,18 @@ def painel_dashboard(request):
         "publicadas": escopo.filter(status=EditorialStatus.PUBLICADO).count(),
         "recentes": escopo[:8],
         "dashboard_cards": [
-            (escopo.count(), "Total"), (escopo.filter(status=EditorialStatus.RASCUNHO).count(), "Rascunhos"),
-            (escopo.filter(status__in=[EditorialStatus.ENVIADO_REVISAO, EditorialStatus.EM_REVISAO]).count(), "Revisões"),
-            (escopo.filter(status=EditorialStatus.AGENDADO, agendado_para__gte=agora).count(), "Agendadas"),
-            (escopo.filter(status=EditorialStatus.PUBLICADO).count(), "Publicadas"),
+            (escopo.count(), "Total de artigos"),
+            (escopo.filter(status=EditorialStatus.RASCUNHO).count(), "Rascunhos"),
+            (escopo.filter(status__in=[EditorialStatus.ENVIADO_REVISAO, EditorialStatus.EM_REVISAO]).count(), "Aguardando revisão"),
+            (escopo.filter(status=EditorialStatus.CORRECAO_SOLICITADA).count(), "Devolvidos"),
+            (escopo.filter(status=EditorialStatus.APROVADO).count(), "Aprovados"),
+            (escopo.filter(status=EditorialStatus.AGENDADO, agendado_para__gte=agora).count(), "Programados"),
+            (escopo.filter(status=EditorialStatus.PUBLICADO).count(), "Publicados"),
+            (escopo.filter(status=EditorialStatus.ARQUIVADO).count(), "Arquivados"),
+            (escopo.filter(Q(autor=request.user) | Q(autor_editorial__usuario=request.user)).count(), "Criados por você"),
+            (escopo.filter(status__in=[EditorialStatus.ENVIADO_REVISAO, EditorialStatus.EM_REVISAO, EditorialStatus.APROVADO]).count()
+             if pode(request.user, "news.visualizar_artigo_terceiro") else
+             escopo.filter(status=EditorialStatus.CORRECAO_SOLICITADA).count(), "Dependem da sua ação"),
         ],
         "news_aux_menu": NEWS_AUX_MENU,
     })
@@ -267,23 +282,35 @@ def artigo_lista(request, status=None):
         queryset = queryset.filter(status=status)
     if query:
         queryset = queryset.filter(Q(titulo__icontains=query) | Q(resumo__icontains=query))
+    filters = {
+        "categoria_id": request.GET.get("categoria"),
+        "coluna_id": request.GET.get("coluna"),
+        "serie_id": request.GET.get("serie"),
+        "autor_editorial_id": request.GET.get("autor"),
+    }
+    for field, value in filters.items():
+        if value:
+            queryset = queryset.filter(**{field: value})
+    if request.GET.get("proprios") == "1":
+        queryset = queryset.filter(Q(autor=request.user) | Q(autor_editorial__usuario=request.user))
+    if request.GET.get("inicio"):
+        queryset = queryset.filter(atualizado_em__date__gte=request.GET["inicio"])
+    if request.GET.get("fim"):
+        queryset = queryset.filter(atualizado_em__date__lte=request.GET["fim"])
     page = Paginator(queryset, 20).get_page(request.GET.get("page"))
     for artigo in page.object_list:
         artigo.pode_editar_painel = pode_editar_artigo(request.user, artigo)
     return render(request, "painel/noticias/artigo_list.html", {
         "page_obj": page, "artigos": page.object_list,
         "status_choices": EditorialStatus.choices,
+        "categorias": CategoriaNoticia.objects.filter(ativo=True),
+        "colunas": Coluna.objects.filter(ativo=True),
+        "series": SerieEditorial.objects.filter(ativo=True),
+        "autores": Autor.objects.filter(ativo=True, usuario__is_active=True)
+        if pode(request.user, "news.visualizar_artigo_terceiro") else (),
+        "pode_ver_autores": pode(request.user, "news.visualizar_artigo_terceiro"),
         "news_aux_menu": NEWS_AUX_MENU,
     })
-
-
-ARTIGO_FIELDS = [
-    "autor_editorial", "categoria", "coluna", "serie", "temas", "tags",
-    "titulo", "subtitulo", "resumo", "conteudo", "tipo_editorial",
-    "imagem_capa", "credito_imagem", "fonte", "url_fonte", "data_fato",
-    "destaque", "urgente", "titulo_seo", "descricao_seo", "imagem_social",
-]
-ArtigoForm = modelform_factory(Artigo, fields=ARTIGO_FIELDS)
 
 
 @login_required
@@ -292,9 +319,9 @@ def artigo_form(request, uuid=None):
     if obj:
         if not pode_editar_artigo(request.user, obj):
             raise PermissionDenied
-    elif not _can(request.user, "news.criar"):
+    elif not pode(request.user, "news.criar_artigo"):
         raise PermissionDenied
-    form = ArtigoForm(request.POST or None, request.FILES or None, instance=obj)
+    form = ArtigoForm(request.POST or None, request.FILES or None, instance=obj, usuario=request.user)
     requested_status = request.POST.get("status") if request.method == "POST" else None
     if requested_status and requested_status != (obj.status if obj else EditorialStatus.RASCUNHO):
         form.add_error(None, "O estado editorial deve ser alterado pelas ações do fluxo.")
@@ -303,8 +330,12 @@ def artigo_form(request, uuid=None):
             artigo_obj = form.save(commit=False)
             if not artigo_obj.pk:
                 artigo_obj.autor = request.user
-                if not artigo_obj.autor_editorial_id:
-                    artigo_obj.autor_editorial = Autor.objects.filter(usuario=request.user).first()
+            if not form.pode_atribuir_autor:
+                autor, _ = Autor.objects.get_or_create(
+                    usuario=request.user,
+                    defaults={"nome": str(request.user), "ativo": True},
+                )
+                artigo_obj.autor_editorial = autor
             artigo_obj.save()
             form.save_m2m()
             auditar(
@@ -316,6 +347,12 @@ def artigo_form(request, uuid=None):
     return render(request, "painel/noticias/artigo_form.html", {
         "form": form, "artigo": obj,
         "status_choices": EditorialStatus.choices,
+        "acoes_status": [
+            (status, label) for status, label in EditorialStatus.choices
+            if status in TRANSICOES.get(obj.status if obj else EditorialStatus.RASCUNHO, set())
+            and (not PERMISSAO_TRANSICAO.get(status) or _can(request.user, PERMISSAO_TRANSICAO[status]))
+        ] if obj else [],
+        "pode_atribuir_autor": form.pode_atribuir_autor,
         "news_aux_menu": NEWS_AUX_MENU,
     })
 

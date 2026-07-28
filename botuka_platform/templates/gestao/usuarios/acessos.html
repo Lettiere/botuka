@@ -1,0 +1,17 @@
+{% extends "gestao/base.html" %}
+{% block title %}Acessos de {{ usuario_alvo }} | Gestão{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{% url 'gestao:dashboard' %}">Gestão</a> / <a href="{% url 'gestao:usuarios_lista' %}">Usuários</a> / Acessos</nav>
+<div class="page-head"><div><h1>Acessos e permissões</h1><p>{{ usuario_alvo }} · {{ usuario_alvo.email }}</p></div><a class="btn btn-primary" href="{% url 'gestao:usuario_acesso_novo' usuario_alvo.uuid %}">+ Conceder acesso a módulo</a></div>
+<section class="panel panel-pad"><div class="access-user-summary"><div><strong>Status da conta</strong><span class="badge {% if usuario_alvo.is_active %}badge-success{% else %}badge-danger{% endif %}">{% if usuario_alvo.is_active %}Ativa{% else %}Inativa{% endif %}</span></div><div><strong>Perfil global</strong><span>{{ usuario_alvo.perfil|default:"Nenhum" }}</span></div><div><strong>Módulos concedidos</strong><span>{{ acessos|length }}</span></div></div></section>
+<div class="access-grid">
+{% for acesso in acessos %}<article class="panel panel-pad access-card">
+  <header><div><span class="access-module">{{ acesso.modulo|title }}</span><h2>{{ acesso.perfil.nome|default:"Personalizado" }}</h2></div><span class="badge {% if acesso.status == "ATIVO" %}badge-success{% else %}badge-warning{% endif %}">{{ acesso.get_status_display }}</span></header>
+  <dl><div><dt>Escopo</dt><dd>{{ acesso.get_escopo_display }}</dd></div><div><dt>Permissões</dt><dd>{{ acesso.total_permissoes }}</dd></div><div><dt>Validade</dt><dd>{{ acesso.valida_ate|date:"d/m/Y H:i"|default:"Sem expiração" }}</dd></div><div><dt>Concessor</dt><dd>{{ acesso.concedido_por }}</dd></div><div><dt>Última alteração</dt><dd>{{ acesso.atualizado_em|date:"d/m/Y H:i" }}</dd></div></dl>
+  <div class="actions"><a class="btn btn-soft" href="{% url 'gestao:usuario_acesso_editar' usuario_alvo.uuid acesso.uuid %}">Editar</a>
+  <form method="post" action="{% url 'gestao:usuario_acesso_status' usuario_alvo.uuid acesso.uuid %}" data-confirm="Confirma a alteração deste acesso?">{% csrf_token %}<input type="hidden" name="status" value="{% if acesso.status == 'ATIVO' %}SUSPENSO{% else %}ATIVO{% endif %}"><input type="hidden" name="justificativa" value="Alteração pela gestão de acessos"><button class="btn btn-muted">{% if acesso.status == "ATIVO" %}Suspender{% else %}Reativar{% endif %}</button></form>
+  <form method="post" action="{% url 'gestao:usuario_acesso_status' usuario_alvo.uuid acesso.uuid %}" data-confirm="Revogar todo o módulo e suas permissões?">{% csrf_token %}<input type="hidden" name="status" value="REVOGADO"><input name="justificativa" required placeholder="Motivo da revogação"><button class="btn btn-danger">Revogar</button></form></div>
+</article>{% empty %}<section class="panel panel-pad"><h2>Nenhum módulo concedido</h2><p>Conceda somente os módulos necessários ao trabalho deste usuário.</p></section>{% endfor %}
+</div>
+<section class="panel panel-pad"><h2>Histórico recente</h2><div class="table-wrap"><table><thead><tr><th>Data</th><th>Módulo</th><th>Ação</th><th>Permissão</th><th>Responsável</th></tr></thead><tbody>{% for item in historico %}<tr><td>{{ item.criado_em|date:"d/m/Y H:i" }}</td><td>{{ item.permissao.modulo|title }}</td><td>{{ item.get_acao_display }}</td><td>{{ item.permissao.nome }}</td><td>{{ item.ator }}</td></tr>{% empty %}<tr><td colspan="5">Nenhuma alteração registrada.</td></tr>{% endfor %}</tbody></table></div></section>
+{% endblock %}

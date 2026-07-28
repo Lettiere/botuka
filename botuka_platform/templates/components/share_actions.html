@@ -1,0 +1,17 @@
+{% load static contact_tags %}<link rel="stylesheet" href="{% static 'public/css/share-actions.css' %}"><div class="share-actions" data-share-actions data-title="{{ share_title|escape }}" data-url="{{ share_url|escape }}">
+  <button type="button" class="btn-botuka" data-native-share><i class="bi bi-share"></i> Compartilhar</button>
+  <button type="button" class="btn-botuka btn-botuka-outline" data-copy-link><i class="bi bi-link-45deg"></i> Copiar link</button>
+  <button type="button" class="btn-botuka btn-botuka-outline" data-open-qr><i class="bi bi-qr-code"></i> QR Code</button>
+  <a class="btn-botuka btn-botuka-outline" href="{% url 'sharing:print' share_type share_object.uuid %}" target="_blank"><i class="bi bi-printer"></i> Imprimir divulgação</a>{% public_whatsapp share_object %}
+  <dialog class="share-qr-modal" data-qr-modal>
+    <form method="dialog"><button aria-label="Fechar">×</button></form>
+    <h2>{{ share_title }}</h2>
+    <img src="{% url 'sharing:png' share_type share_object.uuid %}" alt="QR Code para {{ share_title }}" width="280" height="280">
+    <p><small>{{ share_url }}</small></p>
+    <div>
+      <a class="btn-botuka" href="{% url 'sharing:png' share_type share_object.uuid %}" download>Baixar PNG</a>
+      <a class="btn-botuka btn-botuka-outline" href="{% url 'sharing:svg' share_type share_object.uuid %}" download>Baixar SVG</a>
+      <button type="button" class="btn-botuka btn-botuka-outline" data-copy-link>Copiar link</button>
+    </div>
+  </dialog>
+</div><script src="{% static 'public/js/share-actions.js' %}" defer></script>

@@ -1,11 +1,11 @@
 {% extends "_layout/platform/public.html" %}{% load static %}
-{% block title %}YuBotuka{% endblock %}
+{% block title %}YoBotuka{% endblock %}
 {% block public_styles %}<link rel="stylesheet" href="{% static 'public/css/yubotuka.css' %}">{% endblock %}
 {% block public_content %}
 <main class="yu-public">
   <section class="yu-public-hero">
     <div class="container-botuka">
-      <nav class="public-breadcrumb"><a href="{% url 'home' %}">Início</a> / YuBotuka</nav>
+      <nav class="public-breadcrumb"><a href="{% url 'home' %}">Início</a> / YoBotuka</nav>
       <div class="yu-public-hero__content"><div><span class="section-kicker">Botucatu em vídeo</span><h1>{{ configuracao.titulo_publico|default:'YuBotuka' }}</h1><p>{{ configuracao.descricao_publica|default:'Vídeos, programas e histórias da nossa cidade.' }}</p></div>
       <form class="yu-public-search"><label class="visually-hidden" for="yu-search">Buscar</label><input id="yu-search" name="q" value="{{ request.GET.q }}" placeholder="Busque vídeos, canais ou programas"><button>Buscar</button></form></div>
     </div>

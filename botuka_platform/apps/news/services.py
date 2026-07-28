@@ -2,6 +2,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db import transaction
 from django.utils import timezone
 
+from apps.accounts.authorization import pode
 from apps.accounts.permissions import usuario_tem_permissao
 from apps.core.domain import auditar
 
@@ -46,10 +47,10 @@ PERMISSAO_TRANSICAO = {
 
 
 def pode_editar_artigo(usuario, artigo):
-    if usuario_tem_permissao(usuario, "news.editar_qualquer") or usuario_tem_permissao(usuario, "news.gerenciar"):
+    if pode(usuario, "news.editar_artigo_terceiro", artigo) or usuario_tem_permissao(usuario, "news.gerenciar"):
         return True
     return (
-        usuario_tem_permissao(usuario, "news.editar_propria")
+        pode(usuario, "news.editar_artigo_proprio")
         and (artigo.autor_id == usuario.pk or artigo.autor_editorial_id and artigo.autor_editorial.usuario_id == usuario.pk)
     )
 
@@ -61,7 +62,7 @@ def validar_transicao(usuario, anterior, novo):
         raise ValidationError({"status": f"Transição de {anterior} para {novo} não permitida."})
     permissao = PERMISSAO_TRANSICAO.get(novo)
     if permissao and not (
-        usuario_tem_permissao(usuario, permissao)
+        pode(usuario, permissao)
         or usuario_tem_permissao(usuario, "news.gerenciar")
     ):
         raise PermissionDenied(f"Permissão necessária: {permissao}")

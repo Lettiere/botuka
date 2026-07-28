@@ -1,18 +1,16 @@
 {% extends "gestao/base.html" %}
-{% block title %}Permissões de {{ usuario_alvo }} | Gestão{% endblock %}
+{% block title %}Acessos de {{ usuario_alvo }} | Gestão{% endblock %}
 {% block content %}
-<div class="page-head"><div><h1>Permissões individuais</h1><p>{{ usuario_alvo.get_full_name|default:usuario_alvo.email }}</p></div><a class="btn btn-secondary" href="{% url 'gestao:usuarios_detalhe' usuario_alvo.pk %}">Voltar</a></div>
-<section class="panel panel-pad">
-  <h2>Conceder permissão</h2>
-  <form method="post" class="form-grid">{% csrf_token %}
-    <label>Permissão<select name="permissao" required>{% for permissao in permissoes %}<option value="{{ permissao.uuid }}">{{ permissao.modulo }} · {{ permissao.nome }} ({{ permissao.codigo }})</option>{% endfor %}</select></label>
-    <label>Justificativa<textarea name="justificativa" required></textarea></label>
-    <label>Observação<textarea name="observacao"></textarea></label>
-    <div><button class="btn btn-primary" type="submit">Conceder e auditar</button></div>
-  </form>
-</section>
-<section class="panel panel-pad">
-  <h2>Concessões ativas</h2>
-  {% for concessao in concessoes %}<article class="permission-row"><div><strong>{{ concessao.permissao.nome }}</strong><small>{{ concessao.permissao.codigo }} · concedida por {{ concessao.concedida_por }}</small></div><form method="post">{% csrf_token %}<input type="hidden" name="acao" value="revogar"><input type="hidden" name="concessao" value="{{ concessao.uuid }}"><input name="justificativa" required placeholder="Justificativa da revogação"><button class="btn btn-danger" type="submit">Revogar</button></form></article>{% empty %}<p>Nenhuma concessão individual ativa.</p>{% endfor %}
-</section>
-{% endblock %}
+<div class="page-head"><div><h1>Acessos e permissões</h1><p>{{ usuario_alvo.get_full_name|default:usuario_alvo.email }}</p></div><a class="btn btn-secondary" href="{% url 'gestao:usuarios_detalhe' usuario_alvo.pk %}">Voltar</a></div>
+<section class="panel panel-pad"><h2>Dados do usuário</h2><p>{{ usuario_alvo.email }} · Perfil: {{ usuario_alvo.perfil|default:"Sem perfil" }} · {% if usuario_alvo.is_active %}Ativo{% else %}Inativo{% endif %}</p></section>
+<section class="panel panel-pad"><h2>Acessos por módulo</h2><p>A concessão não promove o usuário a administrador global.</p>
+<form method="post" class="form-grid">{% csrf_token %}
+<label>Permissão<select name="permissao" required>{% for modulo,itens in modulos.items %}<optgroup label="{{ modulo|upper }}">{% for permissao in itens %}<option value="{{ permissao.uuid }}">{{ permissao.nome }} ({{ permissao.codigo }})</option>{% endfor %}</optgroup>{% endfor %}</select></label>
+<label>Perfil funcional<input name="perfil_funcional" placeholder="Autor, Editor, Publicador..."></label>
+<label>Escopo<select name="escopo">{% for value,label in escopos %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></label>
+<label>Validade opcional<input type="datetime-local" name="valida_ate"></label>
+<label>Justificativa<textarea name="justificativa" required></textarea></label><label>Observação<textarea name="observacao"></textarea></label>
+<div><button class="btn btn-primary" type="submit">Conceder e auditar</button></div></form></section>
+<section class="panel panel-pad"><h2>Resumo e histórico</h2>
+{% for concessao in concessoes %}<article class="permission-row"><div><strong>{{ concessao.permissao.modulo|upper }} · {{ concessao.permissao.nome }}</strong><small>{{ concessao.perfil_funcional|default:"Sem perfil funcional" }} · {{ concessao.get_escopo_display }} · validade: {{ concessao.valida_ate|date:"d/m/Y H:i"|default:"sem expiração" }}<br>{{ concessao.permissao.codigo }} · concedida por {{ concessao.concedida_por }}</small></div><form method="post">{% csrf_token %}<input type="hidden" name="acao" value="revogar"><input type="hidden" name="concessao" value="{{ concessao.uuid }}"><input name="justificativa" required placeholder="Justificativa da revogação"><button class="btn btn-danger" type="submit">Revogar</button></form></article>{% empty %}<p>Nenhuma concessão individual ativa.</p>{% endfor %}
+</section>{% endblock %}

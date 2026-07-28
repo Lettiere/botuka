@@ -13,6 +13,7 @@ from django.http import HttpRequest, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
+from django.utils.dateparse import parse_datetime
 
 from apps.core.models import ConfiguracaoSistema, ContatoInstitucional, Perfil, Permissao
 from apps.gestao.decorators import (
@@ -21,10 +22,12 @@ from apps.gestao.decorators import (
     permission_required,
     staff_required,
 )
+from apps.accounts.authorization import pode
 from apps.accounts.permissions import usuario_e_master
-from apps.accounts.models import ConcessaoPermissao
+from apps.accounts.models import AcessoModulo, AuditoriaPermissao, ConcessaoPermissao
 from apps.accounts.permission_services import (
-    conceder_permissao, pode_administrar_permissoes, revogar_permissao,
+    alterar_status_acesso, pode_administrar_permissoes,
+    salvar_acesso_modulo,
 )
 from apps.gestao.forms import (
     BairroForm,
@@ -40,47 +43,96 @@ from apps.gestao.forms import (
     PermissaoForm,
     SubcategoriaForm,
     UnidadeForm,
+    AcessoModuloForm,
     UsuarioCreateForm,
     UsuarioForm,
 )
 
 
+MODULE_LABELS = {
+    'news': 'Notícias', 'media': 'YoBotuka', 'events': 'Eventos',
+    'sports': 'Esportes', 'tourism': 'Turismo', 'services': 'Serviços',
+    'organizations': 'Empresas', 'recruitment': 'Recrutamento',
+    'government': 'Governo', 'gestao': 'Gestão',
+}
+
+
 @staff_required
-def usuario_permissoes(request, uuid):
+def usuario_acessos(request, uuid):
     if not pode_administrar_permissoes(request.user):
         raise PermissionDenied
     usuario = get_object_or_404(get_user_model(), uuid=uuid)
-    if request.method == 'POST':
-        justificativa = request.POST.get('justificativa', '')
-        if request.POST.get('acao') == 'revogar':
-            concessao = get_object_or_404(
-                ConcessaoPermissao, uuid=request.POST.get('concessao'),
-                usuario=usuario,
-            )
-            revogar_permissao(
-                ator=request.user, concessao=concessao,
-                justificativa=justificativa, request=request,
-            )
-            messages.success(request, 'Permissão revogada e auditada.')
-        else:
-            permissao = get_object_or_404(
-                Permissao.objects, uuid=request.POST.get('permissao'),
-            )
-            conceder_permissao(
-                ator=request.user, beneficiado=usuario,
-                permissao=permissao, justificativa=justificativa,
-                observacao=request.POST.get('observacao', ''), request=request,
-            )
-            messages.success(request, 'Permissão concedida e auditada.')
-        return redirect('gestao:usuario_permissoes', uuid=usuario.uuid)
-    return render(request, 'gestao/usuarios/permissoes.html', {
+    acessos = AcessoModulo.objects.filter(usuario=usuario).exclude(
+        status=AcessoModulo.Status.REVOGADO,
+    ).select_related('perfil', 'concedido_por').prefetch_related('concessoes')
+    return render(request, 'gestao/usuarios/acessos.html', {
         'usuario_alvo': usuario,
-        'permissoes': Permissao.objects.order_by('modulo', 'grupo', 'codigo'),
-        'concessoes': ConcessaoPermissao.objects.filter(
-            usuario=usuario, revogada_em__isnull=True,
-        ).select_related('permissao', 'concedida_por'),
-        'section': 'Permissões individuais',
+        'acessos': acessos, 'module_labels': MODULE_LABELS,
+        'historico': AuditoriaPermissao.objects.filter(
+            usuario_beneficiado=usuario,
+        ).select_related('permissao', 'ator')[:20],
+        'section': 'Acessos e permissões',
     })
+
+
+@staff_required
+def usuario_acesso_form(request, uuid, acesso_uuid=None):
+    if not pode_administrar_permissoes(request.user):
+        raise PermissionDenied
+    usuario = get_object_or_404(get_user_model(), uuid=uuid)
+    acesso = get_object_or_404(AcessoModulo, uuid=acesso_uuid, usuario=usuario) if acesso_uuid else None
+    raw_modulo = acesso.modulo if acesso else request.POST.get('modulo') or request.GET.get('modulo', '')
+    modulo = {'yubotuka': 'media', 'eventos': 'events', 'esportes': 'sports'}.get(raw_modulo, raw_modulo)
+    data = None
+    if request.method == 'POST':
+        data = request.POST.copy()
+        data['modulo'] = modulo
+    form = AcessoModuloForm(data, instance=acesso, modulo=modulo)
+    if request.method == 'POST':
+        if form.is_valid():
+            salvar_acesso_modulo(
+                ator=request.user, beneficiado=usuario, modulo=form.cleaned_data['modulo'],
+                permissoes=form.cleaned_data['permissoes'], perfil=form.cleaned_data['perfil'],
+                escopo=form.cleaned_data['escopo'], valida_ate=form.cleaned_data['valida_ate'],
+                justificativa=form.cleaned_data['justificativa'],
+                observacao=form.cleaned_data['observacao'], request=request,
+            )
+            messages.success(request, 'Acesso ao módulo salvo e auditado.')
+            return redirect('gestao:usuario_acessos', uuid=usuario.uuid)
+    grupos = defaultdict(list)
+    for permissao in Permissao.objects.filter(modulo=modulo, ativo=True).order_by('grupo', 'nome'):
+        grupos[permissao.grupo or 'Outras'].append(permissao)
+    selecionadas = set(form['permissoes'].value() or [])
+    modulos = [
+        (item, MODULE_LABELS.get(item, item.title()))
+        for item in Permissao.objects.exclude(modulo='').values_list('modulo', flat=True).distinct().order_by('modulo')
+    ]
+    perfis = Perfil.objects.filter(ativo=True, perfil_permissoes__permissao__modulo=modulo).distinct()
+    return render(request, 'gestao/usuarios/acesso_form.html', {
+        'usuario_alvo': usuario, 'acesso': acesso, 'modulo': modulo,
+        'form': form,
+        'modulos': modulos, 'grupos': dict(grupos), 'perfis': perfis,
+        'selecionadas': selecionadas, 'escopos': AcessoModulo.Escopo.choices,
+        'section': 'Acessos e permissões',
+    })
+
+
+@staff_required
+def usuario_acesso_status(request, uuid, acesso_uuid):
+    if request.method != 'POST' or not pode_administrar_permissoes(request.user):
+        raise PermissionDenied
+    usuario = get_object_or_404(get_user_model(), uuid=uuid)
+    acesso = get_object_or_404(AcessoModulo, uuid=acesso_uuid, usuario=usuario)
+    alterar_status_acesso(
+        ator=request.user, acesso=acesso, status=request.POST.get('status', ''),
+        justificativa=request.POST.get('justificativa', ''), request=request,
+    )
+    messages.success(request, 'Situação do acesso atualizada.')
+    return redirect('gestao:usuario_acessos', uuid=usuario.uuid)
+
+
+def usuario_permissoes(request, uuid):
+    return redirect('gestao:usuario_acessos', uuid=uuid)
 from apps.locations.models import Bairro, Cidade, Estado, Pais
 from apps.organizations.models import Endereco, Organizacao, Unidade
 from apps.taxonomy.models import Categoria, Subcategoria

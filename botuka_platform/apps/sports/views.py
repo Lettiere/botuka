@@ -166,7 +166,7 @@ def campeonato(request, slug):
     campeonato_obj = get_object_or_404(_public_championships().select_related("organizacao", "modalidade", "estilo", "categoria"), slug=slug)
     classificacoes = Classificacao.objects.filter(campeonato=campeonato_obj, ativo=True, excluido_em__isnull=True).select_related("participante", "participante__equipe", "participante__atleta").order_by("posicao")
     jogos = _public_disputes().filter(campeonato=campeonato_obj).select_related("participante_a", "participante_a__equipe", "participante_b", "participante_b__equipe").order_by("data_hora")
-    return render(request, "publico/sports/campeonato.html", {"campeonato": campeonato_obj, "classificacoes": classificacoes, "jogos": jogos, "seo": sports_seo(request, campeonato_obj, kind='campeonato')})
+    return render(request, "publico/sports/campeonato.html", {"campeonato": campeonato_obj, "share_object": campeonato_obj, "share_type": "campeonato", "classificacoes": classificacoes, "jogos": jogos, "seo": sports_seo(request, campeonato_obj, kind='campeonato')})
 
 
 def jogo(request, uuid):

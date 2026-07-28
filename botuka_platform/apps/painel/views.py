@@ -3,11 +3,9 @@
 from __future__ import annotations
 
 from functools import wraps
-from io import BytesIO
 import re
 from datetime import timedelta
 
-import qrcode
 from PIL import Image, UnidentifiedImageError
 
 from django.contrib import messages
@@ -23,6 +21,7 @@ from django.urls import reverse
 from django.utils import timezone
 
 from apps.accounts.permissions import usuario_e_master, usuario_tem_permissao
+from apps.core.services.public_sharing import gerar_qrcode_png, obter_url_publica
 from apps.painel.forms import (
     ApresentacaoUsuarioForm,
     ContatoUsuarioForm,
@@ -824,7 +823,13 @@ def servico_criar(request: HttpRequest) -> HttpResponse:
         for erro in erros_upload:
             form.add_error(None, erro)
         messages.error(request, 'Revise os campos destacados.')
-    return render(request, 'painel/servicos/novo.html', {'titulo': 'Novo cadastro de serviço', 'form': form, 'area_form': area_form, 'links_forms': links_forms})
+    return render(request, 'painel/servicos/novo.html', {
+        'titulo': 'Novo cadastro de serviço',
+        'form': form,
+        'area_form': area_form,
+        'links_forms': links_forms,
+        'profissional_responsavel': request.user,
+    })
 
 
 def _formularios_links_post(request):
@@ -902,7 +907,12 @@ def servico_editar(request: HttpRequest, uuid) -> HttpResponse:
     else:
         form = ServicoForm(instance=servico, usuario=request.user)
 
-    return render(request, 'painel/servicos/form.html', {'titulo': 'Editar serviço', 'form': form, 'servico': servico})
+    return render(request, 'painel/servicos/form.html', {
+        'titulo': 'Editar serviço',
+        'form': form,
+        'servico': servico,
+        'profissional_responsavel': request.user,
+    })
 
 
 @login_required
@@ -992,11 +1002,8 @@ def servico_caracteristicas(request: HttpRequest, uuid) -> HttpResponse:
     return render(request, 'painel/servicos/caracteristicas.html', {'servico': servico, 'form': form, 'caracteristicas': caracteristicas})
 
 
-def _resposta_qrcode(url: str, nome: str) -> HttpResponse:
-    imagem = qrcode.make(url)
-    arquivo = BytesIO()
-    imagem.save(arquivo, format='PNG')
-    resposta = HttpResponse(arquivo.getvalue(), content_type='image/png')
+def _resposta_qrcode(objeto, request, nome: str) -> HttpResponse:
+    resposta = HttpResponse(gerar_qrcode_png(objeto, request), content_type='image/png')
     resposta['Content-Disposition'] = f'inline; filename="{nome}.png"'
     resposta['Cache-Control'] = 'private, no-store'
     return resposta
@@ -1072,9 +1079,9 @@ def servico_qrcode(request: HttpRequest, uuid) -> HttpResponse:
             servico.qr_atualizado_em = timezone.now()
             servico.save(update_fields=['qr_ativo', 'qr_atualizado_em', 'atualizado_em'])
         return redirect('painel:servico_qrcode', uuid=servico.uuid)
-    url = request.build_absolute_uri(reverse('publico:qrcode_servico', args=[servico.qr_token]))
+    url = obter_url_publica(servico, request)
     if request.GET.get('formato') == 'png':
-        return _resposta_qrcode(url, f'botuka-servico-{servico.uuid}')
+        return _resposta_qrcode(servico, request, f'botuka-servico-{servico.uuid}')
     return render(request, 'painel/qrcode.html', {'objeto': servico, 'tipo_objeto': 'serviço', 'url_curta': url, 'imagem_url': f'{request.path}?formato=png', 'voltar_url': reverse('painel:servico_detalhe', kwargs={'uuid': servico.uuid})})
 
 
@@ -1096,9 +1103,9 @@ def empresa_qrcode(request: HttpRequest, uuid) -> HttpResponse:
             empresa.qr_atualizado_em = timezone.now()
             empresa.save(update_fields=['qr_ativo', 'qr_atualizado_em', 'atualizado_em'])
         return redirect('painel:empresa_qrcode', uuid=empresa.uuid)
-    url = request.build_absolute_uri(reverse('publico:qrcode_empresa', args=[empresa.qr_token]))
+    url = obter_url_publica(empresa, request)
     if request.GET.get('formato') == 'png':
-        return _resposta_qrcode(url, f'botuka-empresa-{empresa.uuid}')
+        return _resposta_qrcode(empresa, request, f'botuka-empresa-{empresa.uuid}')
     return render(request, 'painel/qrcode.html', {'objeto': empresa, 'tipo_objeto': 'empresa', 'url_curta': url, 'imagem_url': f'{request.path}?formato=png', 'voltar_url': reverse('painel:empresa_detalhe', kwargs={'uuid': empresa.uuid})})
 
 
@@ -1111,12 +1118,10 @@ def servico_preview(request: HttpRequest, uuid) -> HttpResponse:
 @login_required
 def servicos_ajax_areas(request: HttpRequest) -> JsonResponse:
     setor_id = request.GET.get('setor')
-    areas = AreaProfissional.objects.filter(ativo=True)
+    if not setor_id or not setor_id.isdigit():
+        return JsonResponse({'results': [], 'error': 'Setor inválido.'}, status=400)
 
-    if setor_id:
-        areas = areas.filter(setor_id=setor_id)
-    else:
-        areas = areas.none()
+    areas = AreaProfissional.objects.filter(ativo=True, setor_id=setor_id)
 
     return JsonResponse(
         {
@@ -1131,12 +1136,21 @@ def servicos_ajax_areas(request: HttpRequest) -> JsonResponse:
 @login_required
 def servicos_ajax_profissoes(request: HttpRequest) -> JsonResponse:
     area_id = request.GET.get('area')
-    profissoes = Profissao.objects.filter(ativo=True)
-
+    setor_id = request.GET.get('setor')
     if area_id:
-        profissoes = profissoes.filter(area_id=area_id)
+        if not area_id.isdigit():
+            return JsonResponse({'results': [], 'error': 'Área profissional inválida.'}, status=400)
+        profissoes = Profissao.objects.filter(ativo=True, area_id=area_id)
+    elif setor_id:
+        if not setor_id.isdigit():
+            return JsonResponse({'results': [], 'error': 'Setor inválido.'}, status=400)
+        profissoes = Profissao.objects.filter(
+            ativo=True,
+            setor_id=setor_id,
+            area__isnull=True,
+        )
     else:
-        profissoes = profissoes.none()
+        return JsonResponse({'results': [], 'error': 'Informe a área ou o setor.'}, status=400)
 
     return JsonResponse(
         {

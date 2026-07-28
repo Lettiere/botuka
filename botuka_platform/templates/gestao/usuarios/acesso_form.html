@@ -1,0 +1,18 @@
+{% extends "gestao/base.html" %}{% load gestao_extras %}
+{% block title %}{% if acesso %}Editar{% else %}Conceder{% endif %} acesso | Gestão{% endblock %}
+{% block content %}
+<nav class="breadcrumb"><a href="{% url 'gestao:usuario_acessos' usuario_alvo.uuid %}">Acessos</a> / {% if acesso %}Editar {{ acesso.modulo|title }}{% else %}Novo módulo{% endif %}</nav>
+<div class="page-head"><div><h1>{% if acesso %}Editar acesso{% else %}Conceder acesso a módulo{% endif %}</h1><p>{{ usuario_alvo }} · {{ usuario_alvo.email }}</p></div></div>
+<form method="post" class="panel panel-pad access-form">{% csrf_token %}
+  {% if form.non_field_errors %}<div class="alert alert-error">{{ form.non_field_errors }}</div>{% endif %}
+  <div class="form-grid">
+    <label>Módulo<select name="modulo" required {% if acesso %}disabled{% else %}onchange="location.search='?modulo='+this.value"{% endif %}><option value="">Selecione</option>{% for value,label in modulos %}<option value="{{ value }}" {% if modulo == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>{% if acesso %}<input type="hidden" name="modulo" value="{{ modulo }}">{% endif %}{{ form.modulo.errors }}</label>
+    <label>Perfil inicial<select name="perfil"><option value="">Sem perfil predefinido</option>{% for perfil in perfis %}<option value="{{ perfil.pk }}" {% if form.perfil.value|stringformat:"s" == perfil.pk|stringformat:"s" %}selected{% endif %}>{{ perfil.nome }}</option>{% endfor %}</select>{{ form.perfil.errors }}<small>O perfil adiciona suas permissões iniciais; a matriz pode ser personalizada.</small></label>
+    <label>Escopo<select name="escopo">{% for value,label in escopos %}<option value="{{ value }}" {% if form.escopo.value == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>{{ form.escopo.errors }}<small>Equipe e organização usam fallback seguro para próprios enquanto o módulo não expuser essas relações.</small></label>
+    <label>Expiração opcional<input type="datetime-local" name="valida_ate" value="{{ form.valida_ate.value|default:'' }}">{{ form.valida_ate.errors }}</label>
+  </div>
+  {% if modulo %}<section class="permission-matrix"><h2>Matriz de permissões</h2>{{ form.permissoes.errors }}{% for grupo,itens in grupos.items %}<fieldset><legend>{{ grupo }}</legend><div class="permission-options">{% for permissao in itens %}<label class="permission-option"><input type="checkbox" name="permissoes" value="{{ permissao.pk }}" {% if selecionadas|contains:permissao.pk %}checked{% endif %}><span><strong>{{ permissao.nome }}</strong><small>{{ permissao.descricao }}</small></span></label>{% endfor %}</div></fieldset>{% empty %}<p>Nenhuma permissão cadastrada para este módulo.</p>{% endfor %}</section>{% endif %}
+  <div class="form-grid"><label>Justificativa<textarea name="justificativa" required>{{ form.justificativa.value|default:'' }}</textarea>{{ form.justificativa.errors }}</label><label>Observação<textarea name="observacao">{{ form.observacao.value|default:'' }}</textarea>{{ form.observacao.errors }}</label></div>
+  <div class="actions"><a class="btn btn-muted" href="{% url 'gestao:usuario_acessos' usuario_alvo.uuid %}">Cancelar</a><button class="btn btn-primary" type="submit">Salvar alterações</button></div>
+</form>
+{% endblock %}

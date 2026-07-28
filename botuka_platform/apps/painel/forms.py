@@ -12,7 +12,7 @@ from django.utils import timezone
 from apps.core.models import EnderecoCore, PessoaDocumento
 from apps.organizations.models import Empresa, EmpresaLink, EmpresaUsuario
 from apps.organizations.models import EmpresaCapacidade, EmpresaSolicitacao, UsuarioLimitePersonalizado
-from apps.organizations.permissions import empresas_disponiveis_para_usuario
+from apps.organizations.permissions import empresas_gerenciaveis_para_usuario
 from apps.services.models import (
     AreaProfissional,
     Profissao,
@@ -556,7 +556,7 @@ class ServicoPrestadorForm(BaseServicoForm):
 class ServicoClassificacaoForm(BaseServicoForm):
     class Meta:
         model = Servico
-        fields = ['setor', 'profissao', 'tipo_servico', 'forma_cobranca']
+        fields = ['setor', 'area', 'profissao', 'tipo_servico', 'forma_cobranca']
 
 
 class ServicoApresentacaoForm(BaseServicoForm):
@@ -590,6 +590,10 @@ class ServicoForm(BaseServicoForm):
 
         self.fields['area'].queryset = AreaProfissional.objects.none()
         self.fields['profissao'].queryset = Profissao.objects.none()
+        self.fields['area'].required = False
+        self.fields['area'].empty_label = 'Selecione primeiro o setor'
+        self.fields['profissao'].empty_label = 'Selecione primeiro a área'
+        self.fields['empresa'].empty_label = 'Selecione uma empresa'
 
         setor_id = None
         area_id = None
@@ -601,40 +605,76 @@ class ServicoForm(BaseServicoForm):
             setor_id = self.instance.setor_id
             area_id = self.instance.area_id
 
-        if setor_id:
+        if setor_id and str(setor_id).isdigit():
             self.fields['area'].queryset = (
                 AreaProfissional.objects
                 .filter(setor_id=setor_id, ativo=True)
                 .order_by('ordem', 'nome')
             )
 
-        if area_id:
+        if area_id and str(area_id).isdigit():
             self.fields['profissao'].queryset = (
                 Profissao.objects
                 .filter(area_id=area_id, ativo=True)
                 .order_by('nome')
             )
+        elif setor_id and str(setor_id).isdigit():
+            # Compatibilidade com a taxonomia legada, que possui profissões sem área.
+            self.fields['profissao'].queryset = (
+                Profissao.objects
+                .filter(setor_id=setor_id, area__isnull=True, ativo=True)
+                .order_by('nome')
+            )
 
         if usuario is not None:
             self.fields['empresa'].queryset = (
-                empresas_disponiveis_para_usuario(usuario)
+                empresas_gerenciaveis_para_usuario(usuario)
                 .filter(ativo=True)
                 .order_by('nome_fantasia')
             )
 
     def clean(self):
         cleaned = super().clean()
-        if self.usuario and cleaned.get('prestador_tipo'):
+        prestador_tipo = cleaned.get('prestador_tipo')
+        empresa = cleaned.get('empresa')
+        setor = cleaned.get('setor')
+        area = cleaned.get('area')
+        profissao = cleaned.get('profissao')
+
+        if prestador_tipo == Servico.PrestadorTipo.PESSOA_FISICA:
+            if empresa is not None:
+                self.add_error('empresa', 'O prestador autônomo é sempre o usuário autenticado; não envie uma empresa.')
+            cleaned['empresa'] = None
+
+        if area and setor and area.setor_id != setor.pk:
+            self.add_error('area', 'A área profissional não pertence ao setor selecionado.')
+        if profissao and setor and profissao.setor_id != setor.pk:
+            self.add_error('profissao', 'A profissão não pertence ao setor selecionado.')
+        if profissao and profissao.area_id and area and profissao.area_id != area.pk:
+            self.add_error('profissao', 'A profissão não pertence à área profissional selecionada.')
+
+        if self.usuario and prestador_tipo:
             from apps.organizations.plans import validar_contexto_servico
             try:
                 validar_contexto_servico(
                     self.usuario,
-                    cleaned.get('prestador_tipo'),
+                    prestador_tipo,
                     cleaned.get('empresa'),
                 )
             except (ValidationError, PermissionDenied) as exc:
                 self.add_error('empresa', str(exc))
         return cleaned
+
+    def save(self, commit=True):
+        servico = super().save(commit=False)
+        if self.usuario is not None:
+            servico.usuario_responsavel = self.usuario
+        if servico.prestador_tipo == Servico.PrestadorTipo.PESSOA_FISICA:
+            servico.empresa = None
+        if commit:
+            servico.save()
+            self.save_m2m()
+        return servico
 
     class Meta:
         model = Servico
@@ -662,6 +702,36 @@ class ServicoForm(BaseServicoForm):
             'whatsapp_publico',
             'email_publico',
         ]
+        labels = {
+            'prestador_tipo': 'Tipo de prestador',
+            'empresa': 'Empresa responsável',
+            'setor': 'Setor',
+            'area': 'Área profissional',
+            'profissao': 'Profissão',
+            'tipo_servico': 'Tipo de serviço',
+            'forma_cobranca': 'Forma de cobrança',
+            'titulo': 'Título do serviço',
+            'descricao_curta': 'Resumo',
+            'descricao_completa': 'Descrição completa',
+            'experiencia': 'Experiência e qualificações',
+            'preco_inicial': 'Preço inicial',
+            'preco_final': 'Preço final',
+            'preco_sob_consulta': 'Preço sob consulta',
+            'unidade_preco': 'Unidade de preço',
+            'atendimento_remoto': 'Atendimento remoto',
+            'atendimento_presencial': 'Atendimento presencial',
+            'atendimento_emergencial': 'Atendimento emergencial',
+            'prazo_medio': 'Prazo médio',
+            'telefone_publico': 'Telefone público',
+            'whatsapp_publico': 'WhatsApp público',
+            'email_publico': 'E-mail público',
+        }
+        help_texts = {
+            'empresa': 'São listadas apenas empresas que você administra.',
+            'area': 'As opções são carregadas de acordo com o setor.',
+            'profissao': 'As opções são carregadas de acordo com a área profissional.',
+            'tipo_servico': 'Classificação geral do serviço.',
+        }
 
 
 class ServicoImagemForm(BaseServicoForm):

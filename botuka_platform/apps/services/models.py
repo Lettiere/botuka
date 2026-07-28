@@ -287,8 +287,12 @@ class Servico(UUIDModel):
             raise ValidationError({'empresa': 'Informe a empresa prestadora.'})
         if self.prestador_tipo == self.PrestadorTipo.PESSOA_FISICA and self.empresa_id:
             raise ValidationError({'empresa': 'Pessoa física não deve ter empresa vinculada.'})
+        if self.area_id and self.setor_id and self.area.setor_id != self.setor_id:
+            raise ValidationError({'area': 'A área profissional deve pertencer ao setor selecionado.'})
         if self.profissao_id and self.setor_id and self.profissao.setor_id != self.setor_id:
             raise ValidationError({'profissao': 'A profissão deve pertencer ao setor selecionado.'})
+        if self.profissao_id and self.profissao.area_id and self.area_id != self.profissao.area_id:
+            raise ValidationError({'profissao': 'A profissão deve pertencer à área profissional selecionada.'})
         if self.preco_inicial and self.preco_final and self.preco_inicial > self.preco_final:
             raise ValidationError({'preco_final': 'O preço final não pode ser menor que o inicial.'})
         if not self.atendimento_remoto and not self.atendimento_presencial:

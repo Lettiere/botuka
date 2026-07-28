@@ -672,7 +672,7 @@ def local_publico(request, slug):
     map_url = ''
     if local.visibilidade_localizacao == 'PUBLICA' and local.latitude is not None and local.longitude is not None:
         map_url = MapService().public_url(local.latitude, local.longitude, local.nome)
-    return render(request, 'publico/turismo/local.html', {'local': local, 'map_url': map_url})
+    return render(request, 'publico/turismo/local.html', {'local': local, 'map_url': map_url, 'share_object': local, 'share_type': 'turismo'})
 
 
 def guias_publicos(request):

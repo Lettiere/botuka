@@ -28,3 +28,8 @@ def has_perm_code(user: object, code: str) -> bool:
     """Permite checar permissão de domínio em templates."""
 
     return usuario_tem_permissao(user, code)
+
+
+@register.filter
+def contains(values, value):
+    return str(value) in {str(item) for item in values}

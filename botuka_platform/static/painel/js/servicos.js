@@ -1,61 +1,108 @@
-document.addEventListener('change', (event) => {
-  const prestador = event.target.closest('input[name="prestador_tipo"]');
-  if (prestador) {
-    document.querySelectorAll('.provider-card').forEach((card) => {
-      const input = card.querySelector('input[name="prestador_tipo"]');
-      card.classList.toggle('is-selected', Boolean(input && input.checked));
+function providerValue(field) {
+  if (!field) return '';
+  if (field.tagName === 'SELECT') return field.value;
+  return document.querySelector('input[name="prestador_tipo"]:checked')?.value || '';
+}
+
+function updateProvider(field) {
+  const value = providerValue(field);
+  document.querySelectorAll('[data-provider-panel]').forEach((panel) => {
+    const visible = panel.dataset.providerPanel === value;
+    panel.hidden = !visible;
+    panel.querySelectorAll('select, input, textarea').forEach((control) => {
+      control.disabled = !visible;
     });
-    document.querySelectorAll('[data-responsavel]').forEach((panel) => {
-      panel.hidden = panel.dataset.responsavel !== prestador.value;
-    });
+  });
+}
+
+function resetSelect(select, label) {
+  if (!select) return;
+  select.replaceChildren(new Option(label, ''));
+}
+
+async function loadOptions(select, url, statusElement, emptyLabel) {
+  resetSelect(select, 'Carregando...');
+  select.disabled = true;
+  if (statusElement) {
+    statusElement.textContent = 'Carregando opções...';
+    statusElement.classList.remove('text-danger');
   }
+
+  try {
+    const response = await fetch(url, {
+      headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      credentials: 'same-origin',
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Não foi possível carregar as opções.');
+    resetSelect(select, emptyLabel);
+    data.results.forEach((item) => select.add(new Option(item.text, item.id)));
+    if (statusElement) {
+      statusElement.textContent = data.results.length
+        ? `${data.results.length} opção(ões) disponível(is).`
+        : 'Nenhuma opção ativa foi encontrada para a seleção anterior.';
+    }
+    return data.results;
+  } catch (error) {
+    resetSelect(select, 'Não foi possível carregar');
+    if (statusElement) {
+      statusElement.textContent = error.message;
+      statusElement.classList.add('text-danger');
+    }
+    return [];
+  } finally {
+    select.disabled = false;
+  }
+}
+
+document.addEventListener('change', async (event) => {
+  const provider = event.target.closest('[name="prestador_tipo"]');
+  if (provider) updateProvider(provider);
 
   const setor = event.target.closest('select[name="setor"]');
   const area = event.target.closest('select[name="area"]');
   const areaSelect = document.querySelector('select[name="area"]');
-  const profissao = document.querySelector('select[name="profissao"]');
+  const profissaoSelect = document.querySelector('select[name="profissao"]');
 
-  if (setor && areaSelect && profissao) {
-    areaSelect.innerHTML = '<option value="">---------</option>';
-    profissao.innerHTML = '<option value="">---------</option>';
-
-    if (!setor.value) {
-      return;
+  if (setor && areaSelect && profissaoSelect) {
+    resetSelect(areaSelect, 'Selecione primeiro o setor');
+    resetSelect(profissaoSelect, 'Selecione primeiro a área');
+    if (setor.value) {
+      const areas = await loadOptions(
+        areaSelect,
+        `/painel/servicos/ajax/areas/?setor=${encodeURIComponent(setor.value)}`,
+        document.querySelector('[data-dependency-status="area"]'),
+        'Selecione a área profissional',
+      );
+      if (!areas.length) {
+        await loadOptions(
+          profissaoSelect,
+          `/painel/servicos/ajax/profissoes/?setor=${encodeURIComponent(setor.value)}`,
+          document.querySelector('[data-dependency-status="profissao"]'),
+          'Selecione a profissão',
+        );
+      }
     }
-
-    fetch(`/painel/servicos/ajax/areas/?setor=${encodeURIComponent(setor.value)}`)
-      .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((data) => {
-        data.results.forEach((item) => {
-          const option = document.createElement('option');
-          option.value = item.id;
-          option.textContent = item.text;
-          areaSelect.appendChild(option);
-        });
-      })
-      .catch(() => {});
-
-    return;
-  }
-
-  if (area && profissao) {
-    profissao.innerHTML = '<option value="">---------</option>';
-
-    if (!area.value) {
-      return;
+  } else if (area && profissaoSelect) {
+    resetSelect(profissaoSelect, 'Selecione primeiro a área');
+    if (area.value) {
+      await loadOptions(
+        profissaoSelect,
+        `/painel/servicos/ajax/profissoes/?area=${encodeURIComponent(area.value)}`,
+        document.querySelector('[data-dependency-status="profissao"]'),
+        'Selecione a profissão',
+      );
+    } else {
+      const setorAtual = document.querySelector('select[name="setor"]')?.value;
+      if (setorAtual) {
+        await loadOptions(
+          profissaoSelect,
+          `/painel/servicos/ajax/profissoes/?setor=${encodeURIComponent(setorAtual)}`,
+          document.querySelector('[data-dependency-status="profissao"]'),
+          'Selecione a profissão',
+        );
+      }
     }
-
-    fetch(`/painel/servicos/ajax/profissoes/?area=${encodeURIComponent(area.value)}`)
-      .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((data) => {
-        data.results.forEach((item) => {
-          const option = document.createElement('option');
-          option.value = item.id;
-          option.textContent = item.text;
-          profissao.appendChild(option);
-        });
-      })
-      .catch(() => {});
   }
 });
 
@@ -78,10 +125,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  const selectedProvider = document.querySelector('input[name="prestador_tipo"]:checked');
-  if (selectedProvider) {
-    selectedProvider.dispatchEvent(new Event('change', { bubbles: true }));
-  }
+  const provider = document.querySelector('[name="prestador_tipo"]');
+  updateProvider(provider);
 
   const coverInput = document.querySelector('#imagem_capa');
   const coverName = document.querySelector('[data-cover-name]');

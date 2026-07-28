@@ -301,10 +301,86 @@ class Usuario(UUIDModel, TimeStampedModel, AbstractUser):
         ).exists()
 
 
+class AcessoModulo(UUIDModel, TimeStampedModel):
+    """Acesso único de um usuário a um módulo, com perfil e escopo próprios."""
+
+    class Escopo(models.TextChoices):
+        PROPRIOS = 'PROPRIOS', 'Próprios'
+        EQUIPE = 'EQUIPE', 'Equipe'
+        ORGANIZACAO = 'ORGANIZACAO', 'Organização'
+        TODOS = 'TODOS', 'Todos'
+
+    class Status(models.TextChoices):
+        ATIVO = 'ATIVO', 'Ativo'
+        SUSPENSO = 'SUSPENSO', 'Suspenso'
+        REVOGADO = 'REVOGADO', 'Revogado'
+
+    id = models.BigAutoField(primary_key=True)
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
+        related_name='acessos_modulos',
+    )
+    modulo = models.CharField(max_length=60, db_index=True)
+    perfil = models.ForeignKey(
+        'core.Perfil', on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='acessos_modulos',
+    )
+    escopo = models.CharField(
+        max_length=16, choices=Escopo.choices, default=Escopo.PROPRIOS,
+    )
+    status = models.CharField(
+        max_length=12, choices=Status.choices, default=Status.ATIVO,
+        db_index=True,
+    )
+    concedido_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT,
+        related_name='acessos_modulos_concedidos',
+    )
+    valida_ate = models.DateTimeField(null=True, blank=True)
+    justificativa = models.TextField()
+    observacao = models.TextField(blank=True)
+    revogado_em = models.DateTimeField(null=True, blank=True)
+    revogado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.PROTECT, null=True, blank=True,
+        related_name='acessos_modulos_revogados',
+    )
+
+    class Meta:
+        ordering = ['usuario', 'modulo']
+        constraints = [
+            models.UniqueConstraint(
+                fields=['usuario', 'modulo'],
+                condition=~models.Q(status='REVOGADO'),
+                name='accounts_acesso_modulo_corrente_uk',
+            ),
+        ]
+
+    @property
+    def vigente(self):
+        return (
+            self.status == self.Status.ATIVO
+            and (self.valida_ate is None or self.valida_ate > timezone.now())
+        )
+
+    @property
+    def total_permissoes(self):
+        return self.concessoes.filter(revogada_em__isnull=True).count()
+
+
 class ConcessaoPermissao(UUIDModel, TimeStampedModel):
     """Concessão individual, temporal e auditável de permissão de domínio."""
 
+    class Escopo(models.TextChoices):
+        PROPRIOS = 'PROPRIOS', 'Apenas registros próprios'
+        EQUIPE = 'EQUIPE', 'Registros da própria equipe'
+        ORGANIZACAO = 'ORGANIZACAO', 'Registros da própria organização'
+        TODOS = 'TODOS', 'Todos os registros do módulo'
+
     id = models.BigAutoField(primary_key=True)
+    acesso = models.ForeignKey(
+        AcessoModulo, on_delete=models.PROTECT, null=True, blank=True,
+        related_name='concessoes',
+    )
     usuario = models.ForeignKey(
         settings.AUTH_USER_MODEL, on_delete=models.CASCADE,
         related_name='concessoes_permissao',
@@ -325,6 +401,11 @@ class ConcessaoPermissao(UUIDModel, TimeStampedModel):
     )
     justificativa = models.TextField()
     observacao = models.TextField(blank=True)
+    escopo = models.CharField(
+        max_length=16, choices=Escopo.choices, default=Escopo.PROPRIOS,
+        db_index=True,
+    )
+    perfil_funcional = models.CharField(max_length=80, blank=True)
 
     class Meta:
         ordering = ['usuario', 'permissao__codigo']
@@ -341,6 +422,7 @@ class AuditoriaPermissao(UUIDModel, TimeStampedModel):
     class Acao(models.TextChoices):
         CONCEDER = 'CONCEDER', 'Conceder'
         REVOGAR = 'REVOGAR', 'Revogar'
+        ALTERAR = 'ALTERAR', 'Alterar'
 
     id = models.BigAutoField(primary_key=True)
     usuario_beneficiado = models.ForeignKey(
