@@ -1,0 +1,5 @@
+{% extends "painel/noticias/base.html" %}
+{% block page_title %}Itens excluídos{% endblock %}
+{% block news_content %}<div class="card"><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Notícia</th><th>Excluída em</th><th></th></tr></thead><tbody>
+{% for artigo in artigos %}<tr><td>{{ artigo }}</td><td>{{ artigo.excluido_em|date:"d/m/Y H:i" }}</td><td><form method="post" action="{% url 'painel:news_artigo_restaurar' artigo.uuid %}">{% csrf_token %}<button class="btn btn-sm btn-success">Restaurar</button></form></td></tr>{% empty %}<tr><td colspan="3">Nenhum item excluído.</td></tr>{% endfor %}
+</tbody></table></div></div>{% endblock %}

@@ -1,0 +1,11 @@
+{% extends "painel/noticias/base.html" %}
+{% block page_title %}{% if artigo %}Editar notícia{% else %}Nova notícia{% endif %}{% endblock %}
+{% block news_content %}
+<form class="card card-body" method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<div><button class="btn btn-primary">Salvar notícia</button></div></form>
+{% if artigo %}
+<section class="card card-body mt-3"><h2 class="h5">Fluxo editorial</h2><div class="d-flex flex-wrap gap-2">
+{% for value,label in status_choices %}<form method="post" action="{% url 'painel:news_artigo_status' artigo.uuid value %}">{% csrf_token %}<button class="btn btn-sm btn-outline-dark">{{ label }}</button></form>{% endfor %}
+</div></section>
+<form class="mt-3" method="post" action="{% url 'painel:news_artigo_excluir' artigo.uuid %}" data-confirm="Excluir logicamente esta notícia?">{% csrf_token %}<button class="btn btn-outline-danger">Excluir logicamente</button></form>
+{% endif %}
+{% endblock %}

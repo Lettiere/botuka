@@ -1,0 +1,12 @@
+<form class="panel-card panel-filters" method="get" role="search">
+  <div class="row g-2 align-items-end">
+    <div class="col-12 col-md">
+      <label class="form-label" for="{{ search_id|default:'panel-search' }}">{{ search_label|default:"Buscar" }}</label>
+      <input class="form-control" id="{{ search_id|default:'panel-search' }}" type="search" name="{{ search_name|default:'q' }}" value="{{ search_value }}" placeholder="{{ search_placeholder|default:'Digite para buscar' }}">
+    </div>
+    {% if status_choices %}
+      <div class="col-12 col-md-4"><label class="form-label" for="panel-status">Status</label><select class="form-select" id="panel-status" name="status"><option value="">Todos</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if status_value == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+    {% endif %}
+    <div class="col-12 col-md-auto"><button class="panel-btn panel-btn--primary w-100" type="submit">Filtrar</button></div>
+  </div>
+</form>

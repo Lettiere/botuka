@@ -1,0 +1,6 @@
+<article class="botuka-news-grid-card">
+  <a class="botuka-news-grid-image" href="{% url 'news_public:artigo' artigo.slug %}" aria-label="Ler notícia: {{ artigo.titulo }}">
+    {% if artigo.imagem_capa %}<img src="{{ artigo.imagem_capa.url }}" alt="" loading="lazy" decoding="async">{% else %}<span class="botuka-news-placeholder"><i class="bi bi-newspaper" aria-hidden="true"></i></span>{% endif %}
+  </a>
+  <div class="botuka-news-grid-content"><span class="botuka-news-category">{{ artigo.categoria.nome }}</span><h4><a href="{% url 'news_public:artigo' artigo.slug %}">{{ artigo.titulo }}</a></h4>{% if artigo.resumo %}<p>{{ artigo.resumo|truncatechars:120 }}</p>{% endif %}<div class="botuka-news-grid-footer"><time datetime="{{ artigo.publicado_em|date:'c' }}">{{ artigo.publicado_em|date:"d/m/Y" }}</time><a href="{% url 'news_public:artigo' artigo.slug %}" aria-label="Ler {{ artigo.titulo }}"><i class="bi bi-arrow-right" aria-hidden="true"></i></a></div></div>
+</article>

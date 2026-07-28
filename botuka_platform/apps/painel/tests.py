@@ -1,9 +1,41 @@
 from django.contrib.auth import get_user_model
-from django.test import RequestFactory, TestCase
+from django.template.loader import get_template
+from django.test import RequestFactory, SimpleTestCase, TestCase
 from django.urls import reverse
 
 from apps.core.models import Perfil, PerfilPermissao, Permissao
 from apps.painel.navigation import painel_navigation
+
+
+class PainelSharedInterfaceTests(SimpleTestCase):
+    def test_shared_templates_compile(self):
+        for template_name in (
+            "painel/base.html",
+            "painel/components/page_header.html",
+            "painel/components/filter_bar.html",
+            "painel/components/indicators.html",
+            "painel/components/status_badge.html",
+            "painel/components/pagination.html",
+            "painel/components/empty_state.html",
+            "painel/components/form_actions.html",
+            "painel/components/confirm_modal.html",
+            "painel/noticias/dashboard.html",
+            "painel/yubotuka/dashboard.html",
+            "painel/domain/list.html",
+        ):
+            self.assertIsNotNone(get_template(template_name))
+
+    def test_module_dashboards_have_stable_routes(self):
+        expected = {
+            "painel:dashboard": "/painel/",
+            "painel:news_dashboard": "/painel/noticias/",
+            "painel:turismo_dashboard": "/painel/turismo/",
+            "painel:yubotuka_dashboard": "/painel/yubotuka/",
+            "painel:sports_dashboard": "/painel/esportes/",
+            "painel:government_dashboard": "/painel/prefeitura/",
+        }
+        for name, path in expected.items():
+            self.assertEqual(reverse(name), path)
 
 
 class YuBotukaPanelIntegrationTests(TestCase):

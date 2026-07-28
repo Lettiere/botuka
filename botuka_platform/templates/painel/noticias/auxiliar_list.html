@@ -1,0 +1,7 @@
+{% extends "painel/noticias/base.html" %}
+{% block page_title %}{{ titulo }}{% endblock %}
+{% block news_content %}
+<div class="d-flex justify-content-end mb-3"><a class="btn btn-primary" href="{% url 'painel:news_auxiliar_novo' tipo %}">Novo cadastro</a></div>
+<div class="row g-3">{% for objeto in objetos %}<div class="col-12 col-md-6 col-xl-4"><article class="card h-100"><div class="card-body"><h2 class="h5">{{ objeto }}</h2><a href="{% url 'painel:news_auxiliar_editar' tipo objeto.uuid %}">Editar</a></div></article></div>{% empty %}<p>Nenhum registro.</p>{% endfor %}</div>
+{% include "publico/includes/pagination.html" %}
+{% endblock %}

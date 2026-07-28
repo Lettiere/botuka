@@ -1,7 +1,7 @@
 {% extends 'painel/base.html' %}{% load static %}
 {% block title %}Gerenciar vagas | Painel BOTUKA{% endblock %}
 {% block styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'painel/css/vagas.css' %}">{% endblock %}
-{% block content %}
+{% block painel_content %}
 <div class="jobs-page"><div class="jobs-wrap">
   <ol class="jobs-breadcrumb" aria-label="Breadcrumb"><li><a href="{% url 'painel:dashboard' %}">Painel</a></li><li aria-current="page">Vagas</li></ol>
   <header class="jobs-hero">

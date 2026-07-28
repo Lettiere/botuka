@@ -29,7 +29,7 @@ def montar_contexto_home(usuario=None):
         recruitment.obter_vagas_recentes,
         [],
     )
-    noticias = _secao("home:news", news.obter_noticias, ([], []))
+    noticias = _secao("home:news:v3", news.obter_noticias, (None, [], [], [], [], []))
     # Chave versionada evita manter a estrutura legada em cache após a migração
     # das consultas públicas para Video e Transmissao.
     ytv = _secao("home:yubotuka:v3", media.obter_ytv, ([], [], []))
@@ -46,8 +46,17 @@ def montar_contexto_home(usuario=None):
         "empresas_destaque": empresas,
         "servicos_destaque": servicos_destaque,
         "vagas_recentes": recrutamento,
-        "noticias_destaque": noticias[0],
-        "noticias_recentes": noticias[1],
+        "noticia_manchete": noticias[0],
+        "noticias_destaque": noticias[1],
+        "noticias_recentes": noticias[2],
+        "noticias_agro": noticias[3],
+        "noticias_universidade": noticias[4],
+        "noticias_colunistas": noticias[5],
+        "home_news_sections": [
+            ("Últimas notícias", noticias[2]),
+            ("Agro", noticias[3]),
+            ("Universidade e Ciência", noticias[4]),
+        ],
         "programas_ytv": ytv[0],
         "episodios_ytv": ytv[1],
         "transmissoes_ao_vivo": ytv[2],
@@ -70,7 +79,7 @@ def montar_contexto_home(usuario=None):
         "empresas": len(empresas),
         "servicos": len(servicos_destaque),
         "vagas": len(recrutamento),
-        "noticias": len(noticias[1]),
+        "noticias": len(noticias[2]),
         "episodios": len(ytv[1]),
         "campeonatos": len(esportes[1]),
         "acoes_publicas": len(prefeitura[0]),

@@ -11,12 +11,28 @@ def _can(user, *codes):
 def painel_navigation(request):
     user = getattr(request, "user", None)
     if not user or not user.is_authenticated:
-        return {"painel_module_groups": []}
+        return {"painel_module_groups": [], "painel_capabilities": {}}
+
+    capabilities = {
+        "news_create": _can(user, "news.criar"),
+        "news_review": _can(user, "news.revisar"),
+        "news_publish": _can(user, "news.publicar"),
+        "news_restore": _can(user, "news.restaurar"),
+        "news_configure": _can(
+            user, "news.gerenciar", "news.gerenciar_autores",
+            "news.gerenciar_categorias", "news.gerenciar_destaques",
+        ),
+        "account_configure": _can(user, "configuracoes.editar"),
+    }
 
     groups = []
 
     content = []
-    if _can(user, "news.gerenciar", "news.criar", "news.editar", "news.revisar", "news.publicar"):
+    if _can(
+        user, "news.acessar_painel", "news.gerenciar", "news.criar",
+        "news.editar", "news.editar_propria", "news.editar_qualquer",
+        "news.revisar", "news.publicar",
+    ):
         content.append({"label": "BOTUKA News", "icon": "bi-newspaper", "url": reverse("painel:news_dashboard")})
     if _can(
         user,
@@ -55,6 +71,12 @@ def painel_navigation(request):
     if content:
         groups.append({"label": "Conteúdo da cidade", "items": content})
 
+    business = [
+        {"label": "Empresas", "icon": "bi-buildings-fill", "url": reverse("painel:empresas_lista")},
+        {"label": "Serviços", "icon": "bi-tools", "url": reverse("painel:servicos_lista")},
+    ]
+    groups.append({"label": "Negócios", "items": business})
+
     opportunities = []
     if _can(user, "vagas.visualizar", "vagas.criar"):
         opportunities.append({"label": "Vagas", "icon": "bi-briefcase-fill", "url": reverse("painel:vagas_lista")})
@@ -63,6 +85,21 @@ def painel_navigation(request):
         {"label": "Candidaturas", "icon": "bi-person-check-fill", "url": reverse("painel:minhas_candidaturas")},
     ])
     groups.append({"label": "Oportunidades", "items": opportunities})
+
+    if _can(user, "eventos.visualizar", "eventos.criar"):
+        groups.append({"label": "Agenda", "items": [
+            {"label": "Eventos", "icon": "bi-calendar-event-fill", "url": reverse("painel:eventos_lista")},
+        ]})
+
+    community = []
+    if _can(user, "publicacoes.visualizar"):
+        community.append({"label": "Publicações", "icon": "bi-megaphone-fill", "url": reverse("painel:publicacoes_lista")})
+    if _can(user, "rede_social.acessar"):
+        community.append({"label": "Rede social", "icon": "bi-share-fill", "url": reverse("painel:rede_social")})
+    if _can(user, "mensagens.acessar"):
+        community.append({"label": "Mensagens", "icon": "bi-chat-dots-fill", "url": reverse("painel:mensagens")})
+    if community:
+        groups.append({"label": "Comunidade", "items": community})
 
     if _can(
         user, "sports.gerenciar", "sports.criar", "sports.editar", "sports.publicar",
@@ -78,4 +115,4 @@ def painel_navigation(request):
             {"label": "Esportes", "icon": "bi-trophy-fill", "url": reverse(route)},
         ]})
 
-    return {"painel_module_groups": groups}
+    return {"painel_module_groups": groups, "painel_capabilities": capabilities}

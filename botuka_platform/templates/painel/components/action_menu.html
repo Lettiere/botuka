@@ -1,0 +1,12 @@
+{% if actions %}
+  <div class="dropdown">
+    <button class="panel-btn panel-btn--soft" type="button" data-bs-toggle="dropdown" aria-expanded="false" aria-label="Abrir menu de ações"><i class="bi bi-three-dots-vertical" aria-hidden="true"></i> Ações</button>
+    <ul class="dropdown-menu dropdown-menu-end">
+      {% for action in actions %}
+        {% if action.visible != 0 %}
+          <li>{% if action.method == "post" %}<form method="post" action="{{ action.url }}">{% csrf_token %}<button class="dropdown-item{% if action.danger %} text-danger{% endif %}" type="submit" {% if action.confirm %}data-panel-confirm="{{ action.confirm }}" data-bs-toggle="modal" data-bs-target="#panelConfirmModal"{% endif %}>{{ action.label }}</button></form>{% else %}<a class="dropdown-item{% if action.danger %} text-danger{% endif %}" href="{{ action.url }}">{{ action.label }}</a>{% endif %}</li>
+        {% endif %}
+      {% endfor %}
+    </ul>
+  </div>
+{% endif %}

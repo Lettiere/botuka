@@ -1,7 +1,7 @@
 {% extends 'painel/base.html' %}{% load static %}
 {% block title %}Candidaturas | Painel BOTUKA{% endblock %}
 {% block styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'painel/css/vagas.css' %}">{% endblock %}
-{% block content %}<div class="jobs-page"><div class="jobs-wrap">
+{% block painel_content %}<div class="jobs-page"><div class="jobs-wrap">
   <ol class="jobs-breadcrumb"><li><a href="{% url 'painel:dashboard' %}">Painel</a></li>{% if vaga %}<li><a href="{% url 'painel:vagas_lista' %}">Vagas</a></li><li><a href="{% url 'painel:vaga_detalhe' vaga.uuid %}">{{ vaga.titulo }}</a></li>{% endif %}<li>Candidaturas</li></ol>
   <header class="jobs-hero"><div><span class="jobs-eyebrow"><i class="bi bi-people"></i> Seleção</span><h1>{% if vaga %}Candidaturas de {{ vaga.titulo }}{% else %}Minhas candidaturas{% endif %}</h1><p>{% if vaga %}Analise currículos, avance etapas e mantenha o histórico do processo seletivo.{% else %}Acompanhe as oportunidades para as quais você se candidatou.{% endif %}</p></div><div class="jobs-actions">{% if vaga %}<a class="jobs-button jobs-button--light" href="{% url 'painel:vaga_detalhe' vaga.uuid %}">Voltar à vaga</a><a class="jobs-button jobs-button--primary" href="{% url 'painel:candidaturas_exportar' vaga.uuid %}"><i class="bi bi-download"></i> Exportar</a>{% endif %}</div></header>
   <section class="jobs-panel"><header class="jobs-panel__head"><h2>{{ candidaturas|length }} candidatura{{ candidaturas|length|pluralize }}</h2></header><div class="jobs-panel__body">

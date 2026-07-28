@@ -1,1 +1,8 @@
-{% extends 'painel/base.html' %}{% block content %}<main class="container py-4"><h1>{{ objeto }}</h1>{% if objeto.descricao %}{{ objeto.descricao|linebreaks }}{% endif %}{% if editar_url %}<a class="btn btn-primary" href="{{ editar_url }}">Editar</a>{% endif %}</main>{% endblock %}
+{% extends 'painel/base.html' %}
+{% block painel_content %}
+  {% include "painel/components/page_header.html" with title=objeto breadcrumb_current=objeto action_url=editar_url action_label="Editar" %}
+  <article class="panel-card p-3">
+    {% if objeto.status %}{% include "painel/components/status_badge.html" with status_value=objeto.status status_label=objeto.get_status_display %}{% endif %}
+    {% if objeto.descricao %}<div class="mt-3">{{ objeto.descricao|linebreaks }}</div>{% endif %}
+  </article>
+{% endblock %}

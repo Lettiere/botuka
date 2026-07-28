@@ -1,4 +1,6 @@
 <nav class="article-tags" aria-label="Assuntos relacionados">
   <strong>Assunto</strong>
   <a href="{% url 'news_public:categoria' artigo.categoria.slug %}">#{{ artigo.categoria.nome }}</a>
+  {% for tema in artigo.temas.all %}<a href="{% url 'news_public:tema' tema.slug %}">#{{ tema.nome }}</a>{% endfor %}
+  {% for tag in artigo.tags.all %}<a href="{% url 'news_public:tag' tag.slug %}">#{{ tag.nome }}</a>{% endfor %}
 </nav>

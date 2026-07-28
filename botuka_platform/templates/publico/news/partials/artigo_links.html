@@ -1,0 +1,5 @@
+{% if artigo.links_relacionados.all %}
+<section class="article-transparency"><h2>Links relacionados</h2><ul>
+{% for link in artigo.links_relacionados.all %}<li><a href="{{ link.url }}" target="_blank" rel="noopener noreferrer{% if link.nofollow %} nofollow{% endif %}">{{ link.titulo }} <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a></li>{% endfor %}
+</ul></section>
+{% endif %}

@@ -1,0 +1,14 @@
+{% extends "painel/noticias/base.html" %}
+{% block page_title %}Notícias{% endblock %}
+{% block news_content %}
+<form class="panel-card panel-filters"><div class="row g-2">
+  <div class="col-12 col-md"><label class="form-label" for="q">Busca</label><input class="form-control" id="q" name="q" value="{{ request.GET.q }}"></div>
+  <div class="col-12 col-md-4"><label class="form-label" for="status">Status</label><select class="form-select" id="status" name="status"><option value="">Todos</option>{% for value,label in status_choices %}<option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>{% endfor %}</select></div>
+  <div class="col-12 col-md-auto d-flex align-items-end"><button class="panel-btn panel-btn--primary w-100">Filtrar</button></div>
+</div></form>
+<div class="panel-card"><div class="panel-table-wrap"><table class="table table-hover panel-table panel-table--responsive align-middle mb-0"><thead><tr><th>Título</th><th>Categoria</th><th>Autor</th><th>Status</th><th>Ações</th></tr></thead><tbody>
+{% for artigo in artigos %}<tr><td data-label="Título">{{ artigo.titulo }}</td><td data-label="Categoria">{{ artigo.categoria }}</td><td data-label="Autor">{{ artigo.autor_editorial|default:artigo.autor }}</td><td data-label="Status">{% include "painel/components/status_badge.html" with status_value=artigo.status status_label=artigo.get_status_display %}</td><td data-label="Ações">{% if artigo.pode_editar_painel %}<a class="panel-btn panel-btn--soft" href="{% url 'painel:news_artigo_editar' artigo.uuid %}">Editar</a>{% else %}<span class="text-muted">Somente leitura</span>{% endif %}</td></tr>
+{% empty %}<tr><td colspan="5">{% include "painel/components/empty_state.html" with empty_title="Nenhuma notícia encontrada" empty_text="Altere os filtros ou cadastre uma nova notícia." %}</td></tr>{% endfor %}
+</tbody></table></div></div>
+{% include "painel/components/pagination.html" %}
+{% endblock %}

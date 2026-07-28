@@ -2,7 +2,7 @@
 {% load static %}
 {% block title %}Institucional — {{ empresa.nome_exibicao }}{% endblock %}
 {% block styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/painel/platform-admin.css' %}">{% endblock %}
-{% block content %}
+{% block painel_content %}
 <main class="platform-admin container">
   <header class="platform-admin__header"><div><span class="platform-admin__eyebrow">Autorização institucional</span><h1>{{ empresa.nome_exibicao }}</h1></div><a class="btn btn-outline-secondary" href="{% url 'painel:empresa_detalhe' empresa.uuid %}">Voltar</a></header>
   <div class="platform-admin__columns">

@@ -10,14 +10,34 @@ from apps.core.models import Auditoria
 from apps.accounts.permissions import usuario_tem_permissao
 
 
-class ActiveManager(models.Manager):
+class SoftDeleteQuerySet(models.QuerySet):
+    def delete(self):
+        agora = timezone.now()
+        quantidade = self.update(ativo=False, excluido_em=agora)
+        return quantidade, {self.model._meta.label: quantidade}
+
+    def restore(self):
+        return self.update(ativo=True, excluido_em=None)
+
+    def ativos(self):
+        return self.filter(ativo=True, excluido_em__isnull=True)
+
+    def excluidos(self):
+        return self.filter(excluido_em__isnull=False)
+
+
+class ActiveManager(models.Manager.from_queryset(SoftDeleteQuerySet)):
     def get_queryset(self):
-        return super().get_queryset().filter(ativo=True, excluido_em__isnull=True)
+        return super().get_queryset().ativos()
+
+
+class AllObjectsManager(models.Manager.from_queryset(SoftDeleteQuerySet)):
+    pass
 
 
 class SoftDeleteMixin(models.Model):
     objects = ActiveManager()
-    all_objects = models.Manager()
+    all_objects = AllObjectsManager()
 
     class Meta:
         abstract = True
@@ -27,6 +47,12 @@ class SoftDeleteMixin(models.Model):
         self.excluido_em = timezone.now()
         self.save(update_fields=['ativo', 'excluido_em', 'atualizado_em'])
         return 1, {self._meta.label: 1}
+
+    def restore(self, using=None):
+        self.ativo = True
+        self.excluido_em = None
+        self.save(using=using, update_fields=['ativo', 'excluido_em', 'atualizado_em'])
+        return self
 
 
 class EditorialStatus(models.TextChoices):

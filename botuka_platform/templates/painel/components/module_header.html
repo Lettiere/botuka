@@ -1,0 +1,19 @@
+<section class="panel-module-header panel-module-header--{{ module_theme|default:'default' }}">
+  <nav class="panel-breadcrumb" aria-label="Breadcrumb">
+    <ol>
+      <li><a href="{% url 'painel:dashboard' %}">Painel</a></li>
+      {% if module_url %}<li><a href="{{ module_url }}">{{ module_name }}</a></li>{% elif module_name %}<li>{{ module_name }}</li>{% endif %}
+      {% if page_name %}<li aria-current="page">{{ page_name }}</li>{% endif %}
+    </ol>
+  </nav>
+  <header class="panel-module-hero">
+    <div>
+      {% if module_kicker %}<span class="panel-module-kicker">{{ module_kicker }}</span>{% endif %}
+      <h1>{{ page_title|default:module_name }}</h1>
+      {% if page_description %}<p>{{ page_description }}</p>{% endif %}
+    </div>
+    {% if primary_action_url and primary_action_label %}
+      <a class="panel-btn panel-btn--primary" href="{{ primary_action_url }}">{{ primary_action_label }}</a>
+    {% endif %}
+  </header>
+</section>

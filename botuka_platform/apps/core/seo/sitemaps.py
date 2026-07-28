@@ -7,7 +7,9 @@ from apps.core.domain import EditorialStatus
 from apps.government.models import AcaoPublica, OrgaoPublico
 from apps.media.models import Canal, CategoriaYuBotuka, Episodio, Playlist, Programa
 from apps.media.selectors import videos_publicos
-from apps.news.models import Artigo, CategoriaNoticia
+from apps.news.models import (
+    Artigo, CategoriaNoticia, Coluna, Colunista, SerieEditorial, Tag, Tema,
+)
 from apps.organizations.models import Empresa
 from apps.recruitment.models import Vaga
 from apps.services.models import Servico
@@ -52,6 +54,35 @@ class ArtigoSitemap(HttpsSitemap):
 class CategoriaNoticiaSitemap(HttpsSitemap):
     def items(self): return CategoriaNoticia.objects.filter(ativo=True, excluido_em__isnull=True).only('slug', 'atualizado_em')
     def location(self, item): return reverse('news_public:categoria', args=[item.slug])
+    def lastmod(self, item): return item.atualizado_em
+
+
+class NewsTaxonomySitemap(HttpsSitemap):
+    model_route = {
+        Tema: 'news_public:tema',
+        Tag: 'news_public:tag',
+        SerieEditorial: 'news_public:serie',
+        Coluna: 'news_public:coluna',
+    }
+
+    def items(self):
+        itens = []
+        for model in self.model_route:
+            itens.extend(model.objects.only('slug', 'atualizado_em'))
+        return itens
+
+    def location(self, item):
+        return reverse(self.model_route[type(item)], args=[item.slug])
+
+    def lastmod(self, item): return item.atualizado_em
+
+
+class ColunistaSitemap(HttpsSitemap):
+    def items(self):
+        return Colunista.objects.select_related('autor').only(
+            'atualizado_em', 'autor__slug',
+        )
+    def location(self, item): return reverse('news_public:colunista', args=[item.autor.slug])
     def lastmod(self, item): return item.atualizado_em
 
 
@@ -146,6 +177,8 @@ SITEMAPS = {
     'servicos': ServicoSitemap,
     'noticias': ArtigoSitemap,
     'categorias-noticias': CategoriaNoticiaSitemap,
+    'taxonomias-noticias': NewsTaxonomySitemap,
+    'colunistas-noticias': ColunistaSitemap,
     'vagas': VagaSitemap,
     'ytv-programas': ProgramaSitemap,
     'ytv-episodios': EpisodioSitemap,

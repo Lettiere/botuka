@@ -1,0 +1,9 @@
+{% for midia in artigo.midias.all %}
+<section class="article-content-block">
+  {% if midia.titulo %}<h2>{{ midia.titulo }}</h2>{% endif %}
+  {% if midia.embed_url %}<div class="article-embed"><iframe loading="lazy" src="{{ midia.embed_url }}" title="{{ midia.titulo|default:artigo.titulo }}" allow="encrypted-media; picture-in-picture" allowfullscreen></iframe></div>{% endif %}
+</section>
+{% endfor %}
+{% for imagem in artigo.imagens.all %}{% if not imagem.capa %}
+<figure><img src="{% if imagem.arquivo %}{{ imagem.arquivo.url }}{% else %}{{ imagem.url_externa }}{% endif %}" alt="{{ imagem.texto_alternativo }}" loading="lazy" decoding="async">{% if imagem.legenda or imagem.credito %}<figcaption>{{ imagem.legenda }}{% if imagem.credito %} — {{ imagem.credito }}{% endif %}</figcaption>{% endif %}</figure>
+{% endif %}{% endfor %}

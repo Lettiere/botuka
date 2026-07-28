@@ -1,6 +1,6 @@
 {% extends 'painel/base.html' %}
 {% block title %}{{ titulo }} · Currículo | BOTUKA{% endblock %}
-{% block content %}
+{% block painel_content %}
 <div class="profile-page curriculum-page">
   <div class="profile-container">
     {% include 'painel/components/page_header.html' with title='Currículo' subtitle=header_subtitle breadcrumb_parent='Currículo' breadcrumb_parent_url_name='painel:curriculo' breadcrumb_current=breadcrumb_atual back_url_name='painel:curriculo' %}

@@ -1,0 +1,12 @@
+{% extends "painel/noticias/base.html" %}
+{% block page_title %}Visão geral{% endblock %}
+{% block news_content %}
+<section class="panel-indicators" aria-label="Indicadores editoriais">
+  {% for valor,rotulo in dashboard_cards %}<article class="panel-indicator"><i class="bi bi-bar-chart" aria-hidden="true"></i><strong>{{ valor }}</strong><span>{{ rotulo }}</span></article>{% endfor %}
+</section>
+<section class="panel-card"><div class="p-3"><h2 class="h4">Atividade recente</h2></div>
+  <div class="panel-table-wrap"><table class="table panel-table panel-table--responsive align-middle"><thead><tr><th>Notícia</th><th>Status</th><th>Atualização</th></tr></thead><tbody>
+  {% for artigo in recentes %}<tr><td data-label="Notícia"><a href="{% url 'painel:news_artigo_editar' artigo.uuid %}">{{ artigo.titulo }}</a></td><td data-label="Status">{% include "painel/components/status_badge.html" with status_value=artigo.status status_label=artigo.get_status_display %}</td><td data-label="Atualização">{{ artigo.atualizado_em|date:"d/m/Y H:i" }}</td></tr>{% empty %}<tr><td colspan="3">{% include "painel/components/empty_state.html" with empty_title="Nenhuma notícia" empty_text="A atividade editorial recente aparecerá aqui." %}</td></tr>{% endfor %}
+  </tbody></table></div>
+</section>
+{% endblock %}

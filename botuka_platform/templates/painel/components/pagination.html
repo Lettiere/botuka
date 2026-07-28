@@ -1,0 +1,7 @@
+{% if page_obj and page_obj.paginator.num_pages > 1 %}
+  <nav class="panel-pagination" aria-label="Paginação">
+    {% if page_obj.has_previous %}<a class="panel-btn panel-btn--soft" href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}page={{ page_obj.previous_page_number }}" rel="prev">Anterior</a>{% endif %}
+    <span>Página <strong>{{ page_obj.number }}</strong> de {{ page_obj.paginator.num_pages }}</span>
+    {% if page_obj.has_next %}<a class="panel-btn panel-btn--soft" href="?{% if request.GET.q %}q={{ request.GET.q|urlencode }}&{% endif %}page={{ page_obj.next_page_number }}" rel="next">Próxima</a>{% endif %}
+  </nav>
+{% endif %}

@@ -1,0 +1,9 @@
+{% extends "_layout/news/base.html" %}
+{% block content %}
+<main class="container py-5"><header class="mb-4"><span class="text-uppercase fw-bold text-primary">Vozes da cidade</span><h1>Colunistas</h1><p>Especialistas, pesquisadores e autores que ajudam a compreender Botucatu.</p></header>
+<div class="row g-4">{% for colunista in colunistas %}<div class="col-12 col-md-6 col-xl-4"><article class="card h-100"><div class="card-body">
+{% if colunista.autor.foto %}<img class="rounded-circle mb-3" width="96" height="96" loading="lazy" src="{{ colunista.autor.foto.url }}" alt="Foto de {{ colunista.autor.nome }}">{% endif %}
+<h2 class="h4"><a href="{% url 'news_public:colunista' colunista.autor.slug %}">{{ colunista.autor.nome }}</a></h2><p>{{ colunista.autor.mini_bio }}</p>
+<div>{% for especialidade in colunista.autor.especialidades.all %}<span class="badge text-bg-light">{{ especialidade }}</span>{% endfor %}</div>
+</div></article></div>{% empty %}<p>Os colunistas serão apresentados em breve.</p>{% endfor %}</div></main>
+{% endblock %}

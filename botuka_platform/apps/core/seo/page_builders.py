@@ -67,7 +67,11 @@ def servico_seo(request, servico):
 def artigo_seo(request, artigo):
     image = artigo.imagem_social or artigo.imagem_capa
     url = safe_absolute_url(request, request.path)
-    author = artigo.autor.get_full_name() or 'Equipe BOTUKA'
+    author = (
+        artigo.autor_editorial.nome
+        if getattr(artigo, 'autor_editorial_id', None)
+        else artigo.autor.get_full_name() or 'Equipe BOTUKA'
+    )
     schema = compact({'@type': 'NewsArticle', '@id': f'{url}#article', 'headline': artigo.titulo,
                       'description': text(artigo.resumo or artigo.subtitulo or artigo.conteudo),
                       'image': [image_url(request, image)], 'datePublished': artigo.publicado_em.isoformat() if artigo.publicado_em else None,

@@ -1,0 +1,10 @@
+{% if messages %}
+  <section class="panel-messages" aria-label="Mensagens do sistema" aria-live="polite">
+    {% for message in messages %}
+      <div class="alert alert-{{ message.tags|default:'info' }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Fechar mensagem"></button>
+      </div>
+    {% endfor %}
+  </section>
+{% endif %}

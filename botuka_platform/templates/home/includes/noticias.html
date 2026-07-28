@@ -1,0 +1,47 @@
+{% load static %}
+{% if noticia_manchete or noticias_recentes %}
+<link rel="stylesheet" href="{% static 'home/css/noticias.css' %}">
+<section class="botuka-news-home home-domain" aria-labelledby="home-news-title">
+  <div class="container-botuka">
+    <header class="botuka-news-header">
+      <div><span class="botuka-news-kicker"><i class="bi bi-newspaper" aria-hidden="true"></i> Informação local</span><h2 id="home-news-title">BOTUKA News</h2><p>Notícias, histórias e informações relevantes para o desenvolvimento da cidade.</p></div>
+      <a class="botuka-news-all" href="{% url 'news_public:home' %}">Ver todas as notícias <i class="bi bi-arrow-right" aria-hidden="true"></i></a>
+    </header>
+
+    <div class="botuka-news-layout">
+      {% if noticia_manchete %}
+        <article class="botuka-news-featured">
+          <a class="botuka-news-featured-link" href="{% url 'news_public:artigo' noticia_manchete.slug %}" aria-label="Ler notícia: {{ noticia_manchete.titulo }}">
+            <div class="botuka-news-featured-image">
+              <img src="{% if noticia_manchete.imagem_capa %}{{ noticia_manchete.imagem_capa.url }}{% else %}{% static 'home/images/news-placeholder.svg' %}{% endif %}" alt="{% if noticia_manchete.imagem_capa %}{{ noticia_manchete.titulo }}{% endif %}" fetchpriority="high" decoding="async">
+              <span class="botuka-news-featured-overlay" aria-hidden="true"></span>
+              <div class="botuka-news-featured-content"><span class="botuka-news-category botuka-news-category-light">{{ noticia_manchete.categoria.nome }}</span><h3>{{ noticia_manchete.titulo }}</h3>{% if noticia_manchete.resumo %}<p>{{ noticia_manchete.resumo|truncatechars:180 }}</p>{% endif %}<div class="botuka-news-featured-footer"><time datetime="{{ noticia_manchete.publicado_em|date:'c' }}"><i class="bi bi-clock" aria-hidden="true"></i> {{ noticia_manchete.publicado_em|date:"d/m/Y" }}</time><span class="botuka-news-read">Ler matéria <i class="bi bi-arrow-up-right" aria-hidden="true"></i></span></div></div>
+            </div>
+          </a>
+        </article>
+      {% endif %}
+
+      <div class="botuka-news-list" aria-label="Destaques">
+        {% for artigo in noticias_destaque %}
+          <article class="botuka-news-list-card">
+            <a class="botuka-news-list-image" href="{% url 'news_public:artigo' artigo.slug %}" aria-label="Ler notícia: {{ artigo.titulo }}"><img src="{{ artigo.imagem_capa.url }}" alt="" loading="lazy" decoding="async"></a>
+            <div class="botuka-news-list-content"><span class="botuka-news-category">{{ artigo.categoria.nome }}</span><h3><a href="{% url 'news_public:artigo' artigo.slug %}">{{ artigo.titulo }}</a></h3><div class="botuka-news-list-footer"><time datetime="{{ artigo.publicado_em|date:'c' }}">{{ artigo.publicado_em|date:"d/m/Y" }}</time><a class="botuka-news-list-read" href="{% url 'news_public:artigo' artigo.slug %}">Ler <i class="bi bi-arrow-right" aria-hidden="true"></i></a></div></div>
+          </article>
+        {% empty %}
+          {% for artigo in noticias_recentes|slice:":3" %}
+            <article class="botuka-news-list-card botuka-news-list-card--text"><div class="botuka-news-list-content"><span class="botuka-news-category">{{ artigo.categoria.nome }}</span><h3><a href="{% url 'news_public:artigo' artigo.slug %}">{{ artigo.titulo }}</a></h3><div class="botuka-news-list-footer"><time datetime="{{ artigo.publicado_em|date:'c' }}">{{ artigo.publicado_em|date:"d/m/Y" }}</time></div></div></article>
+          {% endfor %}
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if noticias_recentes %}<section class="botuka-news-block"><header><span>Agora</span><h3>Últimas notícias</h3></header><div class="botuka-news-grid">{% for artigo in noticias_recentes %}{% include "home/includes/news_card.html" with artigo=artigo %}{% endfor %}</div></section>{% endif %}
+    <div class="botuka-news-columns">
+      {% if noticias_agro %}<section class="botuka-news-block"><header><span>Campo e inovação</span><h3>Agro</h3></header><div class="botuka-news-stack">{% for artigo in noticias_agro %}<a href="{% url 'news_public:artigo' artigo.slug %}"><span>{{ artigo.categoria.nome }}</span><strong>{{ artigo.titulo }}</strong></a>{% endfor %}</div></section>{% endif %}
+      {% if noticias_universidade %}<section class="botuka-news-block"><header><span>Conhecimento local</span><h3>Universidade e Ciência</h3></header><div class="botuka-news-stack">{% for artigo in noticias_universidade %}<a href="{% url 'news_public:artigo' artigo.slug %}"><span>{{ artigo.categoria.nome }}</span><strong>{{ artigo.titulo }}</strong></a>{% endfor %}</div></section>{% endif %}
+    </div>
+
+    {% if noticias_colunistas %}<section class="botuka-news-block botuka-news-columnists"><header><span>Análise e opinião</span><h3>Colunistas</h3></header><div>{% for item in noticias_colunistas %}<a href="{% url 'news_public:colunista' item.autor.slug %}">{% if item.autor.foto %}<img src="{{ item.autor.foto.url }}" alt="" loading="lazy" decoding="async">{% else %}<span class="botuka-news-avatar" aria-hidden="true">{{ item.autor.nome|first|upper }}</span>{% endif %}<strong>{{ item.autor.nome }}</strong><small>{{ item.titulo|default:item.autor.mini_bio|truncatechars:60 }}</small></a>{% endfor %}</div></section>{% endif %}
+  </div>
+</section>
+{% endif %}

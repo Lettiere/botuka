@@ -8,7 +8,7 @@ from apps.news.models import CategoriaNoticia,Artigo,ArtigoBloco
 
 class NewsTests(TestCase):
     def setUp(self):
-        self.user=get_user_model().objects.create_user('reporter',password='x');p=Perfil.objects.create(nome='NEWS_REPORTER');self.user.perfil=p;self.user.save();perm=Permissao.objects.create(codigo='news.criar',nome='Criar');PerfilPermissao.objects.create(perfil=p,permissao=perm);self.cat=CategoriaNoticia.objects.create(nome='Cidade')
+        self.user=get_user_model().objects.create_user('reporter',password='x');p=Perfil.objects.create(nome='NEWS_REPORTER');self.user.perfil=p;self.user.save();perm=Permissao.all_objects.get(codigo='news.criar');PerfilPermissao.objects.create(perfil=p,permissao=perm);self.cat=CategoriaNoticia.objects.create(nome='Cidade')
     def test_categoria_criminal_rejeitada(self):
         with self.assertRaises(ValidationError):CategoriaNoticia.objects.create(nome='Noticiário policial')
     def test_artigo_privado_e_publicado(self):

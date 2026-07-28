@@ -1,10 +1,18 @@
 {% extends "_layout/platform/platform_home.html" %}
 {% load static %}
 {# Base privada: a autenticação continua nas views; noindex é uma camada adicional. #}
-{% block styles %}<link rel="stylesheet" href="{% static 'css/platform/style.css' %}">{% endblock %}
+{% block styles %}
+  <link rel="stylesheet" href="{% static 'css/platform/style.css' %}">
+  <link rel="stylesheet" href="{% static 'painel/css/painel.css' %}">
+{% endblock %}
 {% block content %}
-  <main class="painel-wrap">
-    {% if messages %}{% for message in messages %}<div class="alert alert-{{ message.tags }}">{{ message }}</div>{% endfor %}{% endif %}
+  <main class="painel-wrap panel-shell" id="conteudo-principal" tabindex="-1">
+    {% include "painel/components/messages.html" %}
     {% block painel_content %}{% endblock %}
   </main>
+  {% include "painel/components/confirm_modal.html" %}
+{% endblock %}
+{% block scripts %}
+  {{ block.super }}
+  <script src="{% static 'painel/js/painel.js' %}" defer></script>
 {% endblock %}

@@ -2,7 +2,7 @@
 {% load static %}
 {% block title %}Limites Comerciais | BOTUKA{% endblock %}
 {% block styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'css/painel/platform-admin.css' %}">{% endblock %}
-{% block content %}
+{% block painel_content %}
 <main class="platform-admin container">
   <header class="platform-admin__header"><div><span class="platform-admin__eyebrow">MASTER · Usuários</span><h1>Limites Comerciais</h1><p>Overrides comerciais individuais, sem alteração de permissões administrativas.</p></div><a class="btn btn-outline-secondary" href="{% url 'painel:administracao_plataforma' %}">Voltar</a></header>
   <form class="platform-admin__search" method="get" role="search">

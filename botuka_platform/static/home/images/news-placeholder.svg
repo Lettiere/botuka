@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 675" role="img" aria-label="Imagem neutra do BOTUKA Notícias">
+  <defs><linearGradient id="g" x1="0" x2="1" y1="0" y2="1"><stop stop-color="#102a43"/><stop offset="1" stop-color="#0b7285"/></linearGradient></defs>
+  <rect width="1200" height="675" fill="url(#g)"/>
+  <g fill="none" stroke="#fff" stroke-linecap="round" stroke-width="18" opacity=".72">
+    <rect x="380" y="190" width="440" height="295" rx="24"/>
+    <path d="M435 260h235M435 315h330M435 370h330M435 425h210"/>
+  </g>
+</svg>

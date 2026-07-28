@@ -1,0 +1,11 @@
+{% if indicators %}
+  <section class="panel-indicators" aria-label="{{ indicators_label|default:'Indicadores' }}">
+    {% for item in indicators %}
+      <article class="panel-indicator">
+        {% if item.icon %}<i class="bi {{ item.icon }}" aria-hidden="true"></i>{% endif %}
+        <strong>{{ item.value }}</strong>
+        <span>{{ item.label }}</span>
+      </article>
+    {% endfor %}
+  </section>
+{% endif %}

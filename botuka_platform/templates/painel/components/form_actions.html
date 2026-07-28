@@ -1,0 +1,5 @@
+<div class="panel-form-actions">
+  {% if cancel_url %}<a class="panel-btn panel-btn--soft" href="{{ cancel_url }}">Cancelar</a>{% endif %}
+  {% if allow_save_continue %}<button class="panel-btn panel-btn--soft" type="submit" name="_continue" value="1">Salvar e continuar</button>{% endif %}
+  <button class="panel-btn panel-btn--primary" type="submit">{{ submit_label|default:"Salvar" }}</button>
+</div>

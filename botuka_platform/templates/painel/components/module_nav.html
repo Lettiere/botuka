@@ -1,0 +1,11 @@
+{% if module_items %}
+  <nav class="panel-module-nav" aria-label="Navegação de {{ module_name|default:'módulo' }}">
+    {% for item in module_items %}
+      {% if item.visible != 0 %}
+        <a class="panel-btn {% if item.active %}panel-btn--primary{% else %}panel-btn--soft{% endif %}" href="{{ item.url }}" {% if item.active %}aria-current="page"{% endif %}>
+          {% if item.icon %}<i class="bi {{ item.icon }}" aria-hidden="true"></i>{% endif %}{{ item.label }}
+        </a>
+      {% endif %}
+    {% endfor %}
+  </nav>
+{% endif %}

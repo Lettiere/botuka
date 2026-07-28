@@ -8,8 +8,30 @@ ROLES = {
     'ARBITRO': ['sports.disputa.arbitrar'], 'MESARIO': ['sports.disputa.registrar'], 'ATLETA': ['sports.atleta.editar'],
     'YTV_GESTOR': ['media.gerenciar', 'media.publicar'], 'YTV_PRODUTOR': ['media.criar', 'media.editar'],
     'YTV_APRESENTADOR': ['media.apresentar'], 'YTV_EDITOR': ['media.editar'], 'YTV_OPERADOR_TRANSMISSAO': ['media.transmitir'],
-    'NEWS_EDITOR_CHEFE': ['news.gerenciar', 'news.publicar'], 'NEWS_EDITOR': ['news.editar', 'news.publicar'],
-    'NEWS_REPORTER': ['news.criar'], 'NEWS_REVISOR': ['news.revisar'],
+    'NEWS_EDITOR_CHEFE': [
+        'news.acessar_painel', 'news.editar_qualquer', 'news.revisar',
+        'news.aprovar', 'news.agendar', 'news.publicar', 'news.despublicar',
+        'news.arquivar', 'news.excluir', 'news.restaurar',
+        'news.gerenciar_autores', 'news.gerenciar_colunistas',
+        'news.gerenciar_colunas', 'news.gerenciar_categorias',
+        'news.gerenciar_temas', 'news.gerenciar_tags',
+        'news.gerenciar_especialidades', 'news.gerenciar_series',
+        'news.gerenciar_fontes', 'news.gerenciar_imagens',
+        'news.gerenciar_destaques',
+    ],
+    'NEWS_EDITOR': [
+        'news.acessar_painel', 'news.editar_qualquer', 'news.revisar',
+        'news.solicitar_correcao', 'news.aprovar', 'news.agendar',
+        'news.publicar', 'news.despublicar',
+    ],
+    'NEWS_REPORTER': [
+        'news.acessar_painel', 'news.criar', 'news.editar_propria',
+        'news.enviar_revisao',
+    ],
+    'NEWS_REVISOR': [
+        'news.acessar_painel', 'news.revisar', 'news.solicitar_correcao',
+        'news.aprovar',
+    ],
     'PREFEITURA_GESTOR': ['government.gerenciar', 'government.publicar'],
     'PREFEITURA_EDITOR': ['government.criar', 'government.editar'], 'PREFEITURA_REVISOR': ['government.revisar'],
 }

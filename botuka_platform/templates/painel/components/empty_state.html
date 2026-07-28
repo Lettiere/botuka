@@ -1,0 +1,6 @@
+<div class="panel-empty" role="status">
+  <i class="bi {{ empty_icon|default:'bi-inbox' }}" aria-hidden="true"></i>
+  <h2>{{ empty_title|default:"Nenhum registro encontrado" }}</h2>
+  {% if empty_text %}<p>{{ empty_text }}</p>{% endif %}
+  {% if empty_action_url and empty_action_label %}<a class="panel-btn panel-btn--primary" href="{{ empty_action_url }}">{{ empty_action_label }}</a>{% endif %}
+</div>

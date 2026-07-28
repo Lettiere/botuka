@@ -1,0 +1,3 @@
+{% extends "painel/noticias/base.html" %}
+{% block page_title %}Cadastro editorial{% endblock %}
+{% block news_content %}<form class="card card-body" method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<div><button class="btn btn-primary">Salvar</button></div></form>{% endblock %}

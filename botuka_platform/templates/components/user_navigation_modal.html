@@ -45,33 +45,7 @@
             <div class="navigation-group__links">
               <a href="{% url 'painel:perfil' %}" data-navigation-link><i class="bi bi-person"></i><span><strong>Meu perfil</strong><small>Dados e informações pessoais</small></span></a>
               <a href="{% url 'painel:dashboard' %}" data-navigation-link><i class="bi bi-speedometer2"></i><span><strong>Dashboard</strong><small>Visão geral da sua conta</small></span></a>
-              <a href="{% url 'painel:configuracoes' %}" data-navigation-link><i class="bi bi-gear"></i><span><strong>Configurações</strong><small>Preferências da plataforma</small></span></a>
-            </div>
-          </section>
-
-          <section class="navigation-group" data-navigation-group>
-            <button class="navigation-group__heading" type="button" data-navigation-group-toggle aria-expanded="true">
-              <span><i class="bi bi-buildings" aria-hidden="true"></i> Empresas e serviços</span>
-              <i class="bi bi-chevron-down navigation-group__chevron" aria-hidden="true"></i>
-            </button>
-            <div class="navigation-group__links">
-              <a href="{% url 'painel:empresas_lista' %}" data-navigation-link><i class="bi bi-buildings"></i><span><strong>Minhas empresas</strong><small>Cadastros e equipes</small></span></a>
-              <a href="{% url 'painel:empresa_criar' %}" data-navigation-link><i class="bi bi-building-add"></i><span><strong>Cadastrar empresa</strong><small>Adicionar um novo negócio</small></span></a>
-              <a href="{% url 'painel:servicos_lista' %}" data-navigation-link><i class="bi bi-tools"></i><span><strong>Meus serviços</strong><small>Gerenciar serviços publicados</small></span></a>
-              <a href="{% url 'painel:servico_criar' %}" data-navigation-link><i class="bi bi-plus-circle"></i><span><strong>Novo serviço</strong><small>Criar uma oferta de serviço</small></span></a>
-            </div>
-          </section>
-
-          <section class="navigation-group" data-navigation-group>
-            <button class="navigation-group__heading" type="button" data-navigation-group-toggle aria-expanded="true">
-              <span><i class="bi bi-broadcast" aria-hidden="true"></i> Comunidade</span>
-              <i class="bi bi-chevron-down navigation-group__chevron" aria-hidden="true"></i>
-            </button>
-            <div class="navigation-group__links">
-              <a href="{% url 'painel:publicacoes_lista' %}" data-navigation-link><i class="bi bi-megaphone"></i><span><strong>Publicações</strong><small>Conteúdos da sua conta</small></span></a>
-              <a href="{% url 'painel:rede_social' %}" data-navigation-link><i class="bi bi-share"></i><span><strong>Rede social</strong><small>Conexões na comunidade</small></span></a>
-              <a href="{% url 'painel:eventos_lista' %}" data-navigation-link><i class="bi bi-calendar-event"></i><span><strong>Eventos</strong><small>Gerenciar sua agenda</small></span></a>
-              <a href="{% url 'painel:mensagens' %}" data-navigation-link><i class="bi bi-chat-dots"></i><span><strong>Mensagens</strong><small>Conversas e contatos</small></span></a>
+              {% if painel_capabilities.account_configure %}<a href="{% url 'painel:configuracoes' %}" data-navigation-link><i class="bi bi-gear"></i><span><strong>Configurações</strong><small>Preferências da plataforma</small></span></a>{% endif %}
             </div>
           </section>
 
@@ -105,7 +79,7 @@
       </div>
 
       <footer class="navigation-modal__footer">
-        <a href="{% url 'painel:configuracoes' %}"><i class="bi bi-gear"></i> Configurações</a>
+        {% if painel_capabilities.account_configure %}<a href="{% url 'painel:configuracoes' %}"><i class="bi bi-gear"></i> Configurações</a>{% endif %}
         <form method="post" action="{% url 'accounts:logout' %}">
           {% csrf_token %}
           <button type="submit"><i class="bi bi-box-arrow-right"></i> Encerrar sessão</button>

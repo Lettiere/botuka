@@ -1,1 +1,10 @@
-{% extends 'painel/base.html' %}{% block content %}<main class="container py-4"><h1>{{ titulo }}</h1><form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary" type="submit">Salvar</button></form></main>{% endblock %}
+{% extends 'painel/base.html' %}
+{% block painel_content %}
+  {% include "painel/components/page_header.html" with title=titulo breadcrumb_current=titulo %}
+  <form class="panel-card panel-form" method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% include "painel/components/form_errors.html" %}
+    {{ form.as_p }}
+    {% include "painel/components/form_actions.html" %}
+  </form>
+{% endblock %}

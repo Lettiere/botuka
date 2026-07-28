@@ -182,9 +182,14 @@ def seed_news_demo():
     user=demo_user("news"); nomes=["Cidade","Cultura","Educação","Saúde pública","Economia","Empreendedorismo","Turismo","Esportes"]
     categorias=[]
     for i,nome in enumerate(nomes):
-        slug="demo-news-"+str(i+1); c,_=CategoriaNoticia.objects.update_or_create(slug=slug,defaults={"nome":nome,"ordem":i,"ativo":True,"excluido_em":None}); categorias.append(c)
+        c=CategoriaNoticia.objects.filter(nome__iexact=nome).first()
+        if c:
+            c.ordem=i;c.ativo=True;c.excluido_em=None;c.save()
+        else:
+            slug="demo-news-"+str(i+1);c=CategoriaNoticia.objects.create(slug=slug,nome=nome,ordem=i,ativo=True)
+        categorias.append(c)
     for i in range(1,21):
-        status="PUBLICADO" if i<=14 else ("EM_REVISAO" if i<=17 else "PAUSADO" if i==18 else "RASCUNHO")
+        status="PUBLICADO" if i<=14 else ("EM_REVISAO" if i<=17 else "DESPUBLICADO" if i==18 else "RASCUNHO")
         Artigo.objects.update_or_create(slug=f"artigo-demo-{i:02d}",defaults={"autor":user,"categoria":categorias[(i-1)%len(categorias)],"titulo":f"Conteúdo demonstrativo da cidade {i:02d}","resumo":"Artigo fictício sem atribuição a pessoas reais.","conteudo":"Material criado exclusivamente para validar o ambiente local do BOTUKA.","status":status,"destaque":i<=5,"publicado_em":timezone.now()-timedelta(days=i) if status=="PUBLICADO" else None,"ativo":True,"excluido_em":None})
     return {"categorias_news":8,"artigos":20}
 
