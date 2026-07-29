@@ -67,6 +67,88 @@ def codigos_equivalentes(codigo):
     return tuple(dict.fromkeys(equivalents))
 
 
+def criar_verificador_permissoes(usuario):
+    """Carrega a autorização do usuário em lote para menus e dashboards."""
+
+    if (
+        not usuario
+        or not getattr(usuario, "is_authenticated", False)
+        or not getattr(usuario, "is_active", False)
+    ):
+        return lambda codigo: False
+    if usuario_e_master(usuario):
+        return lambda codigo: True
+
+    from apps.core.models import PerfilPermissao
+
+    profile_ids = set(
+        usuario.perfis_adicionais.filter(
+            ativo=True, removido_em__isnull=True,
+        ).values_list("pk", flat=True)
+    )
+    if getattr(usuario, "perfil_id", None):
+        profile_ids.add(usuario.perfil_id)
+    profile_names = set(
+        usuario.perfis_adicionais.filter(
+            ativo=True, removido_em__isnull=True,
+        ).values_list("nome", flat=True)
+    )
+    if getattr(usuario, "perfil_id", None) and usuario.perfil.ativo and usuario.perfil.removido_em is None:
+        profile_names.add(usuario.perfil.nome)
+    if any(name.upper() == "ROOT" for name in profile_names):
+        return lambda codigo: True
+
+    profile_codes = set(
+        PerfilPermissao.objects.filter(
+            perfil_id__in=profile_ids,
+            ativo=True,
+            permissao__ativo=True,
+        ).values_list("permissao__codigo", flat=True)
+    )
+    now = timezone.now()
+    accesses = {
+        item.modulo: item
+        for item in AcessoModulo.objects.filter(
+            usuario=usuario,
+            status=AcessoModulo.Status.ATIVO,
+        ).filter(Q(valida_ate__isnull=True) | Q(valida_ate__gt=now))
+    }
+    grants_by_module = {}
+    for module, code in ConcessaoPermissao.objects.filter(
+        usuario=usuario,
+        acesso__status=AcessoModulo.Status.ATIVO,
+        acesso__revogado_em__isnull=True,
+        permissao__ativo=True,
+        revogada_em__isnull=True,
+    ).filter(
+        Q(valida_ate__isnull=True) | Q(valida_ate__gt=now),
+    ).filter(
+        Q(acesso__valida_ate__isnull=True) | Q(acesso__valida_ate__gt=now),
+    ).values_list("acesso__modulo", "permissao__codigo"):
+        grants_by_module.setdefault(module, set()).add(code)
+
+    def checker(codigo):
+        if not codigo:
+            return False
+        raw_module = codigo.split(".", 1)[0]
+        module = MODULE_ALIASES.get(raw_module, raw_module)
+        access_codes = MODULE_ACCESS_CODES.get(module, (f"{module}.acessar",))
+        profile_has_access = any(
+            equivalent in profile_codes
+            for access_code in access_codes
+            for equivalent in codigos_equivalentes(access_code)
+        )
+        if module not in accesses and not profile_has_access:
+            return False
+        equivalents = set(codigos_equivalentes(codigo))
+        return bool(
+            equivalents.intersection(profile_codes)
+            or equivalents.intersection(grants_by_module.get(module, set()))
+        )
+
+    return checker
+
+
 def _perfil_concede(usuario, codigo):
     checker = getattr(usuario, "tem_permissao", None)
     return bool(checker and any(checker(item) for item in codigos_equivalentes(codigo)))

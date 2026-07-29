@@ -5,6 +5,7 @@ from __future__ import annotations
 from functools import wraps
 import re
 from datetime import timedelta
+from uuid import UUID
 
 from PIL import Image, UnidentifiedImageError
 
@@ -71,7 +72,7 @@ from apps.organizations.plans import (
     bloquear_e_validar_criacao_servico,
     validar_contexto_servico,
 )
-from apps.services.models import AreaProfissional, Profissao, Servico, ServicoArea, ServicoCaracteristica, ServicoImagem, ServicoLink
+from apps.services.models import AreaProfissional, Profissao, Servico, ServicoArea, ServicoCaracteristica, ServicoImagem, ServicoLink, Setor
 from apps.services.permissions import (
     servicos_disponiveis_para_usuario,
     usuario_pode_editar_servico,
@@ -101,8 +102,15 @@ def painel_permission_required(codigo: str):
 @login_required
 def dashboard(request: HttpRequest) -> HttpResponse:
     from apps.painel.services import montar_dashboard_conta
+    from apps.painel.navigation import painel_navigation
+
+    navigation = painel_navigation(request)
     return render(request, 'painel/dashboard.html', {
-        "dashboard": montar_dashboard_conta(request.user),
+        "dashboard": montar_dashboard_conta(
+            request.user,
+            navigation["painel_module_groups"],
+            request._painel_permission_checker,
+        ),
         "usuario_master": usuario_e_master(request.user),
     })
 
@@ -739,9 +747,9 @@ def _aplicar_filtros_servicos(request: HttpRequest, queryset):
         )
     if status:
         queryset = queryset.filter(status=status)
-    if empresa:
+    if empresa.isdigit():
         queryset = queryset.filter(empresa_id=empresa)
-    if setor:
+    if setor.isdigit():
         queryset = queryset.filter(setor_id=setor)
     return queryset
 
@@ -764,6 +772,8 @@ def servicos_lista(request: HttpRequest) -> HttpResponse:
             'page_obj': page_obj,
             'querystring': querystring.urlencode(),
             'status_choices': Servico.Status.choices,
+            'empresas_filtro': Empresa.objects.filter(servicos__in=servicos_base).distinct().order_by('nome_fantasia'),
+            'setores_filtro': Setor.objects.filter(servicos__in=servicos_base).distinct().order_by('nome'),
             'total_servicos': servicos_base.count(),
             'total_publicados': servicos_base.filter(status=Servico.Status.PUBLICADO).count(),
             'total_pendentes': servicos_base.filter(status__in=[Servico.Status.PENDENTE, Servico.Status.EM_ANALISE]).count(),
@@ -808,8 +818,7 @@ def servico_criar(request: HttpRequest) -> HttpResponse:
                         area = area_form.save(commit=False)
                         area.servico = servico
                         area.save()
-                    for ordem, arquivo in enumerate(arquivos):
-                        ServicoImagem.objects.create(servico=servico, imagem=arquivo, principal=ordem == 0, ordem=ordem)
+                    _salvar_imagens_servico(request, servico)
                     for link_form in links_forms:
                         if not link_form.cleaned_data.get('url'):
                             continue
@@ -857,6 +866,52 @@ def _validar_uploads_servico(request):
     return arquivos, erros
 
 
+def _salvar_imagens_servico(request, servico):
+    """Atualiza metadados, exclusões lógicas e novos uploads do serviço."""
+    imagens = list(ServicoImagem.objects.filter(servico=servico, ativo=True))
+    remover = set(request.POST.getlist('remover_imagem'))
+    principal_uuid = request.POST.get('imagem_principal', '').strip()
+    for imagem in imagens:
+        chave = str(imagem.uuid)
+        if chave in remover:
+            imagem.delete()
+            continue
+        imagem.legenda = request.POST.get(f'imagem-{chave}-legenda', imagem.legenda).strip()[:160]
+        imagem.credito = request.POST.get(f'imagem-{chave}-credito', imagem.credito).strip()[:160]
+        imagem.texto_alternativo = request.POST.get(
+            f'imagem-{chave}-texto_alternativo', imagem.texto_alternativo,
+        ).strip()[:220]
+        ordem = str(request.POST.get(f'imagem-{chave}-ordem', imagem.ordem))
+        imagem.ordem = int(ordem) if ordem.isdigit() else imagem.ordem
+        imagem.save(update_fields=['legenda', 'credito', 'texto_alternativo', 'ordem', 'atualizado_em'])
+
+    capa = request.FILES.get('imagem_capa')
+    galeria = request.FILES.getlist('galeria')
+    if capa:
+        ServicoImagem.objects.filter(servico=servico, ativo=True, principal=True).update(principal=False)
+        ServicoImagem.objects.create(
+            servico=servico, imagem=capa, principal=True, ordem=0,
+            legenda=request.POST.get('imagem_capa_legenda', '').strip()[:160],
+            credito=request.POST.get('imagem_capa_credito', '').strip()[:160],
+            texto_alternativo=request.POST.get('imagem_capa_alt', '').strip()[:220],
+        )
+    for ordem, arquivo in enumerate(galeria, start=1):
+        ServicoImagem.objects.create(servico=servico, imagem=arquivo, principal=False, ordem=ordem)
+
+    try:
+        principal_valido = str(UUID(principal_uuid)) if principal_uuid else ''
+    except (ValueError, AttributeError):
+        principal_valido = ''
+    if principal_valido and not capa:
+        ServicoImagem.objects.filter(servico=servico, ativo=True, principal=True).update(principal=False)
+        ServicoImagem.objects.filter(servico=servico, ativo=True, uuid=principal_valido).update(principal=True)
+    if not ServicoImagem.objects.filter(servico=servico, ativo=True, principal=True).exists():
+        primeira = ServicoImagem.objects.filter(servico=servico, ativo=True).order_by('ordem', 'id').first()
+        if primeira:
+            primeira.principal = True
+            primeira.save(update_fields=['principal', 'atualizado_em'])
+
+
 @login_required
 def servico_detalhe(request: HttpRequest, uuid) -> HttpResponse:
     servico = _servico_autorizado(request, uuid)
@@ -881,7 +936,8 @@ def servico_editar(request: HttpRequest, uuid) -> HttpResponse:
 
     if request.method == 'POST':
         form = ServicoForm(request.POST, request.FILES, instance=servico, usuario=request.user)
-        valido = form.is_valid()
+        arquivos, erros_upload = _validar_uploads_servico(request)
+        valido = form.is_valid() and not erros_upload
         acao = request.POST.get('acao', 'salvar')
         # Validar vínculo de empresa
         if valido:
@@ -900,10 +956,12 @@ def servico_editar(request: HttpRequest, uuid) -> HttpResponse:
                 raise PermissionDenied
         if valido:
             with transaction.atomic():
-                servico_obj.usuario_responsavel = request.user
                 servico_obj.save()
+                _salvar_imagens_servico(request, servico_obj)
             messages.success(request, 'Serviço atualizado com sucesso.')
             return redirect('painel:servico_detalhe', uuid=servico_obj.uuid)
+        for erro in erros_upload:
+            form.add_error(None, erro)
     else:
         form = ServicoForm(instance=servico, usuario=request.user)
 
@@ -911,6 +969,7 @@ def servico_editar(request: HttpRequest, uuid) -> HttpResponse:
         'titulo': 'Editar serviço',
         'form': form,
         'servico': servico,
+        'imagens': servico.imagens.filter(ativo=True).order_by('-principal', 'ordem'),
         'profissional_responsavel': request.user,
     })
 
@@ -938,6 +997,8 @@ def servico_alterar_status(request: HttpRequest, uuid) -> HttpResponse:
     novo_status = request.POST.get('status')
     if novo_status not in Servico.Status.values:
         messages.error(request, 'Status inválido.')
+    elif novo_status == Servico.Status.PUBLICADO and not usuario_pode_publicar_servico(request.user, servico):
+        raise PermissionDenied
     else:
         servico.status = novo_status
         servico.save(update_fields=['status', 'publicado_em', 'atualizado_em'])
@@ -951,10 +1012,18 @@ def servico_imagens(request: HttpRequest, uuid) -> HttpResponse:
     if not usuario_pode_editar_servico(request.user, servico):
         raise PermissionDenied
     if request.method == 'POST':
+        remover = request.POST.get('remover')
+        if remover:
+            imagem = get_object_or_404(ServicoImagem, servico=servico, uuid=remover, ativo=True)
+            imagem.delete()
+            messages.success(request, 'Imagem removida do serviço.')
+            return redirect('painel:servico_imagens', uuid=servico.uuid)
         form = ServicoImagemForm(request.POST, request.FILES)
         if form.is_valid():
             imagem = form.save(commit=False)
             imagem.servico = servico
+            if imagem.principal:
+                ServicoImagem.objects.filter(servico=servico, ativo=True, principal=True).update(principal=False)
             imagem.save()
             messages.success(request, 'Imagem adicionada com sucesso.')
             return redirect('painel:servico_imagens', uuid=servico.uuid)
