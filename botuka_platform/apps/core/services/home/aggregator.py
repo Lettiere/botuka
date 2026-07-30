@@ -2,7 +2,7 @@ import logging
 
 from django.core.cache import cache
 
-from .adapters import culture, events, gastronomy, government, media, news, organizations, places, recruitment, services, sports, tourism
+from .adapters import culture, events, gastronomy, government, media, news, organizations, places, products, recruitment, services, sports, tourism
 
 logger = logging.getLogger(__name__)
 CACHE_TIMEOUT = 300
@@ -41,6 +41,7 @@ def montar_contexto_home(usuario=None):
     parques = _secao("home:places", places.obter_parques, [])
     turismo_destaque = _secao("home:tourism", tourism.obter_turismo, [])
     turismo_secoes = _secao("home:tourism:sections", tourism.obter_secoes_turismo, {})
+    produtos_destaque = _secao("home:products:v1", products.obter_produtos_destaque, [])
 
     contexto = {
         "empresas_destaque": empresas,
@@ -74,6 +75,7 @@ def montar_contexto_home(usuario=None):
         "parques_destaque": parques,
         "turismo_destaque": turismo_destaque,
         "turismo_secoes": turismo_secoes,
+        "produtos_destaque": produtos_destaque,
     }
     contexto["estatisticas_home"] = {
         "empresas": len(empresas),
@@ -84,5 +86,6 @@ def montar_contexto_home(usuario=None):
         "campeonatos": len(esportes[1]),
         "acoes_publicas": len(prefeitura[0]),
         "turismo": len(turismo_destaque),
+        "produtos": len(produtos_destaque),
     }
     return contexto

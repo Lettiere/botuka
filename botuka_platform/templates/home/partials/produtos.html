@@ -1,59 +1,11 @@
-  <!-- PRODUTOS E EMPRESAS -->
-  <section class="showcase-section" id="produtos">
-    <div class="container-botuka">
-      <div class="section-title">
-        <div>
-          <h2>Produtos e empresas locais</h2>
-          <small>Vitrine para lojas, negócios e produtores</small>
-        </div>
-        <a href="{% url 'publico:empresas' %}" class="feed-link">Ver lojas</a>
-      </div>
-
-      <div class="row g-3">
-        <div class="col-md-3 col-6">
-          <article class="showcase-card reveal">
-            <div class="showcase-img photo-offer"></div>
-            <div class="showcase-body">
-              <div class="feed-type">Mercado</div>
-              <div class="showcase-title">Combo feira da semana</div>
-              <p class="showcase-text">Hortifruti e cesta local.</p>
-              <a href="{% url 'publico:empresas' %}" class="feed-link">Ver oferta</a>
-            </div>
-          </article>
-        </div>
-        <div class="col-md-3 col-6">
-          <article class="showcase-card reveal">
-            <div class="showcase-img" style="background:linear-gradient(135deg,#236941,#C1642F)"></div>
-            <div class="showcase-body">
-              <div class="feed-type">Padaria</div>
-              <div class="showcase-title">Café especial da manhã</div>
-              <p class="showcase-text">Produtos frescos da região.</p>
-              <a href="{% url 'publico:empresas' %}" class="feed-link">Conhecer</a>
-            </div>
-          </article>
-        </div>
-        <div class="col-md-3 col-6">
-          <article class="showcase-card reveal">
-            <div class="showcase-img" style="background:linear-gradient(135deg,#13293D,#FFB703)"></div>
-            <div class="showcase-body">
-              <div class="feed-type">Loja</div>
-              <div class="showcase-title">Moda e presentes</div>
-              <p class="showcase-text">Novidades no comércio local.</p>
-              <a href="{% url 'publico:empresas' %}" class="feed-link">Ver loja</a>
-            </div>
-          </article>
-        </div>
-        <div class="col-md-3 col-6">
-          <article class="showcase-card reveal">
-            <div class="showcase-img" style="background:linear-gradient(135deg,#C1642F,#1E3A54)"></div>
-            <div class="showcase-body">
-              <div class="feed-type">Produtor</div>
-              <div class="showcase-title">Queijos artesanais</div>
-              <p class="showcase-text">Direto do produtor.</p>
-              <a href="{% url 'publico:empresas' %}" class="feed-link">Ver empresa</a>
-            </div>
-          </article>
-        </div>
-      </div>
-    </div>
-  </section>
+<section class="showcase-section" id="produtos">
+  <div class="container-botuka">
+    <div class="section-title"><div><h2>Produtos em destaque</h2><small>Encontre produtos e ofertas de empresas da cidade.</small></div><a href="{% url 'products:loja' %}" class="feed-link">Ver todos os produtos</a></div>
+    {% if produtos_destaque %}<div class="row g-3">{% for produto in produtos_destaque %}
+      <div class="col-lg-3 col-md-4 col-6"><article class="showcase-card reveal">
+        {% with image=produto.imagem_principal %}{% if image %}<img class="showcase-img" style="width:100%;object-fit:cover" src="{{ image.imagem.url }}" alt="{{ image.texto_alternativo }}" loading="lazy">{% else %}<div class="showcase-img" style="background:#eef2f6"></div>{% endif %}{% endwith %}
+        <div class="showcase-body"><div class="feed-type">{{ produto.categoria_taxonomia.nome }}</div><div class="showcase-title">{{ produto.nome }}</div><p class="showcase-text">{% if produto.preco_sob_consulta %}Preço sob consulta{% else %}R$ {{ produto.preco_atual|floatformat:2 }}{% endif %}{% if produto.empresa_proprietaria %} · {{ produto.empresa_proprietaria.nome_fantasia }}{% endif %}</p><a href="{{ produto.get_absolute_url }}" class="feed-link">Ver produto</a></div>
+      </article></div>
+    {% endfor %}</div>{% else %}<p>Nenhum produto em destaque publicado no momento.</p>{% endif %}
+  </div>
+</section>

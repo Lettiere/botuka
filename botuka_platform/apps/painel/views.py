@@ -10,6 +10,7 @@ from uuid import UUID
 from PIL import Image, UnidentifiedImageError
 
 from django.contrib import messages
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -79,6 +80,8 @@ from apps.services.permissions import (
     usuario_pode_publicar_servico,
     usuario_pode_visualizar_servico,
 )
+from apps.products.models import Conversa, Produto
+from apps.products.services import calcular_limite
 
 
 def painel_permission_required(codigo: str):
@@ -294,6 +297,10 @@ def empresa_detalhe(request: HttpRequest, uuid) -> HttpResponse:
         'usuario__first_name',
         'usuario__username',
     )
+    produtos = Produto.objects.filter(empresa_proprietaria=empresa)
+    limite_produtos = calcular_limite(
+        request.user, Produto.TitularTipo.EMPRESA, empresa,
+    )
 
     return render(
         request,
@@ -308,6 +315,14 @@ def empresa_detalhe(request: HttpRequest, uuid) -> HttpResponse:
                 usuario_e_master(request.user)
                 or usuario_tem_permissao(request.user, 'institucional.gerenciar')
             ),
+            'produtos_total': produtos.count(),
+            'produtos_publicados': produtos.filter(status=Produto.Status.PUBLICADO).count(),
+            'produtos_em_analise': produtos.filter(status=Produto.Status.EM_ANALISE).count(),
+            'conversas_comerciais': Conversa.objects.filter(empresa=empresa, ativo=True).count(),
+            'limite_produtos': limite_produtos,
+            'pode_produtos': usuario_tem_permissao(request.user, 'products.visualizar'),
+            'pode_criar_produto_empresa': usuario_tem_permissao(request.user, 'products.criar_empresa'),
+            'vendas_loja_url': f"{settings.VENDAS_URL}/lojas/{empresa.slug}/",
         },
     )
 

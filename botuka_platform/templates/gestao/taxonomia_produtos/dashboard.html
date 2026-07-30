@@ -1,0 +1,17 @@
+{% extends "gestao/base.html" %}
+{% block title %}Taxonomia de Produtos | Gestão BOTUKA{% endblock %}
+{% block content %}
+<div class="page-head"><div><p>Gestão › Taxonomias › Produtos</p><h1>Taxonomia de Produtos</h1><p>Hierarquia comercial: categoria, família, tipo e segmento opcional.</p></div></div>
+<div class="grid-cards">
+{% for label, total, url_name in cards %}<a class="stat" href="{% url url_name %}"><span>{{ label }}</span><strong>{{ total }}</strong></a>{% endfor %}
+<div class="stat"><span>Produtos sem classificação completa</span><strong>{{ sem_taxonomia }}</strong></div>
+<div class="stat"><span>Inconsistências de taxonomia</span><strong>{{ inconsistencias }}</strong></div>
+</div>
+<div class="page-actions">
+  <a class="btn" href="{% url 'gestao:taxonomia_categorias_novo' %}">Nova categoria</a>
+  <a class="btn" href="{% url 'gestao:taxonomia_familias_novo' %}">Nova família</a>
+  <a class="btn" href="{% url 'gestao:taxonomia_tipos_novo' %}">Novo tipo</a>
+  <a class="btn" href="{% url 'gestao:taxonomia_segmentos_novo' %}">Novo segmento</a>
+  <a class="btn btn-primary" href="{% url 'painel:produto_criar' %}">Novo produto</a>
+</div>
+{% endblock %}

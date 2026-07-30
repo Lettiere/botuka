@@ -1,0 +1,123 @@
+{% extends "painel/base.html" %}
+{% load static %}
+{% block title %}{{ titulo }} | Painel BOTUKA{% endblock %}
+{% block painel_content %}
+<link rel="stylesheet" href="{% static 'painel/css/produtos_form.css' %}">
+<div class="product-wizard" data-product-wizard
+ data-existing-images="{{ produto.imagens.count|default:0 }}"
+ data-families-url="{% url 'gestao:api_produtos_familias' %}"
+ data-types-url="{% url 'gestao:api_produtos_tipos' %}"
+ data-segments-url="{% url 'gestao:api_produtos_segmentos' %}">
+  <header class="product-wizard__header">
+    <a href="{% url 'painel:produtos_lista' %}" aria-label="Voltar">←</a>
+    <div><small>PRODUTOS</small><h1>{{ titulo }}</h1><p>Preencha as sete etapas e confira tudo antes de salvar.</p></div>
+    <div class="product-code"><span>Código interno</span><strong>{% if produto.codigo_interno %}{{ produto.codigo_interno }}{% else %}Será gerado automaticamente ao salvar{% endif %}</strong></div>
+  </header>
+
+  <div class="wizard-progress" aria-label="Progresso"><div data-progress-bar></div><span data-progress-text>Etapa 1 de 7 · 14%</span></div>
+  <div class="product-wizard__layout">
+    <nav class="wizard-nav" aria-label="Etapas do cadastro">
+      <button type="button" data-step-target="1"><b>1</b><span>Identificação</span></button>
+      <button type="button" data-step-target="2"><b>2</b><span>Classificação</span></button>
+      <button type="button" data-step-target="3"><b>3</b><span>Dados comerciais</span></button>
+      <button type="button" data-step-target="4"><b>4</b><span>Descrição e especificações</span></button>
+      <button type="button" data-step-target="5"><b>5</b><span>Publicação e contato</span></button>
+      <button type="button" data-step-target="6"><b>6</b><span>Imagens e vídeos</span></button>
+      <button type="button" data-step-target="7"><b>7</b><span>Conferência do produto</span></button>
+    </nav>
+
+    <form method="post" enctype="multipart/form-data" novalidate data-product-form>
+      {% csrf_token %}
+      {% if form.non_field_errors %}<div class="form-alert">{{ form.non_field_errors }}</div>{% endif %}
+      {% if video_formset.non_form_errors %}<div class="form-alert" data-video-errors>{{ video_formset.non_form_errors }}</div>{% endif %}
+
+      {% for number in "1234567" %}
+      {# Para corrigir problemas de CSS especificamente na etapa 7, adicione uma classe CSS distinta #}
+      <section class="wizard-step{% if number == "7" %} wizard-step--review{% endif %}" data-step="{{ number }}" {% if number != "1" %}hidden{% endif %}>
+        <header>
+          {% if number == "1" %}<h2>Identificação</h2><p>Identifique o produto e seu vendedor.</p>
+          {% elif number == "2" %}<h2>Classificação</h2><p>Selecione a taxonomia cadastrada no banco.</p>
+          {% elif number == "3" %}<h2>Dados comerciais</h2><p>Informe valores, estoque e condições comerciais.</p>
+          {% elif number == "4" %}<h2>Descrição e especificações</h2><p>Apresente características e informações técnicas.</p>
+          {% elif number == "5" %}<h2>Publicação e contato</h2><p>Configure exposição pública e canais de contato.</p>
+          {% elif number == "6" %}<h2>Imagens e vídeos</h2><p>Adicione a imagem principal, organize a galeria e informe os vídeos de apresentação do produto.</p>
+          {% else %}<h2>Conferência do produto</h2><p>Confira todas as informações, mídias, valores e configurações antes de salvar.</p>{% endif %}
+        </header>
+
+        {% if number != "7" %}
+        <div class="form-grid">
+          {% for field in form %}
+            {% if field.field.widget.attrs.data_step == number %}
+            <div class="field {% if field.errors %}has-error{% endif %}" data-field-name="{{ field.name }}">
+              <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span aria-hidden="true">*</span>{% endif %}</label>
+              {{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}
+              {% if field.name == "imagem_principal_upload" %}<div class="image-preview" data-main-image-preview></div>{% endif %}
+              {% if field.name == "galeria_upload" %}<div class="gallery-preview" data-gallery-preview></div>{% endif %}
+            </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        {% if number == "6" %}
+          {% if produto %}
+          <div class="existing-media">
+            <h3>Mídias cadastradas</h3>
+            <p>{{ produto.imagens.count }} imagem(ns) e {{ produto.videos.count }} vídeo(s). As mídias não marcadas para remoção serão preservadas.</p>
+            <div class="existing-images">{% for image in produto.imagens.all %}<label><img src="{{ image.imagem.url }}" alt="{{ image.texto_alternativo }}" loading="lazy"><span><input type="checkbox" name="remove_images" value="{{ image.uuid }}"> Remover ao salvar</span></label>{% endfor %}</div>
+          </div>
+          {% endif %}
+          <div class="video-section">
+            <div class="section-heading"><div><h3>Vídeos do YouTube</h3><p>Até oito vídeos, cada um com legenda e ordem.</p></div><button type="button" class="btn-secondary" data-add-video>+ Adicionar outro vídeo</button></div>
+            {{ video_formset.management_form }}
+            <div data-video-list>
+              {% for video_form in video_formset %}
+              <article class="video-row" data-video-form>
+                {{ video_form.id }}
+                <div class="video-row__title">Vídeo <span data-video-number>{{ forloop.counter }}</span></div>
+                {% for field in video_form.visible_fields %}
+                <div class="field {% if field.errors %}has-error{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>
+                {% endfor %}
+                <div class="video-preview" data-video-preview></div>
+                <button type="button" class="btn-danger" data-remove-video>Remover vídeo</button>
+              </article>
+              {% endfor %}
+            </div>
+            <template data-video-empty-form>
+              <article class="video-row" data-video-form>
+                {{ video_formset.empty_form.id }}
+                <div class="video-row__title">Vídeo <span data-video-number></span></div>
+                {% for field in video_formset.empty_form.visible_fields %}
+                <div class="field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}</div>
+                {% endfor %}
+                <div class="video-preview" data-video-preview></div>
+                <button type="button" class="btn-danger" data-remove-video>Remover vídeo</button>
+              </article>
+            </template>
+          </div>
+        {% endif %}
+
+        {% if number == "7" %}
+        <div class="review-grid" data-review>
+          <article><h3>Identificação</h3><dl data-review-block="1"></dl><button type="button" data-step-target="1">Editar identificação</button></article>
+          <article><h3>Classificação</h3><dl data-review-block="2"></dl><button type="button" data-step-target="2">Editar classificação</button></article>
+          <article><h3>Dados comerciais</h3><dl data-review-block="3"></dl><button type="button" data-step-target="3">Editar dados comerciais</button></article>
+          <article><h3>Descrição</h3><dl data-review-block="4"></dl><button type="button" data-step-target="4">Editar descrição</button></article>
+          <article><h3>Publicação e contato</h3><dl data-review-block="5"></dl><button type="button" data-step-target="5">Editar publicação</button></article>
+          <article><h3>Imagens</h3><p data-review-images></p><button type="button" data-step-target="6">Editar mídias</button></article>
+          <article><h3>Vídeos</h3><div data-review-videos></div><button type="button" data-step-target="6">Editar mídias</button></article>
+        </div>
+        {% endif %}
+
+        <footer class="wizard-actions">
+          {% if number != "1" %}<button type="button" class="btn-secondary" data-previous>Voltar</button>{% endif %}
+          {% if number != "7" %}<button type="button" class="btn-primary" data-next>Continuar</button>
+          {% else %}<button type="submit" class="btn-primary" data-submit><span data-submit-label>Salvar produto</span><span data-submit-loading hidden>Salvando…</span></button>{% endif %}
+        </footer>
+      </section>
+      {% endfor %}
+    </form>
+  </div>
+</div>
+<script src="{% static 'painel/js/produtos_form.js' %}"></script>
+{% endblock %}

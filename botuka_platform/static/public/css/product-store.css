@@ -1,0 +1,81 @@
+html,
+body {
+  max-width: 100%;
+  overflow-x: clip;
+}
+
+.product-store {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  overflow-x: clip;
+}
+
+.product-store .row {
+  max-width: 100%;
+  margin-right: 0;
+  margin-left: 0;
+}
+
+.product-store .row > *,
+.product-store form,
+.product-store article,
+.product-store .card-body,
+.product-store .card-footer {
+  min-width: 0;
+  max-width: 100%;
+}
+
+.product-store :where(h1, h2, p, small, strong, label, a) {
+  overflow-wrap: anywhere;
+}
+
+.product-store :where(input, select, button, img, iframe) {
+  max-width: 100%;
+}
+
+@media (max-width: 768px) {
+  .product-store {
+    padding-right: 12px;
+    padding-left: 12px;
+  }
+
+  .product-store .card-footer {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .botuka-consent {
+    width: auto;
+    max-width: calc(100vw - 24px);
+    right: 12px;
+    left: 12px;
+    box-sizing: border-box;
+  }
+
+  .botuka-consent__content,
+  .botuka-consent__actions,
+  .botuka-consent__actions > * {
+    min-width: 0;
+    max-width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .product-store {
+    padding-right: 10px;
+    padding-left: 10px;
+  }
+
+  .product-store .card {
+    border-radius: 12px;
+  }
+
+  .botuka-consent {
+    max-width: calc(100vw - 16px);
+    right: 8px;
+    left: 8px;
+    padding: 14px;
+  }
+}

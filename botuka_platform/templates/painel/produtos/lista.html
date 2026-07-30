@@ -1,1 +1,25 @@
-{% extends "painel/base.html" %}{% block painel_content %}<section class="painel-card"><h1>{{ titulo }}</h1><p>Área estrutural de produtos.</p></section>{% endblock %}
+{% extends "painel/base.html" %}{% load static %}
+{% block title %}Produtos | Painel BOTUKA{% endblock %}
+{% block painel_content %}
+<link rel="stylesheet" href="{% static 'painel/css/produtos.css' %}">
+<section class="painel-card products-page">
+  <header class="products-header"><div><span class="products-kicker">Negócios</span><h1 class="painel-title">Produtos</h1><p>Gerencie produtos pessoais e empresariais.</p></div><a class="btn btn-primary" href="{% url 'painel:produto_criar' %}">Novo produto</a></header>
+  <nav class="d-flex gap-2 mb-3"><a class="btn btn-outline-secondary" href="?escopo=pessoais">Meus produtos</a><a class="btn btn-outline-secondary" href="?escopo=empresas">Produtos das empresas</a><span class="ms-auto">Limite pessoal: {{ limite_pessoal.utilizado }} de {% if limite_pessoal.efetivo == None %}∞{% else %}{{ limite_pessoal.efetivo }}{% endif %}</span></nav>
+  <form class="row g-2 mb-3" method="get">
+    <div class="col-lg-4"><input class="form-control" name="q" value="{{ request.GET.q }}" placeholder="Nome ou código"></div>
+    <div class="col-lg-2"><select class="form-select" name="status"><option value="">Status</option>{% for value,label in produto_statuses %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+    <div class="col-lg-3"><select class="form-select" name="empresa"><option value="">Empresa</option>{% for item in empresas_filtro %}<option value="{{ item.uuid }}">{{ item.nome_fantasia }}</option>{% endfor %}</select></div>
+    <div class="col-lg-3"><select class="form-select" name="categoria"><option value="">Categoria</option>{% for item in categorias_filtro %}<option value="{{ item.uuid }}">{{ item.nome }}</option>{% endfor %}</select></div>
+    <div class="col-lg-3"><select class="form-select" name="familia"><option value="">Família</option>{% for item in familias_filtro %}<option value="{{ item.uuid }}">{{ item.nome }}</option>{% endfor %}</select></div>
+    <div class="col-lg-3"><select class="form-select" name="tipo"><option value="">Tipo</option>{% for item in tipos_filtro %}<option value="{{ item.uuid }}">{{ item.nome }}</option>{% endfor %}</select></div>
+    <div class="col-lg-2"><select class="form-select" name="segmento"><option value="">Segmento</option>{% for item in segmentos_filtro %}<option value="{{ item.uuid }}">{{ item.nome }}</option>{% endfor %}</select></div>
+    <div class="col-lg-2"><select class="form-select" name="destaque"><option value="">Destaque</option><option value="sim">Sim</option><option value="nao">Não</option></select></div>
+    <div class="col-lg-2"><select class="form-select" name="estoque"><option value="">Estoque</option><option value="com">Com estoque</option><option value="sem">Sem estoque</option></select></div>
+    <div class="col-lg-2"><button class="btn btn-outline-primary">Filtrar</button> <a href="{% url 'painel:produtos_lista' %}">Limpar</a></div>
+  </form>
+  <div class="table-responsive"><table class="table align-middle"><thead><tr><th>Imagem</th><th>Produto</th><th>Empresa</th><th>Classificação</th><th>Preço / estoque</th><th>Status</th><th>Atualização</th><th></th></tr></thead><tbody>
+  {% for produto in produtos %}<tr><td>{% with image=produto.imagem_principal %}{% if image %}<img src="{{ image.imagem.url }}" alt="" width="64" height="52" style="object-fit:cover;border-radius:8px">{% else %}—{% endif %}{% endwith %}</td><td><strong>{{ produto.nome }}</strong><small class="d-block text-muted">{{ produto.codigo_interno|default:"Código pendente" }}</small></td><td>{{ produto.empresa_proprietaria.nome_fantasia|default:"Produto pessoal" }}</td><td>{{ produto.categoria_taxonomia.nome|default:"Sem categoria" }}<br><small>{{ produto.familia.nome }}{% if produto.tipo_produto %} › {{ produto.tipo_produto.nome }}{% endif %}</small></td><td>{% if produto.preco_sob_consulta %}Sob consulta{% else %}R$ {{ produto.preco_atual|floatformat:2 }}{% endif %}<br><small>Estoque: {{ produto.estoque_informativo|default:"não informado" }}</small></td><td>{{ produto.get_status_display }}</td><td>{{ produto.atualizado_em|date:"d/m/Y H:i" }}</td><td><a class="btn btn-sm btn-outline-primary" href="{% url 'painel:produto_detalhe' produto.uuid %}">Gerenciar</a></td></tr>
+  {% empty %}<tr><td colspan="8" class="text-center py-5">Nenhum produto encontrado.</td></tr>{% endfor %}
+  </tbody></table></div>
+  {% include "gestao/components/pagination.html" %}
+</section>{% endblock %}

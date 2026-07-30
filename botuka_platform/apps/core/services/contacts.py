@@ -1,6 +1,7 @@
 """Normalização e apresentação segura de telefones públicos."""
 
 import re
+from urllib.parse import quote
 
 
 def normalizar_telefone(numero, ddi_padrao='55'):
@@ -32,6 +33,9 @@ def formatar_telefone(numero):
     return f'+{digits}' if digits else ''
 
 
-def telefone_para_whatsapp(numero):
+def telefone_para_whatsapp(numero, mensagem=''):
     digits = normalizar_telefone(numero)
-    return f'https://wa.me/{digits}' if digits and telefone_eh_celular(digits) else ''
+    if not digits or not telefone_eh_celular(digits):
+        return ''
+    url = f'https://wa.me/{digits}'
+    return f'{url}?text={quote(str(mensagem))}' if mensagem else url

@@ -1,0 +1,30 @@
+{% extends "_layout/platform/public.html" %}{% load static %}
+{% block public_styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'public/css/product-store.css' %}">{% endblock %}
+{% block public_content %}
+<main class="container py-5 product-store">
+  <header class="mb-4"><h1>Loja BOTUKA</h1><p>Produtos publicados por pessoas e empresas autorizadas da cidade.</p></header>
+  <form method="get" class="card card-body mb-4">
+    <div class="row g-3">
+      <div class="col-lg-4"><label for="q">Buscar</label><input id="q" class="form-control" name="q" value="{{ query }}" placeholder="Produto ou empresa"></div>
+      <div class="col-lg-4"><label for="categoria">Categoria</label><select id="categoria" class="form-select" name="categoria"><option value="">Todas</option>{% for item in categorias %}<option value="{{ item.uuid }}" {% if filtros.categoria == item.uuid|stringformat:"s" %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></div>
+      <div class="col-lg-4"><label for="familia">Família</label><select id="familia" class="form-select" name="familia"><option value="">Todas</option>{% for item in familias %}<option value="{{ item.uuid }}" data-category="{{ item.categoria.uuid }}" {% if filtros.familia == item.uuid|stringformat:"s" %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></div>
+      <div class="col-lg-4"><label for="tipo">Tipo</label><select id="tipo" class="form-select" name="tipo"><option value="">Todos</option>{% for item in tipos %}<option value="{{ item.uuid }}" data-family="{{ item.familia.uuid }}" {% if filtros.tipo == item.uuid|stringformat:"s" %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></div>
+      <div class="col-lg-4"><label for="segmento">Segmento</label><select id="segmento" class="form-select" name="segmento"><option value="">Todos</option>{% for item in segmentos %}<option value="{{ item.uuid }}" data-types="{% for type in item.tipos.all %}{{ type.uuid }} {% endfor %}" {% if filtros.segmento == item.uuid|stringformat:"s" %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></div>
+      <div class="col-lg-4"><label for="empresa">Empresa</label><select id="empresa" class="form-select" name="empresa"><option value="">Todas</option>{% for item in empresas %}<option value="{{ item.uuid }}">{{ item.nome_fantasia }}</option>{% endfor %}</select></div>
+      <div class="col-lg-3"><label for="preco_min">Preço mínimo</label><input id="preco_min" class="form-control" name="preco_min" value="{{ request.GET.preco_min }}"></div>
+      <div class="col-lg-3"><label for="preco_max">Preço máximo</label><input id="preco_max" class="form-control" name="preco_max" value="{{ request.GET.preco_max }}"></div>
+      <div class="col-lg-3"><label for="disponibilidade">Disponibilidade</label><select id="disponibilidade" class="form-select" name="disponibilidade"><option value="">Todas</option>{% for value,label in disponibilidades %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select></div>
+      <div class="col-lg-3"><label for="ordem">Ordenar</label><select id="ordem" class="form-select" name="ordem"><option value="recentes">Mais recentes</option><option value="menor_preco">Menor preço</option><option value="maior_preco">Maior preço</option></select></div>
+    </div>
+    <div class="mt-3"><button class="btn btn-primary">Filtrar</button> <a class="btn btn-outline-secondary" href="{% url 'products:loja' %}">Limpar filtros</a></div>
+  </form>
+  <div class="row g-4">{% for produto in produtos %}
+    <div class="col-sm-6 col-lg-4"><article class="card h-100">{% with image=produto.imagem_principal %}{% if image %}<img class="card-img-top" style="aspect-ratio:4/3;object-fit:cover" src="{{ image.imagem.url }}" alt="{{ image.texto_alternativo }}" loading="lazy">{% else %}<div class="bg-light d-grid place-items-center" style="aspect-ratio:4/3"></div>{% endif %}{% endwith %}
+      <div class="card-body"><small>{{ produto.categoria_taxonomia.nome }}</small><h2 class="h5">{{ produto.nome }}</h2><p>{{ produto.descricao_curta|truncatechars:100 }}</p>{% if produto.empresa_proprietaria %}<p class="small">{{ produto.empresa_proprietaria.nome_fantasia }}{% if produto.empresa_proprietaria.cidade %} · {{ produto.empresa_proprietaria.cidade.nome }}{% endif %}</p>{% endif %}<strong>{% if produto.preco_sob_consulta %}Preço sob consulta{% else %}R$ {{ produto.preco_atual|floatformat:2 }}{% endif %}</strong></div>
+      <div class="card-footer bg-white"><a class="btn btn-primary" href="{{ produto.get_absolute_url }}">Ver produto</a>{% with whatsapp=produto.whatsapp_publico %}{% if whatsapp.url %} <a class="btn btn-outline-success" href="{{ whatsapp.url }}" target="_blank" rel="noopener noreferrer nofollow">WhatsApp</a>{% endif %}{% endwith %}</div>
+    </article></div>
+  {% empty %}<div class="col-12"><p class="alert alert-light">Nenhum produto publicado corresponde aos filtros.</p></div>{% endfor %}</div>
+  {% include "gestao/components/pagination.html" %}
+</main>
+<script src="{% static 'public/js/product-store.js' %}" defer></script>
+{% endblock %}

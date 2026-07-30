@@ -13,6 +13,9 @@ from apps.recruitment.services import calcular_progresso
 from apps.services.models import Servico
 from apps.services.permissions import servicos_disponiveis_para_usuario
 from apps.sports.models import OrganizacaoEsportiva
+from apps.products.models import Conversa, DenunciaNegociacao, Produto
+from apps.products.permissions import produtos_do_usuario
+from apps.products.services import calcular_limite
 
 
 def _can(user, *codes):
@@ -54,6 +57,20 @@ def montar_dashboard_conta(usuario, module_groups=None, permission_checker=None)
     total_servicos = servicos_qs.count()
     servicos_ativos = servicos_qs.filter(status=Servico.Status.PUBLICADO).count()
     servicos_pausados = servicos_qs.filter(status=Servico.Status.PAUSADO).count()
+    produtos_qs = produtos_do_usuario(usuario)
+    produtos_total = produtos_qs.count()
+    produtos_publicados = produtos_qs.filter(status=Produto.Status.PUBLICADO).count()
+    produtos_analise = produtos_qs.filter(status=Produto.Status.EM_ANALISE).count()
+    produtos_rascunho = produtos_qs.filter(status=Produto.Status.RASCUNHO).count()
+    produtos_pausados = produtos_qs.filter(status=Produto.Status.PAUSADO).count()
+    produtos_indisponiveis = produtos_qs.filter(
+        status__in=[Produto.Status.INDISPONIVEL, Produto.Status.ESGOTADO],
+    ).count()
+    limite_produtos = calcular_limite(usuario, Produto.TitularTipo.PESSOA_FISICA)
+    conversas_produtos = Conversa.objects.filter(vendedor=usuario, ativo=True).count()
+    denuncias_pendentes = DenunciaNegociacao.objects.filter(
+        denunciado=usuario, status=DenunciaNegociacao.Status.ABERTA,
+    ).count() if can('products.visualizar_denuncias') else 0
 
     vagas_qs = Vaga.objects.filter(empresa_id__in=empresa_ids)
     vagas_total = vagas_qs.count()
@@ -94,6 +111,8 @@ def montar_dashboard_conta(usuario, module_groups=None, permission_checker=None)
         actions.append({"title": "Publicar vaga", "description": "Encontre profissionais para sua empresa.", "url": reverse("painel:vaga_criar"), "icon": "bi-briefcase"})
     if pode_publicar_conteudo and not any(publicacoes.values()):
         actions.append({"title": "Criar publicação", "description": "Publique conteúdo nos módulos que você administra.", "url": reverse("painel:publicacoes_lista"), "icon": "bi-megaphone"})
+    if can('products.criar_proprio', 'products.criar_empresa') and limite_produtos.permitido:
+        actions.append({"title": "Novo produto", "description": "Cadastre para você ou para uma empresa autorizada.", "url": reverse("painel:produto_criar"), "icon": "bi-box-seam"})
 
     indicators = []
     if empresas: indicators.append({"label": "Empresas", "value": len(empresas), "icon": "bi-buildings"})
@@ -102,6 +121,8 @@ def montar_dashboard_conta(usuario, module_groups=None, permission_checker=None)
     if candidaturas_recebidas: indicators.append({"label": "Candidaturas recebidas", "value": candidaturas_recebidas, "icon": "bi-people"})
     if not empresas and not servicos_ativos and curriculo: indicators.append({"label": "Currículo preenchido", "value": f"{progresso_curriculo.percentual}%", "icon": "bi-file-earmark-person"})
     if candidaturas_total and len(indicators) < 4: indicators.append({"label": "Minhas candidaturas", "value": candidaturas_total, "icon": "bi-person-check"})
+    if can('products.visualizar') and len(indicators) < 4:
+        indicators.append({"label": "Produtos publicados", "value": produtos_publicados, "icon": "bi-box-seam"})
 
     navigation_items = {
         item["label"]: item
@@ -115,6 +136,7 @@ def montar_dashboard_conta(usuario, module_groups=None, permission_checker=None)
         "Eventos": ("Eventos", "Cadastre e acompanhe eventos disponíveis.", "bi-calendar-event"),
         "Turismo": ("Turismo", "Organize locais, roteiros, guias e experiências.", "bi-geo-alt"),
         "Serviços": ("Serviços", "Gerencie serviços vinculados ao seu perfil ou empresa.", "bi-tools"),
+        "Produtos": ("Produtos", "Gerencie produtos pessoais e de empresas autorizadas.", "bi-box-seam"),
         "Esportes": ("Esportes", "Administre organizações, competições e resultados.", "bi-trophy"),
     }
     content_modules = []
@@ -130,6 +152,8 @@ def montar_dashboard_conta(usuario, module_groups=None, permission_checker=None)
             card.update(metric=publicacoes["cultura"], metric_label="conteúdos")
         elif label == "Serviços":
             card.update(metric=total_servicos, metric_label="serviços")
+        elif label == "Produtos":
+            card.update(metric=produtos_total, metric_label="produtos")
         elif label == "Esportes":
             card.update(metric=publicacoes["esportes"], metric_label="organizações")
         content_modules.append(card)
@@ -248,6 +272,14 @@ def montar_dashboard_conta(usuario, module_groups=None, permission_checker=None)
             "applications": candidaturas_total,
         } if curriculo else None,
         "services": {"total": total_servicos, "active": servicos_ativos, "paused": servicos_pausados, "limit": limite_servico.limite, "can_create": limite_servico.permitido} if total_servicos else None,
+        "products": {
+            "total": produtos_total, "published": produtos_publicados,
+            "review": produtos_analise, "draft": produtos_rascunho,
+            "paused": produtos_pausados, "unavailable": produtos_indisponiveis,
+            "limit_used": limite_produtos.utilizado,
+            "limit_available": limite_produtos.disponivel,
+            "conversations": conversas_produtos, "reports": denuncias_pendentes,
+        } if can('products.visualizar') else None,
         "jobs": {"total": vagas_total, "active": vagas_ativas, "draft": vagas_rascunho, "closed": vagas_encerradas, "applications": candidaturas_recebidas} if vagas_total else None,
         "applications": {"total": candidaturas_total} if candidaturas_total else None,
         "publications": publicacoes if any(publicacoes.values()) or pode_publicar_conteudo else None,

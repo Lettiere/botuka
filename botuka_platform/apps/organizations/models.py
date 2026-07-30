@@ -796,6 +796,11 @@ class Empresa(UUIDModel):
         self.qr_atualizado_em = timezone.now()
         self.save(update_fields=['qr_token', 'qr_atualizado_em', 'atualizado_em'])
 
+    def get_absolute_url(self):
+        from django.urls import reverse
+
+        return reverse('publico:empresa', args=[self.slug])
+
 
 class EmpresaLink(models.Model):
     id = models.BigAutoField(primary_key=True, db_column='platform_empresa_link_id')

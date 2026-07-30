@@ -1,0 +1,14 @@
+{% extends "_layout/platform/public.html" %}
+{% block public_content %}
+<main class="container py-5"><nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="/">Início</a></li><li class="breadcrumb-item active">Produtos</li></ol></nav>
+<article class="row g-5"><div class="col-lg-6">{% with imagem=produto.imagem_principal %}{% if imagem %}<img class="img-fluid rounded shadow-sm w-100" src="{{ imagem.imagem.url }}" alt="{{ imagem.texto_alternativo }}">{% endif %}{% endwith %}
+<div class="row g-2 mt-2">{% for imagem in produto.imagens.all %}<div class="col-3"><img class="img-fluid rounded" src="{{ imagem.imagem.url }}" alt="{{ imagem.texto_alternativo }}"></div>{% endfor %}</div></div>
+<div class="col-lg-6"><span class="badge text-bg-light">{{ produto.categoria_taxonomia.nome|default:produto.categoria }}</span><h1 class="display-5 fw-bold mt-3">{{ produto.nome }}</h1>
+{% if produto.categoria_taxonomia %}<p>{{ produto.categoria_taxonomia.nome }}{% if produto.familia %} › {{ produto.familia.nome }}{% endif %}{% if produto.tipo_produto %} › {{ produto.tipo_produto.nome }}{% endif %}{% if produto.segmento %} · {{ produto.segmento.nome }}{% endif %}</p>{% endif %}
+<p class="lead">{{ produto.descricao_curta }}</p><h2 class="h3 text-primary">{% if produto.preco_sob_consulta %}Preço sob consulta{% elif produto.preco_promocional %}<del class="text-muted fs-6">R$ {{ produto.preco }}</del> R$ {{ produto.preco_promocional }}{% else %}R$ {{ produto.preco }}{% endif %}</h2>
+{% if whatsapp_url %}<a class="btn btn-success btn-lg mt-3" rel="noopener noreferrer nofollow" target="_blank" href="{{ whatsapp_url }}">Falar pelo WhatsApp</a>{% endif %}
+{% if produto.url_externa %}<a class="btn btn-outline-primary btn-lg mt-3" rel="nofollow noopener" target="_blank" href="{{ produto.url_externa }}">Ver site</a>{% endif %}</div></article>
+<section class="mt-5"><h2>Descrição</h2>{{ produto.descricao_completa|safe }}{% if produto.especificacoes %}<h2 class="mt-4">Especificações</h2>{{ produto.especificacoes|safe }}{% endif %}</section>
+{% if produto.videos.all %}<section class="mt-5"><h2>Vídeos</h2><div class="row g-4">{% for video in produto.videos.all %}<div class="col-lg-6"><div class="ratio ratio-16x9"><iframe src="{{ video.embed_url }}" title="{{ video.titulo|default:produto.nome }}" loading="lazy" allowfullscreen></iframe></div>{% if video.titulo %}<p class="mt-2">{{ video.titulo }}</p>{% endif %}</div>{% endfor %}</div></section>{% endif %}
+</main>
+{% endblock %}

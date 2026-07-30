@@ -1,0 +1,10 @@
+{% extends "gestao/base.html" %}
+{% block title %}{{ title }} | Gestão BOTUKA{% endblock %}
+{% block content %}
+<div class="page-head"><div><p>Taxonomia de Produtos</p><h1>{{ title }}</h1></div></div>
+<form method="post" novalidate class="gestao-form">{% csrf_token %}
+{% if form.non_field_errors %}<div class="alert alert-error">{{ form.non_field_errors }}</div>{% endif %}
+<div class="form-grid">{% for field in form %}<div class="form-group"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</div>{% endfor %}</div>
+<div class="form-actions"><a class="btn" href="{% url list_url %}">Cancelar</a><button class="btn btn-primary" type="submit">Salvar</button></div>
+</form>
+{% endblock %}

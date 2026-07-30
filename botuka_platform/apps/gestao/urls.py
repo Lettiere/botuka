@@ -3,11 +3,16 @@
 from django.urls import path
 
 from apps.gestao import views
+from apps.products import taxonomy_views
 
 app_name = 'gestao'
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
+    path('taxonomias/produtos/', taxonomy_views.dashboard, name='taxonomia_produtos_dashboard'),
+    path('taxonomias/produtos/api/familias/', taxonomy_views.api_familias, name='api_produtos_familias'),
+    path('taxonomias/produtos/api/tipos/', taxonomy_views.api_tipos, name='api_produtos_tipos'),
+    path('taxonomias/produtos/api/segmentos/', taxonomy_views.api_segmentos, name='api_produtos_segmentos'),
     path('usuarios/', views.UsuarioListView.as_view(), name='usuarios_lista'),
     path('usuarios/novo/', views.UsuarioCreateView.as_view(), name='usuarios_novo'),
     path('usuarios/<int:pk>/', views.UsuarioDetailView.as_view(), name='usuarios_detalhe'),
@@ -29,6 +34,15 @@ urlpatterns = [
     path('contatos/<int:pk>/ativar/', views.contato_ativar, name='contatos_ativar'),
     path('contatos/<int:pk>/desativar/', views.contato_desativar, name='contatos_desativar'),
 ]
+
+for kind in taxonomy_views.CONFIG:
+    urlpatterns += [
+        path(f'taxonomias/produtos/{kind}/', taxonomy_views.lista, {'kind': kind}, name=f'taxonomia_{kind}_lista'),
+        path(f'taxonomias/produtos/{kind}/novo/', taxonomy_views.formulario, {'kind': kind}, name=f'taxonomia_{kind}_novo'),
+        path(f'taxonomias/produtos/{kind}/<uuid:uuid>/', taxonomy_views.detalhe, {'kind': kind}, name=f'taxonomia_{kind}_detalhe'),
+        path(f'taxonomias/produtos/{kind}/<uuid:uuid>/editar/', taxonomy_views.formulario, {'kind': kind}, name=f'taxonomia_{kind}_editar'),
+        path(f'taxonomias/produtos/{kind}/<uuid:uuid>/status/', taxonomy_views.alternar_status, {'kind': kind}, name=f'taxonomia_{kind}_status'),
+    ]
 
 for slug in views.CRUD_CONFIGS:
     urlpatterns += [

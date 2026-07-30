@@ -52,6 +52,7 @@ if IS_PRODUCTION and DEBUG:
     raise ImproperlyConfigured('DEBUG deve ser False quando APP_ENV=production.')
 PLATFORM_URL = config('PLATFORM_URL', default='http://127.0.0.1:7700')
 SERVICES_URL = config('SERVICES_URL', default='http://127.0.0.1:7701')
+VENDAS_URL = config('VENDAS_URL', default='http://127.0.0.1:7710').rstrip('/')
 PUBLIC_BASE_URL = config('PUBLIC_BASE_URL', default=PLATFORM_URL)
 CNPJ_PROVIDER = config('CNPJ_PROVIDER', default='mock')
 CNPJ_API_BASE_URL = config('CNPJ_API_BASE_URL', default='')
@@ -156,6 +157,7 @@ INSTALLED_APPS = [
     'apps.media.apps.MediaConfig',
     'apps.news.apps.NewsConfig',
     'apps.government.apps.GovernmentConfig',
+    'apps.products.apps.ProductsConfig',
     'apps.taxonomy.apps.TaxonomyConfig',
     'apps.gestao.apps.GestaoConfig',
     'apps.painel.apps.PainelConfig',

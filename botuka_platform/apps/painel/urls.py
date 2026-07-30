@@ -8,6 +8,7 @@ from apps.recruitment import views as recruitment_views
 app_name = 'painel'
 
 urlpatterns = [
+    path('', include('apps.products.panel_urls')),
     path('', include('apps.tourism.panel_urls')),
     path('', include('apps.sports.panel_urls')),
     path('', include('apps.media.panel_urls')),
@@ -56,7 +57,6 @@ urlpatterns = [
     path('servicos/<uuid:uuid>/qrcode/', views.servico_qrcode, name='servico_qrcode'),
     path('servicos/<uuid:uuid>/preview/', views.servico_preview, name='servico_preview'),
     # --- Produtos, Vagas, Currículo, etc ---
-    path('produtos/', views.produtos_lista, name='produtos_lista'),
     path('vagas/', recruitment_views.vaga_lista, name='vagas_lista'),
     path('vagas/exportar/', recruitment_views.vagas_exportar, name='vagas_exportar'),
     path('vagas/nova/', recruitment_views.vaga_criar, name='vaga_criar'),

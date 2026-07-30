@@ -81,6 +81,14 @@ def painel_navigation(request, permission_checker=None):
         {"label": "Empresas", "icon": "bi-buildings-fill", "url": reverse("painel:empresas_lista")},
         {"label": "Serviços", "icon": "bi-tools", "url": reverse("painel:servicos_lista")},
     ]
+    if _can("products.acessar", "products.visualizar"):
+        business.append({"label": "Produtos", "icon": "bi-box-seam-fill", "url": reverse("painel:produtos_lista")})
+    if _can("products.criar_proprio", "products.criar_empresa"):
+        business.append({"label": "Novo produto", "icon": "bi-plus-square-fill", "url": reverse("painel:produto_criar")})
+    if _can("products.acessar_conversas"):
+        business.append({"label": "Conversas de produtos", "icon": "bi-chat-left-text-fill", "url": reverse("painel:produto_conversas")})
+    if _can("products.visualizar_denuncias"):
+        business.append({"label": "Denúncias de produtos", "icon": "bi-shield-exclamation", "url": reverse("painel:produto_denuncias")})
     groups.append({"label": "Negócios", "items": business})
 
     opportunities = []

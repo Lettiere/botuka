@@ -76,6 +76,10 @@
           {% if pode_institucional %}
             <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_institucional' empresa.uuid %}"><i class="bi bi-shield-check"></i> Institucional</a>
           {% endif %}
+          {% if pode_produtos %}
+            <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_produtos' empresa.uuid %}"><i class="bi bi-box-seam"></i> Produtos</a>
+            <a class="empresa-btn empresa-btn-light" href="{{ vendas_loja_url }}" target="_blank" rel="noopener"><i class="bi bi-shop"></i> Loja</a>
+          {% endif %}
           {% if pode_gerenciar %}
             <a class="empresa-btn empresa-btn-danger" href="{% url 'painel:empresa_excluir' empresa.uuid %}"><i class="bi bi-power"></i> Desativar</a>
           {% endif %}
@@ -152,6 +156,22 @@
           <p class="text-muted mb-0">Você pode visualizar esta empresa, mas não alterar configurações.</p>
         {% endif %}
       </article>
+      {% if pode_produtos %}
+      <article class="empresa-card">
+        <h2>Produtos</h2>
+        <ul class="empresa-list">
+          <li>Total <strong>{{ produtos_total }}</strong></li>
+          <li>Publicados <strong>{{ produtos_publicados }}</strong></li>
+          <li>Em análise <strong>{{ produtos_em_analise }}</strong></li>
+          <li>Limite <strong>{{ limite_produtos.utilizado }} de {% if limite_produtos.efetivo == None %}∞{% else %}{{ limite_produtos.efetivo }}{% endif %}</strong></li>
+          <li>Conversas comerciais <strong>{{ conversas_comerciais }}</strong></li>
+        </ul>
+        <div class="empresa-actions">
+          <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_produtos' empresa.uuid %}">Ver produtos</a>
+          {% if pode_criar_produto_empresa %}<a class="empresa-btn empresa-btn-primary" href="{% url 'painel:empresa_produto_criar' empresa.uuid %}">Novo produto</a>{% endif %}
+        </div>
+      </article>
+      {% endif %}
     </section>
   </div>
 </div>

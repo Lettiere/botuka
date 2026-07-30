@@ -1,0 +1,15 @@
+{% extends "gestao/base.html" %}
+{% block title %}{{ item.nome }} | Gestão BOTUKA{% endblock %}
+{% block content %}
+<div class="page-head"><div><p>Taxonomia de Produtos › {{ title }}</p><h1>{{ item.nome }}</h1><p>{{ item.descricao|default:"Sem descrição." }}</p></div><a class="btn btn-primary" href="{% url edit_url uuid=item.uuid %}">Editar</a></div>
+<dl>
+  <dt>Slug</dt><dd>{{ item.slug }}</dd>
+  <dt>Ordem</dt><dd>{{ item.ordem }}</dd>
+  <dt>Status</dt><dd>{% if item.ativo %}Ativo{% else %}Inativo{% endif %}</dd>
+  {% if item.categoria %}<dt>Categoria</dt><dd>{{ item.categoria.nome }}</dd>{% endif %}
+  {% if item.familia %}<dt>Família</dt><dd>{{ item.familia.nome }}</dd>{% endif %}
+  {% if kind == "tipos" %}<dt>Segmentos</dt><dd>{% for segment in item.segmentos.all %}{{ segment.nome }}{% if not forloop.last %}, {% endif %}{% empty %}Não aplicável{% endfor %}</dd>{% endif %}
+  <dt>Atualizado em</dt><dd>{{ item.atualizado_em|date:"d/m/Y H:i" }}</dd>
+</dl>
+<a href="{% url list_url %}">Voltar à lista</a>
+{% endblock %}

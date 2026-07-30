@@ -64,6 +64,57 @@ def servico_seo(request, servico):
                      schemas=[schema], published_time=servico.publicado_em, modified_time=servico.atualizado_em)
 
 
+def product_seo(request, produto):
+    image_item = produto.imagem_principal
+    image = produto.imagem_social or (image_item.imagem if image_item else None)
+    url = safe_absolute_url(request, request.path)
+    seller = (
+        produto.empresa_proprietaria.nome_fantasia or produto.empresa_proprietaria.razao_social
+        if produto.empresa_proprietaria_id else produto.proprietario.get_full_name()
+    )
+    offer = None
+    if produto.preco is not None and not produto.preco_sob_consulta:
+        offer = compact({
+            '@type': 'Offer', 'priceCurrency': produto.moeda,
+            'price': str(produto.preco_promocional or produto.preco),
+            'availability': {
+                'DISPONIVEL': 'https://schema.org/InStock',
+                'SOB_ENCOMENDA': 'https://schema.org/PreOrder',
+                'ESGOTADO': 'https://schema.org/OutOfStock',
+                'INDISPONIVEL': 'https://schema.org/Discontinued',
+            }.get(produto.disponibilidade),
+            'url': url,
+        })
+    schema = compact({
+        '@type': 'Product', '@id': f'{url}#product', 'name': produto.nome,
+        'description': text(produto.descricao_seo or produto.descricao_curta or produto.descricao_completa),
+        'url': url, 'image': [image_url(request, image)], 'sku': produto.sku or None,
+        'brand': {'@type': 'Brand', 'name': produto.marca} if produto.marca else None,
+        'offers': offer,
+        'seller': {'@type': 'Organization' if produto.empresa_proprietaria_id else 'Person', 'name': seller or 'BOTUKA'},
+    })
+    video_schemas = [
+        compact({
+            '@type': 'VideoObject',
+            'name': video.titulo or produto.nome,
+            'description': produto.descricao_curta,
+            'embedUrl': video.embed_url,
+            'contentUrl': video.url,
+            'uploadDate': video.criado_em.isoformat() if video.criado_em else None,
+        })
+        for video in produto.videos.all()[:8]
+    ]
+    return build_seo(
+        request, title=produto.titulo_seo or f'{produto.nome} | Botuka',
+        description=produto.descricao_seo or produto.descricao_curta or produto.descricao_completa,
+        image=image, image_alt=(image_item.texto_alternativo if image_item else produto.nome),
+        breadcrumbs=[breadcrumb(request, 'Início', reverse('home')),
+                     breadcrumb(request, 'Produtos', request.path),
+                     breadcrumb(request, produto.nome, request.path)],
+        schemas=[schema, *video_schemas], published_time=produto.publicado_em, modified_time=produto.atualizado_em,
+    )
+
+
 def artigo_seo(request, artigo):
     image = artigo.imagem_social or artigo.imagem_capa
     url = safe_absolute_url(request, request.path)

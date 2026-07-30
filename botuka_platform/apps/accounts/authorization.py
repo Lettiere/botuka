@@ -44,6 +44,11 @@ ALIASES = {
     "events.visualizar": ("eventos.visualizar",),
     "events.cadastrar": ("eventos.criar",),
     "events.publicar": ("eventos.publicar",),
+    "products.acessar": ("produtos.visualizar", "produtos.criar"),
+    "products.visualizar": ("produtos.visualizar",),
+    "products.criar_proprio": ("produtos.criar",),
+    "products.editar_proprios": ("produtos.editar",),
+    "products.publicar": ("produtos.publicar",),
     "sports.acessar": ("sports.gerenciar", "sports.criar", "sports.editar", "sports.publicar"),
     "sports.visualizar": ("sports.editar", "sports.publicar"),
     "sports.cadastrar": ("sports.criar",),
@@ -56,9 +61,10 @@ MODULE_ACCESS_CODES = {
     "media": ("media.acessar", "media.gerenciar"),
     "events": ("events.acessar", "eventos.visualizar"),
     "sports": ("sports.acessar", "sports.gerenciar"),
+    "products": ("products.acessar", "produtos.visualizar"),
     "gestao": ("gestao.acessar",),
 }
-MODULE_ALIASES = {"eventos": "events"}
+MODULE_ALIASES = {"eventos": "events", "produtos": "products"}
 
 
 def codigos_equivalentes(codigo):

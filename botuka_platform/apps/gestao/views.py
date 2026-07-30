@@ -14,8 +14,9 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse, reverse_lazy
 from django.views.generic import CreateView, DetailView, ListView, UpdateView
 from django.utils.dateparse import parse_datetime
+from django.utils import timezone
 
-from apps.core.models import ConfiguracaoSistema, ContatoInstitucional, Perfil, Permissao
+from apps.core.models import ConfiguracaoSistema, ContatoInstitucional, Perfil, PerfilPermissao, Permissao
 from apps.gestao.decorators import (
     DomainPermissionRequiredMixin,
     master_required,
@@ -143,6 +144,7 @@ Usuario = get_user_model()
 @staff_required
 def dashboard(request: HttpRequest) -> HttpResponse:
     """Página inicial do painel interno."""
+    from apps.products.models import CategoriaProduto, Produto
 
     cards = [
         ('Usuários', Usuario.objects.count(), 'gestao:usuarios_lista'),
@@ -151,8 +153,20 @@ def dashboard(request: HttpRequest) -> HttpResponse:
         ('Organizações', Organizacao.objects.count(), 'gestao:organizacoes_lista'),
         ('Unidades', Unidade.objects.count(), 'gestao:unidades_lista'),
         ('Categorias', Categoria.objects.count(), 'gestao:categorias_lista'),
+        ('Produtos cadastrados', Produto.objects.count(), 'painel:produtos_lista'),
+        ('Taxonomias de produto', CategoriaProduto.objects.filter(ativo=True).count(), 'gestao:taxonomia_produtos_dashboard'),
     ]
-    return render(request, 'gestao/dashboard.html', {'cards': cards})
+    produtos_sem_taxonomia = Produto.objects.filter(
+        Q(categoria_taxonomia__isnull=True) | Q(familia__isnull=True) | Q(tipo_produto__isnull=True)
+    ).distinct().count()
+    produtos_pendentes = Produto.objects.filter(status=Produto.Status.EM_ANALISE).count()
+    pendencias = [
+        ('Produtos aguardando análise', produtos_pendentes, 'painel:produtos_lista'),
+        ('Produtos sem taxonomia completa', produtos_sem_taxonomia, 'gestao:taxonomia_produtos_dashboard'),
+    ]
+    return render(request, 'gestao/dashboard.html', {
+        'cards': cards, 'pendencias': pendencias, 'atualizado_em': timezone.now(),
+    })
 
 
 class GestaoContextMixin:
@@ -414,16 +428,22 @@ def perfil_permissoes(request: HttpRequest, pk: int) -> HttpResponse:
         PerfilPermissao.objects.filter(perfil=perfil).values_list('permissao_id', flat=True)
     )
     grupos = defaultdict(list)
-    for permissao in Permissao.all_objects.all().order_by('codigo'):
-        modulo = permissao.codigo.split('.', 1)[0]
-        grupos[modulo].append(permissao)
+    for permissao in Permissao.objects.filter(ativo=True).order_by('modulo', 'grupo', 'nome'):
+        grupos[permissao.modulo or permissao.codigo.split('.', 1)[0]].append(permissao)
 
     return render(
         request,
         'gestao/perfis/permissoes.html',
         {
             'perfil': perfil,
-            'grupos': dict(grupos),
+            'grupos': [
+                {
+                    'codigo': modulo,
+                    'nome': 'Produtos' if modulo == 'products' else modulo.replace('_', ' ').title(),
+                    'permissoes': permissoes,
+                }
+                for modulo, permissoes in grupos.items()
+            ],
             'permissoes_ativas': permissoes_ativas,
             'usuarios_vinculados': perfil.usuarios.count(),
             'title': 'Permissões do perfil',

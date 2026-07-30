@@ -12,11 +12,11 @@
   </div>
   <form class="panel panel-pad" method="post">
     {% csrf_token %}
-    {% for modulo, permissoes in grupos.items %}
+    {% for grupo in grupos %}
       <section style="margin-bottom:18px">
-        <h2 style="font-size:18px;text-transform:capitalize">{{ modulo }}</h2>
+        <h2 style="font-size:18px">{{ grupo.nome }}</h2>
         <div class="form-grid">
-          {% for permissao in permissoes %}
+          {% for permissao in grupo.permissoes %}
             <label class="panel" style="padding:12px;display:flex;gap:10px;align-items:flex-start">
               <input class="form-check-input" type="checkbox" name="permissoes" value="{{ permissao.pk }}" {% if permissao.pk in permissoes_ativas %}checked{% endif %}>
               <span>

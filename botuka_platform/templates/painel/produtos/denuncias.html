@@ -1,0 +1,3 @@
+{% extends "painel/base.html" %}
+{% block title %}Denúncias de Produtos | Painel BOTUKA{% endblock %}
+{% block painel_content %}<section class="painel-card"><h1>Denúncias de Produtos</h1><p>Fila administrativa protegida por permissão.</p><div class="table-responsive"><table class="table"><thead><tr><th>Produto</th><th>Motivo</th><th>Denunciante</th><th>Denunciado</th><th>Status</th></tr></thead><tbody>{% for denuncia in denuncias %}<tr><td>{{ denuncia.produto|default:"Conversa" }}</td><td>{{ denuncia.motivo }}</td><td>{{ denuncia.denunciante }}</td><td>{{ denuncia.denunciado }}</td><td>{{ denuncia.get_status_display }}</td></tr>{% empty %}<tr><td colspan="5">Nenhuma denúncia.</td></tr>{% endfor %}</tbody></table></div></section>{% endblock %}

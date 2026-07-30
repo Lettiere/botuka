@@ -1,0 +1,44 @@
+{% extends "painel/base.html" %}
+{% load static %}
+
+{% block title %}
+  Imagens de {{ produto.nome }} | Painel BOTUKA
+{% endblock %}
+
+{% block painel_content %}
+  <link rel="stylesheet" href="{% static 'painel/css/produtos.css' %}">
+
+  <section class="painel-card products-page">
+    <header class="products-header">
+      <div>
+        <span class="products-kicker">Galeria</span>
+        <h1 class="painel-title">{{ produto.nome }}</h1>
+      </div>
+      <a class="btn btn-outline-secondary" href="{% url 'painel:produto_detalhe' produto.uuid %}">Voltar</a>
+    </header>
+
+    <form method="post" enctype="multipart/form-data" class="product-image-form">
+      {% csrf_token %}
+      {{ form.as_div }}
+      <button class="btn btn-primary">Adicionar imagem</button>
+    </form>
+
+    <div class="product-gallery">
+      {% for imagem in imagens %}
+        <article>
+          <img src="{{ imagem.imagem.url }}" alt="{{ imagem.texto_alternativo }}">
+          <p>
+            {{ imagem.texto_alternativo }}
+            {% if imagem.principal %}
+              <span class="badge text-bg-primary">Principal</span>
+            {% endif %}
+          </p>
+          <form method="post" action="{% url 'painel:produto_imagem_excluir' produto.uuid imagem.uuid %}">
+            {% csrf_token %}
+            <button class="btn btn-sm btn-outline-danger">Excluir</button>
+          </form>
+        </article>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}
