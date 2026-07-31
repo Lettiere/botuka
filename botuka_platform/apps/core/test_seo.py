@@ -8,7 +8,8 @@ from django.conf import settings
 from django.test import Client, RequestFactory, SimpleTestCase, override_settings
 from django.urls import reverse
 
-from apps.core.seo.page_builders import artigo_seo, empresa_seo, home_seo, vaga_seo
+from apps.core.seo.page_builders import artigo_seo, empresa_seo, home_seo, media_seo, servico_seo, tourism_seo, vaga_seo
+from apps.core.seo.utils import clean_text, image_metadata, youtube_thumbnail, youtube_video_id
 
 
 class SeoMetadataTests(SimpleTestCase):
@@ -55,6 +56,111 @@ class SeoMetadataTests(SimpleTestCase):
         self.assertIn('LocalBusiness', serialized)
         self.assertNotIn('cpf', serialized.lower())
         self.assertNotIn('email', serialized.lower())
+
+    def test_description_is_sanitized_and_does_not_cut_words(self):
+        value = clean_text('<p>Uma descrição com   espaços e conteúdo relevante.</p>', 28)
+        self.assertNotIn('<p>', value)
+        self.assertNotIn('  ', value)
+        self.assertEqual(value, 'Uma descrição com espaços e…')
+
+    def test_youtube_id_and_thumbnail_supported_formats(self):
+        expected = 'AbC_123-xYz'
+        urls = [
+            f'https://www.youtube.com/watch?v={expected}',
+            f'https://youtu.be/{expected}',
+            f'https://www.youtube.com/embed/{expected}',
+            f'https://www.youtube.com/shorts/{expected}',
+        ]
+        for url in urls:
+            with self.subTest(url=url):
+                self.assertEqual(youtube_video_id(url), expected)
+                self.assertEqual(youtube_thumbnail(url), f'https://img.youtube.com/vi/{expected}/maxresdefault.jpg')
+
+    def test_missing_image_file_falls_back_without_error(self):
+        class BrokenImage:
+            name = 'missing.jpg'
+            @property
+            def url(self):
+                raise ValueError('missing')
+        broken = BrokenImage()
+        url, image_type, width, height = image_metadata(RequestFactory().get('/'), broken)
+        self.assertTrue(url.endswith('botuka-default-1200x630.png'))
+        self.assertEqual((image_type, width, height), ('image/png', 1200, 630))
+
+    def test_video_uses_registered_thumbnail_and_video_metadata(self):
+        obj = SimpleNamespace(
+            titulo='Vídeo exemplo', descricao_curta='Descrição real.',
+            thumbnail='https://cdn.example.com/thumb.jpg', video_id='AbC_123-xYz',
+            youtube_url='https://youtu.be/AbC_123-xYz',
+            embed_url='https://www.youtube-nocookie.com/embed/AbC_123-xYz',
+            publicado_em=None, atualizado_em=None, duracao=None,
+        )
+        seo = media_seo(RequestFactory().get('/yob/um/', HTTP_HOST='botuka.com.br'), obj, kind='video')
+        self.assertEqual(seo['content_type'], 'video.other')
+        self.assertEqual(seo['image_url'], obj.thumbnail)
+        self.assertEqual(seo['video_url'], obj.embed_url)
+
+    def test_video_uses_youtube_thumbnail_fallback(self):
+        obj = SimpleNamespace(
+            titulo='Sem thumbnail', descricao='Descrição real.', thumbnail='',
+            video_id='AbC_123-xYz', youtube_url='https://youtu.be/AbC_123-xYz',
+            embed_url='https://www.youtube-nocookie.com/embed/AbC_123-xYz',
+            publicado_em=None, atualizado_em=None, duracao=None,
+        )
+        seo = media_seo(RequestFactory().get('/yob/dois/', HTTP_HOST='botuka.com.br'), obj, kind='video')
+        self.assertIn('/AbC_123-xYz/maxresdefault.jpg', seo['image_url'])
+
+    def test_home_has_no_duplicate_primary_tags(self):
+        body = self._home().content.decode()
+        for marker in ('<title>', 'name="description"', 'property="og:title"', 'rel="canonical"', 'name="twitter:card"'):
+            self.assertEqual(body.count(marker), 1, marker)
+
+    def test_article_uses_first_related_image_when_cover_is_empty(self):
+        class Related:
+            def filter(self, **kwargs): return self
+            def order_by(self, *args): return self
+            def first(self): return SimpleNamespace(arquivo='', url_externa='https://cdn.example.com/article.jpg')
+            def all(self): return []
+        artigo = SimpleNamespace(
+            titulo='Notícia real', titulo_seo='', descricao_seo='', resumo='Resumo real',
+            subtitulo='', conteudo='Conteúdo real', imagem_social='', imagem_capa='',
+            texto_alternativo_imagem='',
+            imagens=Related(), autor_editorial_id=None,
+            autor=SimpleNamespace(get_full_name=lambda: 'Redação'),
+            categoria=SimpleNamespace(nome='Cidade', slug='cidade'), tipo_editorial='NOTICIA',
+            publicado_em=None, atualizado_em=None, tags=Related(),
+        )
+        seo = artigo_seo(RequestFactory().get('/noticias/noticia-real/'), artigo)
+        self.assertEqual(seo['image_url'], 'https://cdn.example.com/article.jpg')
+        self.assertIn('NewsArticle', json.dumps(seo['schema']))
+
+    def test_service_uses_principal_image(self):
+        class Images:
+            def all(self):
+                return [SimpleNamespace(principal=False, imagem='https://cdn.example.com/other.jpg'),
+                        SimpleNamespace(principal=True, imagem='https://cdn.example.com/main.jpg')]
+        servico = SimpleNamespace(
+            titulo='Serviço real', descricao_curta='Descrição real', descricao_completa='',
+            imagens=Images(), empresa_id=None, empresa=None, tipo_servico='Manutenção',
+            publicado_em=None, atualizado_em=None,
+        )
+        seo = servico_seo(RequestFactory().get('/servicos/real/'), servico)
+        self.assertEqual(seo['image_url'], 'https://cdn.example.com/main.jpg')
+        self.assertIn('Service', json.dumps(seo['schema']))
+
+    def test_tourism_uses_main_image_and_valid_schema(self):
+        local = SimpleNamespace(
+            nome='Parque real', descricao_curta='Descrição do parque.',
+            imagem_principal='https://cdn.example.com/park.jpg',
+            capa='', fotos=SimpleNamespace(all=lambda: []), categoria=None,
+            imagem_texto_alternativo='Vista do parque', telefone_publico='',
+            logradouro='Rua Um', numero='10', cidade='Botucatu', estado='SP', cep='',
+            visibilidade_localizacao='PUBLICA', latitude=-22.8, longitude=-48.4,
+            publicado_em=None, atualizado_em=None,
+        )
+        seo = tourism_seo(RequestFactory().get('/turismo/local/parque/'), local)
+        self.assertEqual(seo['image_url'], 'https://cdn.example.com/park.jpg')
+        self.assertIn('TouristAttraction', json.dumps(seo['schema']))
 
 
 class IntegrationConsentTests(SimpleTestCase):

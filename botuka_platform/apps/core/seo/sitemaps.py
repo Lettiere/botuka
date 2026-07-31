@@ -14,6 +14,9 @@ from apps.organizations.models import Empresa
 from apps.recruitment.models import Vaga
 from apps.services.models import Servico
 from apps.sports.models import Atleta, Campeonato, Disputa, Equipe, Modalidade
+from apps.tourism.models import GuiaTuristico, LocalTuristico, RoteiroTuristico, TurismoStatus
+from apps.events.models import Evento
+from apps.products.models import Produto
 
 
 class HttpsSitemap(Sitemap):
@@ -68,7 +71,9 @@ class NewsTaxonomySitemap(HttpsSitemap):
     def items(self):
         itens = []
         for model in self.model_route:
-            itens.extend(model.objects.only('slug', 'atualizado_em'))
+            itens.extend(model.objects.filter(
+                ativo=True, excluido_em__isnull=True,
+            ).only('slug', 'atualizado_em'))
         return itens
 
     def location(self, item):
@@ -79,7 +84,10 @@ class NewsTaxonomySitemap(HttpsSitemap):
 
 class ColunistaSitemap(HttpsSitemap):
     def items(self):
-        return Colunista.objects.select_related('autor').only(
+        return Colunista.objects.filter(
+            ativo=True, excluido_em__isnull=True,
+            autor__ativo=True, autor__excluido_em__isnull=True,
+        ).select_related('autor').only(
             'atualizado_em', 'autor__slug',
         )
     def location(self, item): return reverse('news_public:colunista', args=[item.autor.slug])
@@ -171,6 +179,47 @@ class AcaoSitemap(HttpsSitemap):
     def lastmod(self, item): return item.atualizado_em
 
 
+class LocalTuristicoSitemap(HttpsSitemap):
+    def items(self):
+        return LocalTuristico.objects.filter(status=TurismoStatus.PUBLICADO, ativo=True, excluido_em__isnull=True).only('slug', 'atualizado_em')
+    def location(self, item): return reverse('tourism_public:local', args=[item.slug])
+    def lastmod(self, item): return item.atualizado_em
+
+
+class GuiaTuristicoSitemap(HttpsSitemap):
+    def items(self):
+        return GuiaTuristico.objects.filter(status=TurismoStatus.PUBLICADO, verificado=True, ativo=True, excluido_em__isnull=True).only('slug', 'atualizado_em')
+    def location(self, item): return reverse('tourism_public:guia', args=[item.slug])
+    def lastmod(self, item): return item.atualizado_em
+
+
+class RoteiroTuristicoSitemap(HttpsSitemap):
+    def items(self):
+        return RoteiroTuristico.objects.filter(status=TurismoStatus.PUBLICADO, ativo=True, excluido_em__isnull=True).only('slug', 'atualizado_em')
+    def location(self, item): return reverse('tourism_public:roteiro', args=[item.slug])
+    def lastmod(self, item): return item.atualizado_em
+
+
+class EventoSitemap(HttpsSitemap):
+    def items(self):
+        return Evento.objects.filter(
+            status=Evento.Status.PUBLICADO, publico=True,
+            publicado_em__isnull=False,
+        ).only('slug', 'atualizado_em')
+    def location(self, item): return reverse('events:detalhe', args=[item.slug])
+    def lastmod(self, item): return item.atualizado_em
+
+
+class ProdutoSitemap(HttpsSitemap):
+    def items(self):
+        return Produto.objects.filter(
+            status=Produto.Status.PUBLICADO, publico=True, ativo=True,
+            removido_em__isnull=True, publicado_em__isnull=False,
+        ).only('slug', 'atualizado_em')
+    def location(self, item): return reverse('products:detalhe', args=[item.slug])
+    def lastmod(self, item): return item.atualizado_em
+
+
 SITEMAPS = {
     'static': StaticSitemap,
     'empresas': EmpresaSitemap,
@@ -193,4 +242,9 @@ SITEMAPS = {
     'esportes-jogos': DisputaSitemap,
     'prefeitura-orgaos': OrgaoSitemap,
     'prefeitura-acoes': AcaoSitemap,
+    'turismo-locais': LocalTuristicoSitemap,
+    'turismo-guias': GuiaTuristicoSitemap,
+    'turismo-roteiros': RoteiroTuristicoSitemap,
+    'eventos-publicos': EventoSitemap,
+    'produtos-publicos': ProdutoSitemap,
 }

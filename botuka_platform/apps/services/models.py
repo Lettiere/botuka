@@ -11,6 +11,7 @@ from django.utils import timezone
 from apps.core.models import BairroCidade, CidadeBrasil, EstadoBrasil, RegiaoCidade, UUIDModel
 from apps.core.public_links import TipoLink, normalizar_link_publico, url_embed_youtube
 from apps.core.utils import gerar_slug_unico
+from apps.core.services.rich_text import sanitizar_html_rico
 from apps.organizations.models import Empresa
 
 
@@ -283,6 +284,8 @@ class Servico(UUIDModel):
 
     def clean(self):
         super().clean()
+        self.descricao_completa = sanitizar_html_rico(self.descricao_completa)
+        self.experiencia = sanitizar_html_rico(self.experiencia)
         if self.prestador_tipo == self.PrestadorTipo.EMPRESA and not self.empresa_id:
             raise ValidationError({'empresa': 'Informe a empresa prestadora.'})
         if self.prestador_tipo == self.PrestadorTipo.PESSOA_FISICA and self.empresa_id:
@@ -325,6 +328,10 @@ class Servico(UUIDModel):
     def __str__(self):
         return self.titulo
 
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse('publico:servico', args=[self.slug])
+
     def regenerar_qr_token(self):
         self.qr_token = uuid.uuid4()
         self.qr_atualizado_em = timezone.now()
@@ -365,6 +372,8 @@ class ServicoImagem(UUIDModel):
     servico = models.ForeignKey(Servico, on_delete=models.CASCADE, db_column='services_servico_imagem_fk_servico', related_name='imagens')
     imagem = models.ImageField(upload_to='servicos/imagens/%Y/%m/', db_column='services_servico_imagem_imagem')
     legenda = models.CharField(max_length=160, blank=True, db_column='services_servico_imagem_legenda')
+    credito = models.CharField(max_length=160, blank=True, db_column='services_servico_imagem_credito')
+    texto_alternativo = models.CharField(max_length=220, blank=True, db_column='services_servico_imagem_alt')
     principal = models.BooleanField(default=False, db_column='services_servico_imagem_principal')
     ordem = models.PositiveIntegerField(default=0, db_column='services_servico_imagem_ordem')
     ativo = models.BooleanField(default=True, db_column='services_servico_imagem_ativo')
@@ -375,6 +384,13 @@ class ServicoImagem(UUIDModel):
     class Meta:
         db_table = '"services"."services_servico_imagem_tb"'
         constraints = [models.UniqueConstraint(fields=['servico'], condition=models.Q(principal=True, ativo=True), name='services_servico_img_principal_uk')]
+
+    def delete(self, using=None, keep_parents=False):
+        self.ativo = False
+        self.principal = False
+        self.excluido_em = timezone.now()
+        self.save(update_fields=['ativo', 'principal', 'excluido_em', 'atualizado_em'])
+        return 1, {self._meta.label: 1}
 
 
 class ServicoLink(models.Model):

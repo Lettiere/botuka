@@ -6,7 +6,7 @@
 <link rel="alternate" hreflang="pt-BR" href="{{ data.canonical_url }}">
 <meta name="referrer" content="strict-origin-when-cross-origin">
 <meta property="og:locale" content="pt_BR">
-<meta property="og:site_name" content="BOTUKA">
+<meta property="og:site_name" content="Botuka">
 <meta property="og:type" content="{{ data.content_type }}">
 <meta property="og:title" content="{{ data.title }}">
 <meta property="og:description" content="{{ data.description }}">
@@ -14,9 +14,12 @@
 <meta property="og:image" content="{{ data.image_url }}">
 <meta property="og:image:secure_url" content="{{ data.image_url }}">
 <meta property="og:image:type" content="{{ data.image_type }}">
-<meta property="og:image:width" content="{{ data.image_width }}">
-<meta property="og:image:height" content="{{ data.image_height }}">
+{% if data.image_width %}<meta property="og:image:width" content="{{ data.image_width }}">{% endif %}
+{% if data.image_height %}<meta property="og:image:height" content="{{ data.image_height }}">{% endif %}
 <meta property="og:image:alt" content="{{ data.image_alt }}">
+{% if data.video_url %}<meta property="og:video" content="{{ data.video_url }}">
+<meta property="og:video:secure_url" content="{{ data.video_url }}">
+{% if data.video_mime_type %}<meta property="og:video:type" content="{{ data.video_mime_type }}">{% endif %}{% endif %}
 {% if data.published_time %}<meta property="article:published_time" content="{{ data.published_time|date:'c' }}">{% endif %}
 {% if data.modified_time %}<meta property="article:modified_time" content="{{ data.modified_time|date:'c' }}">{% endif %}
 {% if data.author %}<meta property="article:author" content="{{ data.author }}">{% endif %}

@@ -9,6 +9,7 @@ app_name = 'painel'
 
 urlpatterns = [
     path('', include('apps.products.panel_urls')),
+    path('', include('apps.events.panel_urls')),
     path('', include('apps.tourism.panel_urls')),
     path('', include('apps.sports.panel_urls')),
     path('', include('apps.media.panel_urls')),
@@ -104,7 +105,6 @@ urlpatterns = [
     path('curriculo/visualizar/', recruitment_views.curriculo_visualizar, name='curriculo_visualizar'),
     path('curriculo/preview/', recruitment_views.curriculo_preview, name='curriculo_preview'),
     path('candidaturas/', recruitment_views.minhas_candidaturas, name='minhas_candidaturas'),
-    path('eventos/', views.eventos_lista, name='eventos_lista'),
     path('rede-social/', views.rede_social, name='rede_social'),
     path('mensagens/', views.mensagens, name='mensagens'),
     path('configuracoes/', views.configuracoes, name='configuracoes'),

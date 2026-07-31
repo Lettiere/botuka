@@ -1,5 +1,6 @@
 """Páginas públicas e redirecionamentos curtos de serviços e empresas."""
 
+from django.conf import settings
 from django.core.paginator import Paginator
 from django.db.models import Prefetch, Q
 from django.http import Http404
@@ -8,6 +9,8 @@ from django.shortcuts import get_object_or_404, redirect, render
 from apps.organizations.models import Empresa
 from apps.services.models import Servico, ServicoImagem, Setor
 from apps.core.seo.page_builders import empresa_seo, listing_seo, servico_seo
+from apps.products.models import Produto
+from apps.recruitment.models import Vaga
 
 
 def empresas_publicas(request):
@@ -63,7 +66,25 @@ def empresa_publica(request, slug):
         status=Empresa.Status.ATIVA,
     )
     links = empresa.links.filter(ativo=True, excluido_em__isnull=True).order_by('-destaque', 'ordem')
-    return render(request, 'publico/empresas/detalhe.html', {'empresa': empresa, 'share_object': empresa, 'share_type': 'empresa', 'links': links, 'videos': [link for link in links if link.url_embed][:6], 'seo': empresa_seo(request, empresa)})
+    produtos = Produto.objects.filter(
+        empresa_proprietaria=empresa, status=Produto.Status.PUBLICADO,
+        publico=True, ativo=True, removido_em__isnull=True,
+    ).prefetch_related('imagens') if empresa.verificada and empresa.pode_publicar_produto else Produto.objects.none()
+    servicos = Servico.objects.filter(
+        empresa=empresa, ativo=True, excluido_em__isnull=True,
+        status=Servico.Status.PUBLICADO,
+    )[:6]
+    vagas = Vaga.objects.filter(
+        empresa=empresa, ativo=True, excluido_em__isnull=True,
+        status=Vaga.Status.PUBLICADA,
+    )[:6]
+    return render(request, 'publico/empresas/detalhe.html', {
+        'empresa': empresa, 'share_object': empresa, 'share_type': 'empresa',
+        'links': links, 'videos': [link for link in links if link.url_embed][:6],
+        'seo': empresa_seo(request, empresa), 'produtos': produtos[:6],
+        'servicos': servicos, 'vagas': vagas,
+        'vendas_loja_url': f"{settings.VENDAS_URL}/lojas/{empresa.slug}/",
+    })
 
 
 def qrcode_servico_redirect(request, token):

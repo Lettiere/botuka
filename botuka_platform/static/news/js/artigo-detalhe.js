@@ -68,11 +68,11 @@
     if (copyButton) {
       copyButton.addEventListener('click', async function () {
         try {
-          await navigator.clipboard.writeText(window.location.href);
+          await navigator.clipboard.writeText(page.dataset.publicUrl);
           announce('Link copiado para a área de transferência.');
         } catch (_error) {
           const input = document.createElement('textarea');
-          input.value = window.location.href;
+          input.value = page.dataset.publicUrl;
           input.setAttribute('readonly', '');
           input.style.position = 'fixed';
           input.style.opacity = '0';
@@ -90,11 +90,47 @@
       if (!navigator.share) nativeShare.hidden = true;
       nativeShare.addEventListener('click', async function () {
         try {
-          await navigator.share({title: document.title, url: window.location.href});
+          await navigator.share({title: document.title, url: page.dataset.publicUrl});
         } catch (error) {
           if (error.name !== 'AbortError') announce('Não foi possível compartilhar agora.');
         }
       });
     }
+
+    page.querySelectorAll('[data-comment-text]').forEach(function (textarea) {
+      const counter = textarea.closest('form').querySelector('[data-comment-counter]');
+      const update = function () { counter.textContent = textarea.value.length + '/1000'; };
+      textarea.addEventListener('input', update);
+      update();
+    });
+    page.addEventListener('click', function (event) {
+      const trigger = event.target.closest('[data-reply-to],[data-edit-comment],[data-report-comment]');
+      const cancel = event.target.closest('[data-cancel-reply],[data-cancel-edit],[data-cancel-report]');
+      const toggle = event.target.closest('[data-replies-toggle]');
+      if (trigger) {
+        const key = trigger.dataset.replyTo || trigger.dataset.editComment || trigger.dataset.reportComment;
+        const type = trigger.dataset.replyTo ? 'reply' : (trigger.dataset.editComment ? 'edit' : 'report');
+        const form = page.querySelector('[data-' + type + '-form="' + key + '"]');
+        if (form) { form.hidden = false; form.querySelector('textarea').focus(); }
+      } else if (cancel) {
+        cancel.closest('form').hidden = true;
+      } else if (toggle) {
+        const replies = toggle.nextElementSibling;
+        replies.hidden = !replies.hidden;
+        toggle.setAttribute('aria-expanded', String(!replies.hidden));
+        toggle.textContent = replies.hidden ? toggle.textContent.replace('Ocultar', 'Ver') : toggle.textContent.replace('Ver', 'Ocultar');
+      }
+    });
+    page.querySelectorAll('[data-confirm-comment]').forEach(function (form) {
+      form.addEventListener('submit', function (event) {
+        if (!window.confirm('Excluir este comentário?')) event.preventDefault();
+      });
+    });
+    page.querySelectorAll('.comment-form,.comment-inline-form').forEach(function (form) {
+      form.addEventListener('submit', function () {
+        const button = form.querySelector('button[type="submit"]');
+        if (button) { button.disabled = true; button.textContent = 'Enviando...'; }
+      });
+    });
   });
 })();

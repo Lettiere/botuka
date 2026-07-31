@@ -105,7 +105,7 @@
       if (shell && source.startsWith('https://www.youtube-nocookie.com/embed/')) {
         var iframe = document.createElement('iframe');
         iframe.src = source;
-        iframe.title = videoButton.getAttribute('aria-label') || 'Vídeo da YTv Botuka';
+        iframe.title = videoButton.getAttribute('aria-label') || 'Vídeo da YoBotuka';
         iframe.loading = 'lazy';
         iframe.allow = 'accelerometer; encrypted-media; picture-in-picture';
         iframe.allowFullscreen = true;
@@ -116,17 +116,24 @@
 
     var copy = event.target.closest('[data-copy-url]');
     if (copy && navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href).then(function () { window.Botuka.showToast('Link copiado.'); });
+      var publicUrl = document.querySelector('[data-share-actions]')?.dataset.url || document.querySelector('link[rel="canonical"]')?.href;
+      if (publicUrl) navigator.clipboard.writeText(publicUrl).then(function () { window.Botuka.showToast('Link copiado.'); });
       return;
     }
 
     var share = event.target.closest('[data-share-native]');
     if (share && navigator.share) {
-      navigator.share({ title:share.dataset.shareTitle || document.title, url:window.location.href }).catch(function () {});
+      var publicUrl = document.querySelector('[data-share-actions]')?.dataset.url || document.querySelector('link[rel="canonical"]')?.href;
+      if (publicUrl) navigator.share({ title:share.dataset.shareTitle || document.title, url:publicUrl }).catch(function () {});
       return;
     }
 
     if (event.target.closest('[data-close-mobile-ad]')) document.querySelector('[data-mobile-ad]')?.remove();
+  });
+
+  document.querySelectorAll('[data-share-whatsapp]').forEach(function (link) {
+    var publicUrl = document.querySelector('[data-share-actions]')?.dataset.url;
+    if (publicUrl) link.href = 'https://wa.me/?text=' + encodeURIComponent((link.dataset.shareTitle || document.title) + ' ' + publicUrl);
   });
 
   window.addEventListener('botuka:csrf-failed', function () {

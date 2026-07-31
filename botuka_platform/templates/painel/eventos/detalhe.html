@@ -1,0 +1,159 @@
+{% extends "painel/base.html" %}
+{% load static %}
+{% block title %}{{ evento.titulo }} | Eventos{% endblock %}
+
+{% block painel_content %}
+<link rel="stylesheet" href="{% static 'painel/css/eventos.css' %}">
+<link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/dataTables.bootstrap5.min.js"></script>
+
+<section class="painel-card eventos-page">
+  <div class="event-panel-header d-flex justify-content-between align-items-center mb-4">
+    <div>
+      <span class="event-panel-kicker">Detalhe do evento</span>
+      <h1 class="painel-title">{{ evento.titulo }}</h1>
+      <p>{{ evento.get_status_display }} &middot; {{ evento.inicio|date:"d/m/Y H:i" }}</p>
+    </div>
+    {% if pode_editar %}
+      <a class="btn btn-outline-primary" href="{% url 'painel:evento_editar' evento.uuid %}">
+        <i class="bi bi-pencil"></i> Editar
+      </a>
+    {% endif %}
+  </div>
+
+  <div class="row g-3 mb-4">
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card shadow-sm text-center">
+        <div class="card-body p-2">
+          <strong class="fs-4 d-block">{{ metricas.total }}</strong>
+          <span class="text-muted small">Interessados ativos</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card shadow-sm text-center">
+        <div class="card-body p-2">
+          <strong class="fs-4 d-block">{{ metricas.hoje }}</strong>
+          <span class="text-muted small">Novos hoje</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card shadow-sm text-center">
+        <div class="card-body p-2">
+          <strong class="fs-4 d-block">{{ metricas.sete_dias }}</strong>
+          <span class="text-muted small">Últimos 7 dias</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card shadow-sm text-center">
+        <div class="card-body p-2">
+          <strong class="fs-4 d-block">{{ metricas.trinta_dias }}</strong>
+          <span class="text-muted small">Últimos 30 dias</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card shadow-sm text-center">
+        <div class="card-body p-2">
+          <strong class="fs-4 d-block">{{ metricas.cancelados }}</strong>
+          <span class="text-muted small">Cancelados</span>
+        </div>
+      </div>
+    </div>
+    <div class="col-6 col-md-4 col-lg-2">
+      <div class="card shadow-sm text-center">
+        <div class="card-body p-2">
+          <strong class="fs-4 d-block">{{ metricas.dias_restantes }}</strong>
+          <span class="text-muted small">Dias restantes</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="mb-3">
+    {% if pode_ver_interessados %}
+      <a class="btn btn-outline-secondary" href="{% url 'painel:evento_interessados' evento.uuid %}">
+        Interessados
+      </a>
+    {% endif %}
+    {% if pode_ver_metricas %}
+      <a class="btn btn-outline-secondary" href="{% url 'painel:evento_metricas' evento.uuid %}">
+        Métricas
+      </a>
+    {% endif %}
+    {% if evento.status == 'PUBLICADO' %}
+      <a class="btn btn-outline-secondary" href="{{ evento.get_absolute_url }}">
+        Página pública
+      </a>
+    {% endif %}
+  </div>
+
+  {% if acoes_status %}
+    <div class="mb-4 d-flex gap-2 flex-wrap">
+      {% for status,label in acoes_status %}
+        <form method="post" action="{% url 'painel:evento_status' evento.uuid %}">
+          {% csrf_token %}
+          <input type="hidden" name="status" value="{{ status }}">
+          <button class="btn btn-sm btn-outline-dark" type="submit">
+            {{ label }}
+          </button>
+        </form>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  <div class="table-responsive">
+    <table id="evento-detalhe-table" class="table table-bordered table-striped align-middle mb-4">
+      <tbody>
+        <tr>
+          <th width="25%">Proprietário</th>
+          <td>{{ evento.proprietario }}</td>
+        </tr>
+        <tr>
+          <th>Responsável por edição</th>
+          <td>{{ evento.responsavel_edicao }}</td>
+        </tr>
+        <tr>
+          <th>Empresa promotora</th>
+          <td>{{ evento.empresa_promotora|default:"—" }}</td>
+        </tr>
+        <tr>
+          <th>Criador do registro</th>
+          <td>{{ evento.criador_registro }}</td>
+        </tr>
+        <tr>
+          <th>Organizador</th>
+          <td>{{ evento.organizador|default:"—" }}</td>
+        </tr>
+        <tr>
+          <th>Realizador</th>
+          <td>{{ evento.realizador|default:"—" }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <aside class="alert alert-info mb-0">
+    <strong>Inscrições e ingressos</strong><br>
+    Recurso preparado para uma próxima etapa. O interesse não reserva vaga nem gera ingresso.
+  </aside>
+
+</section>
+<script>
+  $(document).ready(function () {
+    $('#evento-detalhe-table').DataTable({
+      paging: false,
+      searching: false,
+      info: false,
+      ordering: false,
+      language: {
+        emptyTable: "Nenhum detalhe para exibir"
+      }
+    });
+  });
+</script>
+{% endblock %}

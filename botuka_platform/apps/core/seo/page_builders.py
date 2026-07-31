@@ -3,7 +3,7 @@ from django.urls import reverse
 
 from .builders import breadcrumb, build_seo
 from .schemas import compact, text
-from .utils import image_url, safe_absolute_url
+from .utils import first_value, image_url, iso_duration, safe_absolute_url, youtube_thumbnail
 
 
 def home_seo(request):
@@ -22,7 +22,7 @@ def listing_seo(request, title, description, *, robots=None):
         request,
         title=title,
         description=description,
-        robots=robots or ('noindex,follow' if filtered else 'index,follow'),
+        robots=robots or ('noindex,follow' if filtered else 'index,follow,max-image-preview:large'),
         breadcrumbs=[breadcrumb(request, 'Início', reverse('home')), breadcrumb(request, title.split('|')[0].strip(), request.path)],
     )
 
@@ -116,21 +116,30 @@ def product_seo(request, produto):
 
 
 def artigo_seo(request, artigo):
-    image = artigo.imagem_social or artigo.imagem_capa
+    related_image = None
+    try:
+        item = artigo.imagens.filter(ativo=True, excluido_em__isnull=True).order_by('-capa', 'ordem', 'id').first()
+        related_image = first_value(item.arquivo, item.url_externa) if item else None
+    except (AttributeError, TypeError):
+        pass
+    image = first_value(artigo.imagem_social, artigo.imagem_capa, related_image)
     url = safe_absolute_url(request, request.path)
     author = (
         artigo.autor_editorial.nome
         if getattr(artigo, 'autor_editorial_id', None)
         else artigo.autor.get_full_name() or 'Equipe BOTUKA'
     )
-    schema = compact({'@type': 'NewsArticle', '@id': f'{url}#article', 'headline': artigo.titulo,
+    schema_type = 'NewsArticle' if getattr(artigo, 'tipo_editorial', 'NOTICIA') == 'NOTICIA' else 'Article'
+    schema = compact({'@type': schema_type, '@id': f'{url}#article', 'headline': artigo.titulo,
                       'description': text(artigo.resumo or artigo.subtitulo or artigo.conteudo),
                       'image': [image_url(request, image)], 'datePublished': artigo.publicado_em.isoformat() if artigo.publicado_em else None,
-                      'dateModified': artigo.atualizado_em.isoformat(), 'author': {'@type': 'Person', 'name': author},
-                      'publisher': {'@id': f'{settings.SITE_URL.rstrip("/")}/#organization'}, 'mainEntityOfPage': url})
+                      'dateModified': artigo.atualizado_em.isoformat() if artigo.atualizado_em else None, 'author': {'@type': 'Person', 'name': author},
+                      'publisher': {'@id': f'{safe_absolute_url(request, "/").rstrip("/")}/#organization'}, 'mainEntityOfPage': url,
+                      'articleSection': artigo.categoria.nome,
+                      'keywords': [tag.nome for tag in artigo.tags.all()] if hasattr(artigo, 'tags') else None})
     return build_seo(request, title=artigo.titulo_seo or f'{artigo.titulo} | BOTUKA',
                      description=artigo.descricao_seo or artigo.resumo or artigo.subtitulo or artigo.conteudo,
-                     image=image, image_alt=artigo.titulo, content_type='article', published_time=artigo.publicado_em,
+                     image=image, image_alt=artigo.texto_alternativo_imagem or artigo.titulo, content_type='article', published_time=artigo.publicado_em,
                      modified_time=artigo.atualizado_em, author=author, section=artigo.categoria.nome,
                      tags=[artigo.categoria.nome],
                      breadcrumbs=[breadcrumb(request, 'Início', reverse('home')), breadcrumb(request, 'Notícias', reverse('news_public:home')), breadcrumb(request, artigo.categoria.nome, reverse('news_public:categoria', args=[artigo.categoria.slug])), breadcrumb(request, artigo.titulo, request.path)], schemas=[schema])
@@ -162,9 +171,18 @@ def vaga_seo(request, vaga):
 
 
 def media_seo(request, obj, *, kind='programa'):
-    title = getattr(obj, 'titulo_seo', None) or getattr(obj, 'titulo', None) or getattr(obj, 'nome', 'YuBotuka')
+    title = getattr(obj, 'titulo_seo', None) or getattr(obj, 'titulo', None) or getattr(obj, 'nome', 'YoBotuka')
     description = getattr(obj, 'descricao_seo', None) or getattr(obj, 'descricao_curta', None) or getattr(obj, 'descricao', '')
-    image = getattr(obj, 'imagem_compartilhamento', None) or getattr(obj, 'thumbnail', None) or getattr(obj, 'imagem', None)
+    youtube_source = getattr(obj, 'video_id', '') or getattr(obj, 'youtube_url', '') or getattr(obj, 'url_ao_vivo', '')
+    image = first_value(
+        getattr(obj, 'imagem_compartilhamento', None),
+        getattr(obj, 'thumbnail', None),
+        getattr(obj, 'imagem', None),
+        youtube_thumbnail(youtube_source),
+        getattr(getattr(obj, 'programa', None), 'imagem', None),
+        getattr(getattr(obj, 'canal', None), 'capa', None),
+        getattr(getattr(obj, 'canal', None), 'logotipo', None),
+    )
     schemas = []
     if kind in {'episodio', 'video'} and getattr(obj, 'embed_url', ''):
         published_at = (
@@ -176,10 +194,75 @@ def media_seo(request, obj, *, kind='programa'):
                                 'thumbnailUrl': [image_url(request, image)],
                                 'uploadDate': published_at.isoformat() if published_at else None,
                                 'embedUrl': obj.embed_url,
-                                'duration': str(getattr(obj, 'duracao', '')) or None}))
-    return build_seo(request, title=f'{title} | YuBotuka', description=description or 'Conteúdo audiovisual local do YuBotuka.', image=image,
-                     breadcrumbs=[breadcrumb(request, 'Início', reverse('home')), breadcrumb(request, 'YuBotuka', reverse('media_public:yubotuka_home')), breadcrumb(request, title, request.path)], schemas=schemas,
+                                'duration': iso_duration(getattr(obj, 'duracao', None)),
+                                'contentUrl': getattr(obj, 'youtube_url', None),
+                                'publisher': {'@id': f'{safe_absolute_url(request, "/").rstrip("/")}/#organization'}}))
+    is_video = kind in {'episodio', 'video'}
+    return build_seo(request, title=f'{title} | YoBotuka', description=description or 'Conteúdo audiovisual local do YoBotuka.', image=image,
+                     content_type='video.other' if is_video else 'website',
+                     video_url=getattr(obj, 'embed_url', '') if is_video else None,
+                     video_mime_type='text/html' if is_video and getattr(obj, 'embed_url', '') else None,
+                     breadcrumbs=[breadcrumb(request, 'Início', reverse('home')), breadcrumb(request, 'YoBotuka', reverse('media_public:yubotuka_home')), breadcrumb(request, title, request.path)], schemas=schemas,
                      published_time=getattr(obj, 'publicado_em', None), modified_time=getattr(obj, 'atualizado_em', None))
+
+
+def tourism_seo(request, obj, *, kind='local'):
+    title = getattr(obj, 'nome', None) or getattr(obj, 'titulo', None) or str(obj)
+    description = first_value(
+        getattr(obj, 'descricao_seo', None), getattr(obj, 'descricao_curta', None),
+        getattr(obj, 'resumo', None), getattr(obj, 'apresentacao', None),
+        getattr(obj, 'descricao_completa', None), getattr(obj, 'descricao', None),
+    )
+    gallery_image = None
+    try:
+        photo = obj.fotos.all().order_by('-principal', 'ordem', 'id').first()
+        gallery_image = photo.imagem if photo else None
+    except (AttributeError, TypeError):
+        pass
+    image = first_value(
+        getattr(obj, 'imagem_principal', None), getattr(obj, 'capa', None),
+        gallery_image, getattr(getattr(obj, 'categoria', None), 'imagem', None),
+        getattr(obj, 'foto', None),
+    )
+    url = safe_absolute_url(request, request.path)
+    schema_type = 'TouristAttraction' if kind == 'local' else 'WebPage'
+    schema = compact({
+        '@type': schema_type, '@id': f'{url}#tourism', 'name': title,
+        'description': text(description), 'url': url, 'image': image_url(request, image),
+        'telephone': getattr(obj, 'telefone_publico', None),
+        'address': compact({'@type': 'PostalAddress', 'streetAddress': ' '.join(filter(None, [getattr(obj, 'logradouro', ''), getattr(obj, 'numero', '')])),
+                            'addressLocality': getattr(obj, 'cidade', None), 'addressRegion': getattr(obj, 'estado', None), 'postalCode': getattr(obj, 'cep', None), 'addressCountry': 'BR'}) if kind == 'local' else None,
+        'geo': compact({'@type': 'GeoCoordinates', 'latitude': str(obj.latitude), 'longitude': str(obj.longitude)}) if kind == 'local' and getattr(obj, 'visibilidade_localizacao', '') == 'PUBLICA' and getattr(obj, 'latitude', None) is not None and getattr(obj, 'longitude', None) is not None else None,
+    })
+    return build_seo(request, title=f'{title} | Botuka', description=description, image=image,
+                     image_alt=getattr(obj, 'imagem_texto_alternativo', None) or title,
+                     breadcrumbs=[breadcrumb(request, 'Início', reverse('home')), breadcrumb(request, 'Turismo', reverse('tourism_public:home')), breadcrumb(request, title, request.path)],
+                     schemas=[schema], published_time=getattr(obj, 'publicado_em', None), modified_time=getattr(obj, 'atualizado_em', None))
+
+
+def event_seo(request, evento):
+    url = safe_absolute_url(request, request.path)
+    image = getattr(evento, 'imagem_principal', None)
+    location = compact({
+        '@type': 'Place', 'name': evento.local,
+        'address': evento.endereco or None,
+    })
+    schema = compact({
+        '@type': 'Event', '@id': f'{url}#event', 'name': evento.titulo,
+        'description': text(evento.resumo or evento.descricao), 'url': url,
+        'image': [image_url(request, image)], 'startDate': evento.inicio.isoformat(),
+        'endDate': evento.fim.isoformat() if evento.fim else None,
+        'eventStatus': 'https://schema.org/EventCancelled' if evento.status == 'CANCELADO' else 'https://schema.org/EventScheduled',
+        'eventAttendanceMode': 'https://schema.org/OfflineEventAttendanceMode',
+        'location': location,
+        'organizer': {'@type': 'Organization', 'name': evento.organizador} if evento.organizador else None,
+    })
+    return build_seo(
+        request, title=f'{evento.titulo} | Botuka', description=evento.resumo or evento.descricao,
+        image=image, image_alt=evento.imagem_alt or evento.titulo,
+        breadcrumbs=[breadcrumb(request, 'Início', reverse('home')), breadcrumb(request, 'Eventos', reverse('events:lista')), breadcrumb(request, evento.titulo, request.path)],
+        schemas=[schema], published_time=evento.publicado_em, modified_time=evento.atualizado_em,
+    )
 
 
 def government_seo(request, obj, *, kind='acao'):

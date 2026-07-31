@@ -2,7 +2,8 @@ from django import forms
 
 from apps.accounts.authorization import pode
 
-from .models import Artigo, Autor, CategoriaNoticia, Coluna, SerieEditorial, Tag, Tema
+from .models import Artigo, Autor, CategoriaNoticia, Coluna, ComentarioArtigo, SerieEditorial, Tag, Tema
+from .sanitizers import sanitizar_html_editorial
 
 
 class ArtigoForm(forms.ModelForm):
@@ -11,11 +12,13 @@ class ArtigoForm(forms.ModelForm):
         fields = [
             "titulo", "subtitulo", "resumo", "conteudo", "tipo_editorial",
             "categoria", "coluna", "serie", "temas", "tags", "autor_editorial",
-            "imagem_capa", "credito_imagem", "fonte", "url_fonte", "data_fato",
+            "imagem_capa", "legenda_imagem", "credito_imagem", "fonte_imagem",
+            "texto_alternativo_imagem", "fonte", "url_fonte", "data_fato",
             "titulo_seo", "descricao_seo", "imagem_social", "destaque", "urgente",
+            "comentarios_permitidos", "comentarios_moderados", "comentarios_encerrados",
         ]
         widgets = {
-            "conteudo": forms.Textarea(attrs={"rows": 14}),
+            "conteudo": forms.Textarea(attrs={"rows": 14, "data-richtext-source": "", "class": "news-richtext-source"}),
             "resumo": forms.Textarea(attrs={"rows": 4, "maxlength": 500}),
             "data_fato": forms.DateTimeInput(attrs={"type": "datetime-local"}),
             "temas": forms.SelectMultiple(attrs={"size": 6}),
@@ -50,3 +53,28 @@ class ArtigoForm(forms.ModelForm):
             if enviado and str(enviado) != str(proprio or ""):
                 raise forms.ValidationError("Você não pode atribuir outro autor editorial.")
         return cleaned
+
+    def clean_conteudo(self):
+        conteudo = sanitizar_html_editorial(self.cleaned_data.get("conteudo"))
+        if not conteudo:
+            raise forms.ValidationError("Informe o conteúdo da notícia.")
+        return conteudo
+
+
+class ComentarioForm(forms.ModelForm):
+    class Meta:
+        model = ComentarioArtigo
+        fields = ["texto"]
+        widgets = {
+            "texto": forms.Textarea(attrs={
+                "rows": 3, "maxlength": 1000,
+                "placeholder": "Participe da conversa com respeito.",
+                "data-comment-text": "",
+            }),
+        }
+
+    def clean_texto(self):
+        texto = (self.cleaned_data.get("texto") or "").strip()
+        if not texto:
+            raise forms.ValidationError("Escreva um comentário.")
+        return texto

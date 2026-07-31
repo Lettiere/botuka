@@ -1,5 +1,6 @@
+{% load news_extras %}
 <div class="article-richtext" data-article-body>
-  <div class="article-richtext__lead">{{ artigo.conteudo|linebreaks }}</div>
+  <div class="article-richtext__lead">{{ artigo.conteudo|richtext }}</div>
   {% for bloco in artigo.blocos.all %}
     <section class="article-content-block article-content-block--{{ bloco.tipo|lower }}">
       {% if bloco.titulo %}<h2>{{ bloco.titulo }}</h2>{% endif %}

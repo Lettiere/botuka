@@ -238,3 +238,4 @@
 @media (prefers-reduced-motion: reduce) {
   .public-card { transition: none; }
 }
+.public-page-title,.public-page-header h1,.public-detail h1,.article-editorial-header h1,.yu-public h1{max-width:980px;font-size:clamp(1.75rem,4vw,3rem);line-height:1.12;font-weight:800;letter-spacing:-.02em;overflow-wrap:anywhere;text-wrap:balance}.public-page-subtitle{max-width:780px;font-size:clamp(1rem,2vw,1.2rem);line-height:1.5}.public-breadcrumb{overflow-wrap:anywhere}

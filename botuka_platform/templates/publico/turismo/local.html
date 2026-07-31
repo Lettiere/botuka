@@ -1,9 +1,484 @@
 {% extends "_layout/platform/public.html" %}
-{% block title %}{{ local.nome }} · Turismo BOTUKA{% endblock %}
+{% block title %}
+  {{ local.nome }} · Turismo BOTUKA
+{% endblock %}
+
 {% block public_content %}
+<style>
+  /* Estilos para responsividade e qualidade visual das imagens */
+  .tourism-local-hero picture,
+  .tourism-local-hero img {
+    display: block;
+    width: 100%;
+    max-width: 1200px;
+    margin: 0 auto;
+    border-radius: 1.1rem;
+    overflow: hidden;
+    /* Sombra suave para harmonia visual */
+    box-shadow: 0 4px 24px rgba(30, 60, 90, 0.07);
+  }
+  .tourism-local-hero img {
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    image-rendering: auto;
+    -webkit-optimize-contrast: true;
+    aspect-ratio: 16/9;
+    min-height: 200px;
+    max-height: 480px;
+    background-color: #f3f3f3;
+    transition: box-shadow .2s;
+  }
+  .gallery-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 1.3rem;
+    margin-top: 0.7rem;
+  }
+  .gallery-grid figure {
+    display: flex;
+    flex-direction: column;
+    border-radius: 0.7em;
+    overflow: hidden;
+    box-shadow: 0 2px 12px rgba(40, 60, 80, 0.07);
+    background: #fff;
+    margin: 0;
+  }
+  .gallery-grid img {
+    width: 100%;
+    height: 180px;
+    object-fit: cover;
+    image-rendering: auto;
+    aspect-ratio: 4/3;
+    background: #eef1f4;
+    transition: filter 0.2s, transform .2s;
+    cursor: zoom-in;
+  }
+  .gallery-grid img:hover {
+    filter: brightness(0.92);
+    transform: scale(1.04);
+  }
+  .gallery-grid figcaption {
+    font-size: 0.98em;
+    padding: 0.5em 1em 0.7em;
+    color: #495057;
+    background-color: #fcfdff;
+    border-top: 1px solid #eef2f4;
+  }
+  /* Modal styles for zoom */
+  .modal-gallery {
+    display: none;
+    position: fixed;
+    z-index: 10001;
+    left: 0; top: 0;
+    width: 100vw;
+    height: 100vh;
+    padding: 0;
+    margin: 0;
+    background: rgba(20, 28, 40, 0.80);
+    justify-content: center;
+    align-items: center;
+  }
+  .modal-gallery.active {
+    display: flex;
+    animation: modal-fade-in 0.18s;
+  }
+  @keyframes modal-fade-in {
+    from { opacity: 0; }
+    to   { opacity: 1; }
+  }
+  .modal-gallery-image-wrapper {
+    position: relative;
+    max-width: 96vw;
+    max-height: 92vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+  .modal-gallery-img {
+    border-radius: 1.2rem;
+    background: #f3f5f8;
+    max-width: 96vw;
+    max-height: 80vh;
+    width: auto;
+    height: auto;
+    box-shadow: 0 4px 28px rgba(40, 60, 80, 0.18);
+    animation: modal-img-in 0.22s;
+  }
+  @keyframes modal-img-in {
+    from { opacity: 0; transform: scale(0.96);}
+    to   { opacity: 1; transform: scale(1);}
+  }
+  .modal-gallery-caption {
+    color: #fff;
+    background: rgba(33, 40, 56, 0.86);
+    padding: 0.7em 1.5em;
+    font-size: 1.12em;
+    border-radius: 0 0 1em 1em;
+    margin-top: 0.12em;
+    text-align: center;
+    max-width: 90vw;
+    word-break: break-word;
+  }
+  .modal-gallery-close {
+    position: absolute;
+    right: 0.5em;
+    top: 0.2em;
+    background: rgba(24,32,42,0.82);
+    border: none;
+    color: #fff;
+    font-size: 2rem;
+    border-radius: 1.5em;
+    width: 2.1em;
+    height: 2.1em;
+    cursor: pointer;
+    z-index: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 2px 9px rgba(30,40,60,0.10);
+    transition: background 0.12s;
+  }
+  .modal-gallery-close:hover { background: #23306a; }
+
+  /* Responsividade das mídias */
+  .media-grid {
+    display: grid;
+    gap: 1rem;
+    grid-template-columns: 1fr;
+  }
+  @media (min-width: 700px) {
+    .media-grid {
+      grid-template-columns: repeat(auto-fit, minmax(340px, 1fr));
+    }
+    .tourism-local-hero img {
+      max-height: 400px;
+    }
+  }
+  .video-shell {
+    position: relative;
+    padding-bottom: 56.25%;
+    height: 0;
+    overflow: hidden;
+    border-radius: 1em;
+    box-shadow: 0 2px 14px rgba(60, 80, 100, 0.08);
+    background: #f4f6fa;
+  }
+  .video-shell iframe {
+    position: absolute;
+    top:0; left:0;
+    width:100%; height:100%;
+    border:0;
+    border-radius: 1em;
+  }
+  .public-page-header__content-below {
+    max-width: 850px;
+    margin: 0 auto 1.5em;
+    padding-top: 1.2em;
+    text-align: center;
+  }
+  .public-page-header__content-below .section-kicker {
+    display: block;
+    color: #3781b8;
+    font-weight: 700;
+    font-size: 1rem;
+    margin-bottom: .2em;
+    text-transform: uppercase;
+    letter-spacing: .01em;
+  }
+  .public-page-header__content-below h1 {
+    margin: 0.03em 0 0.15em 0;
+    font-size: 2.3rem;
+    line-height: 1.09;
+    color: #213040;
+    font-weight: 800;
+  }
+  .public-page-header__content-below p {
+    margin: 0.5em auto 1em auto;
+    font-size: 1.14rem;
+    color: #38485c;
+    max-width: 650px;
+  }
+  .public-badge-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5em;
+    justify-content: center;
+    margin-bottom: .2em;
+  }
+</style>
 <main class="public-detail container-botuka" id="conteudo-principal">
-  {% url "tourism_public:locais" as parent_url %}{% include "public/components/breadcrumb.html" with parent_url=parent_url parent_label="Turismo" current_label=local.nome %}
-  <header class="public-page-header tourism-local-hero">{% if local.imagem_principal %}<picture>{% if local.imagem_principal_webp %}<source srcset="{{ local.imagem_principal_webp.url }}" type="image/webp">{% endif %}<img src="{{ local.imagem_principal.url }}" alt="{{ local.imagem_texto_alternativo }}" width="1600" height="900"></picture>{% endif %}<div class="public-page-header__content"><span class="section-kicker">{{ local.categoria }}</span><h1>{{ local.nome }}</h1><p>{{ local.descricao_curta }}</p><div class="public-badge-row">{% if local.visibilidade_localizacao != "PRIVADA" %}<span class="public-badge">{{ local.cidade }}/{{ local.estado }}</span>{% endif %}{% if local.gratuito %}<span class="public-badge public-badge--verified">Entrada gratuita</span>{% endif %}</div></div></header>
-<div class="public-content-grid"><article><section class="public-section"><h2>Sobre o local</h2><div class="public-prose">{{ local.descricao_completa|linebreaks }}</div></section>{% if local.historia %}<section class="public-section"><h2>História</h2>{{ local.historia|linebreaks }}</section>{% endif %}{% if local.estruturas.all or local.servicos_disponiveis.all %}<section class="public-section"><h2>Estrutura e serviços</h2>{% if local.estruturas.all %}<h3>Estrutura disponível</h3><ul>{% for item in local.estruturas.all %}<li>{{ item.nome }}</li>{% endfor %}</ul>{% endif %}{% if local.servicos_disponiveis.all %}<h3>Serviços</h3><ul>{% for item in local.servicos_disponiveis.all %}<li>{{ item.nome }}</li>{% endfor %}</ul>{% endif %}</section>{% endif %}{% if local.fotos.all %}<section class="public-section"><h2>Galeria</h2><div class="gallery-grid">{% for foto in local.fotos.all %}<figure><img src="{{ foto.imagem.url }}" alt="{{ foto.texto_alternativo }}" loading="lazy">{% if foto.legenda or foto.credito %}<figcaption>{{ foto.legenda }}{% if foto.credito %} · Foto: {{ foto.credito }}{% endif %}</figcaption>{% endif %}</figure>{% endfor %}</div></section>{% endif %}{% if local.videos.all %}<section class="public-section"><h2>Vídeos</h2><div class="media-grid">{% for video in local.videos.all %}<div class="video-shell"><iframe src="https://www.youtube-nocookie.com/embed/{{ video.youtube_video_id }}" title="{{ video.titulo }}" loading="lazy" allowfullscreen></iframe></div>{% endfor %}</div></section>{% endif %}</article><aside class="public-sidebar"><section class="public-sidebar-card"><h2>Informações</h2><dl class="public-facts">{% if local.horario %}<div><dt>Horários</dt><dd>{{ local.horario }}{% if local.dias_funcionamento %}<br>{{ local.dias_funcionamento }}{% endif %}</dd></div>{% endif %}<div><dt>Acesso</dt><dd>{% if local.gratuito %}Gratuito{% else %}A partir de R$ {{ local.valor_inteiro }}{% if local.valor_informativo %}<br>{{ local.valor_informativo }}{% endif %}{% endif %}</dd></div>{% if local.agendamento_necessario %}<div><dt>Agendamento</dt><dd>Necessário{% if local.agendamento_antecedencia_horas %}, com {{ local.agendamento_antecedencia_horas }} horas de antecedência{% endif %}</dd></div>{% endif %}<div><dt>Localização</dt><dd>{% if local.visibilidade_localizacao == "PUBLICA" %}{{ local.logradouro }}{% if local.numero %}, {{ local.numero }}{% endif %} · {{ local.bairro }} · {{ local.cidade }}/{{ local.estado }}{% elif local.visibilidade_localizacao == "APROXIMADA" %}{{ local.bairro }} · {{ local.cidade }}/{{ local.estado }}{% else %}Localização não divulgada{% endif %}</dd></div></dl>{% if map_url %}<a class="btn-botuka btn-soft" href="{{ map_url }}" target="_blank" rel="noopener">Abrir mapa</a>{% endif %}</section>{% if local.contatos.all or local.redes_sociais_itens.all %}<section class="public-sidebar-card"><h2>Contatos</h2><ul>{% for item in local.contatos.all %}<li><strong>{{ item.get_tipo_display }}:</strong> {{ item.valor }}</li>{% endfor %}{% for item in local.redes_sociais_itens.all %}<li><a href="{{ item.url }}" rel="noopener noreferrer">{{ item.nome_exibicao|default:item.get_tipo_display }}</a></li>{% endfor %}</ul></section>{% endif %}{% include "publico/includes/share.html" with share_title=local.nome %}</aside></div>
+  {# Breadcrumb #}
+  {% url "tourism_public:locais" as parent_url %}
+  {% include "public/components/breadcrumb.html" with parent_url=parent_url parent_label="Turismo" current_label=local.nome %}
+
+  {# Hero/Header #}
+  <header class="public-page-header tourism-local-hero">
+    {% if local.imagem_principal %}
+      <picture>
+        {% if local.imagem_principal_webp %}
+          <source srcset="{{ local.imagem_principal_webp.url }} 1x, {{ local.imagem_principal_webp.url }} 2x" type="image/webp">
+        {% endif %}
+        <img
+          src="{{ local.imagem_principal.url }}"
+          srcset="{{ local.imagem_principal.url }} 1x, {{ local.imagem_principal.url }} 2x"
+          alt="{{ local.imagem_texto_alternativo|default:local.nome }}"
+          width="1600"
+          height="900"
+          loading="eager"
+          style="background-color: #ececec;"
+        >
+      </picture>
+    {% endif %}
+  </header>
+  <div class="public-page-header__content-below">
+    <span class="section-kicker">{{ local.categoria }}</span>
+    <h1>{{ local.nome }}</h1>
+    <p>{{ local.descricao_curta }}</p>
+    <div class="public-badge-row">
+      {% if local.visibilidade_localizacao != "PRIVADA" %}
+        <span class="public-badge">{{ local.cidade }}/{{ local.estado }}</span>
+      {% endif %}
+      {% if local.gratuito %}
+        <span class="public-badge public-badge--verified">Entrada gratuita</span>
+      {% endif %}
+    </div>
+  </div>
+
+  {# Main content grid #}
+  <div class="public-content-grid">
+
+    <article>
+      {# Sobre o local #}
+      <section class="public-section">
+        <h2>Sobre o local</h2>
+        <div class="public-prose">
+          {{ local.descricao_completa|linebreaks }}
+        </div>
+      </section>
+
+      {# História #}
+      {% if local.historia %}
+        <section class="public-section">
+          <h2>História</h2>
+          {{ local.historia|linebreaks }}
+        </section>
+      {% endif %}
+
+      {# Estrutura e serviços #}
+      {% if local.estruturas.all or local.servicos_disponiveis.all %}
+        <section class="public-section">
+          <h2>Estrutura e serviços</h2>
+          {% if local.estruturas.all %}
+            <h3>Estrutura disponível</h3>
+            <ul>
+              {% for item in local.estruturas.all %}
+                <li>{{ item.nome }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+          {% if local.servicos_disponiveis.all %}
+            <h3>Serviços</h3>
+            <ul>
+              {% for item in local.servicos_disponiveis.all %}
+                <li>{{ item.nome }}</li>
+              {% endfor %}
+            </ul>
+          {% endif %}
+        </section>
+      {% endif %}
+
+      {# Galeria #}
+      {% if local.fotos.all %}
+        <section class="public-section">
+          <h2>Galeria</h2>
+          <div class="gallery-grid" id="gallery-grid-gallery">
+            {% for foto in local.fotos.all %}
+              <figure>
+                <picture>
+                  {% if foto.imagem_webp %}
+                    <source srcset="{{ foto.imagem_webp.url }} 1x, {{ foto.imagem_webp.url }} 2x" type="image/webp">
+                  {% endif %}
+                  <img
+                    src="{{ foto.imagem.url }}"
+                    srcset="{{ foto.imagem.url }} 1x, {{ foto.imagem.url }} 2x"
+                    alt="{{ foto.texto_alternativo|default:local.nome }}"
+                    loading="lazy"
+                    class="gallery-photo-modal"
+                    data-img-full="{{ foto.imagem.url }}"
+                    {% if foto.imagem_webp %}data-img-full-webp="{{ foto.imagem_webp.url }}"{% endif %}
+                    data-caption="{% filter escapejs %}{{ foto.legenda }}{% if foto.credito %} · Foto: {{ foto.credito }}{% endif %}{% endfilter %}"
+                  >
+                </picture>
+                {% if foto.legenda or foto.credito %}
+                  <figcaption>
+                    {{ foto.legenda }}{% if foto.credito %} · Foto: {{ foto.credito }}{% endif %}
+                  </figcaption>
+                {% endif %}
+              </figure>
+            {% endfor %}
+          </div>
+          <div class="modal-gallery" id="modal-gallery">
+            <div class="modal-gallery-image-wrapper">
+              <button class="modal-gallery-close" id="modal-gallery-close" aria-label="Fechar">&times;</button>
+              <img class="modal-gallery-img" id="modal-gallery-img" src="" alt="" />
+              <div class="modal-gallery-caption" id="modal-gallery-caption"></div>
+            </div>
+          </div>
+        </section>
+      {% endif %}
+
+      {# Vídeos #}
+      {% if local.videos.all %}
+        <section class="public-section">
+          <h2>Vídeos</h2>
+          <div class="media-grid">
+            {% for video in local.videos.all %}
+              <div class="video-shell">
+                <iframe src="https://www.youtube-nocookie.com/embed/{{ video.youtube_video_id }}"
+                        title="{{ video.titulo }}"
+                        loading="lazy"
+                        allowfullscreen></iframe>
+              </div>
+            {% endfor %}
+          </div>
+        </section>
+      {% endif %}
+    </article>
+
+    <aside class="public-sidebar">
+      <section class="public-sidebar-card">
+        <h2>Informações</h2>
+        <dl class="public-facts">
+          {% if local.horario %}
+            <div>
+              <dt>Horários</dt>
+              <dd>
+                {{ local.horario }}
+                {% if local.dias_funcionamento %}
+                  <br>{{ local.dias_funcionamento }}
+                {% endif %}
+              </dd>
+            </div>
+          {% endif %}
+          <div>
+            <dt>Acesso</dt>
+            <dd>
+              {% if local.gratuito %}
+                Gratuito
+              {% else %}
+                A partir de R$ {{ local.valor_inteiro }}
+                {% if local.valor_informativo %}
+                  <br>{{ local.valor_informativo }}
+                {% endif %}
+              {% endif %}
+            </dd>
+          </div>
+          {% if local.agendamento_necessario %}
+            <div>
+              <dt>Agendamento</dt>
+              <dd>
+                Necessário{% if local.agendamento_antecedencia_horas %}, com {{ local.agendamento_antecedencia_horas }} horas de antecedência{% endif %}
+              </dd>
+            </div>
+          {% endif %}
+          <div>
+            <dt>Localização</dt>
+            <dd>
+              {% if local.visibilidade_localizacao == "PUBLICA" %}
+                {{ local.logradouro }}{% if local.numero %}, {{ local.numero }}{% endif %} · {{ local.bairro }} · {{ local.cidade }}/{{ local.estado }}
+              {% elif local.visibilidade_localizacao == "APROXIMADA" %}
+                {{ local.bairro }} · {{ local.cidade }}/{{ local.estado }}
+              {% else %}
+                Localização não divulgada
+              {% endif %}
+            </dd>
+          </div>
+        </dl>
+        {% if map_url %}
+          <a class="btn-botuka btn-soft"
+             href="{{ map_url }}"
+             target="_blank"
+             rel="noopener">
+            Abrir mapa
+          </a>
+        {% endif %}
+      </section>
+
+      {% if local.contatos.all or local.redes_sociais_itens.all %}
+        <section class="public-sidebar-card">
+          <h2>Contatos</h2>
+          <ul>
+            {% for item in local.contatos.all %}
+              <li>
+                <strong>{{ item.get_tipo_display }}:</strong> {{ item.valor }}
+              </li>
+            {% endfor %}
+            {% for item in local.redes_sociais_itens.all %}
+              <li>
+                <a href="{{ item.url }}" rel="noopener noreferrer">
+                  {{ item.nome_exibicao|default:item.get_tipo_display }}
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+
+      {% include "publico/includes/share.html" with share_title=local.nome %}
+    </aside>
+  </div>
 </main>
+<script>
+  // GALERIA MODAL - JS Simples, sem dependências.
+  document.addEventListener('DOMContentLoaded', function () {
+    var modal = document.getElementById('modal-gallery');
+    var modalImg = document.getElementById('modal-gallery-img');
+    var modalCaption = document.getElementById('modal-gallery-caption');
+    var closeBtn = document.getElementById('modal-gallery-close');
+
+    function openModal(src, alt, captionText, webpSrc=null) {
+      modal.classList.add('active');
+      if (webpSrc) {
+        // Optionally use <picture> if needed, but for now fallback to img.
+        modalImg.src = webpSrc;
+      } else {
+        modalImg.src = src;
+      }
+      modalImg.alt = alt || '';
+      modalCaption.textContent = captionText || '';
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeModal() {
+      modal.classList.remove('active');
+      modalImg.src = '';
+      document.body.style.overflow = '';
+    }
+
+    // Open
+    document.querySelectorAll('.gallery-photo-modal').forEach(function(img) {
+      img.addEventListener('click', function () {
+        openModal(
+          img.getAttribute('data-img-full'),
+          img.getAttribute('alt'),
+          img.getAttribute('data-caption'),
+          img.getAttribute('data-img-full-webp')
+        );
+      });
+    });
+
+    // Close
+    closeBtn.addEventListener('click', closeModal);
+    modal.addEventListener('click', function(e){
+      // Click-outside image closes
+      if (e.target === modal) closeModal();
+    });
+
+    // Esc key closes
+    window.addEventListener('keydown', function(e){
+      if(e.key==="Escape") closeModal();
+    });
+  });
+</script>
 {% endblock %}

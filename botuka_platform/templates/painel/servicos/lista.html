@@ -1,62 +1,1171 @@
 {% extends "painel/base.html" %}
 {% load static %}
+
 {% block title %}Serviços | Painel BOTUKA{% endblock %}
-{% block styles %}{{ block.super }}<link rel="stylesheet" href="{% static 'painel/css/servicos.css' %}">{% endblock %}
-{% block painel_content %}
-<section class="painel-card servicos-page">
-  <div class="d-flex flex-wrap justify-content-between align-items-start gap-3 mb-4">
-    <div>
-      <h1 class="painel-title mb-1">Serviços</h1>
-      <p class="text-muted mb-0">Gerencie serviços de pessoa física ou empresas vinculadas.</p>
-    </div>
-    <a class="btn btn-primary" href="{% url 'painel:servico_criar' %}"><i class="bi bi-plus-lg"></i> Novo cadastro</a>
-  </div>
 
-  <div class="servicos-kpis mb-4">
-    <div><strong>{{ total_servicos }}</strong><span>Total</span></div>
-    <div><strong>{{ total_publicados }}</strong><span>Publicados</span></div>
-    <div><strong>{{ total_pendentes }}</strong><span>Pendentes</span></div>
-  </div>
+{% block styles %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'painel/css/servicos.css' %}">
+  <style>
+    /* ============================================================
+       SERVIÇOS — PAINEL BOTUKA
+       Estrutura visual isolada para não interferir em outros módulos
+       ============================================================ */
 
-  <form class="row g-2 mb-4" method="get">
-    <div class="col-md-7"><input class="form-control" name="busca" value="{{ request.GET.busca }}" placeholder="Buscar por título, descrição ou empresa"></div>
-    <div class="col-md-3">
-      <select class="form-select" name="status">
-        <option value="">Todos os status</option>
-        {% for value,label in status_choices %}
-          <option value="{{ value }}" {% if request.GET.status == value %}selected{% endif %}>{{ label }}</option>
-        {% endfor %}
-      </select>
-    </div>
-    <div class="col-md-2"><button class="btn btn-outline-secondary w-100" type="submit">Filtrar</button></div>
-  </form>
+    .servicos-page {
+      --servicos-bg: #f5f7fb;
+      --servicos-surface: #ffffff;
+      --servicos-border: #e5e9f0;
+      --servicos-border-strong: #d8dee8;
+      --servicos-text: #182230;
+      --servicos-muted: #667085;
+      --servicos-soft: #f8fafc;
+      --servicos-primary-soft: rgba(13, 110, 253, 0.09);
+      --servicos-success-soft: rgba(25, 135, 84, 0.1);
+      --servicos-warning-soft: rgba(255, 193, 7, 0.13);
+      --servicos-shadow:
+        0 1px 2px rgba(16, 24, 40, 0.04),
+        0 8px 24px rgba(16, 24, 40, 0.05);
 
-  <div class="servicos-list">
-    {% for servico in servicos %}
-      <article class="servico-row">
-        <div>
-          <h2>{{ servico.titulo }}</h2>
-          <p>{{ servico.descricao_curta|default:"Sem descrição curta." }}</p>
-          <small>{{ servico.get_prestador_tipo_display }}{% if servico.empresa %} · {{ servico.empresa.nome_exibicao }}{% endif %}</small>
-        </div>
-        <div class="text-md-end">
-          {% include "painel/components/status_badge.html" with status_value=servico.status status_label=servico.get_status_display %}
-          <div class="mt-3">
-            <a class="btn btn-sm btn-outline-primary" href="{% url 'painel:servico_detalhe' servico.uuid %}">Abrir</a>
-          </div>
-        </div>
-      </article>
-    {% empty %}
-      {% if total_servicos == 0 %}
-        {% url 'painel:servico_criar' as empty_action_url %}
-        {% include "painel/components/empty_state.html" with empty_icon="bi-tools" empty_title="Nenhum serviço cadastrado" empty_text="Cadastre um serviço como profissional autônomo ou por uma empresa vinculada." empty_action_label="Criar primeiro cadastro" %}
-      {% else %}
-        <div class="text-center text-muted py-5">Nenhum serviço encontrado para os filtros informados.</div>
-      {% endif %}
-    {% endfor %}
-  </div>
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+      color: var(--servicos-text);
+    }
 
-  {% include "painel/components/pagination.html" %}
-</section>
+    /* ============================================================
+       HERO
+       ============================================================ */
+
+    .servicos-hero {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1.5rem;
+      overflow: hidden;
+      padding: 1.75rem;
+      border: 1px solid var(--servicos-border);
+      border-radius: 1.25rem;
+      background:
+        radial-gradient(
+          circle at top right,
+          rgba(13, 110, 253, 0.12),
+          transparent 34%
+        ),
+        linear-gradient(135deg, #ffffff 0%, #f8fbff 100%);
+      box-shadow: var(--servicos-shadow);
+    }
+
+    .servicos-hero::after {
+      content: "";
+      position: absolute;
+      top: -4rem;
+      right: -4rem;
+      width: 11rem;
+      height: 11rem;
+      border: 1.75rem solid rgba(13, 110, 253, 0.04);
+      border-radius: 50%;
+      pointer-events: none;
+    }
+
+    .servicos-hero__content {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      align-items: flex-start;
+      gap: 1rem;
+      min-width: 0;
+    }
+
+    .servicos-hero__icon {
+      display: grid;
+      flex: 0 0 auto;
+      width: 3.25rem;
+      height: 3.25rem;
+      place-items: center;
+      border-radius: 1rem;
+      background: var(--servicos-primary-soft);
+      color: var(--bs-primary);
+      font-size: 1.4rem;
+    }
+
+    .servicos-hero__eyebrow,
+    .servicos-panel__eyebrow {
+      display: block;
+      margin-bottom: 0.25rem;
+      color: var(--servicos-muted);
+      font-size: 0.72rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      line-height: 1.2;
+      text-transform: uppercase;
+    }
+
+    .servicos-hero__title {
+      margin: 0;
+      font-size: clamp(1.65rem, 3vw, 2.2rem);
+      font-weight: 750;
+      letter-spacing: -0.035em;
+      line-height: 1.15;
+    }
+
+    .servicos-hero__description {
+      max-width: 44rem;
+      margin: 0.5rem 0 0;
+      color: var(--servicos-muted);
+      font-size: 0.95rem;
+      line-height: 1.6;
+    }
+
+    .servicos-hero__actions {
+      position: relative;
+      z-index: 1;
+      flex: 0 0 auto;
+    }
+
+    .servicos-primary-action {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+      min-height: 2.75rem;
+      padding-inline: 1rem;
+      border-radius: 0.75rem;
+      font-weight: 650;
+      box-shadow: 0 0.5rem 1.25rem rgba(13, 110, 253, 0.18);
+    }
+
+    /* ============================================================
+       KPIs
+       ============================================================ */
+
+    .servicos-kpis {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .servicos-kpi {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      min-width: 0;
+      padding: 1.15rem;
+      border: 1px solid var(--servicos-border);
+      border-radius: 1rem;
+      background: var(--servicos-surface);
+      box-shadow: 0 1px 2px rgba(16, 24, 40, 0.03);
+      transition:
+        transform 180ms ease,
+        border-color 180ms ease,
+        box-shadow 180ms ease;
+    }
+
+    .servicos-kpi:hover {
+      transform: translateY(-2px);
+      border-color: var(--servicos-border-strong);
+      box-shadow: var(--servicos-shadow);
+    }
+
+    .servicos-kpi__icon {
+      display: grid;
+      flex: 0 0 auto;
+      width: 2.8rem;
+      height: 2.8rem;
+      place-items: center;
+      border-radius: 0.85rem;
+      font-size: 1.2rem;
+    }
+
+    .servicos-kpi__icon--total {
+      background: var(--servicos-primary-soft);
+      color: var(--bs-primary);
+    }
+
+    .servicos-kpi__icon--published {
+      background: var(--servicos-success-soft);
+      color: var(--bs-success);
+    }
+
+    .servicos-kpi__icon--pending {
+      background: var(--servicos-warning-soft);
+      color: #a66a00;
+    }
+
+    .servicos-kpi__content {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+    }
+
+    .servicos-kpi__label {
+      overflow: hidden;
+      color: var(--servicos-muted);
+      font-size: 0.8rem;
+      font-weight: 600;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .servicos-kpi__value {
+      margin-top: 0.1rem;
+      color: var(--servicos-text);
+      font-size: 1.65rem;
+      font-weight: 750;
+      letter-spacing: -0.04em;
+      line-height: 1.1;
+    }
+
+    /* ============================================================
+       PAINÉIS
+       ============================================================ */
+
+    .servicos-panel {
+      overflow: hidden;
+      border: 1px solid var(--servicos-border);
+      border-radius: 1.15rem;
+      background: var(--servicos-surface);
+      box-shadow: 0 1px 3px rgba(16, 24, 40, 0.04);
+    }
+
+    .servicos-panel__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 1.25rem 1.35rem;
+      border-bottom: 1px solid var(--servicos-border);
+    }
+
+    .servicos-panel__title {
+      margin: 0;
+      color: var(--servicos-text);
+      font-size: 1.05rem;
+      font-weight: 700;
+      letter-spacing: -0.02em;
+    }
+
+    .servicos-clear-filter {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      color: var(--servicos-muted);
+      font-size: 0.83rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: color 160ms ease;
+    }
+
+    .servicos-clear-filter:hover {
+      color: var(--bs-danger);
+    }
+
+    /* ============================================================
+       FILTROS
+       ============================================================ */
+
+    .servicos-filters {
+      display: grid;
+      grid-template-columns:
+        minmax(15rem, 1.7fr)
+        minmax(10rem, 0.85fr)
+        minmax(12rem, 1.15fr)
+        minmax(11rem, 1fr)
+        auto;
+      gap: 0.9rem;
+      align-items: end;
+      padding: 1.25rem 1.35rem 1.35rem;
+    }
+
+    .servicos-filter {
+      min-width: 0;
+    }
+
+    .servicos-filter .form-label {
+      margin-bottom: 0.4rem;
+      color: #344054;
+      font-size: 0.78rem;
+      font-weight: 650;
+    }
+
+    .servicos-filter .form-control,
+    .servicos-filter .form-select {
+      min-height: 2.65rem;
+      border-color: var(--servicos-border-strong);
+      border-radius: 0.7rem;
+      color: var(--servicos-text);
+      font-size: 0.88rem;
+      box-shadow: none;
+    }
+
+    .servicos-filter .form-control:focus,
+    .servicos-filter .form-select:focus {
+      border-color: rgba(13, 110, 253, 0.55);
+      box-shadow: 0 0 0 0.2rem rgba(13, 110, 253, 0.1);
+    }
+
+    .servicos-input-icon {
+      position: relative;
+    }
+
+    .servicos-input-icon > i {
+      position: absolute;
+      z-index: 2;
+      top: 50%;
+      left: 0.9rem;
+      color: #98a2b3;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .servicos-input-icon .form-control {
+      padding-left: 2.5rem;
+    }
+
+    .servicos-filter__action .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      min-height: 2.65rem;
+      padding-inline: 1rem;
+      border-radius: 0.7rem;
+      font-size: 0.86rem;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    /* ============================================================
+       CABEÇALHO DA LISTA
+       ============================================================ */
+
+    .servicos-result-count {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      padding: 0.45rem 0.65rem;
+      border: 1px solid var(--servicos-border);
+      border-radius: 999px;
+      background: var(--servicos-soft);
+      color: var(--servicos-muted);
+      font-size: 0.76rem;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    /* ============================================================
+       LISTA E CARDS
+       ============================================================ */
+
+    .servicos-list {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .servico-card {
+      background: var(--servicos-surface);
+      transition: background-color 160ms ease;
+    }
+
+    .servico-card + .servico-card {
+      border-top: 1px solid var(--servicos-border);
+    }
+
+    .servico-card:hover {
+      background: #fcfdff;
+    }
+
+    .servico-card__main {
+      padding: 1.35rem;
+    }
+
+    .servico-card__identity {
+      display: flex;
+      align-items: flex-start;
+      gap: 0.9rem;
+      min-width: 0;
+    }
+
+    .servico-card__avatar {
+      display: grid;
+      flex: 0 0 auto;
+      width: 2.65rem;
+      height: 2.65rem;
+      place-items: center;
+      border: 1px solid rgba(13, 110, 253, 0.12);
+      border-radius: 0.8rem;
+      background: var(--servicos-primary-soft);
+      color: var(--bs-primary);
+      font-size: 1.05rem;
+    }
+
+    .servico-card__heading {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+
+    .servico-card__title-row {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+
+    .servico-card__title {
+      min-width: 0;
+      margin: 0;
+      color: var(--servicos-text);
+      font-size: 1rem;
+      font-weight: 700;
+      letter-spacing: -0.015em;
+      line-height: 1.4;
+    }
+
+    .servico-card__title a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .servico-card__title a:hover {
+      color: var(--bs-primary);
+    }
+
+    .servico-card__description {
+      display: -webkit-box;
+      overflow: hidden;
+      max-width: 64rem;
+      margin: 0.45rem 0 0;
+      color: var(--servicos-muted);
+      font-size: 0.86rem;
+      line-height: 1.6;
+      -webkit-box-orient: vertical;
+      -webkit-line-clamp: 2;
+    }
+
+    .servico-card__metadata {
+      display: grid;
+      grid-template-columns:
+        minmax(12rem, 1.35fr)
+        minmax(9rem, 1fr)
+        minmax(8rem, 0.8fr)
+        minmax(10rem, 1fr);
+      gap: 0.85rem;
+      margin-top: 1.15rem;
+      padding-top: 1.05rem;
+      border-top: 1px solid var(--servicos-border);
+    }
+
+    .servico-meta {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      min-width: 0;
+    }
+
+    .servico-meta__icon {
+      display: grid;
+      flex: 0 0 auto;
+      width: 2rem;
+      height: 2rem;
+      place-items: center;
+      border-radius: 0.6rem;
+      background: var(--servicos-soft);
+      color: #667085;
+      font-size: 0.88rem;
+    }
+
+    .servico-meta > div {
+      display: flex;
+      min-width: 0;
+      flex-direction: column;
+    }
+
+    .servico-meta__label {
+      color: #98a2b3;
+      font-size: 0.68rem;
+      font-weight: 650;
+      letter-spacing: 0.02em;
+      line-height: 1.3;
+      text-transform: uppercase;
+    }
+
+    .servico-meta__value {
+      overflow: hidden;
+      margin-top: 0.13rem;
+      color: #475467;
+      font-size: 0.79rem;
+      font-weight: 600;
+      line-height: 1.4;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    /* ============================================================
+       AÇÕES
+       ============================================================ */
+
+    .servico-card__footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding: 0.8rem 1.35rem;
+      border-top: 1px solid var(--servicos-border);
+      background: #fbfcfe;
+    }
+
+    .servico-card__primary-actions,
+    .servico-card__secondary-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .servico-card__footer .btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.38rem;
+      min-height: 2.25rem;
+      border-radius: 0.62rem;
+      font-size: 0.77rem;
+      font-weight: 650;
+      white-space: nowrap;
+    }
+
+    .servico-status-form {
+      display: inline-flex;
+      margin: 0;
+    }
+
+    /* ============================================================
+       RESULTADO VAZIO
+       ============================================================ */
+
+    .servicos-filter-empty {
+      display: flex;
+      max-width: 34rem;
+      margin: 0 auto;
+      padding: 4rem 1.5rem;
+      flex-direction: column;
+      align-items: center;
+      text-align: center;
+    }
+
+    .servicos-filter-empty__icon {
+      display: grid;
+      width: 3.5rem;
+      height: 3.5rem;
+      margin-bottom: 1rem;
+      place-items: center;
+      border-radius: 1rem;
+      background: var(--servicos-soft);
+      color: #667085;
+      font-size: 1.4rem;
+    }
+
+    .servicos-filter-empty h3 {
+      margin: 0;
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .servicos-filter-empty p {
+      margin: 0.55rem 0 1.15rem;
+      color: var(--servicos-muted);
+      font-size: 0.88rem;
+      line-height: 1.6;
+    }
+
+    .servicos-filter-empty .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      border-radius: 0.7rem;
+      font-weight: 600;
+    }
+
+    /* ============================================================
+       PAGINAÇÃO
+       ============================================================ */
+
+    .servicos-pagination {
+      padding: 1rem 1.35rem;
+      border-top: 1px solid var(--servicos-border);
+    }
+
+    /* ============================================================
+       TABLET
+       ============================================================ */
+
+    @media (max-width: 1199.98px) {
+      .servicos-filters {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+      .servicos-filter--search {
+        grid-column: span 2;
+      }
+      .servicos-filter__action {
+        display: flex;
+        align-items: end;
+      }
+      .servicos-filter__action .btn {
+        width: 100%;
+      }
+      .servico-card__metadata {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+      }
+    }
+
+    /* ============================================================
+       MOBILE
+       ============================================================ */
+
+    @media (max-width: 767.98px) {
+      .servicos-page {
+        gap: 1rem;
+      }
+      .servicos-hero {
+        padding: 1.25rem;
+        flex-direction: column;
+        align-items: stretch;
+        border-radius: 1rem;
+      }
+      .servicos-hero__content {
+        gap: 0.75rem;
+      }
+      .servicos-hero__icon {
+        width: 2.75rem;
+        height: 2.75rem;
+        border-radius: 0.8rem;
+        font-size: 1.15rem;
+      }
+      .servicos-hero__description {
+        font-size: 0.86rem;
+      }
+      .servicos-hero__actions,
+      .servicos-primary-action {
+        width: 100%;
+      }
+      .servicos-kpis {
+        grid-template-columns: 1fr;
+        gap: 0.7rem;
+      }
+      .servicos-kpi {
+        padding: 0.9rem 1rem;
+      }
+      .servicos-kpi__icon {
+        width: 2.5rem;
+        height: 2.5rem;
+      }
+      .servicos-kpi__value {
+        font-size: 1.4rem;
+      }
+      .servicos-panel {
+        border-radius: 1rem;
+      }
+      .servicos-panel__header {
+        padding: 1rem;
+        align-items: flex-start;
+      }
+      .servicos-filters {
+        grid-template-columns: 1fr;
+        padding: 1rem;
+      }
+      .servicos-filter--search {
+        grid-column: auto;
+      }
+      .servicos-filter__action,
+      .servicos-filter__action .btn {
+        width: 100%;
+      }
+      .servico-card__main {
+        padding: 1rem;
+      }
+      .servico-card__identity {
+        gap: 0.7rem;
+      }
+      .servico-card__avatar {
+        width: 2.35rem;
+        height: 2.35rem;
+      }
+      .servico-card__title-row {
+        flex-direction: column;
+        gap: 0.55rem;
+      }
+      .servico-card__title {
+        font-size: 0.95rem;
+      }
+      .servico-card__description {
+        font-size: 0.82rem;
+        -webkit-line-clamp: 3;
+      }
+      .servico-card__metadata {
+        grid-template-columns: 1fr;
+        gap: 0.75rem;
+        margin-top: 1rem;
+        padding-top: 0.9rem;
+      }
+      .servico-meta__value {
+        white-space: normal;
+      }
+      .servico-card__footer {
+        padding: 0.85rem 1rem 1rem;
+        flex-direction: column;
+        align-items: stretch;
+      }
+      .servico-card__primary-actions,
+      .servico-card__secondary-actions {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        width: 100%;
+      }
+      .servico-card__footer .btn,
+      .servico-status-form,
+      .servico-status-form .btn {
+        width: 100%;
+      }
+      .servicos-result-count {
+        padding: 0.4rem 0.55rem;
+        font-size: 0.7rem;
+      }
+      .servicos-pagination {
+        padding: 0.85rem 1rem;
+      }
+    }
+
+    /* ============================================================
+       CELULARES PEQUENOS
+       ============================================================ */
+
+    @media (max-width: 420px) {
+      .servicos-hero__content {
+        flex-direction: column;
+      }
+      .servicos-panel__header {
+        flex-direction: column;
+      }
+      .servicos-clear-filter {
+        align-self: flex-start;
+      }
+      .servico-card__primary-actions,
+      .servico-card__secondary-actions {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
 {% endblock %}
-{% block scripts %}{{ block.super }}<script src="{% static 'painel/js/servicos.js' %}" defer></script>{% endblock %}
+
+{% block painel_content %}
+<div class="servicos-page">
+
+  {# ========================================================= #}
+  {# CABEÇALHO                                                 #}
+  {# ========================================================= #}
+  <section class="servicos-hero">
+    <div class="servicos-hero__content">
+      <div class="servicos-hero__icon" aria-hidden="true">
+        <i class="bi bi-briefcase"></i>
+      </div>
+
+      <div>
+        <span class="servicos-hero__eyebrow">Gestão de conteúdo</span>
+        <h1 class="servicos-hero__title">Serviços</h1>
+        <p class="servicos-hero__description">
+          Cadastre, organize e acompanhe os serviços oferecidos por profissionais
+          ou empresas vinculadas à plataforma.
+        </p>
+      </div>
+    </div>
+
+    <div class="servicos-hero__actions">
+      <a
+        class="btn btn-primary servicos-primary-action"
+        href="{% url 'painel:servico_criar' %}"
+      >
+        <i class="bi bi-plus-lg" aria-hidden="true"></i>
+        <span>Novo serviço</span>
+      </a>
+    </div>
+  </section>
+
+  {# ========================================================= #}
+  {# INDICADORES                                               #}
+  {# ========================================================= #}
+  <section class="servicos-kpis" aria-label="Indicadores de serviços">
+    <article class="servicos-kpi">
+      <div class="servicos-kpi__icon servicos-kpi__icon--total">
+        <i class="bi bi-grid" aria-hidden="true"></i>
+      </div>
+
+      <div class="servicos-kpi__content">
+        <span class="servicos-kpi__label">Total de serviços</span>
+        <strong class="servicos-kpi__value">{{ total_servicos|default:0 }}</strong>
+      </div>
+    </article>
+
+    <article class="servicos-kpi">
+      <div class="servicos-kpi__icon servicos-kpi__icon--published">
+        <i class="bi bi-check-circle" aria-hidden="true"></i>
+      </div>
+
+      <div class="servicos-kpi__content">
+        <span class="servicos-kpi__label">Publicados</span>
+        <strong class="servicos-kpi__value">{{ total_publicados|default:0 }}</strong>
+      </div>
+    </article>
+
+    <article class="servicos-kpi">
+      <div class="servicos-kpi__icon servicos-kpi__icon--pending">
+        <i class="bi bi-hourglass-split" aria-hidden="true"></i>
+      </div>
+
+      <div class="servicos-kpi__content">
+        <span class="servicos-kpi__label">Pendentes</span>
+        <strong class="servicos-kpi__value">{{ total_pendentes|default:0 }}</strong>
+      </div>
+    </article>
+  </section>
+
+  {# ========================================================= #}
+  {# FILTROS                                                   #}
+  {# ========================================================= #}
+  <section class="servicos-panel servicos-filters-panel">
+    <div class="servicos-panel__header">
+      <div>
+        <span class="servicos-panel__eyebrow">Localização rápida</span>
+        <h2 class="servicos-panel__title">Filtros</h2>
+      </div>
+
+      {% if request.GET %}
+        <a
+          class="servicos-clear-filter"
+          href="{% url 'painel:servicos_lista' %}"
+        >
+          <i class="bi bi-x-circle" aria-hidden="true"></i>
+          <span>Limpar filtros</span>
+        </a>
+      {% endif %}
+    </div>
+
+    <form class="servicos-filters" method="get">
+      <div class="servicos-filter servicos-filter--search">
+        <label for="servico-busca" class="form-label">
+          Buscar serviço
+        </label>
+
+        <div class="servicos-input-icon">
+          <i class="bi bi-search" aria-hidden="true"></i>
+
+          <input
+            id="servico-busca"
+            class="form-control"
+            type="search"
+            name="busca"
+            value="{{ request.GET.busca }}"
+            placeholder="Título, descrição ou empresa"
+            autocomplete="off"
+          >
+        </div>
+      </div>
+
+      <div class="servicos-filter">
+        <label for="servico-status" class="form-label">
+          Status
+        </label>
+
+        <select
+          id="servico-status"
+          class="form-select"
+          name="status"
+        >
+          <option value="">Todos os status</option>
+
+          {% for value, label in status_choices %}
+            <option
+              value="{{ value }}"
+              {% if request.GET.status == value %}selected{% endif %}
+            >
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="servicos-filter">
+        <label for="servico-empresa" class="form-label">
+          Empresa
+        </label>
+
+        <select
+          id="servico-empresa"
+          class="form-select"
+          name="empresa"
+        >
+          <option value="">Todas as empresas</option>
+
+          {% for empresa in empresas_filtro %}
+            <option
+              value="{{ empresa.pk }}"
+              {% if request.GET.empresa == empresa.pk|stringformat:"s" %}selected{% endif %}
+            >
+              {{ empresa.nome_exibicao }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="servicos-filter">
+        <label for="servico-setor" class="form-label">
+          Setor
+        </label>
+
+        <select
+          id="servico-setor"
+          class="form-select"
+          name="setor"
+        >
+          <option value="">Todos os setores</option>
+
+          {% for setor in setores_filtro %}
+            <option
+              value="{{ setor.pk }}"
+              {% if request.GET.setor == setor.pk|stringformat:"s" %}selected{% endif %}
+            >
+              {{ setor.nome }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="servicos-filter__action">
+        <button class="btn btn-dark" type="submit">
+          <i class="bi bi-funnel" aria-hidden="true"></i>
+          <span>Aplicar filtros</span>
+        </button>
+      </div>
+    </form>
+  </section>
+
+  {# ========================================================= #}
+  {# LISTAGEM                                                  #}
+  {# ========================================================= #}
+  <section class="servicos-panel servicos-list-panel">
+    <header class="servicos-panel__header servicos-list-header">
+      <div>
+        <span class="servicos-panel__eyebrow">Conteúdo cadastrado</span>
+        <h2 class="servicos-panel__title">Lista de serviços</h2>
+      </div>
+
+      <span class="servicos-result-count">
+        <i class="bi bi-collection" aria-hidden="true"></i>
+        {{ total_servicos|default:0 }}
+        serviço{{ total_servicos|pluralize }}
+      </span>
+    </header>
+
+    <div class="servicos-list">
+      {% for servico in servicos %}
+        <article class="servico-card">
+          <div class="servico-card__main">
+
+            <div class="servico-card__top">
+              <div class="servico-card__identity">
+                <div class="servico-card__avatar" aria-hidden="true">
+                  <i class="bi bi-briefcase"></i>
+                </div>
+
+                <div class="servico-card__heading">
+                  <div class="servico-card__title-row">
+                    <h3 class="servico-card__title">
+                      <a href="{% url 'painel:servico_detalhe' servico.uuid %}">
+                        {{ servico.titulo }}
+                      </a>
+                    </h3>
+
+                    {% include "painel/components/status_badge.html" with status_value=servico.status status_label=servico.get_status_display %}
+                  </div>
+
+                  <p class="servico-card__description">
+                    {{ servico.descricao_curta|default:"Este serviço ainda não possui uma descrição curta." }}
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            <div class="servico-card__metadata">
+              <div class="servico-meta">
+                <span class="servico-meta__icon">
+                  {% if servico.empresa %}
+                    <i class="bi bi-building" aria-hidden="true"></i>
+                  {% else %}
+                    <i class="bi bi-person" aria-hidden="true"></i>
+                  {% endif %}
+                </span>
+
+                <div>
+                  <span class="servico-meta__label">Responsável</span>
+                  <strong class="servico-meta__value">
+                    {% if servico.empresa %}
+                      {{ servico.empresa.nome_exibicao }}
+                    {% elif servico.usuario_responsavel %}
+                      {{ servico.usuario_responsavel.get_full_name|default:servico.usuario_responsavel.username }}
+                    {% else %}
+                      Não informado
+                    {% endif %}
+                  </strong>
+                </div>
+              </div>
+
+              <div class="servico-meta">
+                <span class="servico-meta__icon">
+                  <i class="bi bi-diagram-3" aria-hidden="true"></i>
+                </span>
+
+                <div>
+                  <span class="servico-meta__label">Setor</span>
+                  <strong class="servico-meta__value">
+                    {{ servico.setor|default:"Não informado" }}
+                  </strong>
+                </div>
+              </div>
+
+              <div class="servico-meta">
+                <span class="servico-meta__icon">
+                  <i class="bi bi-calendar-plus" aria-hidden="true"></i>
+                </span>
+
+                <div>
+                  <span class="servico-meta__label">Criado em</span>
+                  <strong class="servico-meta__value">
+                    {{ servico.criado_em|date:"d/m/Y" }}
+                  </strong>
+                </div>
+              </div>
+
+              <div class="servico-meta">
+                <span class="servico-meta__icon">
+                  <i class="bi bi-clock-history" aria-hidden="true"></i>
+                </span>
+
+                <div>
+                  <span class="servico-meta__label">Última atualização</span>
+                  <strong class="servico-meta__value">
+                    {{ servico.atualizado_em|date:"d/m/Y H:i" }}
+                  </strong>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <footer class="servico-card__footer">
+            <div class="servico-card__primary-actions">
+              <a
+                class="btn btn-sm btn-outline-primary"
+                href="{% url 'painel:servico_detalhe' servico.uuid %}"
+              >
+                <i class="bi bi-eye" aria-hidden="true"></i>
+                <span>Visualizar</span>
+              </a>
+
+              <a
+                class="btn btn-sm btn-outline-secondary"
+                href="{% url 'painel:servico_editar' servico.uuid %}"
+              >
+                <i class="bi bi-pencil-square" aria-hidden="true"></i>
+                <span>Editar</span>
+              </a>
+            </div>
+
+            <div class="servico-card__secondary-actions">
+              {% if servico.status != "PUBLICADO" %}
+                <form
+                  method="post"
+                  action="{% url 'painel:servico_alterar_status' servico.uuid %}"
+                  class="servico-status-form"
+                >
+                  {% csrf_token %}
+                  <input type="hidden" name="status" value="PUBLICADO">
+
+                  <button
+                    class="btn btn-sm btn-success"
+                    type="submit"
+                  >
+                    <i class="bi bi-send-check" aria-hidden="true"></i>
+                    <span>Publicar</span>
+                  </button>
+                </form>
+              {% else %}
+                <form
+                  method="post"
+                  action="{% url 'painel:servico_alterar_status' servico.uuid %}"
+                  class="servico-status-form"
+                >
+                  {% csrf_token %}
+                  <input type="hidden" name="status" value="PAUSADO">
+
+                  <button
+                    class="btn btn-sm btn-outline-warning"
+                    type="submit"
+                  >
+                    <i class="bi bi-pause-circle" aria-hidden="true"></i>
+                    <span>Pausar</span>
+                  </button>
+                </form>
+              {% endif %}
+
+              <a
+                class="btn btn-sm btn-outline-danger"
+                href="{% url 'painel:servico_excluir' servico.uuid %}"
+              >
+                <i class="bi bi-trash3" aria-hidden="true"></i>
+                <span>Excluir</span>
+              </a>
+            </div>
+          </footer>
+        </article>
+
+      {% empty %}
+        {% if total_servicos == 0 %}
+          {% url 'painel:servico_criar' as empty_action_url %}
+
+          {% include "painel/components/empty_state.html" with empty_icon="bi-briefcase" empty_title="Nenhum serviço cadastrado" empty_text="Cadastre o primeiro serviço oferecido por um profissional ou empresa vinculada." empty_action_label="Cadastrar primeiro serviço" empty_action_url=empty_action_url %}
+        {% else %}
+          <div class="servicos-filter-empty">
+            <div class="servicos-filter-empty__icon">
+              <i class="bi bi-search" aria-hidden="true"></i>
+            </div>
+
+            <h3>Nenhum resultado encontrado</h3>
+
+            <p>
+              Não encontramos serviços correspondentes aos filtros selecionados.
+              Revise os critérios ou limpe os filtros para visualizar todos os registros.
+            </p>
+
+            <a
+              class="btn btn-outline-primary"
+              href="{% url 'painel:servicos_lista' %}"
+            >
+              <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+              <span>Limpar filtros</span>
+            </a>
+          </div>
+        {% endif %}
+      {% endfor %}
+    </div>
+
+    {% if servicos %}
+      <div class="servicos-pagination">
+        {% include "painel/components/pagination.html" %}
+      </div>
+    {% endif %}
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  {{ block.super }}
+  <script src="{% static 'painel/js/servicos.js' %}" defer></script>
+{% endblock %}

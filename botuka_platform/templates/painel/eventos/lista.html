@@ -1,7 +1,16 @@
-{% extends "painel/base.html" %}
+{% extends "painel/base.html" %}{% load static %}
+{% block title %}Eventos | Painel BOTUKA{% endblock %}
 {% block painel_content %}
-  {% include "painel/components/page_header.html" with title=titulo subtitle="Gerencie os conteúdos de agenda disponíveis para o seu perfil." breadcrumb_current="Eventos" %}
-  <section class="panel-card">
-    {% include "painel/components/empty_state.html" with empty_icon="bi-calendar-event" empty_title="Módulo de eventos em preparação" empty_text="Nenhuma operação de cadastro foi disponibilizada pelo domínio atual." %}
-  </section>
+<link rel="stylesheet" href="{% static 'painel/css/eventos.css' %}">
+<section class="painel-card eventos-page">
+  <header class="event-panel-header"><div><span class="event-panel-kicker">Agenda</span><h1 class="painel-title">Eventos</h1><p>Gerencie eventos próprios e das empresas dentro do seu escopo autorizado.</p></div>{% if pode_criar %}<a class="btn btn-primary" href="{% url 'painel:evento_criar' %}"><i class="bi bi-calendar-plus"></i> Novo evento</a>{% endif %}</header>
+  <div class="eventos-list">
+    {% for evento in eventos %}<article class="evento-row">
+      <div><div class="d-flex align-items-center flex-wrap gap-2"><h2><a class="text-decoration-none" href="{% url 'painel:evento_detalhe' evento.uuid %}">{{ evento.titulo }}</a></h2><span class="badge text-bg-{% if evento.status == 'PUBLICADO' %}success{% elif evento.status == 'REJEITADO' or evento.status == 'CANCELADO' %}danger{% elif evento.status == 'EM_ANALISE' %}warning{% else %}secondary{% endif %}">{{ evento.get_status_display }}</span></div><div class="evento-row__meta"><span><i class="bi bi-building"></i> {{ evento.empresa_promotora|default:"Evento próprio" }}</span><span><i class="bi bi-person"></i> {{ evento.responsavel_edicao }}</span><span><i class="bi bi-calendar3"></i> {{ evento.inicio|date:"d/m/Y H:i" }}</span><span><i class="bi bi-people"></i> {{ evento.total_interessados }} interessado{{ evento.total_interessados|pluralize }}</span></div></div>
+      <div class="evento-row__actions"><a class="btn btn-sm btn-outline-primary" href="{% url 'painel:evento_detalhe' evento.uuid %}"><i class="bi bi-eye"></i> Detalhes</a>{% if evento.pode_editar_no_painel %}<a class="btn btn-sm btn-outline-secondary" href="{% url 'painel:evento_editar' evento.uuid %}"><i class="bi bi-pencil"></i> Editar</a>{% endif %}</div>
+    </article>{% empty %}
+      {% if pode_criar %}{% url 'painel:evento_criar' as empty_action_url %}{% include "painel/components/empty_state.html" with empty_icon="bi-calendar-event" empty_title="Nenhum evento cadastrado" empty_text="Cadastre o primeiro evento próprio ou de uma empresa autorizada." empty_action_label="Cadastrar evento" empty_action_url=empty_action_url %}{% else %}{% include "painel/components/empty_state.html" with empty_icon="bi-calendar-event" empty_title="Nenhum evento disponível" empty_text="Não existem eventos dentro do seu escopo atual." %}{% endif %}
+    {% endfor %}
+  </div>
+</section>
 {% endblock %}

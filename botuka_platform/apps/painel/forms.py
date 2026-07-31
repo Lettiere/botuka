@@ -22,6 +22,7 @@ from apps.services.models import (
     ServicoImagem,
     ServicoLink,
 )
+from apps.core.services.rich_text import sanitizar_html_rico
 
 Usuario = get_user_model()
 
@@ -667,7 +668,7 @@ class ServicoForm(BaseServicoForm):
 
     def save(self, commit=True):
         servico = super().save(commit=False)
-        if self.usuario is not None:
+        if self.usuario is not None and not servico.pk:
             servico.usuario_responsavel = self.usuario
         if servico.prestador_tipo == Servico.PrestadorTipo.PESSOA_FISICA:
             servico.empresa = None
@@ -675,6 +676,12 @@ class ServicoForm(BaseServicoForm):
             servico.save()
             self.save_m2m()
         return servico
+
+    def clean_descricao_completa(self):
+        return sanitizar_html_rico(self.cleaned_data.get('descricao_completa'))
+
+    def clean_experiencia(self):
+        return sanitizar_html_rico(self.cleaned_data.get('experiencia'))
 
     class Meta:
         model = Servico
@@ -732,12 +739,19 @@ class ServicoForm(BaseServicoForm):
             'profissao': 'As opções são carregadas de acordo com a área profissional.',
             'tipo_servico': 'Classificação geral do serviço.',
         }
+        widgets = {
+            'descricao_completa': forms.Textarea(attrs={
+                'rows': 12, 'data-richtext-source': '',
+                'class': 'richtext-source',
+            }),
+            'experiencia': forms.Textarea(attrs={'rows': 5}),
+        }
 
 
 class ServicoImagemForm(BaseServicoForm):
     class Meta:
         model = ServicoImagem
-        fields = ['imagem', 'legenda', 'principal', 'ordem']
+        fields = ['imagem', 'legenda', 'credito', 'texto_alternativo', 'principal', 'ordem']
 
 
 class ServicoAreaForm(BaseServicoForm):

@@ -53,7 +53,7 @@ if IS_PRODUCTION and DEBUG:
 PLATFORM_URL = config('PLATFORM_URL', default='http://127.0.0.1:7700')
 SERVICES_URL = config('SERVICES_URL', default='http://127.0.0.1:7701')
 VENDAS_URL = config('VENDAS_URL', default='http://127.0.0.1:7710').rstrip('/')
-PUBLIC_BASE_URL = config('PUBLIC_BASE_URL', default=PLATFORM_URL)
+PUBLIC_BASE_URL = config('PUBLIC_BASE_URL', default='https://botuka.com.br')
 CNPJ_PROVIDER = config('CNPJ_PROVIDER', default='mock')
 CNPJ_API_BASE_URL = config('CNPJ_API_BASE_URL', default='')
 CNPJ_API_TOKEN = config('CNPJ_API_TOKEN', default='')
@@ -105,6 +105,9 @@ SESSION_COOKIE_SECURE = config(
 )
 CSRF_COOKIE_SAMESITE = config('CSRF_COOKIE_SAMESITE', default='Lax')
 SESSION_COOKIE_SAMESITE = config('SESSION_COOKIE_SAMESITE', default='Lax')
+SESSION_COOKIE_AGE = 7200
+SESSION_SAVE_EVERY_REQUEST = True
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
 CONSENT_POLICY_VERSION = '2026-07-25'
 CONSENT_MAX_AGE_DAYS = 365
 USE_X_FORWARDED_HOST = config(
@@ -157,6 +160,7 @@ INSTALLED_APPS = [
     'apps.media.apps.MediaConfig',
     'apps.news.apps.NewsConfig',
     'apps.government.apps.GovernmentConfig',
+    'apps.events.apps.EventsConfig',
     'apps.products.apps.ProductsConfig',
     'apps.taxonomy.apps.TaxonomyConfig',
     'apps.gestao.apps.GestaoConfig',

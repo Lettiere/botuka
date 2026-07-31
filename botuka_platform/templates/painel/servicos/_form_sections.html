@@ -1,0 +1,29 @@
+{% include "painel/servicos/_responsavel_classificacao.html" with numero_etapa="1" %}
+<section class="service-step">
+  <div class="service-step-heading"><span class="service-step-number">2</span><div><h2>Informações principais</h2><p>Apresente o serviço de forma objetiva e completa.</p></div></div>
+  <div class="row g-3">
+    <div class="col-12"><label class="form-label" for="{{ form.titulo.id_for_label }}">{{ form.titulo.label }}</label>{{ form.titulo }}{{ form.titulo.errors }}</div>
+    <div class="col-12"><label class="form-label" for="{{ form.descricao_curta.id_for_label }}">{{ form.descricao_curta.label }}</label>{{ form.descricao_curta }}{{ form.descricao_curta.errors }}</div>
+    <div class="col-12"><label class="form-label" for="{{ form.descricao_completa.id_for_label }}">{{ form.descricao_completa.label }}</label>{% include "components/rich_text_editor.html" with field=form.descricao_completa %}{{ form.descricao_completa.errors }}<div class="form-text">Formatação segura; scripts, iframes e estilos arbitrários são removidos no servidor.</div></div>
+    <div class="col-12"><label class="form-label" for="{{ form.experiencia.id_for_label }}">{{ form.experiencia.label }}</label>{{ form.experiencia }}{{ form.experiencia.errors }}</div>
+  </div>
+</section>
+<section class="service-step">
+  <div class="service-step-heading"><span class="service-step-number">3</span><div><h2>Valores e condições</h2><p>Informe valores públicos ou indique orçamento sob consulta.</p></div></div>
+  <div class="row g-3">
+    {% for field in form %}{% if field.name == "preco_inicial" or field.name == "preco_final" or field.name == "unidade_preco" %}<div class="col-12 col-md-4"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endif %}{% endfor %}
+    <div class="col-12"><div class="form-check">{{ form.preco_sob_consulta }} <label for="{{ form.preco_sob_consulta.id_for_label }}">{{ form.preco_sob_consulta.label }}</label></div>{{ form.preco_sob_consulta.errors }}</div>
+  </div>
+</section>
+<section class="service-step">
+  <div class="service-step-heading"><span class="service-step-number">4</span><div><h2>Atendimento e contato</h2><p>Somente contatos destinados à divulgação pública.</p></div></div>
+  <div class="row g-3">
+    {% for field in form %}{% if field.name == "telefone_publico" or field.name == "whatsapp_publico" or field.name == "email_publico" or field.name == "prazo_medio" %}<div class="col-12 col-md-6"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endif %}{% endfor %}
+    <div class="col-12 attendance-grid"><div class="form-check">{{ form.atendimento_presencial }} <label for="{{ form.atendimento_presencial.id_for_label }}">{{ form.atendimento_presencial.label }}</label></div><div class="form-check">{{ form.atendimento_remoto }} <label for="{{ form.atendimento_remoto.id_for_label }}">{{ form.atendimento_remoto.label }}</label></div><div class="form-check">{{ form.atendimento_emergencial }} <label for="{{ form.atendimento_emergencial.id_for_label }}">{{ form.atendimento_emergencial.label }}</label></div></div>
+  </div>
+</section>
+<section class="service-step">
+  <div class="service-step-heading"><span class="service-step-number">5</span><div><h2>Imagens e apresentação</h2><p>JPG, PNG ou WebP, até 5 MB por arquivo e 8 imagens no envio.</p></div></div>
+  {% if imagens %}<div class="service-image-editor">{% for imagem in imagens %}<article><img src="{{ imagem.imagem.url }}" alt="{{ imagem.texto_alternativo|default:servico.titulo }}" width="320" height="220"><label><input type="radio" name="imagem_principal" value="{{ imagem.uuid }}" {% if imagem.principal %}checked{% endif %}> Imagem principal</label><label>Legenda<input class="form-control" name="imagem-{{ imagem.uuid }}-legenda" value="{{ imagem.legenda }}"></label><label>Crédito<input class="form-control" name="imagem-{{ imagem.uuid }}-credito" value="{{ imagem.credito }}"></label><label>Texto alternativo<input class="form-control" name="imagem-{{ imagem.uuid }}-texto_alternativo" value="{{ imagem.texto_alternativo }}"></label><label>Ordem<input class="form-control" type="number" min="0" name="imagem-{{ imagem.uuid }}-ordem" value="{{ imagem.ordem }}"></label><label class="service-image-remove"><input type="checkbox" name="remover_imagem" value="{{ imagem.uuid }}"> Remover ao salvar</label></article>{% endfor %}</div>{% endif %}
+  <div class="row g-3 mt-1"><div class="col-12 col-md-6"><label class="form-label">Nova imagem principal</label><input class="form-control" type="file" name="imagem_capa" accept="image/jpeg,image/png,image/webp" data-image-input><div data-image-preview></div><label class="form-label mt-2">Legenda</label><input class="form-control" name="imagem_capa_legenda" maxlength="160"><label class="form-label mt-2">Crédito</label><input class="form-control" name="imagem_capa_credito" maxlength="160"><label class="form-label mt-2">Texto alternativo</label><input class="form-control" name="imagem_capa_alt" maxlength="220"></div><div class="col-12 col-md-6"><label class="form-label">Adicionar à galeria</label><input class="form-control" type="file" name="galeria" multiple accept="image/jpeg,image/png,image/webp"></div></div>
+</section>

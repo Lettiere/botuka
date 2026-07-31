@@ -13,6 +13,7 @@ from apps.core.domain import (
 )
 from apps.core.public_links import TipoLink, normalizar_link_publico, url_embed_youtube
 from apps.core.utils import gerar_slug_unico
+from .sanitizers import sanitizar_html_editorial
 
 
 TERMOS_PROIBIDOS = {
@@ -249,7 +250,10 @@ class Artigo(SoftDeleteMixin):
     conteudo = models.TextField(db_column="news_artigo_conteudo")
     tipo_editorial = models.CharField(max_length=20, choices=TipoEditorial.choices, default=TipoEditorial.NOTICIA, db_column="news_artigo_tipo_editorial")
     imagem_capa = models.ImageField(upload_to="news/artigos/", blank=True, db_column="news_artigo_imagem")
+    legenda_imagem = models.CharField(max_length=280, blank=True, db_column="news_artigo_legenda_imagem")
     credito_imagem = models.CharField(max_length=180, blank=True, db_column="news_artigo_credito")
+    fonte_imagem = models.CharField(max_length=180, blank=True, db_column="news_artigo_fonte_imagem")
+    texto_alternativo_imagem = models.CharField(max_length=220, blank=True, db_column="news_artigo_alt_imagem")
     fonte = models.CharField(max_length=180, blank=True, db_column="news_artigo_fonte")
     url_fonte = models.URLField(blank=True, max_length=500, db_column="news_artigo_url_fonte")
     data_fato = models.DateTimeField(null=True, blank=True, db_column="news_artigo_data_fato")
@@ -260,6 +264,9 @@ class Artigo(SoftDeleteMixin):
     titulo_seo = models.CharField(max_length=70, blank=True, db_column="news_artigo_titulo_seo")
     descricao_seo = models.CharField(max_length=160, blank=True, db_column="news_artigo_descricao_seo")
     imagem_social = models.ImageField(upload_to="news/social/", blank=True, db_column="news_artigo_imagem_social")
+    comentarios_permitidos = models.BooleanField(default=True, db_column="news_artigo_comentarios_permitidos")
+    comentarios_moderados = models.BooleanField(default=False, db_column="news_artigo_comentarios_moderados")
+    comentarios_encerrados = models.BooleanField(default=False, db_column="news_artigo_comentarios_encerrados")
     agendado_para = models.DateTimeField(null=True, blank=True, db_column="news_artigo_agendado_para")
     publicado_em = models.DateTimeField(null=True, blank=True, db_column="news_artigo_publicado_em")
     revisado_em = models.DateTimeField(null=True, blank=True, db_column="news_artigo_revisado_em")
@@ -280,7 +287,9 @@ class Artigo(SoftDeleteMixin):
         ]
 
     def clean(self):
-        self.conteudo = texto_sem_html(self.conteudo)
+        self.conteudo = sanitizar_html_editorial(self.conteudo)
+        if not self.conteudo:
+            raise ValidationError({"conteudo": "Informe o conteúdo da notícia."})
         validar_imagem_publica(self.imagem_capa)
         validar_imagem_publica(self.imagem_social)
         if self.status == EditorialStatus.AGENDADO and not self.agendado_para:
@@ -299,6 +308,80 @@ class Artigo(SoftDeleteMixin):
 
     def __str__(self):
         return self.titulo
+
+    def get_absolute_url(self):
+        from django.urls import reverse
+        return reverse("news_public:artigo", args=[self.slug])
+
+
+class ComentarioArtigo(SoftDeleteMixin):
+    class Status(models.TextChoices):
+        PENDENTE = "PENDENTE", "Pendente"
+        PUBLICADO = "PUBLICADO", "Publicado"
+        OCULTO = "OCULTO", "Oculto"
+        REJEITADO = "REJEITADO", "Rejeitado"
+
+    id = models.BigAutoField(primary_key=True, db_column="news_comentario_id")
+    uuid = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_column="news_comentario_uuid")
+    artigo = models.ForeignKey(Artigo, on_delete=models.CASCADE, related_name="comentarios", db_column="news_comentario_fk_artigo")
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="comentarios_news", db_column="news_comentario_fk_usuario")
+    comentario_raiz = models.ForeignKey("self", on_delete=models.CASCADE, null=True, blank=True, related_name="respostas", db_column="news_comentario_fk_raiz")
+    respondendo_a = models.ForeignKey("self", on_delete=models.SET_NULL, null=True, blank=True, related_name="respostas_diretas", db_column="news_comentario_fk_respondido")
+    usuario_mencionado = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="mencoes_news", db_column="news_comentario_fk_mencionado")
+    texto = models.TextField(max_length=1000, db_column="news_comentario_texto")
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PUBLICADO, db_column="news_comentario_status")
+    moderado_por = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name="comentarios_news_moderados", db_column="news_comentario_fk_moderador")
+    moderado_em = models.DateTimeField(null=True, blank=True, db_column="news_comentario_moderado_em")
+    motivo_moderacao = models.CharField(max_length=500, blank=True, db_column="news_comentario_motivo")
+    editado_em = models.DateTimeField(null=True, blank=True, db_column="news_comentario_editado_em")
+    ativo = models.BooleanField(default=True, db_column="news_comentario_ativo")
+    criado_em = models.DateTimeField(auto_now_add=True, db_column="news_comentario_criado_em")
+    atualizado_em = models.DateTimeField(auto_now=True, db_column="news_comentario_atualizado_em")
+    excluido_em = models.DateTimeField(null=True, blank=True, db_column="news_comentario_excluido_em")
+
+    class Meta:
+        db_table = '"news"."news_comentario_artigo_tb"'
+        ordering = ["-criado_em"]
+        indexes = [models.Index(fields=["artigo", "status", "criado_em"], name="news_coment_art_status_idx")]
+
+    def clean(self):
+        self.texto = (self.texto or "").strip()
+        if not self.texto:
+            raise ValidationError({"texto": "Escreva um comentário."})
+        self.texto = texto_sem_html(self.texto)
+        if len(self.texto) > 1000:
+            raise ValidationError({"texto": "O comentário deve ter no máximo 1.000 caracteres."})
+        if self.comentario_raiz_id and self.comentario_raiz.comentario_raiz_id:
+            self.comentario_raiz = self.comentario_raiz.comentario_raiz
+        if self.comentario_raiz_id and self.comentario_raiz.artigo_id != self.artigo_id:
+            raise ValidationError("A resposta não pertence a esta notícia.")
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+
+class CurtidaComentario(models.Model):
+    id = models.BigAutoField(primary_key=True, db_column="news_curtida_comentario_id")
+    comentario = models.ForeignKey(ComentarioArtigo, on_delete=models.CASCADE, related_name="curtidas", db_column="news_curtida_fk_comentario")
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name="curtidas_comentarios_news", db_column="news_curtida_fk_usuario")
+    criado_em = models.DateTimeField(auto_now_add=True, db_column="news_curtida_criado_em")
+
+    class Meta:
+        db_table = '"news"."news_curtida_comentario_tb"'
+        constraints = [models.UniqueConstraint(fields=["comentario", "usuario"], name="news_curtida_comentario_uk")]
+
+
+class DenunciaComentario(models.Model):
+    id = models.BigAutoField(primary_key=True, db_column="news_denuncia_comentario_id")
+    comentario = models.ForeignKey(ComentarioArtigo, on_delete=models.CASCADE, related_name="denuncias", db_column="news_denuncia_fk_comentario")
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name="denuncias_comentarios_news", db_column="news_denuncia_fk_usuario")
+    motivo = models.CharField(max_length=500, db_column="news_denuncia_motivo")
+    criado_em = models.DateTimeField(auto_now_add=True, db_column="news_denuncia_criado_em")
+
+    class Meta:
+        db_table = '"news"."news_denuncia_comentario_tb"'
+        constraints = [models.UniqueConstraint(fields=["comentario", "usuario"], name="news_denuncia_comentario_uk")]
 
 
 class ArtigoBloco(SoftDeleteMixin):

@@ -1,7 +1,7 @@
 from django.conf import settings
 
 from .schemas import breadcrumb_schema, compact, organization, webpage, website
-from .utils import canonical_url, clean_text, image_url, safe_absolute_url
+from .utils import canonical_url, clean_text, image_metadata, image_url, safe_absolute_url
 
 
 def breadcrumb(request, name, url):
@@ -15,7 +15,7 @@ def build_seo(
     description=None,
     image=None,
     image_alt=None,
-    robots='index,follow',
+    robots='index,follow,max-image-preview:large',
     content_type='website',
     published_time=None,
     modified_time=None,
@@ -25,13 +25,15 @@ def build_seo(
     breadcrumbs=None,
     schemas=None,
     page_type='WebPage',
+    video_url=None,
+    video_mime_type=None,
 ):
     canonical = canonical_url(request)
     final_title = clean_text(title or settings.SITE_NAME, 70)
     final_description = clean_text(description or settings.SITE_DEFAULT_DESCRIPTION, 160)
-    final_image = image_url(request, image)
+    final_image, image_type, image_width, image_height = image_metadata(request, image)
     crumbs = breadcrumbs or []
-    site_url = settings.SITE_URL.rstrip('/')
+    site_url = safe_absolute_url(request, '/').rstrip('/')
     organization_schema = organization(site_url, image_url(request))
     graph = [
         organization_schema,
@@ -48,9 +50,9 @@ def build_seo(
         'robots': robots,
         'image_url': final_image,
         'image_alt': clean_text(image_alt or final_title, 150),
-        'image_width': 1200,
-        'image_height': 630,
-        'image_type': 'image/png' if final_image.lower().endswith('.png') else 'image/jpeg',
+        'image_width': image_width,
+        'image_height': image_height,
+        'image_type': image_type,
         'content_type': content_type,
         'published_time': published_time,
         'modified_time': modified_time,
@@ -59,4 +61,6 @@ def build_seo(
         'tags': [clean_text(tag, 60) for tag in (tags or []) if clean_text(tag, 60)],
         'breadcrumbs': crumbs,
         'schema': {'@context': 'https://schema.org', '@graph': compact(graph)},
+        'video_url': safe_absolute_url(request, video_url) if video_url else '',
+        'video_mime_type': clean_text(video_mime_type, 100),
     }

@@ -1,27 +1,50 @@
 <section class="home-hero" aria-labelledby="home-hero-title">
   <div class="container-botuka home-hero__grid">
     <div class="home-hero__content">
-      <span class="home-hero__kicker"><i class="bi bi-geo-alt-fill"></i> Tudo de Botucatu em um só lugar</span>
-      <h1 id="home-hero-title">A cidade acontece.<br><span>O BOTUKA aproxima você.</span></h1>
-      <p>Encontre empresas, serviços, vagas, notícias, turismo, eventos e oportunidades na cidade.</p>
-      <form class="home-hero__search" id="mainSearch" role="search">
-        <label class="visually-hidden" for="home-search">O que você procura em Botucatu?</label>
-        <i class="bi bi-search" aria-hidden="true"></i>
-        <input id="home-search" type="search" placeholder="O que você procura em Botucatu?">
-        <button class="btn-botuka btn-yellow" type="submit">Buscar</button>
+
+      <!-- Versão MOBILE da busca -->
+      <form class="home-hero__search--minimal" id="mainSearch" role="search" autocomplete="off">
+        <button type="button" class="hero-search-toggle" aria-label="Abrir busca">
+          <i class="bi bi-search" style="color: var(--color-yellow, #ffde59);"></i>
+        </button>
+        <div class="hero-search-input-wrapper" hidden>
+          <label class="visually-hidden" for="home-search">O que você procura em Botucatu?</label>
+          <input id="home-search" type="search" placeholder="Pesquisar em Botucatu..." autocomplete="off">
+          <button class="btn-botuka btn-yellow" type="submit" aria-label="Buscar">
+            <i class="bi bi-arrow-right"></i>
+          </button>
+        </div>
       </form>
-      <div class="home-hero__actions">
-        <a class="btn-botuka btn-yellow" href="#turismo"><i class="bi bi-compass"></i> Explorar a cidade</a>
-        {% if request.user.is_authenticated %}<a class="btn-botuka home-hero__secondary" href="{% url 'painel:dashboard' %}"><i class="bi bi-plus-circle"></i> Cadastrar conteúdo</a>{% else %}<button class="btn-botuka home-hero__secondary" type="button" data-bs-toggle="modal" data-bs-target="#loginModal"><i class="bi bi-plus-circle"></i> Cadastrar conteúdo</button>{% endif %}
+
+      <!-- Versão DESKTOP da hero completa (adaptada da hero copy.html linhas 1-40) -->
+      <div class="home-hero__main--desktop">
+        <span class="home-hero__kicker"><i class="bi bi-geo-alt-fill"></i> Tudo de Botucatu em um só lugar</span>
+        <h1 id="home-hero-title">A cidade acontece.<br><span>O BOTUKA aproxima você.</span></h1>
+        <p>Encontre empresas, serviços, vagas, notícias, turismo, eventos e oportunidades na cidade.</p>
+        <form class="home-hero__search" role="search">
+          <label class="visually-hidden" for="home-search-desktop">O que você procura em Botucatu?</label>
+          <i class="bi bi-search" aria-hidden="true"></i>
+          <input id="home-search-desktop" type="search" placeholder="O que você procura em Botucatu?">
+          <button class="btn-botuka btn-yellow" type="submit">Buscar</button>
+        </form>
+        <div class="home-hero__actions">
+          <a class="btn-botuka btn-yellow" href="#turismo"><i class="bi bi-compass"></i> Explorar a cidade</a>
+          {% if request.user.is_authenticated %}
+            <a class="btn-botuka home-hero__secondary" href="{% url 'painel:dashboard' %}"><i class="bi bi-plus-circle"></i> Cadastrar conteúdo</a>
+          {% else %}
+            <button class="btn-botuka home-hero__secondary" type="button" data-bs-toggle="modal" data-bs-target="#loginModal"><i class="bi bi-plus-circle"></i> Cadastrar conteúdo</button>
+          {% endif %}
+        </div>
+        <nav class="home-hero__shortcuts" aria-label="Atalhos da HOME">
+          <a href="#eventos"><i class="bi bi-calendar-event"></i> Eventos</a>
+          <a href="#empresas"><i class="bi bi-buildings"></i> Empresas</a>
+          <a href="#vagas"><i class="bi bi-briefcase"></i> Vagas</a>
+          <a href="#turismo"><i class="bi bi-binoculars"></i> Turismo</a>
+        </nav>
       </div>
-      <nav class="home-hero__shortcuts" aria-label="Atalhos da HOME">
-        <a href="#eventos"><i class="bi bi-calendar-event"></i> Eventos</a>
-        <a href="#empresas"><i class="bi bi-buildings"></i> Empresas</a>
-        <a href="#vagas"><i class="bi bi-briefcase"></i> Vagas</a>
-        <a href="#turismo"><i class="bi bi-binoculars"></i> Turismo</a>
-      </nav>
     </div>
-    <aside class="home-hero__visual" aria-label="Destaques da plataforma">
+
+    <aside class="home-hero__visual home-hero__visual--desktop" aria-label="Destaques da plataforma">
       <div class="home-hero__orb"></div>
       <article class="home-hero__feature">
         <i class="bi bi-compass"></i>
@@ -36,4 +59,102 @@
       </div>
     </aside>
   </div>
+
+  <style>
+    .home-hero {
+      padding: 1.1rem 0 0.5rem 0;
+    }
+    .home-hero__content {
+      padding: 0.5rem 0;
+    }
+    /* MOBILE search minimal style */
+    .home-hero__search--minimal {
+      display: flex;
+      gap: 0.4rem;
+      margin-bottom: 0.7rem;
+      align-items: center;
+      position: relative;
+    }
+    .hero-search-toggle {
+      background: transparent;
+      border: none;
+      font-size: 1.6rem;
+      padding: 0.2em 0.5em;
+      cursor: pointer;
+    }
+    .hero-search-input-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      background: #fff;
+      border-radius: 2em;
+      box-shadow: 0 1px 8px rgba(20,20,20,0.04);
+      padding: 0.15em 0.45em;
+      margin-left: 0.3em;
+      transition: box-shadow .2s;
+    }
+    .hero-search-input-wrapper input[type="search"] {
+      border: none;
+      outline: none;
+      background: none;
+      font-size: 1rem;
+      min-width: 10ch;
+      max-width: 90vw;
+      padding: 0.3em 0.1em;
+    }
+    .hero-search-input-wrapper button {
+      border-radius: 50%;
+      padding: 0.35em 0.45em;
+      font-size: 1.1rem;
+    }
+
+    /* Hide desktop hero on mobile, show minimal search */
+    .home-hero__main--desktop,
+    .home-hero__visual--desktop {
+      display: none !important;
+    }
+    @media (min-width: 601px) {
+      .home-hero__search--minimal {
+        display: none !important;
+      }
+      .home-hero__main--desktop,
+      .home-hero__visual--desktop {
+        display: block !important;
+      }
+      .home-hero__content {
+        /* add any extra desktop padding if needed */
+        padding: 1.2rem 0 1.2rem 0;
+      }
+      .home-hero__main--desktop {
+        margin-bottom: 0;
+      }
+      .home-hero__visual--desktop {
+        /* ensure aside is visible in desktop grid */
+        display: block !important;
+      }
+    }
+    /* (opcional: ajuste para grid se necessário) */
+    /* .home-hero__grid { ... } */
+  </style>
+
+  <script>
+    // Mobile search UI interaction
+    document.addEventListener('DOMContentLoaded', function() {
+      var toggle = document.querySelector('.hero-search-toggle');
+      var wrapper = document.querySelector('.hero-search-input-wrapper');
+      var input = document.getElementById('home-search');
+      toggle && toggle.addEventListener('click', function() {
+        if(wrapper.hidden) {
+          wrapper.hidden = false;
+          input && input.focus();
+        } else {
+          wrapper.hidden = true;
+        }
+      });
+      // Allow ESC to close search input quickly
+      input && input.addEventListener('keydown', function(e){
+        if(e.key === "Escape") wrapper.hidden = true;
+      });
+    });
+  </script>
 </section>

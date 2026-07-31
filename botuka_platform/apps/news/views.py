@@ -4,6 +4,7 @@ from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
+from django.core.cache import cache
 from django.db import transaction
 from django.db.models import Count, Prefetch, Q
 from django.forms import modelform_factory
@@ -22,6 +23,7 @@ from apps.core.services.home.adapters.events import obter_eventos
 
 from .models import (
     Artigo, ArtigoBloco, ArtigoFonte, Autor, CategoriaNoticia, Coluna,
+    ComentarioArtigo, CurtidaComentario, DenunciaComentario,
     Colunista, DestaqueEditorial, EditorialStatus, EspecialidadeAutor,
     HistoricoEditorial, ImagemPublicacao, LinkRelacionado, MidiaIncorporada,
     SerieEditorial, Tag, Tema,
@@ -29,7 +31,7 @@ from .models import (
 from .services import (
     PERMISSAO_TRANSICAO, TRANSICOES, alterar_status, pode_editar_artigo,
 )
-from .forms import ArtigoForm
+from .forms import ArtigoForm, ComentarioForm
 from .selectors import artigos_publicos, obter_home_noticias
 
 NEWS_AUX_MENU = [
@@ -210,6 +212,22 @@ def artigo(request, slug):
     total_palavras = len(obj.conteudo.split()) + sum(
         len(bloco.conteudo.split()) for bloco in obj.blocos.all()
     )
+    comentarios_qs = (
+        ComentarioArtigo.objects.filter(
+            artigo=obj, comentario_raiz__isnull=True,
+            status=ComentarioArtigo.Status.PUBLICADO,
+        )
+        .select_related("usuario")
+        .prefetch_related(Prefetch(
+            "respostas",
+            queryset=ComentarioArtigo.objects.filter(
+                status=ComentarioArtigo.Status.PUBLICADO,
+            ).select_related("usuario", "usuario_mencionado").annotate(total_curtidas=Count("curtidas")).order_by("criado_em"),
+        ))
+        .annotate(total_curtidas=Count("curtidas"))
+        .order_by("-criado_em")
+    )
+    pagina_comentarios = Paginator(comentarios_qs, 10).get_page(request.GET.get("comentarios"))
     return render(request, "publico/news/artigo.html", {
         "artigo": obj,
         "share_object": obj,
@@ -220,8 +238,145 @@ def artigo(request, slug):
         "categorias_sidebar": categorias,
         "eventos_sidebar": eventos[:3],
         "tempo_leitura": max(1, ceil(total_palavras / 200)),
+        "pagina_comentarios": pagina_comentarios,
+        "comentario_form": ComentarioForm(),
         "seo": artigo_seo(request, obj),
     })
+
+
+def _artigo_publicado(slug):
+    return get_object_or_404(_published_articles(), slug=slug)
+
+
+def _validar_novo_comentario(request, artigo_obj):
+    if not request.user.is_authenticated:
+        raise PermissionDenied
+    if not request.user.is_active:
+        raise PermissionDenied
+    if not artigo_obj.comentarios_permitidos or artigo_obj.comentarios_encerrados:
+        raise PermissionDenied("Os comentários estão encerrados.")
+    key = f"news-comment-rate:{request.user.pk}"
+    total = cache.get(key, 0)
+    if total >= 5:
+        raise PermissionDenied("Aguarde antes de publicar outro comentário.")
+    cache.set(key, total + 1, 60)
+
+
+@login_required
+@require_POST
+def comentario_novo(request, slug):
+    artigo_obj = _artigo_publicado(slug)
+    _validar_novo_comentario(request, artigo_obj)
+    form = ComentarioForm(request.POST)
+    if form.is_valid():
+        comentario = form.save(commit=False)
+        comentario.artigo = artigo_obj
+        comentario.usuario = request.user
+        comentario.status = (
+            ComentarioArtigo.Status.PENDENTE
+            if artigo_obj.comentarios_moderados
+            else ComentarioArtigo.Status.PUBLICADO
+        )
+        comentario.save()
+        auditar(request, "COMENTAR_NOTICIA", comentario)
+        messages.success(request, "Comentário enviado para moderação." if artigo_obj.comentarios_moderados else "Comentário publicado.")
+    else:
+        messages.error(request, "; ".join(
+            str(error) for errors in form.errors.values() for error in errors
+        ))
+    return redirect(f"{artigo_obj.get_absolute_url()}#comentarios")
+
+
+@login_required
+@require_POST
+def comentario_responder(request, uuid):
+    alvo = get_object_or_404(ComentarioArtigo.objects.select_related("artigo", "usuario", "comentario_raiz"), uuid=uuid)
+    _validar_novo_comentario(request, alvo.artigo)
+    form = ComentarioForm(request.POST)
+    if form.is_valid():
+        resposta = form.save(commit=False)
+        resposta.artigo = alvo.artigo
+        resposta.usuario = request.user
+        resposta.comentario_raiz = alvo.comentario_raiz or alvo
+        resposta.respondendo_a = alvo
+        resposta.usuario_mencionado = alvo.usuario if alvo.usuario_id != request.user.pk else None
+        resposta.status = ComentarioArtigo.Status.PENDENTE if alvo.artigo.comentarios_moderados else ComentarioArtigo.Status.PUBLICADO
+        resposta.save()
+        auditar(request, "RESPONDER_COMENTARIO", resposta)
+        messages.success(request, "Resposta publicada." if resposta.status == ComentarioArtigo.Status.PUBLICADO else "Resposta enviada para moderação.")
+    return redirect(f"{alvo.artigo.get_absolute_url()}#comentarios")
+
+
+@login_required
+@require_POST
+def comentario_editar(request, uuid):
+    comentario = get_object_or_404(ComentarioArtigo.objects.select_related("artigo"), uuid=uuid)
+    if comentario.usuario_id != request.user.pk:
+        raise PermissionDenied
+    form = ComentarioForm(request.POST, instance=comentario)
+    if form.is_valid():
+        comentario = form.save(commit=False)
+        comentario.editado_em = timezone.now()
+        comentario.save()
+        auditar(request, "EDITAR_COMENTARIO", comentario)
+    return redirect(f"{comentario.artigo.get_absolute_url()}#comentarios")
+
+
+@login_required
+@require_POST
+def comentario_excluir(request, uuid):
+    comentario = get_object_or_404(ComentarioArtigo.objects.select_related("artigo"), uuid=uuid)
+    if comentario.usuario_id != request.user.pk and not _can(request.user, "news.moderar_comentarios"):
+        raise PermissionDenied
+    comentario.delete()
+    auditar(request, "EXCLUIR_COMENTARIO", comentario)
+    return redirect(f"{comentario.artigo.get_absolute_url()}#comentarios")
+
+
+@login_required
+@require_POST
+def comentario_curtir(request, uuid):
+    comentario = get_object_or_404(ComentarioArtigo.objects, uuid=uuid, status=ComentarioArtigo.Status.PUBLICADO)
+    curtida, criada = CurtidaComentario.objects.get_or_create(comentario=comentario, usuario=request.user)
+    if not criada:
+        curtida.delete()
+    return redirect(f"{comentario.artigo.get_absolute_url()}#comentarios")
+
+
+@login_required
+@require_POST
+def comentario_denunciar(request, uuid):
+    comentario = get_object_or_404(ComentarioArtigo.objects, uuid=uuid)
+    if comentario.usuario_id == request.user.pk:
+        raise PermissionDenied
+    motivo = (request.POST.get("motivo") or "").strip()[:500]
+    if not motivo:
+        messages.error(request, "Informe o motivo da denúncia.")
+    else:
+        DenunciaComentario.objects.get_or_create(comentario=comentario, usuario=request.user, defaults={"motivo": motivo})
+        auditar(request, "DENUNCIAR_COMENTARIO", comentario, motivo=motivo)
+        messages.success(request, "Denúncia registrada para análise.")
+    return redirect(f"{comentario.artigo.get_absolute_url()}#comentarios")
+
+
+@login_required
+@require_POST
+def comentario_moderar(request, uuid):
+    if not _can(request.user, "news.moderar_comentarios"):
+        raise PermissionDenied
+    comentario = get_object_or_404(ComentarioArtigo.all_objects.select_related("artigo"), uuid=uuid)
+    status = request.POST.get("status")
+    if status not in {ComentarioArtigo.Status.PUBLICADO, ComentarioArtigo.Status.OCULTO, ComentarioArtigo.Status.REJEITADO}:
+        raise PermissionDenied
+    comentario.status = status
+    comentario.moderado_por = request.user
+    comentario.moderado_em = timezone.now()
+    comentario.motivo_moderacao = (request.POST.get("motivo") or "").strip()[:500]
+    comentario.ativo = True
+    comentario.excluido_em = None
+    comentario.save()
+    auditar(request, "MODERAR_COMENTARIO", comentario, motivo=comentario.motivo_moderacao)
+    return redirect(f"{comentario.artigo.get_absolute_url()}#comentarios")
 
 
 def _require_panel(user):

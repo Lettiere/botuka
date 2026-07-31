@@ -14,6 +14,8 @@ from django.urls import reverse
 from django.utils import timezone
 from django.utils.html import strip_tags
 
+from .public_urls import build_public_absolute_url
+
 
 @dataclass(frozen=True)
 class PublicType:
@@ -99,15 +101,13 @@ def obter_url_publica(objeto, request=None):
     path, config = _path_for(objeto)
     if config and not config.published(objeto):
         raise PermissionDenied('Conteúdo não publicado.')
+    if request is not None:
+        return build_public_absolute_url(request, path)
     base = settings.PUBLIC_BASE_URL.rstrip('/') + '/'
-    if settings.DEBUG and request:
-        parsed = urlparse(request.build_absolute_uri('/'))
-        if parsed.hostname in {'127.0.0.1', 'localhost'}:
-            base = f'{parsed.scheme}://{parsed.netloc}/'
     url = urljoin(base, path.lstrip('/'))
     allowed = urlparse(settings.PUBLIC_BASE_URL).hostname
     host = urlparse(url).hostname
-    if not (host == allowed or settings.DEBUG and host in {'127.0.0.1', 'localhost'}):
+    if host != allowed:
         raise PermissionDenied('Host público não permitido.')
     return url
 

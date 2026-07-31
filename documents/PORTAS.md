@@ -17,6 +17,7 @@ Padrao definitivo de portas locais dos projetos BOTUKA.
 | BOTUKA Mobilidade | botuka_mobilidade | 7710 | http://127.0.0.1:7710/ | mobilidade.botuka.com.br | mobility | incompleto | Projeto Django existente; precisa adequar ao padrao. |
 | BOTUKA Turismo | botuka_turismo | 7711 | http://127.0.0.1:7711/ | turismo.botuka.com.br | tourism | planejado | Diretorio vazio no levantamento. |
 | BOTUKA Veiculos | botuka_veiculos | 7712 | http://127.0.0.1:7712/ | veiculos.botuka.com.br | vehicles | planejado | Diretorio vazio no levantamento. |
+| BOTUKA Finance | botuka_finance | 7720 | http://127.0.0.1:7720/financeiro/ | financeiro.botuka.com.br | finance | fundação funcional | Projeto independente; provider Mock e pagamentos reais desativados. |
 | BOTUKA API | botuka_api | 7799 | http://127.0.0.1:7799/ | api.botuka.com.br | api | planejado | Porta definitiva da API. |
 
 ## Regras

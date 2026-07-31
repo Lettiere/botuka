@@ -56,6 +56,8 @@ function shouldIgnore(request) {
     url.pathname.startsWith("/gestao/") ||
     url.pathname.startsWith("/conta/") ||
     url.pathname.startsWith("/media/") ||
+    url.pathname.startsWith("/qrcode/") ||
+    url.pathname.startsWith("/compartilhar/") ||
     url.pathname === "/service-worker.js"
   );
 }

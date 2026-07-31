@@ -1,0 +1,1037 @@
+{% extends "_layout/platform/public.html" %}
+{% load static %}
+
+{% block public_content %}
+
+<style>
+  .event-page {
+    --event-bg: #f4f7f9;
+    --event-surface: #ffffff;
+    --event-surface-soft: #f8fafb;
+    --event-text: #172027;
+    --event-text-soft: #5f6c75;
+    --event-border: #dfe6ea;
+    --event-primary: #126b57;
+    --event-primary-dark: #0d5142;
+    --event-primary-soft: #e6f4ef;
+    --event-warning-soft: #fff7df;
+    --event-warning-text: #806000;
+    --event-danger: #a83b3b;
+    --event-shadow: 0 18px 50px rgba(20, 37, 45, 0.08);
+    --event-radius-lg: 24px;
+    --event-radius-md: 16px;
+    --event-radius-sm: 10px;
+
+    background:
+      radial-gradient(circle at top right, rgba(18, 107, 87, 0.08), transparent 32rem),
+      var(--event-bg);
+    color: var(--event-text);
+    min-height: 100vh;
+    padding: 24px 0 64px;
+  }
+
+  .event-page,
+  .event-page *,
+  .event-page *::before,
+  .event-page *::after {
+    box-sizing: border-box;
+  }
+
+  .event-page a {
+    color: inherit;
+  }
+
+  .event-shell {
+    width: min(1180px, calc(100% - 32px));
+    margin: 0 auto;
+  }
+
+  .event-breadcrumb {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
+    color: var(--event-text-soft);
+    font-size: 0.9rem;
+  }
+
+  .event-breadcrumb a {
+    color: var(--event-primary);
+    font-weight: 700;
+    text-decoration: none;
+  }
+
+  .event-breadcrumb a:hover {
+    text-decoration: underline;
+  }
+
+  .event-hero {
+    position: relative;
+    overflow: hidden;
+    min-height: 390px;
+    border-radius: var(--event-radius-lg);
+    background:
+      linear-gradient(120deg, rgba(11, 34, 30, 0.95), rgba(18, 107, 87, 0.74)),
+      linear-gradient(135deg, #173f36, #126b57);
+    box-shadow: var(--event-shadow);
+  }
+
+  .event-hero--with-image {
+    min-height: 520px;
+  }
+
+  .event-hero__image {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .event-hero__overlay {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(
+        90deg,
+        rgba(8, 24, 21, 0.96) 0%,
+        rgba(8, 24, 21, 0.82) 42%,
+        rgba(8, 24, 21, 0.34) 72%,
+        rgba(8, 24, 21, 0.16) 100%
+      ),
+      linear-gradient(
+        0deg,
+        rgba(8, 24, 21, 0.68) 0%,
+        rgba(8, 24, 21, 0.04) 55%
+      );
+  }
+
+  .event-hero__content {
+    position: relative;
+    z-index: 2;
+    display: flex;
+    min-height: inherit;
+    align-items: flex-end;
+    width: min(760px, 100%);
+    padding: 56px;
+    color: #ffffff;
+  }
+
+  .event-hero__content-inner {
+    width: 100%;
+  }
+
+  .event-eyebrow-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 18px;
+  }
+
+  .event-tag,
+  .event-status-tag {
+    display: inline-flex;
+    align-items: center;
+    min-height: 32px;
+    padding: 7px 12px;
+    border: 1px solid rgba(255, 255, 255, 0.28);
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.13);
+    color: #ffffff;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 0.035em;
+    text-transform: uppercase;
+    backdrop-filter: blur(8px);
+  }
+
+  .event-hero h1 {
+    max-width: 900px;
+    margin: 0;
+    color: #ffffff;
+    font-size: clamp(2.2rem, 6vw, 4.8rem);
+    font-weight: 850;
+    letter-spacing: -0.045em;
+    line-height: 0.98;
+    text-wrap: balance;
+  }
+
+  .event-hero__summary {
+    max-width: 680px;
+    margin: 22px 0 0;
+    color: rgba(255, 255, 255, 0.88);
+    font-size: clamp(1rem, 2vw, 1.2rem);
+    line-height: 1.65;
+  }
+
+  .event-layout {
+    display: grid;
+    grid-template-columns: minmax(0, 1.55fr) minmax(310px, 0.65fr);
+    gap: 28px;
+    align-items: start;
+    margin-top: 28px;
+  }
+
+  .event-main,
+  .event-sidebar {
+    min-width: 0;
+  }
+
+  .event-sidebar {
+    position: sticky;
+    top: 24px;
+    display: grid;
+    gap: 20px;
+  }
+
+  .event-card {
+    overflow: hidden;
+    border: 1px solid var(--event-border);
+    border-radius: var(--event-radius-md);
+    background: var(--event-surface);
+    box-shadow: 0 10px 30px rgba(22, 42, 51, 0.05);
+  }
+
+  .event-card__body {
+    padding: 28px;
+  }
+
+  .event-card__title {
+    margin: 0 0 18px;
+    color: var(--event-text);
+    font-size: 1.18rem;
+    font-weight: 850;
+    letter-spacing: -0.02em;
+  }
+
+  .event-info-grid {
+    display: grid;
+    gap: 0;
+    margin: 0;
+  }
+
+  .event-info-item {
+    display: grid;
+    grid-template-columns: 44px minmax(0, 1fr);
+    gap: 14px;
+    padding: 18px 0;
+    border-bottom: 1px solid var(--event-border);
+  }
+
+  .event-info-item:first-child {
+    padding-top: 0;
+  }
+
+  .event-info-item:last-child {
+    padding-bottom: 0;
+    border-bottom: 0;
+  }
+
+  .event-info-icon {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    place-items: center;
+    border-radius: 13px;
+    background: var(--event-primary-soft);
+    color: var(--event-primary);
+    font-size: 1.15rem;
+    font-weight: 900;
+  }
+
+  .event-info-item dt {
+    margin: 0 0 4px;
+    color: var(--event-text-soft);
+    font-size: 0.76rem;
+    font-weight: 800;
+    letter-spacing: 0.045em;
+    text-transform: uppercase;
+  }
+
+  .event-info-item dd {
+    margin: 0;
+    color: var(--event-text);
+    font-size: 0.98rem;
+    font-weight: 750;
+    line-height: 1.5;
+    overflow-wrap: anywhere;
+  }
+
+  .event-prose-card {
+    margin-bottom: 24px;
+  }
+
+  .event-prose {
+    color: #354149;
+    font-size: 1.03rem;
+    line-height: 1.78;
+    overflow-wrap: anywhere;
+  }
+
+  .event-prose > :first-child {
+    margin-top: 0;
+  }
+
+  .event-prose > :last-child {
+    margin-bottom: 0;
+  }
+
+  .event-prose h2,
+  .event-prose h3,
+  .event-prose h4 {
+    margin: 1.7em 0 0.7em;
+    color: var(--event-text);
+    font-weight: 850;
+    letter-spacing: -0.025em;
+    line-height: 1.2;
+  }
+
+  .event-prose h2 {
+    font-size: clamp(1.45rem, 3vw, 2rem);
+  }
+
+  .event-prose h3 {
+    font-size: 1.3rem;
+  }
+
+  .event-prose p,
+  .event-prose ul,
+  .event-prose ol,
+  .event-prose blockquote {
+    margin: 0 0 1.25em;
+  }
+
+  .event-prose ul,
+  .event-prose ol {
+    padding-left: 1.35rem;
+  }
+
+  .event-prose li + li {
+    margin-top: 0.45rem;
+  }
+
+  .event-prose a {
+    color: var(--event-primary);
+    font-weight: 750;
+    text-decoration-thickness: 2px;
+    text-underline-offset: 3px;
+  }
+
+  .event-prose img,
+  .event-prose iframe,
+  .event-prose video {
+    max-width: 100%;
+    border-radius: 14px;
+  }
+
+  .event-prose blockquote {
+    padding: 18px 20px;
+    border-left: 4px solid var(--event-primary);
+    border-radius: 0 12px 12px 0;
+    background: var(--event-primary-soft);
+    color: #284940;
+  }
+
+  .event-interest {
+    background:
+      radial-gradient(circle at top right, rgba(255, 255, 255, 0.85), transparent 14rem),
+      linear-gradient(145deg, #e8f6f1, #f8fcfa);
+  }
+
+  .event-interest__head {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    margin-bottom: 18px;
+  }
+
+  .event-interest__icon {
+    display: grid;
+    flex: 0 0 auto;
+    width: 48px;
+    height: 48px;
+    place-items: center;
+    border-radius: 15px;
+    background: var(--event-primary);
+    color: #ffffff;
+    font-size: 1.3rem;
+  }
+
+  .event-interest__head h2 {
+    margin: 0 0 5px;
+    color: var(--event-text);
+    font-size: 1.35rem;
+    font-weight: 900;
+    letter-spacing: -0.025em;
+  }
+
+  .event-interest__head p {
+    margin: 0;
+    color: var(--event-text-soft);
+    line-height: 1.55;
+  }
+
+  .event-interest__count {
+    display: block;
+    margin-bottom: 14px;
+    color: var(--event-primary-dark);
+    font-size: 1rem;
+    font-weight: 850;
+    line-height: 1.5;
+  }
+
+  .event-interest__notice {
+    margin: 0 0 18px;
+    padding: 13px 14px;
+    border-radius: 11px;
+    background: rgba(255, 255, 255, 0.8);
+    color: var(--event-text-soft);
+    font-size: 0.86rem;
+    line-height: 1.5;
+  }
+
+  .event-button {
+    display: inline-flex;
+    width: auto;
+    min-height: 46px;
+    align-items: center;
+    justify-content: center;
+    gap: 9px;
+    padding: 12px 18px;
+    border: 1px solid transparent;
+    border-radius: 12px;
+    background: var(--event-primary);
+    color: #ffffff !important;
+    font-family: inherit;
+    font-size: 0.94rem;
+    font-weight: 850;
+    line-height: 1;
+    text-align: center;
+    text-decoration: none;
+    cursor: pointer;
+    transition:
+      transform 160ms ease,
+      box-shadow 160ms ease,
+      background 160ms ease,
+      border-color 160ms ease;
+  }
+
+  .event-button:hover {
+    background: var(--event-primary-dark);
+    box-shadow: 0 10px 22px rgba(18, 107, 87, 0.2);
+    transform: translateY(-1px);
+  }
+
+  .event-button:focus-visible {
+    outline: 3px solid rgba(18, 107, 87, 0.25);
+    outline-offset: 3px;
+  }
+
+  .event-button:disabled,
+  .event-button[aria-disabled="true"] {
+    background: #bdc7cc;
+    box-shadow: none;
+    cursor: not-allowed;
+    transform: none;
+  }
+
+  .event-button--wide {
+    width: 100%;
+  }
+
+  .event-button--secondary {
+    border-color: var(--event-border);
+    background: #ffffff;
+    color: var(--event-primary) !important;
+  }
+
+  .event-button--secondary:hover {
+    border-color: var(--event-primary);
+    background: var(--event-primary-soft);
+  }
+
+  .event-interest__form {
+    margin: 0;
+  }
+
+  .event-interest.is-loading .event-button {
+    pointer-events: none;
+    opacity: 0.72;
+  }
+
+  .event-interest.is-active .event-interest__icon {
+    background: var(--event-primary-dark);
+  }
+
+  .event-interest.is-active .event-button {
+    border-color: var(--event-primary);
+    background: #ffffff;
+    color: var(--event-primary) !important;
+  }
+
+  .event-interest__feedback {
+    min-height: 20px;
+    margin-top: 12px;
+    color: var(--event-primary-dark);
+    font-size: 0.84rem;
+    font-weight: 750;
+  }
+
+  .event-external {
+    border-color: #eadca7;
+    background:
+      radial-gradient(circle at top right, rgba(255, 255, 255, 0.85), transparent 13rem),
+      var(--event-warning-soft);
+  }
+
+  .event-external__label {
+    display: inline-flex;
+    margin-bottom: 12px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    background: rgba(128, 96, 0, 0.1);
+    color: var(--event-warning-text);
+    font-size: 0.75rem;
+    font-weight: 850;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .event-external p {
+    color: #66591e;
+    line-height: 1.6;
+  }
+
+  .event-empty-text {
+    margin: 0;
+    color: var(--event-text-soft);
+    font-style: italic;
+  }
+
+  .event-mobile-actions {
+    display: none;
+  }
+
+  @media (max-width: 960px) {
+    .event-layout {
+      grid-template-columns: 1fr;
+    }
+
+    .event-sidebar {
+      position: static;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+
+    .event-sidebar .event-card:first-child {
+      grid-column: 1 / -1;
+    }
+  }
+
+  @media (max-width: 700px) {
+    .event-page {
+      padding-top: 14px;
+    }
+
+    .event-shell {
+      width: min(100% - 20px, 1180px);
+    }
+
+    .event-breadcrumb {
+      margin-bottom: 14px;
+      font-size: 0.82rem;
+    }
+
+    .event-hero,
+    .event-hero--with-image {
+      min-height: 410px;
+      border-radius: 18px;
+    }
+
+    .event-hero__overlay {
+      background:
+        linear-gradient(
+          0deg,
+          rgba(8, 24, 21, 0.98) 0%,
+          rgba(8, 24, 21, 0.72) 60%,
+          rgba(8, 24, 21, 0.28) 100%
+        );
+    }
+
+    .event-hero__content {
+      align-items: flex-end;
+      padding: 28px 22px;
+    }
+
+    .event-hero h1 {
+      font-size: clamp(2rem, 11vw, 3.3rem);
+    }
+
+    .event-hero__summary {
+      margin-top: 16px;
+      font-size: 0.98rem;
+      line-height: 1.55;
+    }
+
+    .event-layout {
+      gap: 18px;
+      margin-top: 18px;
+    }
+
+    .event-sidebar {
+      grid-template-columns: 1fr;
+      gap: 18px;
+    }
+
+    .event-sidebar .event-card:first-child {
+      grid-column: auto;
+    }
+
+    .event-card {
+      border-radius: 15px;
+    }
+
+    .event-card__body {
+      padding: 21px;
+    }
+
+    .event-info-item {
+      grid-template-columns: 40px minmax(0, 1fr);
+      gap: 12px;
+    }
+
+    .event-info-icon {
+      width: 40px;
+      height: 40px;
+    }
+
+    .event-prose {
+      font-size: 0.98rem;
+      line-height: 1.7;
+    }
+
+    .event-button {
+      width: 100%;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .event-page *,
+    .event-page *::before,
+    .event-page *::after {
+      scroll-behavior: auto !important;
+      transition-duration: 0.01ms !important;
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+    }
+  }
+</style>
+
+<main class="event-page">
+  <div class="event-shell">
+
+    <nav class="event-breadcrumb" aria-label="Navegação estrutural">
+      <a href="{% url 'home' %}">Início</a>
+      <span aria-hidden="true">/</span>
+      <a href="{% url 'events:lista' %}">Eventos</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">{{ evento.titulo }}</span>
+    </nav>
+
+    <article>
+      <header class="event-hero{% if evento.imagem_principal %} event-hero--with-image{% endif %}">
+
+        {% if evento.imagem_principal %}
+          <img
+            class="event-hero__image"
+            src="{{ evento.imagem_principal.url }}"
+            alt="{{ evento.imagem_alt|default:evento.titulo }}"
+            width="1600"
+            height="900"
+            fetchpriority="high"
+          >
+        {% endif %}
+
+        <div class="event-hero__overlay" aria-hidden="true"></div>
+
+        <div class="event-hero__content">
+          <div class="event-hero__content-inner">
+
+            <div class="event-eyebrow-row">
+              <span class="event-tag">
+                {{ evento.categoria|default:"Evento" }}
+              </span>
+
+              {% if evento.gratuito %}
+                <span class="event-status-tag">Gratuito</span>
+              {% endif %}
+
+              {% if evento.formato %}
+                <span class="event-status-tag">{{ evento.get_formato_display|default:evento.formato }}</span>
+              {% endif %}
+            </div>
+
+            <h1>{{ evento.titulo }}</h1>
+
+            {% if evento.resumo %}
+              <p class="event-hero__summary">{{ evento.resumo }}</p>
+            {% endif %}
+
+          </div>
+        </div>
+      </header>
+
+      <div class="event-layout">
+
+        <div class="event-main">
+
+          <section class="event-card event-prose-card">
+            <div class="event-card__body">
+              <h2 class="event-card__title">Sobre o evento</h2>
+
+              {% if evento.descricao %}
+                <div class="event-prose">
+                  {{ evento.descricao|safe }}
+                </div>
+              {% else %}
+                <p class="event-empty-text">
+                  Ainda não há uma descrição completa para este evento.
+                </p>
+              {% endif %}
+            </div>
+          </section>
+
+          {% if evento.programacao %}
+            <section class="event-card event-prose-card">
+              <div class="event-card__body">
+                <h2 class="event-card__title">Programação</h2>
+
+                <div class="event-prose">
+                  {{ evento.programacao|safe }}
+                </div>
+              </div>
+            </section>
+          {% endif %}
+
+          {% if evento.regras %}
+            <section class="event-card event-prose-card">
+              <div class="event-card__body">
+                <h2 class="event-card__title">Regras e orientações</h2>
+
+                <div class="event-prose">
+                  {{ evento.regras|safe }}
+                </div>
+              </div>
+            </section>
+          {% endif %}
+
+        </div>
+
+        <aside class="event-sidebar" aria-label="Informações do evento">
+
+          <section class="event-card">
+            <div class="event-card__body">
+              <h2 class="event-card__title">Informações principais</h2>
+
+              <dl class="event-info-grid">
+
+                <div class="event-info-item">
+                  <div class="event-info-icon" aria-hidden="true">📅</div>
+
+                  <div>
+                    <dt>Data e horário</dt>
+                    <dd>
+                      {{ evento.inicio|date:"d/m/Y \à\s H:i" }}
+
+                      {% if evento.fim %}
+                        <br>
+                        até {{ evento.fim|date:"d/m/Y \à\s H:i" }}
+                      {% endif %}
+                    </dd>
+                  </div>
+                </div>
+
+                <div class="event-info-item">
+                  <div class="event-info-icon" aria-hidden="true">📍</div>
+
+                  <div>
+                    <dt>Local</dt>
+                    <dd>
+                      {% if evento.local %}
+                        {{ evento.local }}
+                      {% else %}
+                        Local a confirmar
+                      {% endif %}
+
+                      {% if evento.endereco %}
+                        <br>
+                        {{ evento.endereco }}
+                      {% endif %}
+
+                      {% if evento.cidade %}
+                        <br>
+                        {{ evento.cidade }}{% if evento.estado %} - {{ evento.estado }}{% endif %}
+                      {% endif %}
+                    </dd>
+                  </div>
+                </div>
+
+                <div class="event-info-item">
+                  <div class="event-info-icon" aria-hidden="true">👤</div>
+
+                  <div>
+                    <dt>Organização</dt>
+                    <dd>
+                      {{ evento.organizador|default:evento.realizador|default:"Não informado" }}
+                    </dd>
+                  </div>
+                </div>
+
+                {% if evento.classificacao_etaria %}
+                  <div class="event-info-item">
+                    <div class="event-info-icon" aria-hidden="true">🔖</div>
+
+                    <div>
+                      <dt>Classificação</dt>
+                      <dd>{{ evento.classificacao_etaria }}</dd>
+                    </div>
+                  </div>
+                {% endif %}
+
+              </dl>
+            </div>
+          </section>
+
+          {% if evento.permitir_interesse %}
+            <section
+              class="event-card event-interest{% if interesse_ativo %} is-active{% endif %}"
+              data-interest-box
+              data-interest-active="{% if interesse_ativo %}true{% else %}false{% endif %}"
+            >
+              <div class="event-card__body">
+
+                <div class="event-interest__head">
+                  <div class="event-interest__icon" aria-hidden="true">✓</div>
+
+                  <div>
+                    <h2>Eu vou!</h2>
+
+                    <p>
+                      {{ evento.texto_interesse|default:"Marque seu interesse em participar deste evento." }}
+                    </p>
+                  </div>
+                </div>
+
+                <strong class="event-interest__count" data-interest-count>
+                  {{ total_interessados }}
+                  pessoa{{ total_interessados|pluralize }}
+                  demonstraram interesse.
+                </strong>
+
+                <p class="event-interest__notice">
+                  Esta ação indica interesse e não garante ingresso, vaga,
+                  reserva ou entrada no evento.
+                </p>
+
+                {% if evento.aceita_novos_interesses %}
+                  <form
+                    class="event-interest__form"
+                    method="post"
+                    action="{% url 'events:interesse' evento.slug %}"
+                    data-interest-form
+                  >
+                    {% csrf_token %}
+
+                    <button
+                      class="event-button event-button--wide"
+                      type="submit"
+                      data-interest-button
+                      data-label-active="Desmarcar interesse"
+                      data-label-inactive="Eu vou!"
+                    >
+                      {% if interesse_ativo %}
+                        Desmarcar interesse
+                      {% else %}
+                        Eu vou!
+                      {% endif %}
+                    </button>
+                  </form>
+
+                  <div
+                    class="event-interest__feedback"
+                    data-interest-feedback
+                    role="status"
+                    aria-live="polite"
+                  ></div>
+                {% else %}
+                  <button
+                    class="event-button event-button--wide"
+                    type="button"
+                    disabled
+                  >
+                    Interesse indisponível
+                  </button>
+                {% endif %}
+
+              </div>
+            </section>
+          {% endif %}
+
+          {% if evento.url_inscricao_externa %}
+            <section class="event-card event-external">
+              <div class="event-card__body">
+
+                <span class="event-external__label">
+                  Inscrição externa
+                </span>
+
+                <h2 class="event-card__title">
+                  Consulte as regras de inscrição
+                </h2>
+
+                <p>
+                  A inscrição é administrada pelo organizador e é diferente
+                  de demonstrar interesse pelo botão “Eu vou!”.
+                </p>
+
+                <a
+                  class="event-button event-button--secondary event-button--wide"
+                  href="{{ evento.url_inscricao_externa }}"
+                  target="_blank"
+                  rel="nofollow noopener noreferrer"
+                >
+                  Consultar inscrição
+                </a>
+
+              </div>
+            </section>
+          {% endif %}
+
+        </aside>
+      </div>
+    </article>
+
+  </div>
+</main>
+
+{% endblock %}
+
+{% block public_scripts %}
+<script>
+  document.addEventListener("DOMContentLoaded", function () {
+    const interestBoxes = document.querySelectorAll("[data-interest-box]");
+
+    interestBoxes.forEach(function (box) {
+      const form = box.querySelector("[data-interest-form]");
+      const button = box.querySelector("[data-interest-button]");
+      const countElement = box.querySelector("[data-interest-count]");
+      const feedback = box.querySelector("[data-interest-feedback]");
+
+      if (!form || !button) {
+        return;
+      }
+
+      form.addEventListener("submit", async function (event) {
+        if (!window.fetch || !window.FormData) {
+          return;
+        }
+
+        event.preventDefault();
+
+        if (box.classList.contains("is-loading")) {
+          return;
+        }
+
+        const originalLabel = button.textContent.trim();
+        const formData = new FormData(form);
+
+        box.classList.add("is-loading");
+        button.disabled = true;
+        button.textContent = "Atualizando...";
+
+        if (feedback) {
+          feedback.textContent = "";
+        }
+
+        try {
+          const response = await fetch(form.action, {
+            method: "POST",
+            body: formData,
+            credentials: "same-origin",
+            headers: {
+              "X-Requested-With": "XMLHttpRequest",
+              "Accept": "application/json"
+            }
+          });
+
+          if (response.redirected) {
+            window.location.href = response.url;
+            return;
+          }
+
+          if (!response.ok) {
+            throw new Error("Não foi possível atualizar o interesse.");
+          }
+
+          const contentType = response.headers.get("content-type") || "";
+
+          if (!contentType.includes("application/json")) {
+            window.location.reload();
+            return;
+          }
+
+          const data = await response.json();
+
+          const isActive = Boolean(
+            data.interesse_ativo ??
+            data.ativo ??
+            data.interested
+          );
+
+          const total = Number(
+            data.total_interessados ??
+            data.total ??
+            0
+          );
+
+          box.dataset.interestActive = isActive ? "true" : "false";
+          box.classList.toggle("is-active", isActive);
+
+          const activeLabel =
+            button.dataset.labelActive || "Desmarcar interesse";
+
+          const inactiveLabel =
+            button.dataset.labelInactive || "Eu vou!";
+
+          button.textContent = isActive ? activeLabel : inactiveLabel;
+
+          if (countElement && Number.isFinite(total)) {
+            const plural = total === 1 ? "pessoa" : "pessoas";
+
+            countElement.textContent =
+              total + " " + plural + " demonstraram interesse.";
+          }
+
+          if (feedback) {
+            feedback.textContent = isActive
+              ? "Seu interesse foi registrado."
+              : "Seu interesse foi removido.";
+          }
+        } catch (error) {
+          button.textContent = originalLabel;
+
+          if (feedback) {
+            feedback.textContent =
+              "Não foi possível concluir a ação. Tente novamente.";
+          }
+
+          console.error(error);
+        } finally {
+          box.classList.remove("is-loading");
+          button.disabled = false;
+        }
+      });
+    });
+  });
+</script>
+{% endblock %}

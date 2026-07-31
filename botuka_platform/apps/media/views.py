@@ -117,7 +117,7 @@ def public_home(request):
         for item in categorias[:4]
     ]
     seo = listing_seo(
-        request, 'YuBotuka | Vídeos de Botucatu',
+        request, 'YoBotuka | Vídeos de Botucatu',
         'Vídeos, programas, entrevistas e transmissões de Botucatu.',
     )
     destaque_editorial = videos_em_destaque('YUBOTUKA').first()
@@ -255,7 +255,7 @@ def transmissoes_publicas_lista(request):
             status__in=[Transmissao.Status.ENCERRADA, Transmissao.Status.PUBLICADA],
         ).order_by('-fim', '-atualizado_em')[:20],
         'seo': listing_seo(
-            request, 'Transmissões | YuBotuka',
+            request, 'Transmissões | YoBotuka',
             'Lives, próximas transmissões e gravações de Botucatu.',
         ),
     })
@@ -271,7 +271,7 @@ def transmissao_ao_vivo_publica(request):
     ).order_by('data_prevista')[:6]
     return render(request, 'publico/yubotuka/live.html', {
         'transmissao': transmissao, 'proximas': proximas,
-        'seo': listing_seo(request, 'Ao vivo | YuBotuka', 'Acompanhe transmissões ao vivo de Botucatu.'),
+        'seo': listing_seo(request, 'Ao vivo | YoBotuka', 'Acompanhe transmissões ao vivo de Botucatu.'),
     })
 
 
@@ -286,5 +286,5 @@ def transmissao_publica(request, slug):
 def ao_vivo(request):
     transmissions = Transmissao.objects.filter(ativo=True, excluido_em__isnull=True, status=Transmissao.Status.AO_VIVO, episodio__ativo=True, episodio__excluido_em__isnull=True, episodio__status=Episodio.Status.AO_VIVO, episodio__video_id__gt="", episodio__programa__ativo=True, episodio__programa__excluido_em__isnull=True, episodio__programa__canal__ativo=True, episodio__programa__canal__excluido_em__isnull=True).select_related("episodio", "episodio__programa").order_by("-inicio")
     recentes = _public_episodes().order_by("-publicado_em")[:4]
-    seo = listing_seo(request, 'YTv Botuka ao vivo', 'Transmissões e conteúdos audiovisuais locais da YTv Botuka.')
+    seo = listing_seo(request, 'YoBotuka ao vivo', 'Transmissões e conteúdos audiovisuais locais da YoBotuka.')
     return render(request, "publico/ytv/ao_vivo.html", {"transmissoes": transmissions, "recentes": recentes, "seo": seo})

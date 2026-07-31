@@ -8,6 +8,7 @@ from django.shortcuts import get_object_or_404, redirect, render
 
 from apps.accounts.permissions import usuario_tem_permissao
 from apps.core.services.maps import GeocodingService, MapService
+from apps.core.seo.page_builders import listing_seo, tourism_seo
 
 from .forms import (
     ContatoTurismoForm, EmpresaTuristicaForm, ExperienciaTuristicaForm,
@@ -649,6 +650,7 @@ def turismo_home(request):
         'experiencias': ExperienciaTuristica.objects.filter(status=TurismoStatus.PUBLICADO)[:6],
         'videos': TurismoVideo.objects.filter(status=TurismoStatus.PUBLICADO)[:6],
         'playlists': TurismoPlaylist.objects.filter(status=TurismoStatus.PUBLICADO)[:6],
+        'seo': listing_seo(request, 'Turismo em Botucatu | Botuka', 'Conheça pontos turísticos, roteiros, guias e experiências em Botucatu.'),
     })
 
 
@@ -656,7 +658,7 @@ def locais_publicos(request):
     locais = LocalTuristico.objects.filter(
         status=TurismoStatus.PUBLICADO,
     ).order_by('-destaque_home', 'nome')
-    return render(request, 'publico/turismo/locais.html', {'locais': locais})
+    return render(request, 'publico/turismo/locais.html', {'locais': locais, 'seo': listing_seo(request, 'Pontos turísticos de Botucatu | Botuka', 'Descubra atrações e pontos turísticos publicados de Botucatu.')})
 
 
 def local_publico(request, slug):
@@ -672,23 +674,25 @@ def local_publico(request, slug):
     map_url = ''
     if local.visibilidade_localizacao == 'PUBLICA' and local.latitude is not None and local.longitude is not None:
         map_url = MapService().public_url(local.latitude, local.longitude, local.nome)
-    return render(request, 'publico/turismo/local.html', {'local': local, 'map_url': map_url, 'share_object': local, 'share_type': 'turismo'})
+    return render(request, 'publico/turismo/local.html', {'local': local, 'map_url': map_url, 'share_object': local, 'share_type': 'turismo', 'seo': tourism_seo(request, local)})
 
 
 def guias_publicos(request):
     return render(request, 'publico/turismo/guias.html', {
         'guias': GuiaTuristico.objects.filter(status=TurismoStatus.PUBLICADO, verificado=True),
+        'seo': listing_seo(request, 'Guias de turismo em Botucatu | Botuka', 'Encontre guias de turismo públicos e verificados em Botucatu.'),
     })
 
 
 def guia_publico(request, slug):
     guia = get_object_or_404(GuiaTuristico.objects, slug=slug, status=TurismoStatus.PUBLICADO, verificado=True)
-    return render(request, 'publico/turismo/guia.html', {'guia': guia})
+    return render(request, 'publico/turismo/guia.html', {'guia': guia, 'seo': tourism_seo(request, guia, kind='guia')})
 
 
 def roteiros_publicos(request):
     return render(request, 'publico/turismo/roteiros.html', {
         'roteiros': RoteiroTuristico.objects.filter(status=TurismoStatus.PUBLICADO),
+        'seo': listing_seo(request, 'Roteiros turísticos em Botucatu | Botuka', 'Roteiros publicados para conhecer Botucatu e região.'),
     })
 
 
@@ -697,4 +701,4 @@ def roteiro_publico(request, slug):
         RoteiroTuristico.objects.prefetch_related('locais', 'guias'),
         slug=slug, status=TurismoStatus.PUBLICADO,
     )
-    return render(request, 'publico/turismo/roteiro.html', {'roteiro': roteiro})
+    return render(request, 'publico/turismo/roteiro.html', {'roteiro': roteiro, 'seo': tourism_seo(request, roteiro, kind='roteiro')})

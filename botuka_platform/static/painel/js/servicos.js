@@ -107,6 +107,18 @@ document.addEventListener('change', async (event) => {
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('[data-image-input]').forEach((input) => {
+    input.addEventListener('change', () => {
+      const preview = input.parentElement.querySelector('[data-image-preview]');
+      if (!preview) return;
+      const file = input.files[0];
+      if (!file) { preview.replaceChildren(); return; }
+      const image = document.createElement('img');
+      image.src = URL.createObjectURL(file);
+      image.alt = 'Prévia da nova imagem principal';
+      preview.replaceChildren(image);
+    });
+  });
   const linkList = document.querySelector('[data-link-list]');
   const linkTemplate = document.querySelector('[data-link-template]');
   const addLink = document.querySelector('[data-add-link]');

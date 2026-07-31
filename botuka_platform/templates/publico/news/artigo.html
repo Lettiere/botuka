@@ -3,11 +3,37 @@
 
 {% block public_styles %}
 <link rel="stylesheet" href="{% static 'news/css/artigo-detalhe.css' %}">
+<style>
+  /* Torna a imagem de capa do artigo responsiva e proporcional */
+  .article-hero-image {
+    width: 100%;
+    max-width: 100%;
+    margin: 0 0 1.5rem 0;
+    display: block;
+    text-align: center;
+  }
+  .article-hero-image img {
+    display: block;
+    max-width: 100%;
+    width: 100%;
+    height: auto;
+    object-fit: cover;
+    border-radius: 0.8rem;
+  }
+  @media (max-width: 600px) {
+    .article-hero-image img {
+      border-radius: 0.4rem;
+    }
+  }
+</style>
 {% endblock %}
+
+{% block global_share %}{% endblock %}
 
 {% block public_content %}
 <div class="article-reading-progress" data-reading-progress aria-hidden="true"><span></span></div>
-<main id="conteudo-principal" class="article-detail-page">
+{% load sharing_tags %}{% public_url artigo as article_public_url %}
+<main id="conteudo-principal" class="article-detail-page" data-public-url="{{ article_public_url }}">
   <div class="article-detail-page__container">
     {% include "publico/news/includes/breadcrumb_news.html" %}
     {% include "publico/includes/ad_slot.html" with format="leaderboard" %}
@@ -15,12 +41,22 @@
     <div class="article-detail-page__grid">
       <article class="article-detail-page__main" data-article-content>
         {% include "publico/news/partials/artigo_header.html" %}
-        {% include "publico/news/partials/artigo_compartilhamento.html" %}
-
         {% if artigo.imagem_capa %}
           <figure class="article-hero-image">
-            <img src="{{ artigo.imagem_capa.url }}" alt="{{ artigo.titulo }}" width="1200" height="675" loading="eager" fetchpriority="high" decoding="async">
-            {% if artigo.credito_imagem %}<figcaption>Imagem: {{ artigo.credito_imagem }}</figcaption>{% endif %}
+            <img
+              src="{{ artigo.imagem_capa.url }}"
+              alt="{{ artigo.texto_alternativo_imagem|default:artigo.titulo }}"
+              loading="eager"
+              fetchpriority="high"
+              decoding="async"
+            >
+            {% if artigo.legenda_imagem or artigo.credito_imagem or artigo.fonte_imagem %}
+              <figcaption>
+                {% if artigo.legenda_imagem %}{{ artigo.legenda_imagem }}{% endif %}
+                {% if artigo.credito_imagem %} · Crédito: {{ artigo.credito_imagem }}{% endif %}
+                {% if artigo.fonte_imagem %} · Fonte: {{ artigo.fonte_imagem }}{% endif %}
+              </figcaption>
+            {% endif %}
           </figure>
         {% endif %}
 
@@ -38,6 +74,7 @@
         {% include "publico/news/partials/artigo_fontes.html" %}
         {% include "publico/news/partials/artigo_tags.html" %}
         {% include "publico/news/partials/artigo_autor.html" %}
+        {% include "publico/news/partials/artigo_compartilhamento.html" %}
         {% include "publico/news/partials/artigo_comentarios.html" %}
       </article>
 

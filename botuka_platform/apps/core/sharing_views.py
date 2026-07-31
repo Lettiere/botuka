@@ -20,6 +20,8 @@ def qrcode_png(request, tipo, uuid):
     response = HttpResponse(gerar_qrcode_png(obj, request), content_type='image/png')
     response['Content-Disposition'] = f'inline; filename="botuka-{tipo}-{uuid}.png"'
     response['X-Content-Type-Options'] = 'nosniff'
+    response['Cache-Control'] = 'no-store'
+    response['Vary'] = 'Host, X-Forwarded-Host, X-Forwarded-Proto'
     return response
 
 
@@ -29,6 +31,8 @@ def qrcode_svg(request, tipo, uuid):
     response = HttpResponse(gerar_qrcode_svg(obj, request), content_type='image/svg+xml')
     response['Content-Disposition'] = f'inline; filename="botuka-{tipo}-{uuid}.svg"'
     response['X-Content-Type-Options'] = 'nosniff'
+    response['Cache-Control'] = 'no-store'
+    response['Vary'] = 'Host, X-Forwarded-Host, X-Forwarded-Proto'
     return response
 
 

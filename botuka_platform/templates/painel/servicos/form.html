@@ -1,44 +1,61 @@
 {% extends "painel/base.html" %}
 {% load static %}
-{% block title %}{{ titulo }} | Painel BOTUKA{% endblock %}
+
+{% block title %}
+  {{ titulo }} | Painel BOTUKA
+{% endblock %}
+
 {% block painel_content %}
-<link rel="stylesheet" href="{% static 'painel/css/servicos.css' %}">
-<section class="painel-card servicos-page">
-  <div class="d-flex justify-content-between align-items-start gap-3 mb-4">
-    <div>
-      <h1 class="painel-title mb-1">{{ titulo }}</h1>
-      <p class="text-muted mb-0">Preencha as informações do serviço e salve como rascunho ou pendente.</p>
-    </div>
-    <a class="btn btn-outline-secondary" href="{% url 'painel:servicos_lista' %}">Voltar</a>
-  </div>
-  <form method="post" enctype="multipart/form-data" class="service-form" novalidate>
-    {% csrf_token %}
-    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
-    {% include "painel/servicos/_responsavel_classificacao.html" %}
-    <section class="service-step">
-      <div class="service-step-heading"><div><h2>Dados do serviço</h2></div></div>
-      <div class="row g-3">
-    {% for field in form %}
-      {% if field.name != "prestador_tipo" and field.name != "empresa" and field.name != "setor" and field.name != "area" and field.name != "profissao" and field.name != "tipo_servico" and field.name != "forma_cobranca" %}
-      <div class="{% if field.field.widget.input_type == 'checkbox' %}col-12{% else %}col-md-6{% endif %}">
-        {% if field.field.widget.input_type == 'checkbox' %}
-          <div class="form-check">{{ field }} <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label></div>
-        {% else %}
-          <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
-          {{ field }}
-        {% endif %}
-        {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
-        {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+  <link rel="stylesheet" href="{% static 'painel/css/servicos.css' %}">
+
+  <section class="painel-card servicos-page">
+    <header class="service-panel-header">
+      <div>
+        <span class="service-panel-kicker">Serviços</span>
+        <h1 class="painel-title">{{ titulo }}</h1>
+        <p>
+          Altere conteúdo, classificação, contatos, valores e imagens sem mudar o proprietário do cadastro.
+        </p>
       </div>
+      <div>
+        <a class="btn btn-outline-primary" href="{% url 'painel:servico_preview' servico.uuid %}">Prévia</a>
+        <a class="btn btn-outline-secondary" href="{% url 'painel:servico_detalhe' servico.uuid %}">Cancelar</a>
+      </div>
+    </header>
+    <form method="post" enctype="multipart/form-data" class="service-form" novalidate>
+      {% csrf_token %}
+      {% if form.non_field_errors %}
+        <div class="alert alert-danger">
+          {{ form.non_field_errors }}
+        </div>
       {% endif %}
-    {% endfor %}
+
+      {% include "painel/servicos/_form_sections.html" %}
+
+      <section class="service-step">
+        <div class="service-step-heading">
+          <span class="service-step-number">6</span>
+          <div>
+            <h2>Recursos complementares</h2>
+            <p>
+              Gerencie áreas estruturadas, links, vídeos e características nas telas especializadas.
+            </p>
+          </div>
+        </div>
+        <div class="service-related-actions">
+          <a href="{% url 'painel:servico_areas' servico.uuid %}">Áreas atendidas</a>
+          <a href="{% url 'painel:servico_links' servico.uuid %}">Links e redes</a>
+          <a href="{% url 'painel:servico_caracteristicas' servico.uuid %}">Características</a>
+        </div>
+      </section>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit" name="acao" value="salvar">
+          Salvar alterações
+        </button>
       </div>
-    </section>
-    <div class="d-flex gap-2">
-      <button class="btn btn-primary" type="submit">Salvar</button>
-      {% if servico %}<a class="btn btn-outline-secondary" href="{% url 'painel:servico_detalhe' servico.uuid %}">Cancelar</a>{% endif %}
-    </div>
-  </form>
-</section>
-<script src="{% static 'painel/js/servicos.js' %}?v=20260728-1"></script>
+    </form>
+  </section>
+
+  <script src="{% static 'painel/js/servicos.js' %}?v=20260729-1" defer></script>
 {% endblock %}

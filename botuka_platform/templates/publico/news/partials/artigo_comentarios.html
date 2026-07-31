@@ -1,4 +1,62 @@
-<section class="article-comments" aria-labelledby="article-comments-title">
-  <i class="bi bi-chat-square-text" aria-hidden="true"></i>
-  <div><h2 id="article-comments-title">Conversa com responsabilidade</h2><p>Os comentários ainda não estão disponíveis nesta publicação. O BOTUKA está preparando um espaço seguro para participação da comunidade.</p></div>
+<section class="article-comments" id="comentarios" aria-labelledby="article-comments-title">
+  <header><div><h2 id="article-comments-title">Comentários</h2><p>Comentários principais mais recentes; respostas em ordem cronológica.</p></div></header>
+  {% if artigo.comentarios_permitidos and not artigo.comentarios_encerrados %}
+    {% if request.user.is_authenticated %}
+      <form method="post" action="{% url 'news_public:comentario_novo' artigo.slug %}" class="comment-form" data-comment-form>
+        {% csrf_token %}
+        <div class="comment-avatar">{% if request.user.foto %}<img src="{{ request.user.foto.url }}" alt="" width="42" height="42">{% else %}{{ request.user.username|slice:":1"|upper }}{% endif %}</div>
+        <div><label for="{{ comentario_form.texto.id_for_label }}">Comentar como {{ request.user.get_full_name|default:request.user.username }}</label>{{ comentario_form.texto }}<div class="comment-form__meta"><span data-comment-counter>0/1000</span><button type="submit">Publicar</button></div></div>
+      </form>
+    {% else %}
+      <a class="comment-login" href="{% url 'accounts:login' %}?next={{ request.path|urlencode }}">Entrar para comentar</a>
+    {% endif %}
+  {% elif artigo.comentarios_encerrados %}
+    <p class="comment-notice">A conversa foi encerrada. Os comentários publicados continuam disponíveis.</p>
+  {% endif %}
+
+  <div class="comment-list">
+    {% for comentario in pagina_comentarios %}
+      <article class="comment" id="comentario-{{ comentario.uuid }}">
+        <div class="comment-avatar">{% if comentario.usuario.foto %}<img src="{{ comentario.usuario.foto.url }}" alt="" width="42" height="42">{% else %}{{ comentario.usuario.username|slice:":1"|upper }}{% endif %}</div>
+        <div class="comment__body">
+          <header><strong>{{ comentario.usuario.get_full_name|default:comentario.usuario.username }}</strong><time datetime="{{ comentario.criado_em|date:'c' }}">{{ comentario.criado_em|timesince }} atrás</time>{% if comentario.editado_em %}<small>Editado</small>{% endif %}</header>
+          <p>{{ comentario.texto|linebreaksbr }}</p>
+          <div class="comment__actions">
+            {% if request.user.is_authenticated %}
+              <button type="button" data-reply-to="{{ comentario.uuid }}" data-reply-name="{{ comentario.usuario.username }}">Responder</button>
+              <form method="post" action="{% url 'news_public:comentario_curtir' comentario.uuid %}">{% csrf_token %}<button type="submit">Curtir · {{ comentario.total_curtidas }}</button></form>
+              {% if request.user == comentario.usuario %}
+                <button type="button" data-edit-comment="{{ comentario.uuid }}">Editar</button>
+                <form method="post" action="{% url 'news_public:comentario_excluir' comentario.uuid %}" data-confirm-comment>{% csrf_token %}<button type="submit">Excluir</button></form>
+              {% else %}
+                <button type="button" data-report-comment="{{ comentario.uuid }}">Denunciar</button>
+              {% endif %}
+            {% endif %}
+          </div>
+          {% if request.user.is_authenticated %}
+            <form method="post" action="{% url 'news_public:comentario_responder' comentario.uuid %}" class="comment-inline-form" data-reply-form="{{ comentario.uuid }}" hidden>{% csrf_token %}<label>Responder a @{{ comentario.usuario.username }}</label><textarea name="texto" maxlength="1000" required></textarea><div><button type="button" data-cancel-reply>Cancelar</button><button type="submit">Publicar resposta</button></div></form>
+            {% if request.user == comentario.usuario %}<form method="post" action="{% url 'news_public:comentario_editar' comentario.uuid %}" class="comment-inline-form" data-edit-form="{{ comentario.uuid }}" hidden>{% csrf_token %}<textarea name="texto" maxlength="1000" required>{{ comentario.texto }}</textarea><div><button type="button" data-cancel-edit>Cancelar</button><button type="submit">Salvar</button></div></form>{% endif %}
+            {% if request.user != comentario.usuario %}<form method="post" action="{% url 'news_public:comentario_denunciar' comentario.uuid %}" class="comment-inline-form" data-report-form="{{ comentario.uuid }}" hidden>{% csrf_token %}<label>Motivo da denúncia</label><textarea name="motivo" maxlength="500" required></textarea><div><button type="button" data-cancel-report>Cancelar</button><button type="submit">Enviar denúncia</button></div></form>{% endif %}
+          {% endif %}
+
+          {% with respostas=comentario.respostas.all %}
+            {% if respostas %}
+              <button type="button" class="comment-replies-toggle" data-replies-toggle aria-expanded="false">Ver {{ respostas|length }} resposta{{ respostas|length|pluralize }}</button>
+              <div class="comment-replies" data-replies hidden>
+                {% for resposta in respostas %}
+                  <article class="comment comment--reply">
+                    <div class="comment-avatar">{% if resposta.usuario.foto %}<img src="{{ resposta.usuario.foto.url }}" alt="" width="34" height="34">{% else %}{{ resposta.usuario.username|slice:":1"|upper }}{% endif %}</div>
+                    <div class="comment__body"><header><strong>{{ resposta.usuario.get_full_name|default:resposta.usuario.username }}</strong><time>{{ resposta.criado_em|timesince }} atrás</time>{% if resposta.editado_em %}<small>Editado</small>{% endif %}</header><p>{% if resposta.usuario_mencionado %}<b>@{{ resposta.usuario_mencionado.username }}</b> {% endif %}{{ resposta.texto|linebreaksbr }}</p>
+                      {% if request.user.is_authenticated %}<div class="comment__actions"><button type="button" data-reply-to="{{ resposta.uuid }}" data-reply-name="{{ resposta.usuario.username }}">Responder</button><form method="post" action="{% url 'news_public:comentario_curtir' resposta.uuid %}">{% csrf_token %}<button type="submit">Curtir · {{ resposta.total_curtidas }}</button></form></div><form method="post" action="{% url 'news_public:comentario_responder' resposta.uuid %}" class="comment-inline-form" data-reply-form="{{ resposta.uuid }}" hidden>{% csrf_token %}<textarea name="texto" maxlength="1000" required placeholder="@{{ resposta.usuario.username }}"></textarea><div><button type="button" data-cancel-reply>Cancelar</button><button type="submit">Publicar</button></div></form>{% endif %}
+                    </div>
+                  </article>
+                {% endfor %}
+              </div>
+            {% endif %}
+          {% endwith %}
+        </div>
+      </article>
+    {% empty %}<p class="comment-empty">Seja a primeira pessoa a comentar.</p>{% endfor %}
+  </div>
+  {% if pagina_comentarios.has_next %}<a class="comment-load-more" href="?comentarios={{ pagina_comentarios.next_page_number }}#comentarios">Carregar mais comentários</a>{% endif %}
 </section>

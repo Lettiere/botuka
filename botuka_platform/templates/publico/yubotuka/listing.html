@@ -1,8 +1,8 @@
 {% extends "_layout/platform/public.html" %}{% load static %}
-{% block title %}{{ titulo }} · YuBotuka{% endblock %}
+{% block title %}{{ titulo }} · YoBotuka{% endblock %}
 {% block public_styles %}<link rel="stylesheet" href="{% static 'public/css/yubotuka.css' %}">{% endblock %}
 {% block public_content %}<main class="yu-public"><div class="container-botuka">
-  <nav class="public-breadcrumb"><a href="{% url 'media_public:yubotuka_home' %}">YuBotuka</a> / {{ titulo }}</nav>
-  <header class="yu-listing-header"><span class="section-kicker">YuBotuka</span><h1>{{ titulo }}</h1><p>{{ descricao }}</p></header>
+  <nav class="public-breadcrumb"><a href="{% url 'media_public:yubotuka_home' %}">YoBotuka</a> / {{ titulo }}</nav>
+  <header class="yu-listing-header"><span class="section-kicker">YoBotuka</span><h1>{{ titulo }}</h1><p>{{ descricao }}</p></header>
   <section class="yu-section"><div class="yu-public-grid">{% for video in videos %}{% include 'publico/yubotuka/_video_card.html' %}{% empty %}<div class="yu-empty"><h2>Nenhum vídeo publicado</h2><p>Esta página ainda não possui conteúdo público.</p></div>{% endfor %}</div>{% if page_obj %}{% include 'publico/includes/pagination.html' %}{% endif %}</section>
 </div></main>{% endblock %}

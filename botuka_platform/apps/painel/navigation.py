@@ -100,7 +100,7 @@ def painel_navigation(request, permission_checker=None):
     ])
     groups.append({"label": "Oportunidades", "items": opportunities})
 
-    if _can("eventos.visualizar", "eventos.criar"):
+    if _can("events.acessar", "events.criar_proprio", "events.criar_empresa"):
         groups.append({"label": "Agenda", "items": [
             {"label": "Eventos", "icon": "bi-calendar-event-fill", "url": reverse("painel:eventos_lista")},
         ]})

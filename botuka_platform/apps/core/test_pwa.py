@@ -42,6 +42,8 @@ class PwaIntegrationTests(SimpleTestCase):
         self.assertContains(response, '/offline/')
         self.assertContains(response, '/painel/')
         self.assertContains(response, '/conta/')
+        self.assertContains(response, '/qrcode/')
+        self.assertContains(response, '/compartilhar/')
         self.assertContains(response, 'SKIP_WAITING')
         self.assertContains(response, 'botuka-pwa-v2')
 

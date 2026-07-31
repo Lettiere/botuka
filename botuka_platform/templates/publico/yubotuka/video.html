@@ -1,8 +1,8 @@
 {% extends "_layout/platform/public.html" %}{% load static %}
-{% block title %}{{ video.titulo }} · YuBotuka{% endblock %}
+{% block title %}{{ video.titulo }} · YoBotuka{% endblock %}
 {% block public_styles %}<link rel="stylesheet" href="{% static 'public/css/yubotuka.css' %}">{% endblock %}
 {% block public_content %}<main class="yu-public"><div class="container-botuka yu-video-page">
-  <nav class="public-breadcrumb"><a href="{% url 'media_public:yubotuka_home' %}">YuBotuka</a>{% if video.categoria %} / <a href="{% url 'media_public:categoria' video.categoria.slug %}">{{ video.categoria.nome }}</a>{% endif %} / Vídeo</nav>
+  <nav class="public-breadcrumb"><a href="{% url 'media_public:yubotuka_home' %}">YoBotuka</a>{% if video.categoria %} / <a href="{% url 'media_public:categoria' video.categoria.slug %}">{{ video.categoria.nome }}</a>{% endif %} / Vídeo</nav>
   <article><header><span class="section-kicker">{{ video.categoria|default:video.get_tipo_display }}</span><h1>{{ video.titulo }}</h1><p>{{ video.canal.nome }} · {{ video.publicado_em|date:'d/m/Y' }} · {{ video.get_classificacao_display }}</p></header>
   <div class="yu-video-embed">{% if video.thumbnail %}<img src="{{ video.thumbnail }}" alt="" width="1280" height="720">{% endif %}<button type="button" data-video-src="{{ video.embed_url }}" aria-label="Carregar vídeo {{ video.titulo }}"><i class="bi bi-play-circle"></i><span>Reproduzir vídeo</span></button></div>
   <div class="yu-video-copy"><p class="lead">{{ video.descricao_curta }}</p>{{ video.descricao|linebreaks }}{% if video.videos_tags.all %}<div class="yu-chips">{% for relacao in video.videos_tags.all %}<span>#{{ relacao.tag.nome }}</span>{% endfor %}</div>{% endif %}</div></article>

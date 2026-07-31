@@ -9,7 +9,7 @@
 
 {% block content %}
 <div class="public-shell" data-public-shell>
-  {% if share_object %}{% load sharing_tags %}{% public_share_actions share_object share_type %}{% endif %}
+  {% block global_share %}{% if share_object %}{% load sharing_tags %}{% public_share_actions share_object share_type %}{% endif %}{% endblock %}
   {% block public_content %}{% endblock %}
 </div>
 {% endblock %}

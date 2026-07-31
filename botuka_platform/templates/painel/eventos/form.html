@@ -1,0 +1,70 @@
+{% extends "painel/base.html" %}{% load static %}
+{% block title %}{{ titulo }} | Painel BOTUKA{% endblock %}
+{% block painel_content %}
+<link rel="stylesheet" href="{% static 'painel/css/eventos.css' %}">
+<section class="painel-card eventos-page">
+  <header class="event-panel-header">
+    <div><span class="event-panel-kicker">Eventos</span><h1 class="painel-title">{{ titulo }}</h1><p>Cadastre a programação, responsáveis e regras públicas seguindo o fluxo editorial do BOTUKA.</p></div>
+    <a class="btn btn-outline-secondary" href="{% if evento %}{% url 'painel:evento_detalhe' evento.uuid %}{% else %}{% url 'painel:eventos_lista' %}{% endif %}"><i class="bi bi-x-lg"></i> Cancelar</a>
+  </header>
+  <form method="post" enctype="multipart/form-data" class="event-form" novalidate>{% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+    <section class="event-step">
+      <div class="event-step-heading"><span class="event-step-number">1</span><div><h2>Responsabilidade e promoção</h2><p>Defina em nome de quem o evento será administrado, sem confundir os diferentes papéis.</p></div></div>
+      <div class="row g-3">
+        {% for field in form %}{% if field.name == "empresa_promotora" or field.name == "proprietario" or field.name == "responsavel_edicao" %}
+        <div class="col-12 col-lg-4"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}{{ field.errors }}</div>
+        {% endif %}{% endfor %}
+        <div class="col-12 col-md-6"><label class="form-label" for="{{ form.organizador.id_for_label }}">{{ form.organizador.label }}</label>{{ form.organizador }}{{ form.organizador.errors }}</div>
+        <div class="col-12 col-md-6"><label class="form-label" for="{{ form.realizador.id_for_label }}">{{ form.realizador.label }}</label>{{ form.realizador }}{{ form.realizador.errors }}</div>
+      </div>
+    </section>
+    <section class="event-step">
+      <div class="event-step-heading"><span class="event-step-number">2</span><div><h2>Informações principais</h2><p>Conteúdo usado na página pública, busca e compartilhamentos.</p></div></div>
+      <div class="row g-3">
+        <div class="col-12"><label class="form-label required" for="{{ form.titulo.id_for_label }}">{{ form.titulo.label }}</label>{{ form.titulo }}{{ form.titulo.errors }}</div>
+        <div class="col-12"><label class="form-label required" for="{{ form.resumo.id_for_label }}">{{ form.resumo.label }}</label>{{ form.resumo }}<div class="form-text">{{ form.resumo.help_text }}</div>{{ form.resumo.errors }}</div>
+        <div class="col-12"><label class="form-label required" for="{{ form.descricao.id_for_label }}">{{ form.descricao.label }}</label>{% include "components/rich_text_editor.html" with field=form.descricao %}{{ form.descricao.errors }}<div class="form-text">Formatação segura: scripts, iframes e estilos arbitrários são removidos no servidor.</div></div>
+        <div class="col-12 col-md-6"><label class="form-label" for="{{ form.categoria.id_for_label }}">{{ form.categoria.label }}</label>{{ form.categoria }}{{ form.categoria.errors }}</div>
+        <div class="col-12 col-md-6"><div class="event-check-card">{{ form.publico }} <label for="{{ form.publico.id_for_label }}">{{ form.publico.label }}</label><small>Somente eventos públicos e publicados aparecem na agenda.</small></div>{{ form.publico.errors }}</div>
+      </div>
+    </section>
+    <section class="event-step">
+      <div class="event-step-heading"><span class="event-step-number">3</span><div><h2>Data e localização</h2><p>Informe datas completas e um local compreensível para o público.</p></div></div>
+      <div class="row g-3">
+        <div class="col-12 col-md-6"><label class="form-label required" for="{{ form.inicio.id_for_label }}">{{ form.inicio.label }}</label>{{ form.inicio }}{{ form.inicio.errors }}</div>
+        <div class="col-12 col-md-6"><label class="form-label" for="{{ form.fim.id_for_label }}">{{ form.fim.label }}</label>{{ form.fim }}{{ form.fim.errors }}</div>
+        <div class="col-12 col-md-5"><label class="form-label required" for="{{ form.local.id_for_label }}">{{ form.local.label }}</label>{{ form.local }}{{ form.local.errors }}</div>
+        <div class="col-12 col-md-7"><label class="form-label" for="{{ form.endereco.id_for_label }}">{{ form.endereco.label }}</label>{{ form.endereco }}{{ form.endereco.errors }}</div>
+      </div>
+    </section>
+    <section class="event-step">
+      <div class="event-step-heading"><span class="event-step-number">4</span><div><h2>Imagem e acessibilidade</h2><p>Use uma capa nítida e descreva seu conteúdo para tecnologias assistivas.</p></div></div>
+      <div class="row g-3 align-items-start">
+        <div class="col-12 col-lg-6"><label class="event-upload"><i class="bi bi-image"></i><strong>Selecionar imagem principal</strong><span data-event-cover-name>{% if evento.imagem_principal %}{{ evento.imagem_principal.name }}{% else %}JPG, PNG ou WebP{% endif %}</span>{{ form.imagem_principal }}</label>{{ form.imagem_principal.errors }}<div class="event-cover-preview" data-event-cover-preview>{% if evento.imagem_principal %}<img src="{{ evento.imagem_principal.url }}" alt="Prévia atual">{% endif %}</div></div>
+        <div class="col-12 col-lg-6"><label class="form-label" for="{{ form.imagem_alt.id_for_label }}">{{ form.imagem_alt.label }}</label>{{ form.imagem_alt }}<div class="form-text">{{ form.imagem_alt.help_text }}</div>{{ form.imagem_alt.errors }}</div>
+      </div>
+    </section>
+    <section class="event-step">
+      <div class="event-step-heading"><span class="event-step-number">5</span><div><h2>Demonstração de interesse</h2><p>“Eu vou!” registra intenção e nunca representa inscrição, ingresso ou reserva.</p></div></div>
+      <div class="row g-3">
+        <div class="col-12"><div class="event-check-card">{{ form.permitir_interesse }} <label for="{{ form.permitir_interesse.id_for_label }}">{{ form.permitir_interesse.label }}</label><small>O botão só aparece enquanto o evento publicado aceitar novos interesses.</small></div>{{ form.permitir_interesse.errors }}</div>
+        <div class="col-12"><label class="form-label" for="{{ form.mensagem_interesse.id_for_label }}">{{ form.mensagem_interesse.label }}</label>{{ form.mensagem_interesse }}<div class="form-text">{{ form.mensagem_interesse.help_text }}</div>{{ form.mensagem_interesse.errors }}</div>
+      </div>
+    </section>
+    <section class="event-step event-step--future">
+      <div class="event-step-heading"><span class="event-step-number">6</span><div><h2>Inscrições e ingressos</h2><p>Configurações preparatórias. O BOTUKA ainda não oferece checkout, pagamento, QR Code, reserva ou check-in.</p></div></div>
+      <div class="alert alert-info"><i class="bi bi-info-circle"></i> Uma URL externa pode direcionar ao organizador, mas permanece independente da demonstração de interesse.</div>
+      <div class="row g-3">
+        <div class="col-12"><div class="event-check-card">{{ form.aceita_inscricoes_futuras }} <label for="{{ form.aceita_inscricoes_futuras.id_for_label }}">{{ form.aceita_inscricoes_futuras.label }}</label></div></div>
+        <div class="col-12 col-md-6"><label class="form-label" for="{{ form.modalidade_participacao_futura.id_for_label }}">{{ form.modalidade_participacao_futura.label }}</label>{{ form.modalidade_participacao_futura }}{{ form.modalidade_participacao_futura.errors }}</div>
+        <div class="col-12 col-md-6"><label class="form-label" for="{{ form.limite_estimado_publico.id_for_label }}">{{ form.limite_estimado_publico.label }}</label>{{ form.limite_estimado_publico }}{{ form.limite_estimado_publico.errors }}</div>
+        <div class="col-12"><label class="form-label" for="{{ form.url_inscricao_externa.id_for_label }}">{{ form.url_inscricao_externa.label }}</label>{{ form.url_inscricao_externa }}<div class="form-text">{{ form.url_inscricao_externa.help_text }}</div>{{ form.url_inscricao_externa.errors }}</div>
+        <div class="col-12"><label class="form-label" for="{{ form.observacao_ingresso.id_for_label }}">{{ form.observacao_ingresso.label }}</label>{{ form.observacao_ingresso }}{{ form.observacao_ingresso.errors }}</div>
+      </div>
+    </section>
+    <div class="form-actions"><a class="btn btn-outline-secondary" href="{% if evento %}{% url 'painel:evento_detalhe' evento.uuid %}{% else %}{% url 'painel:eventos_lista' %}{% endif %}">Cancelar</a><button class="btn btn-primary" type="submit"><i class="bi bi-check2-circle"></i> Salvar evento</button></div>
+  </form>
+</section>
+<script src="{% static 'painel/js/eventos.js' %}" defer></script>
+{% endblock %}
