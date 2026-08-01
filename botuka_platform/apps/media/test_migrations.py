@@ -44,7 +44,7 @@ class YuBotukaDataMigrationTests(TransactionTestCase):
 
     def tearDown(self):
         executor = MigrationExecutor(connection)
-        executor.migrate(executor.loader.graph.leaf_nodes())
+        executor.migrate(executor.loader.graph.leaf_nodes(self.app))
         from apps.media.models import (
             Canal,
             CategoriaYuBotuka,

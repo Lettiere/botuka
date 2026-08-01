@@ -4,6 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.core.models import Auditoria, Perfil, Permissao, PerfilPermissao
+from apps.locations.models import Cidade, Estado, Pais
 from apps.organizations.authorization import acao_autorizada, organizacoes_no_escopo
 from apps.organizations.models import (
     Capacidade, Empresa, EmpresaCapacidade, EmpresaUsuario,
@@ -29,11 +30,16 @@ class AuthorizationFoundationTests(TestCase):
         cls.outro = Usuario.objects.create_user(
             username='other-foundation', email='other@example.com', password='test-only',
         )
+        pais = Pais.objects.create(nome='Brasil', codigo_iso_2='BR', codigo_iso_3='BRA')
+        estado = Estado.objects.create(pais=pais, nome='São Paulo', sigla='SP')
+        cidade = Cidade.objects.create(estado=estado, nome='Botucatu')
         cls.empresa = Empresa.objects.create(
             usuario_proprietario=cls.comum, nome_fantasia='Organização A',
+            cidade=cidade, estado=estado,
         )
         cls.outra_empresa = Empresa.objects.create(
             usuario_proprietario=cls.outro, nome_fantasia='Organização B',
+            cidade=cidade, estado=estado,
         )
         cls.vinculo = EmpresaUsuario.objects.create(
             empresa=cls.empresa, usuario=cls.comum,

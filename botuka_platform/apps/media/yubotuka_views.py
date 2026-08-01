@@ -529,7 +529,7 @@ def configuracao(request):
         return redirect('painel:yubotuka_configuracao')
     return render(request, 'painel/yubotuka/form.html', {
         **_contexto_base(request), 'form': form,
-        'titulo': 'Configurações do YuBotuka',
+        'titulo': 'Configurações do YoBotuka',
         'subtitulo': 'Controle a apresentação pública e os limites de conteúdo.',
         'cancelar_url': 'painel:yubotuka_dashboard',
     })

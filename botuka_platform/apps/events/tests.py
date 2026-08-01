@@ -8,6 +8,7 @@ from django.utils import timezone
 from apps.accounts.models import AcessoModulo, ConcessaoPermissao
 from apps.core.models import Permissao
 from apps.organizations.models import Empresa, EmpresaUsuario
+from apps.locations.models import Cidade, Estado, Pais
 
 from .forms import EventoForm
 from .models import Evento, HistoricoEvento, InteresseEvento
@@ -20,7 +21,13 @@ class EventTestMixin:
         )
         self.other = get_user_model().objects.create_user(
             username='other@example.com', email='other@example.com', password='safe-test-pass',
+            first_name='Pessoa', last_name='Interessada',
         )
+        pais = Pais.objects.create(
+            nome='Brasil Events', codigo_iso_2='EV', codigo_iso_3='EVT',
+        )
+        self.estado = Estado.objects.create(pais=pais, nome='São Paulo Events', sigla='EV')
+        self.cidade = Cidade.objects.create(estado=self.estado, nome='Botucatu Events')
 
     def grant(self, user, *codes):
         access, _ = AcessoModulo.objects.get_or_create(
@@ -67,8 +74,14 @@ class EventPermissionTests(EventTestMixin, TestCase):
 
     def test_company_scope_uses_official_relationship(self):
         self.grant(self.user, 'events.acessar', 'events.criar_empresa')
-        allowed = Empresa.objects.create(nome_fantasia='Permitida', usuario_proprietario=self.user)
-        denied = Empresa.objects.create(nome_fantasia='Negada', usuario_proprietario=self.other)
+        allowed = Empresa.objects.create(
+            nome_fantasia='Permitida', usuario_proprietario=self.user,
+            cidade=self.cidade, estado=self.estado,
+        )
+        denied = Empresa.objects.create(
+            nome_fantasia='Negada', usuario_proprietario=self.other,
+            cidade=self.cidade, estado=self.estado,
+        )
         EmpresaUsuario.objects.create(empresa=allowed, usuario=self.user, administrador=True)
         form = EventoForm(user=self.user)
         self.assertIn(allowed, form.fields['empresa_promotora'].queryset)

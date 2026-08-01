@@ -77,10 +77,18 @@ def _adicionar_unicos(destino, candidatos, usados, limite, exige_imagem=False):
 
 
 def artigos_por_area(slugs, usados=(), limite=3, agora=None):
+    nomes_base = {slug.replace("-", " ") for slug in slugs}
+    nomes = nomes_base | {nome.title() for nome in nomes_base}
     queryset = artigos_publicos(agora).filter(
         Q(categoria__slug__in=slugs)
+        | Q(categoria__nome__in=nomes)
         | Q(
             temas__slug__in=slugs,
+            temas__ativo=True,
+            temas__excluido_em__isnull=True,
+        )
+        | Q(
+            temas__nome__in=nomes,
             temas__ativo=True,
             temas__excluido_em__isnull=True,
         )
@@ -146,13 +154,14 @@ def obter_home_noticias(agora=None):
             exige_imagem=True,
         )
 
-    recentes = []
-    _adicionar_unicos(recentes, base, usados, 4)
     agro = artigos_por_area(AGRO_SLUGS, usados, 3, agora)
     usados.update(artigo.pk for artigo in agro)
     universidade = artigos_por_area(
         UNIVERSIDADE_SLUGS, usados, 3, agora
     )
+    usados.update(artigo.pk for artigo in universidade)
+    recentes = []
+    _adicionar_unicos(recentes, base, usados, 4)
 
     return {
         "manchete": manchete,
@@ -161,5 +170,5 @@ def obter_home_noticias(agora=None):
         "agro": agro,
         "universidade": universidade,
         "colunistas": colunistas_publicos(4, agora),
-        "ids_usados": usados | {artigo.pk for artigo in universidade},
+        "ids_usados": usados,
     }

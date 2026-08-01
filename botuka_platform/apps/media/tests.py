@@ -206,7 +206,7 @@ class YuBotukaPermissionAndWorkflowTests(TestCase):
         self.client.force_login(self.autor)
         response = self.client.get(reverse('painel:yubotuka_dashboard'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Gestão YuBotuka')
+        self.assertContains(response, 'Gestão YoBotuka')
 
     def test_manipulacao_de_canal_no_post_e_bloqueada(self):
         canal_proprio = Canal.objects.create(nome='Canal próprio', proprietario=self.autor)
@@ -350,7 +350,7 @@ class YuBotukaPermissionAndWorkflowTests(TestCase):
         self._video(status=Video.Status.PUBLICADO, titulo='Vídeo na home')
         response = self.client.get(reverse('media_public:yubotuka_home'))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'YuBotuka')
+        self.assertContains(response, 'YoBotuka')
 
 
 class YuBotukaPhaseThreeTests(TestCase):

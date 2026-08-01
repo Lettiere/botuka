@@ -7,8 +7,11 @@ from apps.core.models import Perfil, PerfilPermissao, Permissao
 
 class PanelNavigationTests(TestCase):
     module_labels = (
-        "Esportes", "YTv Botuka", "BOTUKA News", "Prefeitura",
-        "Turismo", "Vagas", "Currículo", "Candidaturas",
+        "BOTUKA News", "YoBotuka", "Prefeitura", "Turismo",
+        "Empresas", "Serviços", "Produtos", "Novo produto",
+        "Conversas de produtos", "Denúncias de produtos", "Vagas",
+        "Currículo", "Candidaturas", "Eventos", "Publicações",
+        "Rede social", "Mensagens", "Esportes",
     )
 
     def make_user(self, username, profile_name, *permissions):
@@ -39,16 +42,22 @@ class PanelNavigationTests(TestCase):
         self.client.force_login(user)
         response = self.client.get(reverse("painel:dashboard"))
         items = [item for group in response.context["painel_module_groups"] for item in group["items"]]
-        self.assertEqual({item["label"] for item in items}, {"Currículo", "Candidaturas"})
+        self.assertEqual(
+            {item["label"] for item in items},
+            {"Empresas", "Serviços", "Currículo", "Candidaturas"},
+        )
 
     def test_permissao_especifica_exibe_somente_modulo_autorizado(self):
-        user = self.make_user("reporter_nav", "NEWS_REPORTER_NAV", "news.criar")
+        user = self.make_user(
+            "reporter_nav", "NEWS_REPORTER_NAV",
+            "news.acessar_modulo", "news.criar",
+        )
         self.client.force_login(user)
         response = self.client.get(reverse("painel:dashboard"))
         items = [item for group in response.context["painel_module_groups"] for item in group["items"]]
         labels = {item["label"] for item in items}
         self.assertIn("BOTUKA News", labels)
-        self.assertNotIn("YTv Botuka", labels)
+        self.assertNotIn("YoBotuka", labels)
         self.assertNotIn("Prefeitura", labels)
         self.assertNotIn("Turismo", labels)
         self.assertEqual(self.client.get(reverse("painel:news_dashboard")).status_code, 200)

@@ -66,9 +66,9 @@ class YuBotukaPanelIntegrationTests(TestCase):
     def test_item_yubotuka_visivel_somente_para_usuario_autorizado(self):
         autorizado = str(self._navigation(self.autorizado))
         nao_autorizado = str(self._navigation(self.sem_permissao))
-        self.assertIn('YuBotuka', autorizado)
+        self.assertIn('YoBotuka', autorizado)
         self.assertIn(reverse('painel:yubotuka_dashboard'), autorizado)
-        self.assertNotIn('YuBotuka', nao_autorizado)
+        self.assertNotIn('YoBotuka', nao_autorizado)
 
     def test_alias_antigo_e_dashboard_novo_funcionam(self):
         self.client.force_login(self.autorizado)
@@ -76,7 +76,7 @@ class YuBotukaPanelIntegrationTests(TestCase):
         antigo = self.client.get('/painel/ytv/')
         self.assertEqual(novo.status_code, 200)
         self.assertEqual(antigo.status_code, 200)
-        self.assertContains(novo, 'YuBotuka')
+        self.assertContains(novo, 'YoBotuka')
         self.assertContains(novo, 'breadcrumb')
 
     def test_dashboard_expoe_links_principais_sem_rota_quebrada(self):
@@ -98,7 +98,7 @@ class YuBotukaPanelIntegrationTests(TestCase):
             HTTP_USER_AGENT='Mozilla/5.0 (Linux; Android 14) Mobile',
         )
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'YuBotuka')
+        self.assertContains(response, 'YoBotuka')
 
     def test_rotas_criticas_resolvem(self):
         for route in (

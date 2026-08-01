@@ -65,7 +65,7 @@ def painel_navigation(request, permission_checker=None):
             )
         )
         route = "painel:media_transmissao_lista" if somente_transmissao else "painel:yubotuka_dashboard"
-        content.append({"label": "YuBotuka", "icon": "bi-play-btn-fill", "url": reverse(route)})
+        content.append({"label": "YoBotuka", "icon": "bi-play-btn-fill", "url": reverse(route)})
     if _can("government.gerenciar", "government.criar", "government.editar", "government.revisar", "government.publicar"):
         content.append({"label": "Prefeitura", "icon": "bi-bank2", "url": reverse("painel:government_dashboard")})
     if _can(

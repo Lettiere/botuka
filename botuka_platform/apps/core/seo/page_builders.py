@@ -226,13 +226,17 @@ def tourism_seo(request, obj, *, kind='local'):
     )
     url = safe_absolute_url(request, request.path)
     schema_type = 'TouristAttraction' if kind == 'local' else 'WebPage'
+    localizacao_publica = (
+        kind == 'local'
+        and getattr(obj, 'visibilidade_localizacao', '') == 'PUBLICA'
+    )
     schema = compact({
         '@type': schema_type, '@id': f'{url}#tourism', 'name': title,
         'description': text(description), 'url': url, 'image': image_url(request, image),
         'telephone': getattr(obj, 'telefone_publico', None),
         'address': compact({'@type': 'PostalAddress', 'streetAddress': ' '.join(filter(None, [getattr(obj, 'logradouro', ''), getattr(obj, 'numero', '')])),
-                            'addressLocality': getattr(obj, 'cidade', None), 'addressRegion': getattr(obj, 'estado', None), 'postalCode': getattr(obj, 'cep', None), 'addressCountry': 'BR'}) if kind == 'local' else None,
-        'geo': compact({'@type': 'GeoCoordinates', 'latitude': str(obj.latitude), 'longitude': str(obj.longitude)}) if kind == 'local' and getattr(obj, 'visibilidade_localizacao', '') == 'PUBLICA' and getattr(obj, 'latitude', None) is not None and getattr(obj, 'longitude', None) is not None else None,
+                            'addressLocality': getattr(obj, 'cidade', None), 'addressRegion': getattr(obj, 'estado', None), 'postalCode': getattr(obj, 'cep', None), 'addressCountry': 'BR'}) if localizacao_publica else None,
+        'geo': compact({'@type': 'GeoCoordinates', 'latitude': str(obj.latitude), 'longitude': str(obj.longitude)}) if localizacao_publica and getattr(obj, 'latitude', None) is not None and getattr(obj, 'longitude', None) is not None else None,
     })
     return build_seo(request, title=f'{title} | Botuka', description=description, image=image,
                      image_alt=getattr(obj, 'imagem_texto_alternativo', None) or title,

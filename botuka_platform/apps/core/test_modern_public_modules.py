@@ -18,9 +18,9 @@ class ModernPublicModulesTests(TestCase):
 
     def test_home_exibe_quatro_vitrines_com_destinos_reais(self):
         response = self.client.get(reverse("home"))
-        for texto in ("YTv Botuka", "Esportes em Botucatu", "Próximos jogos e resultados", "Prefeitura de Botucatu"):
+        for texto in ("YoBotuka", "Esportes em Botucatu", "Próximos jogos e resultados", "Prefeitura de Botucatu"):
             self.assertContains(response, texto)
-        for route in ("media_public:home", "media_public:ao_vivo", "sports_public:home", "government_public:home"):
+        for route in ("media_public:yubotuka_home", "media_public:yubotuka_ao_vivo", "sports_public:home", "government_public:home"):
             self.assertContains(response, reverse(route))
         self.assertNotContains(response, 'href="#"')
         self.assertNotContains(response, "/painel/")

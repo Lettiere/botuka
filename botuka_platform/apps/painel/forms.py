@@ -642,6 +642,13 @@ class ServicoForm(BaseServicoForm):
         area = cleaned.get('area')
         profissao = cleaned.get('profissao')
 
+        # O queryset dependente rejeita corretamente IDs de outro setor antes
+        # de clean(); preserve também a mensagem de domínio útil ao usuário.
+        area_enviada = self.data.get('area') if self.is_bound else None
+        if setor and not area and area_enviada and str(area_enviada).isdigit():
+            if AreaProfissional.objects.filter(pk=area_enviada).exclude(setor=setor).exists():
+                self.add_error('area', 'A área profissional não pertence ao setor selecionado.')
+
         if prestador_tipo == Servico.PrestadorTipo.PESSOA_FISICA:
             if empresa is not None:
                 self.add_error('empresa', 'O prestador autônomo é sempre o usuário autenticado; não envie uma empresa.')

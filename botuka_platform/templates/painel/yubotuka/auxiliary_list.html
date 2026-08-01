@@ -1,5 +1,5 @@
 {% extends 'painel/yubotuka/base.html' %}
 {% block breadcrumb_item %}<li class="breadcrumb-item active">{{ titulo }}</li>{% endblock %}
 {% block page_title %}{{ titulo }}{% endblock %}
-{% block page_description %}Cadastros auxiliares reutilizados nos vídeos do YuBotuka.{% endblock %}
+{% block page_description %}Cadastros auxiliares reutilizados nos vídeos do YoBotuka.{% endblock %}
 {% block yubotuka_content %}<div class="d-flex justify-content-end mb-3"><a class="btn btn-warning" href="{% url 'painel:yubotuka_auxiliar_novo' tipo %}">+ Novo cadastro</a></div><div class="list-group">{% for objeto in objetos %}<a class="list-group-item list-group-item-action d-flex justify-content-between" href="{% url 'painel:yubotuka_auxiliar_editar' tipo objeto.uuid %}"><strong>{{ objeto }}</strong>{% if objeto.ativo %}<span class="badge text-bg-success">Ativo</span>{% else %}<span class="badge text-bg-secondary">Inativo</span>{% endif %}</a>{% empty %}<div class="list-group-item text-muted">Nenhum cadastro.</div>{% endfor %}</div>{% endblock %}

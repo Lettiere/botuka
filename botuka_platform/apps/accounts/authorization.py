@@ -61,14 +61,77 @@ ALIASES = {
 }
 
 MODULE_ACCESS_CODES = {
-    "news": ("news.acessar", "news.acessar_modulo", "news.acessar_painel"),
-    "media": ("media.acessar", "media.gerenciar"),
+    "news": (
+        "news.acessar", "news.acessar_modulo", "news.acessar_painel",
+        "news.criar", "news.criar_artigo", "news.editar",
+        "news.editar_propria", "news.editar_qualquer",
+        "news.editar_artigo_proprio", "news.editar_artigo_terceiro",
+        "news.visualizar_artigo_proprio", "news.visualizar_artigo_terceiro",
+        "news.enviar_revisao", "news.revisar", "news.revisar_artigo",
+        "news.solicitar_correcao", "news.aprovar", "news.aprovar_artigo",
+        "news.agendar", "news.publicar", "news.publicar_artigo",
+        "news.despublicar", "news.arquivar", "news.restaurar",
+        "news.atribuir_autor", "news.gerenciar", "news.gerenciar_autores",
+        "news.gerenciar_colunistas", "news.gerenciar_colunas",
+        "news.gerenciar_categorias", "news.gerenciar_temas",
+        "news.gerenciar_tags", "news.gerenciar_especialidades",
+        "news.gerenciar_series", "news.gerenciar_fontes",
+        "news.gerenciar_imagens", "news.gerenciar_destaques",
+    ),
+    "media": (
+        "media.acessar", "media.gerenciar", "media.criar", "media.editar",
+        "media.apresentar", "media.transmitir", "media.publicar",
+    ),
+    "yubotuka": (
+        "yubotuka.dashboard.visualizar", "yubotuka.video.criar",
+        "yubotuka.video.editar_proprio", "yubotuka.video.editar_todos",
+        "yubotuka.video.enviar_analise", "yubotuka.video.aprovar",
+        "yubotuka.video.rejeitar", "yubotuka.video.publicar",
+        "yubotuka.video.agendar", "yubotuka.video.arquivar",
+        "yubotuka.video.destacar", "yubotuka.canal.gerenciar",
+        "yubotuka.categoria.gerenciar", "yubotuka.playlist.gerenciar",
+        "yubotuka.tag.gerenciar", "yubotuka.apresentador.gerenciar",
+        "yubotuka.convidado.gerenciar", "yubotuka.patrocinador.gerenciar",
+        "yubotuka.banner.gerenciar", "yubotuka.motivo_rejeicao.gerenciar",
+        "yubotuka.config.gerenciar", "yubotuka.auditoria.visualizar",
+        "yubotuka.programa.gerenciar", "yubotuka.temporada.gerenciar",
+        "yubotuka.episodio.gerenciar", "yubotuka.transmissao.criar",
+        "yubotuka.transmissao.editar_propria",
+        "yubotuka.transmissao.editar_todas",
+        "yubotuka.transmissao.enviar_analise",
+        "yubotuka.transmissao.aprovar", "yubotuka.transmissao.publicar",
+        "yubotuka.transmissao.cancelar", "yubotuka.canal.atribuir",
+        "yubotuka.legado.homologar",
+    ),
     "events": ("events.acessar", "eventos.visualizar"),
-    "sports": ("sports.acessar", "sports.gerenciar"),
+    "sports": (
+        "sports.acessar", "sports.gerenciar", "sports.criar", "sports.editar",
+        "sports.publicar", "sports.clube.gerenciar", "sports.equipe.gerenciar",
+        "sports.atleta.editar", "sports.disputa.arbitrar",
+        "sports.disputa.registrar",
+    ),
     "products": ("products.acessar", "produtos.visualizar"),
+    "government": (
+        "government.gerenciar", "government.criar", "government.editar",
+        "government.revisar", "government.publicar",
+    ),
+    "institucional": ("institucional.gerenciar",),
     "gestao": ("gestao.acessar",),
 }
-MODULE_ALIASES = {"eventos": "events", "produtos": "products"}
+MODULE_ALIASES = {"eventos": "events", "produtos": "products", "turismo": "tourism"}
+
+
+def _normalizar_modulo(modulo):
+    raw_module = (modulo or "").lower()
+    return MODULE_ALIASES.get(raw_module, raw_module)
+
+
+def _modulo_do_codigo(codigo):
+    """Normaliza códigos atuais com ponto e o namespace legado do Turismo."""
+
+    if codigo.startswith("TURISMO_"):
+        return "tourism"
+    return _normalizar_modulo(codigo.split(".", 1)[0])
 
 
 def codigos_equivalentes(codigo):
@@ -117,7 +180,7 @@ def criar_verificador_permissoes(usuario):
     )
     now = timezone.now()
     accesses = {
-        item.modulo: item
+        _normalizar_modulo(item.modulo): item
         for item in AcessoModulo.objects.filter(
             usuario=usuario,
             status=AcessoModulo.Status.ATIVO,
@@ -135,33 +198,60 @@ def criar_verificador_permissoes(usuario):
     ).filter(
         Q(acesso__valida_ate__isnull=True) | Q(acesso__valida_ate__gt=now),
     ).values_list("acesso__modulo", "permissao__codigo"):
-        grants_by_module.setdefault(module, set()).add(code)
+        grants_by_module.setdefault(_normalizar_modulo(module), set()).add(code)
+    grants_by_module[""] = set(
+        ConcessaoPermissao.objects.filter(
+            usuario=usuario, acesso__isnull=True, permissao__ativo=True,
+            revogada_em__isnull=True,
+        ).filter(
+            Q(valida_ate__isnull=True) | Q(valida_ate__gt=now),
+        ).values_list("permissao__codigo", flat=True)
+    )
 
     def checker(codigo):
         if not codigo:
             return False
-        raw_module = codigo.split(".", 1)[0]
-        module = MODULE_ALIASES.get(raw_module, raw_module)
+        module = _modulo_do_codigo(codigo)
         access_codes = MODULE_ACCESS_CODES.get(module, (f"{module}.acessar",))
         profile_has_access = any(
             equivalent in profile_codes
             for access_code in access_codes
             for equivalent in codigos_equivalentes(access_code)
         )
-        if module not in accesses and not profile_has_access:
+        legacy_grants = grants_by_module.get("", set())
+        legacy_has_access = module == "tourism" and any(
+            item.startswith("TURISMO_") for item in legacy_grants
+        )
+        if module not in accesses and not profile_has_access and not legacy_has_access:
             return False
         equivalents = set(codigos_equivalentes(codigo))
         return bool(
             equivalents.intersection(profile_codes)
             or equivalents.intersection(grants_by_module.get(module, set()))
+            or (module == "tourism" and equivalents.intersection(legacy_grants))
         )
 
     return checker
 
 
 def _perfil_concede(usuario, codigo):
-    checker = getattr(usuario, "tem_permissao", None)
-    return bool(checker and any(checker(item) for item in codigos_equivalentes(codigo)))
+    from apps.core.models import PerfilPermissao
+
+    profile_ids = set(
+        usuario.perfis_adicionais.filter(
+            ativo=True, removido_em__isnull=True,
+        ).values_list("pk", flat=True)
+    )
+    if getattr(usuario, "perfil_id", None):
+        profile_ids.add(usuario.perfil_id)
+    return PerfilPermissao.objects.filter(
+        perfil_id__in=profile_ids,
+        perfil__ativo=True,
+        perfil__removido_em__isnull=True,
+        ativo=True,
+        permissao__ativo=True,
+        permissao__codigo__in=codigos_equivalentes(codigo),
+    ).exists()
 
 
 def acesso_modulo_vigente(usuario, modulo):
@@ -169,7 +259,7 @@ def acesso_modulo_vigente(usuario, modulo):
         return None
     return (
         AcessoModulo.objects.filter(
-            usuario=usuario, modulo=modulo, status=AcessoModulo.Status.ATIVO,
+            usuario=usuario, modulo__iexact=modulo, status=AcessoModulo.Status.ATIVO,
         )
         .filter(Q(valida_ate__isnull=True) | Q(valida_ate__gt=timezone.now()))
         .first()
@@ -181,13 +271,19 @@ def pode(usuario, codigo, objeto=None):
         return False
     if usuario_e_master(usuario):
         return True
-    modulo = MODULE_ALIASES.get(codigo.split(".", 1)[0], codigo.split(".", 1)[0])
+    modulo = _modulo_do_codigo(codigo)
     acesso = acesso_modulo_vigente(usuario, modulo)
     acesso_via_perfil = any(
         _perfil_concede(usuario, access_code)
         for access_code in MODULE_ACCESS_CODES.get(modulo, (f"{modulo}.acessar",))
     )
-    if not acesso and not acesso_via_perfil:
+    concessoes_legadas = ConcessaoPermissao.objects.filter(
+        usuario=usuario, acesso__isnull=True,
+        permissao__codigo__startswith="TURISMO_",
+        permissao__ativo=True, revogada_em__isnull=True,
+    ).filter(Q(valida_ate__isnull=True) | Q(valida_ate__gt=timezone.now()))
+    acesso_legado = modulo == "tourism" and concessoes_legadas.exists()
+    if not acesso and not acesso_via_perfil and not acesso_legado:
         return False
     # Perfis globais legados continuam válidos durante a transição. Concessões
     # individuais novas exigem um AcessoModulo vigente.
@@ -197,7 +293,10 @@ def pode(usuario, codigo, objeto=None):
         permissao__codigo__in=codigos_equivalentes(codigo),
         revogada_em__isnull=True,
     ).filter(Q(valida_ate__isnull=True) | Q(valida_ate__gt=timezone.now())).exists() if acesso else False
-    permitido = via_perfil or via_concessao
+    via_concessao_legada = acesso_legado and concessoes_legadas.filter(
+        permissao__codigo__in=codigos_equivalentes(codigo),
+    ).exists()
+    permitido = via_perfil or via_concessao or via_concessao_legada
     if not permitido:
         return False
     if objeto is None:
@@ -210,8 +309,7 @@ def pode(usuario, codigo, objeto=None):
 def escopo_da_permissao(usuario, codigo):
     if usuario_e_master(usuario):
         return ConcessaoPermissao.Escopo.TODOS
-    raw_module = codigo.split(".", 1)[0]
-    acesso = acesso_modulo_vigente(usuario, MODULE_ALIASES.get(raw_module, raw_module))
+    acesso = acesso_modulo_vigente(usuario, _modulo_do_codigo(codigo))
     if acesso:
         return acesso.escopo
     concessao = (

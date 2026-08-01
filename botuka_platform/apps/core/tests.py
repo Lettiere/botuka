@@ -17,7 +17,9 @@ class CityModulePermissionTests(TestCase):
 
     def test_perfil_adicional_concede_permissao(self):
         perfil = Perfil.objects.create(nome='NEWS_REPORTER')
-        permissao = Permissao.objects.create(codigo='news.criar', nome='Criar notícia')
+        permissao, _ = Permissao.objects.get_or_create(
+            codigo='news.criar', defaults={'nome': 'Criar notícia'},
+        )
         PerfilPermissao.objects.create(perfil=perfil, permissao=permissao)
         UsuarioPerfil.objects.create(usuario=self.user, perfil=perfil)
         self.assertTrue(self.user.tem_perfil('NEWS_REPORTER'))

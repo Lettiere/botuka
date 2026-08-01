@@ -17,7 +17,7 @@ class NewsTests(TestCase):
         self.assertTemplateUsed(response,'publico/news/artigo.html')
         self.assertContains(response,'article-detail-page')
         self.assertContains(response,'data-reading-progress')
-        self.assertContains(response,'data-copy-article-url')
+        self.assertContains(response,'data-copy-link')
         self.assertContains(response,'/static/news/css/artigo-detalhe.css')
         self.assertContains(response,'/static/news/js/artigo-detalhe.js')
         self.assertContains(response,'NewsArticle')

@@ -94,6 +94,9 @@ def public_home(request):
     if categoria:
         videos = videos.filter(categoria__slug=categoria)
     configuracao = ConfiguracaoYuBotuka.objects.first()
+    titulo_publico = configuracao.titulo_publico if configuracao else 'YoBotuka'
+    if titulo_publico == 'YuBotuka':
+        titulo_publico = 'YoBotuka'
     por_pagina = configuracao.quantidade_pagina if configuracao else 12
     page = Paginator(videos, por_pagina).get_page(request.GET.get("page"))
     categorias = CategoriaYuBotuka.objects.filter(
@@ -127,7 +130,7 @@ def public_home(request):
         "programas": programas, "shorts": shorts,
         "recentes_por_categoria": recentes_por_categoria,
         "destaque": destaque_editorial or (page.object_list[0] if page.object_list else None),
-        "configuracao": configuracao, "seo": seo,
+        "configuracao": configuracao, "titulo_publico": titulo_publico, "seo": seo,
     })
 
 

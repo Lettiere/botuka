@@ -6,7 +6,7 @@ from django.urls import reverse
 
 from apps.core.public_links import TipoLink, normalizar_link_publico
 from apps.locations.models import Cidade, Estado, Pais
-from apps.organizations.models import Empresa, EmpresaLink
+from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade, EmpresaLink
 from apps.services.models import AreaProfissional, FormaCobranca, Profissao, Servico, ServicoLink, Setor, TipoServico
 from apps.accounts.master_services import garantir_usuario_master
 from apps.services.permissions import servicos_disponiveis_para_usuario
@@ -28,6 +28,13 @@ class LinksQrCodeTests(TestCase):
             estado=estado,
             status=Empresa.Status.ATIVA,
             perfil_publico=True,
+        )
+        capacidade, _ = Capacidade.objects.get_or_create(
+            codigo='PRESTAR_SERVICOS', defaults={'nome': 'Prestar serviços'},
+        )
+        EmpresaCapacidade.objects.create(
+            empresa=cls.empresa, capacidade=capacidade,
+            status=EmpresaCapacidade.Status.APROVADA, ativo=True,
         )
         setor = Setor.objects.create(nome='Tecnologia')
         cls.area_profissional = AreaProfissional.objects.create(setor=setor, nome='Desenvolvimento')
@@ -76,6 +83,7 @@ class LinksQrCodeTests(TestCase):
                 usuario_responsavel=self.usuario,
                 prestador_tipo=Servico.PrestadorTipo.PESSOA_FISICA,
                 setor=self.servico.setor,
+                area=self.servico.area,
                 profissao=self.servico.profissao,
                 tipo_servico=self.servico.tipo_servico,
                 forma_cobranca=self.servico.forma_cobranca,
