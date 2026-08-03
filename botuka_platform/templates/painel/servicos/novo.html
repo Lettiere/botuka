@@ -2,9 +2,13 @@
 {% block title %}{{ titulo }} | BOTUKA{% endblock %}
 {% block painel_content %}
 <link rel="stylesheet" href="{% static 'painel/css/servicos.css' %}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 <section class="painel-card servicos-page">
   <header class="service-panel-header"><div><span class="service-panel-kicker">Serviços</span><h1 class="painel-title">{{ titulo }}</h1><p>Cadastre como profissional autônomo ou por uma empresa que você administra.</p></div><a class="btn btn-outline-secondary" href="{% url 'painel:servicos_lista' %}">Cancelar</a></header>
-  <form method="post" enctype="multipart/form-data" class="service-form" novalidate>{% csrf_token %}
+  <form method="post" enctype="multipart/form-data" class="service-form" novalidate
+        data-areas-url="{% url 'painel:servicos_ajax_areas' %}"
+        data-profissoes-url="{% url 'painel:servicos_ajax_profissoes' %}"
+        data-tipos-url="{% url 'painel:servicos_ajax_tipos' %}">{% csrf_token %}
     {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
     {% include "painel/servicos/_form_sections.html" %}
     <section class="service-step"><div class="service-step-heading"><span class="service-step-number">6</span><div><h2>Área atendida</h2><p>Opcional; informe uma cobertura estruturada.</p></div></div><div class="row g-3">{% for field in area_form %}<div class="col-12 col-md-4"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}</div></section>
@@ -12,5 +16,7 @@
     <div class="form-actions"><button class="btn btn-outline-primary" name="acao" value="rascunho">Salvar como rascunho</button><button class="btn btn-primary" name="acao" value="publicar">Enviar para publicação</button></div>
   </form>
 </section>
-<script src="{% static 'painel/js/servicos.js' %}?v=20260729-1" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
+<script src="{% static 'painel/js/servicos.js' %}?v=20260803-5" defer></script>
 {% endblock %}

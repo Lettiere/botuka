@@ -21,10 +21,23 @@
     if (current === 7) updateReview();
     if (focus) steps[current - 1].querySelector("h2")?.focus();
   }
+  function validateStep(number) {
+    const step = steps[number - 1];
+    const invalid = [...step.querySelectorAll("input, select, textarea")]
+      .find(control => !control.disabled && !control.checkValidity());
+    if (!invalid) return true;
+    showStep(number, false);
+    invalid.reportValidity();
+    invalid.focus();
+    return false;
+  }
   wizard.addEventListener("click", event => {
     const target = event.target.closest("[data-step-target]");
-    if (target) showStep(target.dataset.stepTarget, true);
-    if (event.target.closest("[data-next]")) showStep(current + 1, true);
+    if (target) {
+      const desired = Number(target.dataset.stepTarget);
+      if (desired < current || validateStep(current)) showStep(desired, true);
+    }
+    if (event.target.closest("[data-next]") && validateStep(current)) showStep(current + 1, true);
     if (event.target.closest("[data-previous]")) showStep(current - 1, true);
   });
 
@@ -32,12 +45,19 @@
   const family = form.querySelector("#id_familia");
   const type = form.querySelector("#id_tipo_produto");
   const segment = form.querySelector("#id_segmento");
+  const sector = form.querySelector("#id_setor");
   const segmentField = segment?.closest(".field");
+  const dynamicAttributes = form.querySelector("[data-dynamic-attributes]");
+  form.querySelectorAll("[data-dynamic-attribute]").forEach(control => {
+    const field = control.closest(".field");
+    if (field && dynamicAttributes) dynamicAttributes.append(field);
+  });
   function reset(select, label) {
     if (!select) return;
     select.replaceChildren(new Option(label, ""));
   }
   async function load(url, key, value, select, label) {
+    if (select?.dataset.ajaxEnhanced === "true") return {};
     reset(select, label);
     if (!value) return {};
     const status = form.querySelector(`[data-taxonomy-status="${key === "categoria" ? "familia" : key === "familia" ? "tipo" : "segmento"}"]`);
@@ -63,10 +83,100 @@
       select.disabled = false;
     }
   }
+  function initTaxonomySelect(select, url, placeholder, parent) {
+    if (!select || !window.jQuery?.fn?.select2) return;
+    select.dataset.ajaxEnhanced = "true";
+    window.jQuery(select).select2({
+      width: "100%",
+      allowClear: true,
+      placeholder,
+      language: {
+        inputTooShort: () => "Digite para buscar",
+        loadingMore: () => "Carregando…",
+        noResults: () => "Nenhum resultado",
+        searching: () => "Buscando…",
+      },
+      ajax: {
+        url,
+        dataType: "json",
+        delay: 300,
+        data: params => ({
+          q: params.term || "",
+          page: params.page || 1,
+          ...(parent ? {[parent.parameter]: parent.element.value} : {}),
+        }),
+        processResults: payload => ({
+          results: payload.results || [],
+          pagination: payload.pagination || {more: false},
+        }),
+        cache: true,
+      },
+    });
+  }
+  initTaxonomySelect(sector, wizard.dataset.sectorsUrl, "Selecione ou busque o setor");
+  initTaxonomySelect(category, wizard.dataset.categoriesUrl, "Selecione ou busque a categoria", {element: sector, parameter: "setor_id"});
+  initTaxonomySelect(family, wizard.dataset.familiesUrl, "Selecione ou busque a família", {element: category, parameter: "categoria_id"});
+  initTaxonomySelect(type, wizard.dataset.typesUrl, "Selecione ou busque o tipo", {element: family, parameter: "familia_id"});
+  sector?.addEventListener("change", async () => {
+    if (category?.dataset.ajaxEnhanced === "true") {
+      window.jQuery(category).val(null).trigger("change");
+    } else {
+      await load(wizard.dataset.categoriesUrl, "setor_id", sector.value, category, "Selecione a categoria");
+    }
+    reset(family, "Selecione primeiro a categoria");
+    reset(type, "Selecione primeiro a família");
+  });
+  async function loadAttributes(categoryId) {
+    if (!dynamicAttributes) return;
+    dynamicAttributes.replaceChildren();
+    if (!categoryId) return;
+    try {
+      const response = await fetch(`${wizard.dataset.attributesUrl}?categoria=${encodeURIComponent(categoryId)}`, {
+        credentials: "same-origin", headers: {"X-Requested-With": "XMLHttpRequest"}
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.error || "Não foi possível carregar os atributos.");
+      (payload.results || []).forEach(attribute => {
+        const wrapper = document.createElement("div");
+        wrapper.className = "field";
+        wrapper.dataset.fieldName = `atributo_${attribute.id}`;
+        const label = document.createElement("label");
+        label.htmlFor = `id_atributo_${attribute.id}`;
+        label.textContent = attribute.nome;
+        let control;
+        if (attribute.tipo === "ESCOLHA") {
+          control = document.createElement("select");
+          control.append(new Option("Selecione", ""));
+          (attribute.opcoes || []).forEach(option => control.add(new Option(option, option)));
+        } else {
+          control = document.createElement("input");
+          control.type = attribute.tipo === "INTEIRO" || attribute.tipo === "DECIMAL" ? "number" : attribute.tipo === "BOOLEANO" ? "checkbox" : "text";
+          if (attribute.tipo === "DECIMAL") control.step = "any";
+          if (attribute.tipo === "BOOLEANO") control.value = "on";
+        }
+        control.id = `id_atributo_${attribute.id}`;
+        control.name = `atributo_${attribute.id}`;
+        control.required = Boolean(attribute.obrigatorio);
+        control.dataset.step = "3";
+        control.setAttribute("data_step", "3");
+        control.className = attribute.tipo === "BOOLEANO" ? "form-check-input" : attribute.tipo === "ESCOLHA" ? "form-select" : "form-control";
+        wrapper.append(label, control);
+        dynamicAttributes.append(wrapper);
+      });
+    } catch (error) {
+      const message = document.createElement("p");
+      message.className = "form-alert";
+      message.textContent = `${error.message} Tente selecionar a categoria novamente.`;
+      dynamicAttributes.append(message);
+    }
+  }
   category?.addEventListener("change", async () => {
     reset(type, "Selecione primeiro a família"); reset(segment, "Não aplicável");
     if (segmentField) segmentField.hidden = true;
-    await load(wizard.dataset.familiesUrl, "categoria", category.value, family, "Selecione a família");
+    await Promise.all([
+      load(wizard.dataset.familiesUrl, "categoria", category.value, family, "Selecione a família"),
+      loadAttributes(category.value),
+    ]);
   });
   family?.addEventListener("change", async () => {
     reset(segment, "Não aplicável"); if (segmentField) segmentField.hidden = true;

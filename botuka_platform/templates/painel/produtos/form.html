@@ -3,11 +3,15 @@
 {% block title %}{{ titulo }} | Painel BOTUKA{% endblock %}
 {% block painel_content %}
 <link rel="stylesheet" href="{% static 'painel/css/produtos_form.css' %}">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 <div class="product-wizard" data-product-wizard
  data-existing-images="{{ produto.imagens.count|default:0 }}"
- data-families-url="{% url 'gestao:api_produtos_familias' %}"
- data-types-url="{% url 'gestao:api_produtos_tipos' %}"
- data-segments-url="{% url 'gestao:api_produtos_segmentos' %}">
+ data-sectors-url="{% url 'painel:api_produtos_setores' %}"
+ data-categories-url="{% url 'painel:api_produtos_categorias' %}"
+ data-families-url="{% url 'painel:api_produtos_familias' %}"
+ data-types-url="{% url 'painel:api_produtos_tipos' %}"
+ data-segments-url="{% url 'gestao:api_produtos_segmentos' %}"
+ data-attributes-url="{% url 'gestao:api_produtos_atributos' %}">
   <header class="product-wizard__header">
     <a href="{% url 'painel:produtos_lista' %}" aria-label="Voltar">←</a>
     <div><small>PRODUTOS</small><h1>{{ titulo }}</h1><p>Preencha as sete etapas e confira tudo antes de salvar.</p></div>
@@ -18,10 +22,10 @@
   <div class="product-wizard__layout">
     <nav class="wizard-nav" aria-label="Etapas do cadastro">
       <button type="button" data-step-target="1"><b>1</b><span>Identificação</span></button>
-      <button type="button" data-step-target="2"><b>2</b><span>Classificação</span></button>
-      <button type="button" data-step-target="3"><b>3</b><span>Dados comerciais</span></button>
-      <button type="button" data-step-target="4"><b>4</b><span>Descrição e especificações</span></button>
-      <button type="button" data-step-target="5"><b>5</b><span>Publicação e contato</span></button>
+      <button type="button" data-step-target="2"><b>2</b><span>Taxonomia</span></button>
+      <button type="button" data-step-target="3"><b>3</b><span>Características e atributos</span></button>
+      <button type="button" data-step-target="4"><b>4</b><span>Preços e estoque</span></button>
+      <button type="button" data-step-target="5"><b>5</b><span>Publicação e revisão</span></button>
       <button type="button" data-step-target="6"><b>6</b><span>Imagens e vídeos</span></button>
       <button type="button" data-step-target="7"><b>7</b><span>Conferência do produto</span></button>
     </nav>
@@ -36,10 +40,10 @@
       <section class="wizard-step{% if number == "7" %} wizard-step--review{% endif %}" data-step="{{ number }}" {% if number != "1" %}hidden{% endif %}>
         <header>
           {% if number == "1" %}<h2>Identificação</h2><p>Identifique o produto e seu vendedor.</p>
-          {% elif number == "2" %}<h2>Classificação</h2><p>Selecione a taxonomia cadastrada no banco.</p>
-          {% elif number == "3" %}<h2>Dados comerciais</h2><p>Informe valores, estoque e condições comerciais.</p>
-          {% elif number == "4" %}<h2>Descrição e especificações</h2><p>Apresente características e informações técnicas.</p>
-          {% elif number == "5" %}<h2>Publicação e contato</h2><p>Configure exposição pública e canais de contato.</p>
+          {% elif number == "2" %}<h2>Taxonomia</h2><p>Selecione categoria, família, tipo e segmento compatíveis.</p>
+          {% elif number == "3" %}<h2>Características e atributos</h2><p>Apresente características e preencha os atributos da categoria.</p>
+          {% elif number == "4" %}<h2>Preços e estoque</h2><p>Informe valores, estoque e condições comerciais.</p>
+          {% elif number == "5" %}<h2>Publicação e revisão</h2><p>Configure exposição pública, contato e dados de revisão.</p>
           {% elif number == "6" %}<h2>Imagens e vídeos</h2><p>Adicione a imagem principal, organize a galeria e informe os vídeos de apresentação do produto.</p>
           {% else %}<h2>Conferência do produto</h2><p>Confira todas as informações, mídias, valores e configurações antes de salvar.</p>{% endif %}
         </header>
@@ -50,13 +54,14 @@
             {% if field.field.widget.attrs.data_step == number %}
             <div class="field {% if field.errors %}has-error{% endif %}" data-field-name="{{ field.name }}">
               <label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span aria-hidden="true">*</span>{% endif %}</label>
-              {{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}
+              {% if field.name == "descricao_completa" or field.name == "especificacoes" or field.name == "garantia" %}{% include "components/rich_text_editor.html" with field=field %}{% else %}{{ field }}{% endif %}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}
               {% if field.name == "imagem_principal_upload" %}<div class="image-preview" data-main-image-preview></div>{% endif %}
               {% if field.name == "galeria_upload" %}<div class="gallery-preview" data-gallery-preview></div>{% endif %}
             </div>
             {% endif %}
           {% endfor %}
         </div>
+        {% if number == "3" %}<div class="form-grid" data-dynamic-attributes aria-live="polite"></div>{% endif %}
         {% endif %}
 
         {% if number == "6" %}
@@ -100,10 +105,10 @@
         {% if number == "7" %}
         <div class="review-grid" data-review>
           <article><h3>Identificação</h3><dl data-review-block="1"></dl><button type="button" data-step-target="1">Editar identificação</button></article>
-          <article><h3>Classificação</h3><dl data-review-block="2"></dl><button type="button" data-step-target="2">Editar classificação</button></article>
-          <article><h3>Dados comerciais</h3><dl data-review-block="3"></dl><button type="button" data-step-target="3">Editar dados comerciais</button></article>
-          <article><h3>Descrição</h3><dl data-review-block="4"></dl><button type="button" data-step-target="4">Editar descrição</button></article>
-          <article><h3>Publicação e contato</h3><dl data-review-block="5"></dl><button type="button" data-step-target="5">Editar publicação</button></article>
+          <article><h3>Taxonomia</h3><dl data-review-block="2"></dl><button type="button" data-step-target="2">Editar taxonomia</button></article>
+          <article><h3>Características e atributos</h3><dl data-review-block="3"></dl><button type="button" data-step-target="3">Editar características</button></article>
+          <article><h3>Preços e estoque</h3><dl data-review-block="4"></dl><button type="button" data-step-target="4">Editar preços</button></article>
+          <article><h3>Publicação e revisão</h3><dl data-review-block="5"></dl><button type="button" data-step-target="5">Editar publicação</button></article>
           <article><h3>Imagens</h3><p data-review-images></p><button type="button" data-step-target="6">Editar mídias</button></article>
           <article><h3>Vídeos</h3><div data-review-videos></div><button type="button" data-step-target="6">Editar mídias</button></article>
         </div>
@@ -119,5 +124,7 @@
     </form>
   </div>
 </div>
-<script src="{% static 'painel/js/produtos_form.js' %}"></script>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
+<script src="{% static 'painel/js/produtos_form.js' %}" defer></script>
 {% endblock %}

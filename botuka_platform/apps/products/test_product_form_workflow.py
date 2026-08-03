@@ -36,8 +36,8 @@ class ProductFormWorkflowTests(TestCase):
         response = self.client.get(reverse('painel:produto_criar'))
         self.assertEqual(response.status_code, 200)
         for title in (
-            'Identificação', 'Classificação', 'Dados comerciais',
-            'Descrição e especificações', 'Publicação e contato',
+            'Identificação', 'Taxonomia', 'Características e atributos',
+            'Preços e estoque', 'Publicação e revisão',
             'Imagens e vídeos', 'Conferência do produto',
         ):
             self.assertContains(response, title)

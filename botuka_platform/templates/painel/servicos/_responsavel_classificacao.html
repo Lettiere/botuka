@@ -48,7 +48,7 @@
     <div class="col-md-6">
       <label class="form-label" for="{{ form.tipo_servico.id_for_label }}">{{ form.tipo_servico.label }}</label>
       {{ form.tipo_servico }}
-      {% if form.tipo_servico.help_text %}<div class="form-text">{{ form.tipo_servico.help_text }}</div>{% endif %}
+      <div class="form-text" data-dependency-status="tipo_servico">{{ form.tipo_servico.help_text }}</div>
       {% for error in form.tipo_servico.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
     </div>
     <div class="col-md-6">

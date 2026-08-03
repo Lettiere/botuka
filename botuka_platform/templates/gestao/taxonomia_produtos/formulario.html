@@ -1,10 +1,18 @@
 {% extends "gestao/base.html" %}
+{% load static %}
 {% block title %}{{ title }} | Gestão BOTUKA{% endblock %}
 {% block content %}
 <div class="page-head"><div><p>Taxonomia de Produtos</p><h1>{{ title }}</h1></div></div>
-<form method="post" novalidate class="gestao-form">{% csrf_token %}
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
+<form method="post" novalidate class="gestao-form" data-taxonomy-management
+ data-sectors-url="{% url 'gestao:api_produtos_setores' %}"
+ data-categories-url="{% url 'gestao:api_produtos_categorias' %}"
+ data-families-url="{% url 'gestao:api_produtos_familias' %}">{% csrf_token %}
 {% if form.non_field_errors %}<div class="alert alert-error">{{ form.non_field_errors }}</div>{% endif %}
 <div class="form-grid">{% for field in form %}<div class="form-group"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field }}{% if field.help_text %}<small>{{ field.help_text }}</small>{% endif %}{{ field.errors }}</div>{% endfor %}</div>
 <div class="form-actions"><a class="btn" href="{% url list_url %}">Cancelar</a><button class="btn btn-primary" type="submit">Salvar</button></div>
 </form>
+<script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script src="{% static 'painel/js/produtos-taxonomia-gestao.js' %}"></script>
 {% endblock %}

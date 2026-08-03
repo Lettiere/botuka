@@ -73,7 +73,7 @@ from apps.organizations.plans import (
     bloquear_e_validar_criacao_servico,
     validar_contexto_servico,
 )
-from apps.services.models import AreaProfissional, Profissao, Servico, ServicoArea, ServicoCaracteristica, ServicoImagem, ServicoLink, Setor
+from apps.services.models import AreaProfissional, Profissao, Servico, ServicoArea, ServicoCaracteristica, ServicoImagem, ServicoLink, Setor, TipoServico
 from apps.services.permissions import (
     servicos_disponiveis_para_usuario,
     usuario_pode_editar_servico,
@@ -1200,18 +1200,35 @@ def servico_preview(request: HttpRequest, uuid) -> HttpResponse:
 
 
 @login_required
-def servicos_ajax_areas(request: HttpRequest) -> JsonResponse:
-    setor_id = request.GET.get('setor')
-    if not setor_id or not setor_id.isdigit():
-        return JsonResponse({'results': [], 'error': 'Setor inválido.'}, status=400)
+def servicos_ajax_setores(request: HttpRequest) -> JsonResponse:
+    termo = request.GET.get('q', '').strip()[:100]
+    setores = Setor.objects.filter(ativo=True)
+    if termo:
+        setores = setores.filter(nome__icontains=termo)
+    return JsonResponse({'results': [
+        {'id': setor.id, 'text': setor.nome}
+        for setor in setores.order_by('nome')[:100]
+    ]})
 
+
+@login_required
+def servicos_ajax_areas(request: HttpRequest) -> JsonResponse:
+    setor_id = request.GET.get('setor_id')
+    if not setor_id or not setor_id.isdigit():
+        return JsonResponse({'results': []})
+
+    if not Setor.objects.filter(pk=setor_id, ativo=True).exists():
+        return JsonResponse({'results': []})
+    termo = request.GET.get('q', '').strip()[:100]
     areas = AreaProfissional.objects.filter(ativo=True, setor_id=setor_id)
+    if termo:
+        areas = areas.filter(nome__icontains=termo)
 
     return JsonResponse(
         {
             'results': [
                 {'id': area.id, 'text': area.nome}
-                for area in areas.order_by('ordem', 'nome')[:100]
+                for area in areas.order_by('nome')[:100]
             ]
         }
     )
@@ -1219,22 +1236,16 @@ def servicos_ajax_areas(request: HttpRequest) -> JsonResponse:
 
 @login_required
 def servicos_ajax_profissoes(request: HttpRequest) -> JsonResponse:
-    area_id = request.GET.get('area')
-    setor_id = request.GET.get('setor')
-    if area_id:
-        if not area_id.isdigit():
-            return JsonResponse({'results': [], 'error': 'Área profissional inválida.'}, status=400)
-        profissoes = Profissao.objects.filter(ativo=True, area_id=area_id)
-    elif setor_id:
-        if not setor_id.isdigit():
-            return JsonResponse({'results': [], 'error': 'Setor inválido.'}, status=400)
-        profissoes = Profissao.objects.filter(
-            ativo=True,
-            setor_id=setor_id,
-            area__isnull=True,
-        )
-    else:
-        return JsonResponse({'results': [], 'error': 'Informe a área ou o setor.'}, status=400)
+    area_id = request.GET.get('area_profissional_id')
+    if not area_id or not area_id.isdigit():
+        return JsonResponse({'results': []})
+    area = AreaProfissional.objects.filter(pk=area_id, ativo=True).first()
+    if not area:
+        return JsonResponse({'results': []})
+    termo = request.GET.get('q', '').strip()[:100]
+    profissoes = Profissao.objects.filter(ativo=True, area=area, setor=area.setor)
+    if termo:
+        profissoes = profissoes.filter(nome__icontains=termo)
 
     return JsonResponse(
         {
@@ -1244,6 +1255,26 @@ def servicos_ajax_profissoes(request: HttpRequest) -> JsonResponse:
             ]
         }
     )
+
+
+@login_required
+def servicos_ajax_tipos(request: HttpRequest) -> JsonResponse:
+    profissao_id = request.GET.get('profissao_id')
+    if not profissao_id or not profissao_id.isdigit():
+        return JsonResponse({'results': []})
+    termo = request.GET.get('q', '').strip()[:100]
+    tipos = TipoServico.objects.filter(
+        ativo=True,
+        vinculos_profissoes__profissao_id=profissao_id,
+        vinculos_profissoes__profissao__ativo=True,
+        vinculos_profissoes__ativo=True,
+    )
+    if termo:
+        tipos = tipos.filter(nome__icontains=termo)
+    return JsonResponse({'results': [
+        {'id': tipo.id, 'text': tipo.nome}
+        for tipo in tipos.distinct().order_by('nome')[:100]
+    ]})
 
 
 @painel_permission_required('produtos.visualizar')

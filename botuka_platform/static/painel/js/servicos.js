@@ -18,11 +18,25 @@ function updateProvider(field) {
 function resetSelect(select, label) {
   if (!select) return;
   select.replaceChildren(new Option(label, ''));
+  if (window.jQuery?.fn?.select2) window.jQuery(select).trigger('change.select2');
 }
 
-async function loadOptions(select, url, statusElement, emptyLabel) {
+function setSelectDisabled(select, disabled) {
+  if (!select) return;
+  select.disabled = disabled;
+  if (window.jQuery?.fn?.select2) {
+    window.jQuery(select).prop('disabled', disabled).trigger('change.select2');
+  }
+}
+
+const dependencyRequests = new Map();
+
+async function loadOptions(select, url, statusElement, emptyLabel, emptyMessage) {
+  dependencyRequests.get(select)?.abort();
+  const controller = new AbortController();
+  dependencyRequests.set(select, controller);
   resetSelect(select, 'Carregando...');
-  select.disabled = true;
+  setSelectDisabled(select, true);
   if (statusElement) {
     statusElement.textContent = 'Carregando opções...';
     statusElement.classList.remove('text-danger');
@@ -32,81 +46,275 @@ async function loadOptions(select, url, statusElement, emptyLabel) {
     const response = await fetch(url, {
       headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
       credentials: 'same-origin',
+      signal: controller.signal,
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Não foi possível carregar as opções.');
+    if (!Array.isArray(data.results)) throw new Error('Resposta inválida do servidor.');
     resetSelect(select, emptyLabel);
     data.results.forEach((item) => select.add(new Option(item.text, item.id)));
+    setSelectDisabled(select, !data.results.length);
     if (statusElement) {
       statusElement.textContent = data.results.length
         ? `${data.results.length} opção(ões) disponível(is).`
-        : 'Nenhuma opção ativa foi encontrada para a seleção anterior.';
+        : emptyMessage;
     }
     return data.results;
   } catch (error) {
+    if (error.name === 'AbortError') return [];
     resetSelect(select, 'Não foi possível carregar');
+    setSelectDisabled(select, true);
     if (statusElement) {
       statusElement.textContent = error.message;
       statusElement.classList.add('text-danger');
     }
     return [];
   } finally {
-    select.disabled = false;
+    if (dependencyRequests.get(select) === controller) {
+      dependencyRequests.delete(select);
+    }
   }
 }
 
-document.addEventListener('change', async (event) => {
-  const provider = event.target.closest('[name="prestador_tipo"]');
-  if (provider) updateProvider(provider);
+function initDependentServiceSelects() {
+  const form = document.querySelector('.service-form[data-areas-url]');
+  const setorSelect = document.getElementById('id_setor');
+  const areaSelect = document.getElementById('id_area');
+  const profissaoSelect = document.getElementById('id_profissao');
+  const tipoSelect = document.getElementById('id_tipo_servico');
 
-  const setor = event.target.closest('select[name="setor"]');
-  const area = event.target.closest('select[name="area"]');
-  const areaSelect = document.querySelector('select[name="area"]');
-  const profissaoSelect = document.querySelector('select[name="profissao"]');
+  const missing = [
+    ['Setor', setorSelect],
+    ['Área profissional', areaSelect],
+    ['Profissão', profissaoSelect],
+    ['Tipo de serviço', tipoSelect],
+  ]
+    .filter(([, element]) => !element)
+    .map(([label]) => label);
 
-  if (setor && areaSelect && profissaoSelect) {
+  if (!form || missing.length) {
+    console.error('[Serviços] Campos da taxonomia não encontrados.', {
+      formularioEncontrado: Boolean(form),
+      camposAusentes: missing,
+    });
+    return;
+  }
+
+  const areaStatus = document.querySelector(
+    '[data-dependency-status="area"]'
+  );
+  const profissaoStatus = document.querySelector(
+    '[data-dependency-status="profissao"]'
+  );
+  const tipoStatus = document.querySelector(
+    '[data-dependency-status="tipo_servico"]'
+  );
+
+  console.debug('[Serviços] Inicialização dos selects dependentes.', {
+    setor: setorSelect.value,
+    area: areaSelect.value,
+    profissao: profissaoSelect.value,
+    tipoServico: tipoSelect.value,
+    areasUrl: form.dataset.areasUrl,
+    profissoesUrl: form.dataset.profissoesUrl,
+    tiposUrl: form.dataset.tiposUrl,
+  });
+
+  async function handleSetorChange() {
+    const setorId = setorSelect.value;
+
+    console.debug('[Serviços] Setor alterado.', {
+      setorId,
+    });
+
     resetSelect(areaSelect, 'Selecione primeiro o setor');
     resetSelect(profissaoSelect, 'Selecione primeiro a área');
-    if (setor.value) {
-      const areas = await loadOptions(
-        areaSelect,
-        `/painel/servicos/ajax/areas/?setor=${encodeURIComponent(setor.value)}`,
-        document.querySelector('[data-dependency-status="area"]'),
-        'Selecione a área profissional',
-      );
-      if (!areas.length) {
-        await loadOptions(
-          profissaoSelect,
-          `/painel/servicos/ajax/profissoes/?setor=${encodeURIComponent(setor.value)}`,
-          document.querySelector('[data-dependency-status="profissao"]'),
-          'Selecione a profissão',
-        );
+    resetSelect(tipoSelect, 'Selecione primeiro a profissão');
+
+    setSelectDisabled(areaSelect, true);
+    setSelectDisabled(profissaoSelect, true);
+    setSelectDisabled(tipoSelect, true);
+
+    if (!setorId) {
+      if (areaStatus) {
+        areaStatus.textContent =
+          'As opções são carregadas de acordo com o setor.';
+        areaStatus.classList.remove('text-danger');
       }
+      return [];
     }
-  } else if (area && profissaoSelect) {
+
+    const url =
+      `${form.dataset.areasUrl}?setor_id=${encodeURIComponent(setorId)}`;
+
+    console.debug('[Serviços] Carregando áreas.', {
+      setorId,
+      url,
+    });
+
+    const results = await loadOptions(
+      areaSelect,
+      url,
+      areaStatus,
+      'Selecione a área profissional',
+      'Nenhuma área profissional cadastrada para este setor.'
+    );
+
+    console.debug('[Serviços] Áreas recebidas.', {
+      setorId,
+      quantidade: results.length,
+      disabled: areaSelect.disabled,
+    });
+
+    return results;
+  }
+
+  async function handleAreaChange() {
+    const areaId = areaSelect.value;
+
+    console.debug('[Serviços] Área alterada.', {
+      areaId,
+    });
+
     resetSelect(profissaoSelect, 'Selecione primeiro a área');
-    if (area.value) {
-      await loadOptions(
-        profissaoSelect,
-        `/painel/servicos/ajax/profissoes/?area=${encodeURIComponent(area.value)}`,
-        document.querySelector('[data-dependency-status="profissao"]'),
-        'Selecione a profissão',
-      );
-    } else {
-      const setorAtual = document.querySelector('select[name="setor"]')?.value;
-      if (setorAtual) {
-        await loadOptions(
-          profissaoSelect,
-          `/painel/servicos/ajax/profissoes/?setor=${encodeURIComponent(setorAtual)}`,
-          document.querySelector('[data-dependency-status="profissao"]'),
-          'Selecione a profissão',
-        );
-      }
+    resetSelect(tipoSelect, 'Selecione primeiro a profissão');
+
+    setSelectDisabled(profissaoSelect, true);
+    setSelectDisabled(tipoSelect, true);
+
+    if (!areaId) {
+      return [];
+    }
+
+    const url =
+      `${form.dataset.profissoesUrl}?area_profissional_id=${encodeURIComponent(areaId)}`;
+
+    console.debug('[Serviços] Carregando profissões.', {
+      areaId,
+      url,
+    });
+
+    const results = await loadOptions(
+      profissaoSelect,
+      url,
+      profissaoStatus,
+      'Selecione a profissão',
+      'Nenhuma profissão cadastrada para esta área profissional.'
+    );
+
+    console.debug('[Serviços] Profissões recebidas.', {
+      areaId,
+      quantidade: results.length,
+      disabled: profissaoSelect.disabled,
+    });
+
+    return results;
+  }
+
+  async function handleProfissaoChange() {
+    const profissaoId = profissaoSelect.value;
+
+    console.debug('[Serviços] Profissão alterada.', {
+      profissaoId,
+    });
+
+    resetSelect(tipoSelect, 'Selecione primeiro a profissão');
+    setSelectDisabled(tipoSelect, true);
+
+    if (!profissaoId) {
+      return [];
+    }
+
+    const url =
+      `${form.dataset.tiposUrl}?profissao_id=${encodeURIComponent(profissaoId)}`;
+
+    console.debug('[Serviços] Carregando tipos de serviço.', {
+      profissaoId,
+      url,
+    });
+
+    const results = await loadOptions(
+      tipoSelect,
+      url,
+      tipoStatus,
+      'Selecione o tipo de serviço',
+      'Nenhum tipo de serviço cadastrado para esta profissão'
+    );
+
+    console.debug('[Serviços] Tipos de serviço recebidos.', {
+      profissaoId,
+      quantidade: results.length,
+      disabled: tipoSelect.disabled,
+    });
+
+    return results;
+  }
+
+  if (window.jQuery?.fn?.select2) {
+    const $ = window.jQuery;
+
+    $(setorSelect)
+      .off('change.serviceDependencies')
+      .on('change.serviceDependencies', handleSetorChange);
+
+    $(areaSelect)
+      .off('change.serviceDependencies')
+      .on('change.serviceDependencies', handleAreaChange);
+
+    $(profissaoSelect)
+      .off('change.serviceDependencies')
+      .on('change.serviceDependencies', handleProfissaoChange);
+  } else {
+    if (!setorSelect.dataset.serviceDependencyBound) {
+      setorSelect.addEventListener('change', handleSetorChange);
+      setorSelect.dataset.serviceDependencyBound = 'true';
+    }
+
+    if (!areaSelect.dataset.serviceDependencyBound) {
+      areaSelect.addEventListener('change', handleAreaChange);
+      areaSelect.dataset.serviceDependencyBound = 'true';
+    }
+
+    if (!profissaoSelect.dataset.serviceDependencyBound) {
+      profissaoSelect.addEventListener('change', handleProfissaoChange);
+      profissaoSelect.dataset.serviceDependencyBound = 'true';
     }
   }
+
+  setSelectDisabled(areaSelect, !areaSelect.value);
+  setSelectDisabled(profissaoSelect, !profissaoSelect.value);
+  setSelectDisabled(tipoSelect, !tipoSelect.value);
+
+  /*
+   * Cadastro novo ou formulário devolvido com apenas Setor preenchido:
+   * carrega automaticamente as áreas.
+   *
+   * Na edição, quando Área/Profissão/Tipo já possuem valor, os registros
+   * existentes são preservados e não são apagados durante a inicialização.
+   */
+  if (setorSelect.value && !areaSelect.value) {
+    void handleSetorChange();
+  }
+}
+
+document.addEventListener('change', (event) => {
+  const provider = event.target.closest('[name="prestador_tipo"]');
+  if (provider) updateProvider(provider);
 });
 
 document.addEventListener('DOMContentLoaded', () => {
+  if (window.jQuery?.fn?.select2) {
+    window.jQuery('select[name="setor"], select[name="area"], select[name="profissao"], select[name="tipo_servico"]').each(function () {
+      if (window.jQuery(this).hasClass('select2-hidden-accessible')) return;
+      window.jQuery(this).select2({
+      width: '100%', allowClear: true, language: {
+        noResults: () => 'Nenhum resultado encontrado',
+        searching: () => 'Buscando...',
+      },
+      });
+    });
+  }
+  initDependentServiceSelects();
   document.querySelectorAll('[data-image-input]').forEach((input) => {
     input.addEventListener('change', () => {
       const preview = input.parentElement.querySelector('[data-image-preview]');

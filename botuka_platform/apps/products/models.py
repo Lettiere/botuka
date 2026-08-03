@@ -20,6 +20,7 @@ class SetorProduto(UUIDModel, TimeStampedModel):
     ativo = models.BooleanField(default=True)
 
     class Meta:
+        db_table = '"taxonomy"."products_setorproduto"'
         ordering = ['ordem', 'nome']
 
     def __str__(self):
@@ -38,6 +39,7 @@ class CategoriaProduto(UUIDModel, TimeStampedModel):
     removido_em = models.DateTimeField(null=True, blank=True)
 
     class Meta:
+        db_table = '"taxonomy"."products_categoriaproduto"'
         ordering = ['nome']
         constraints = [
             models.UniqueConstraint(fields=['slug'], condition=models.Q(ativo=True), name='products_category_active_slug_uk'),
@@ -58,6 +60,7 @@ class FamiliaProduto(UUIDModel, TimeStampedModel):
     removido_em = models.DateTimeField(null=True, blank=True)
 
     class Meta:
+        db_table = '"taxonomy"."products_familiaproduto"'
         ordering = ['nome']
         constraints = [
             models.UniqueConstraint(fields=['categoria', 'slug'], name='products_family_category_slug_uk'),
@@ -80,6 +83,7 @@ class TipoProduto(UUIDModel, TimeStampedModel):
     segmentos = models.ManyToManyField('SegmentoProduto', through='TipoProdutoSegmento', related_name='tipos')
 
     class Meta:
+        db_table = '"taxonomy"."products_tipoproduto"'
         ordering = ['nome']
         constraints = [
             models.UniqueConstraint(fields=['familia', 'slug'], name='products_type_family_slug_uk'),
@@ -106,6 +110,7 @@ class SegmentoProduto(UUIDModel, TimeStampedModel):
     removido_em = models.DateTimeField(null=True, blank=True)
 
     class Meta:
+        db_table = '"taxonomy"."products_segmentoproduto"'
         ordering = ['nome']
 
     def __str__(self):
@@ -120,6 +125,7 @@ class TipoProdutoSegmento(UUIDModel, TimeStampedModel):
     ordem = models.PositiveIntegerField(default=0)
 
     class Meta:
+        db_table = '"taxonomy"."products_tipoprodutosegmento"'
         ordering = ['ordem', 'segmento__nome']
         constraints = [
             models.UniqueConstraint(fields=['tipo_produto', 'segmento'], name='products_type_segment_uk'),
@@ -147,6 +153,7 @@ class AtributoProduto(UUIDModel, TimeStampedModel):
     ativo = models.BooleanField(default=True)
 
     class Meta:
+        db_table = '"taxonomy"."products_atributoproduto"'
         ordering = ['ordem', 'nome']
         constraints = [
             models.UniqueConstraint(
@@ -241,6 +248,10 @@ class Produto(UUIDModel, TimeStampedModel, SoftDeleteModel):
             raise ValidationError({'empresa_proprietaria':'Informe a empresa proprietária.'})
         if not self.preco_sob_consulta and self.preco is None:
             raise ValidationError({'preco':'Informe o preço ou marque preço sob consulta.'})
+        if self.preco is not None and self.preco < 0:
+            raise ValidationError({'preco':'O preço não pode ser negativo.'})
+        if self.preco_promocional is not None and self.preco_promocional < 0:
+            raise ValidationError({'preco_promocional':'O preço promocional não pode ser negativo.'})
         if self.preco_promocional is not None and self.preco is not None and self.preco_promocional >= self.preco:
             raise ValidationError({'preco_promocional':'O preço promocional deve ser menor que o preço normal.'})
         if (

@@ -7,6 +7,7 @@
 
 {% block painel_content %}
   <link rel="stylesheet" href="{% static 'painel/css/servicos.css' %}">
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 
   <section class="painel-card servicos-page">
     <header class="service-panel-header">
@@ -22,7 +23,10 @@
         <a class="btn btn-outline-secondary" href="{% url 'painel:servico_detalhe' servico.uuid %}">Cancelar</a>
       </div>
     </header>
-    <form method="post" enctype="multipart/form-data" class="service-form" novalidate>
+    <form method="post" enctype="multipart/form-data" class="service-form" novalidate
+          data-areas-url="{% url 'painel:servicos_ajax_areas' %}"
+          data-profissoes-url="{% url 'painel:servicos_ajax_profissoes' %}"
+          data-tipos-url="{% url 'painel:servicos_ajax_tipos' %}">
       {% csrf_token %}
       {% if form.non_field_errors %}
         <div class="alert alert-danger">
@@ -57,5 +61,7 @@
     </form>
   </section>
 
-  <script src="{% static 'painel/js/servicos.js' %}?v=20260729-1" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" defer></script>
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
+  <script src="{% static 'painel/js/servicos.js' %}?v=20260803-5" defer></script>
 {% endblock %}

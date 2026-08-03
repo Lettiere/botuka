@@ -7,6 +7,7 @@ import re
 from django import forms
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.db.models import Q
 from django.utils import timezone
 
 from apps.core.models import EnderecoCore, PessoaDocumento
@@ -16,11 +17,14 @@ from apps.organizations.permissions import empresas_gerenciaveis_para_usuario
 from apps.services.models import (
     AreaProfissional,
     Profissao,
+    ProfissaoTipoServico,
     Servico,
     ServicoArea,
     ServicoCaracteristica,
     ServicoImagem,
     ServicoLink,
+    Setor,
+    TipoServico,
 )
 from apps.core.services.rich_text import sanitizar_html_rico
 
@@ -591,40 +595,53 @@ class ServicoForm(BaseServicoForm):
 
         self.fields['area'].queryset = AreaProfissional.objects.none()
         self.fields['profissao'].queryset = Profissao.objects.none()
-        self.fields['area'].required = False
+        self.fields['tipo_servico'].queryset = TipoServico.objects.none()
+        self.fields['setor'].queryset = Setor.objects.filter(ativo=True).order_by('nome')
+        self.fields['area'].required = True
+        self.fields['tipo_servico'].required = False
+        self.fields['tipo_servico'].label = 'Tipo de serviço (opcional)'
         self.fields['area'].empty_label = 'Selecione primeiro o setor'
         self.fields['profissao'].empty_label = 'Selecione primeiro a área'
+        self.fields['tipo_servico'].empty_label = 'Selecione primeiro a profissão'
         self.fields['empresa'].empty_label = 'Selecione uma empresa'
 
         setor_id = None
         area_id = None
+        profissao_id = None
 
         if self.is_bound:
             setor_id = self.data.get('setor')
             area_id = self.data.get('area')
+            profissao_id = self.data.get('profissao')
         elif self.instance and self.instance.pk:
             setor_id = self.instance.setor_id
             area_id = self.instance.area_id
+            profissao_id = self.instance.profissao_id
 
         if setor_id and str(setor_id).isdigit():
             self.fields['area'].queryset = (
                 AreaProfissional.objects
                 .filter(setor_id=setor_id, ativo=True)
-                .order_by('ordem', 'nome')
+                .order_by('nome')
             )
 
-        if area_id and str(area_id).isdigit():
+        if area_id and str(area_id).isdigit() and setor_id and str(setor_id).isdigit():
             self.fields['profissao'].queryset = (
                 Profissao.objects
-                .filter(area_id=area_id, ativo=True)
+                .filter(area_id=area_id, setor_id=setor_id, ativo=True)
                 .order_by('nome')
             )
-        elif setor_id and str(setor_id).isdigit():
-            # Compatibilidade com a taxonomia legada, que possui profissões sem área.
-            self.fields['profissao'].queryset = (
-                Profissao.objects
-                .filter(setor_id=setor_id, area__isnull=True, ativo=True)
-                .order_by('nome')
+
+        if profissao_id and str(profissao_id).isdigit():
+            tipo_filter = Q(
+                ativo=True,
+                vinculos_profissoes__profissao_id=profissao_id,
+                vinculos_profissoes__ativo=True,
+            )
+            if self.instance and self.instance.pk and self.instance.tipo_servico_id:
+                tipo_filter |= Q(pk=self.instance.tipo_servico_id)
+            self.fields['tipo_servico'].queryset = (
+                TipoServico.objects.filter(tipo_filter).distinct().order_by('nome')
             )
 
         if usuario is not None:
@@ -641,6 +658,7 @@ class ServicoForm(BaseServicoForm):
         setor = cleaned.get('setor')
         area = cleaned.get('area')
         profissao = cleaned.get('profissao')
+        tipo_servico = cleaned.get('tipo_servico')
 
         # O queryset dependente rejeita corretamente IDs de outro setor antes
         # de clean(); preserve também a mensagem de domínio útil ao usuário.
@@ -648,6 +666,10 @@ class ServicoForm(BaseServicoForm):
         if setor and not area and area_enviada and str(area_enviada).isdigit():
             if AreaProfissional.objects.filter(pk=area_enviada).exclude(setor=setor).exists():
                 self.add_error('area', 'A área profissional não pertence ao setor selecionado.')
+        profissao_enviada = self.data.get('profissao') if self.is_bound else None
+        if area and not profissao and profissao_enviada and str(profissao_enviada).isdigit():
+            if Profissao.objects.filter(pk=profissao_enviada).exclude(area=area).exists():
+                self.add_error('profissao', 'A profissão não pertence à área profissional selecionada.')
 
         if prestador_tipo == Servico.PrestadorTipo.PESSOA_FISICA:
             if empresa is not None:
@@ -658,8 +680,25 @@ class ServicoForm(BaseServicoForm):
             self.add_error('area', 'A área profissional não pertence ao setor selecionado.')
         if profissao and setor and profissao.setor_id != setor.pk:
             self.add_error('profissao', 'A profissão não pertence ao setor selecionado.')
+        if profissao and not area:
+            self.add_error('profissao', 'Selecione a área profissional da profissão.')
         if profissao and profissao.area_id and area and profissao.area_id != area.pk:
             self.add_error('profissao', 'A profissão não pertence à área profissional selecionada.')
+        tipo_enviado = self.data.get('tipo_servico') if self.is_bound else None
+        if profissao and not tipo_servico and tipo_enviado and str(tipo_enviado).isdigit():
+            if TipoServico.objects.filter(pk=tipo_enviado).exists():
+                self.add_error('tipo_servico', 'O tipo de serviço não pertence à profissão selecionada.')
+        if (
+            profissao and tipo_servico and profissao.area_id
+            and ProfissaoTipoServico.objects.filter(profissao=profissao, ativo=True).exists()
+            and not ProfissaoTipoServico.objects.filter(
+                profissao=profissao,
+                tipo_servico=tipo_servico,
+                ativo=True,
+                tipo_servico__ativo=True,
+            ).exists()
+        ):
+            self.add_error('tipo_servico', 'O tipo de serviço não pertence à profissão selecionada.')
 
         if self.usuario and prestador_tipo:
             from apps.organizations.plans import validar_contexto_servico
@@ -744,7 +783,7 @@ class ServicoForm(BaseServicoForm):
             'empresa': 'São listadas apenas empresas que você administra.',
             'area': 'As opções são carregadas de acordo com o setor.',
             'profissao': 'As opções são carregadas de acordo com a área profissional.',
-            'tipo_servico': 'Classificação geral do serviço.',
+            'tipo_servico': 'As opções são carregadas de acordo com a profissão.',
         }
         widgets = {
             'descricao_completa': forms.Textarea(attrs={

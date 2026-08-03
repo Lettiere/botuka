@@ -1,5 +1,5 @@
 from django import forms
-from .models import CategoriaProduto, FamiliaProduto, SegmentoProduto, TipoProduto
+from .models import CategoriaProduto, FamiliaProduto, SegmentoProduto, SetorProduto, TipoProduto
 
 class StyledForm(forms.ModelForm):
     def __init__(self, *args, **kwargs):
@@ -10,7 +10,11 @@ class StyledForm(forms.ModelForm):
 class CategoriaProdutoGestaoForm(StyledForm):
     class Meta:
         model = CategoriaProduto
-        fields = ['nome','slug','descricao','icone','ordem','ativo']
+        fields = ['setor','nome','slug','descricao','icone','ordem','ativo']
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        selected = self.data.get('setor') if self.is_bound else self.instance.setor_id
+        self.fields['setor'].queryset = SetorProduto.objects.filter(pk=selected) if selected else SetorProduto.objects.none()
 
 class FamiliaProdutoGestaoForm(StyledForm):
     class Meta:
@@ -18,8 +22,8 @@ class FamiliaProdutoGestaoForm(StyledForm):
         fields = ['categoria','nome','slug','descricao','ordem','ativo']
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        if not self.instance.pk:
-            self.fields['categoria'].queryset = CategoriaProduto.objects.filter(ativo=True, removido_em__isnull=True)
+        selected = self.data.get('categoria') if self.is_bound else self.instance.categoria_id
+        self.fields['categoria'].queryset = CategoriaProduto.objects.filter(pk=selected) if selected else CategoriaProduto.objects.none()
 
 class TipoProdutoGestaoForm(StyledForm):
     segmentos_permitidos = forms.ModelMultipleChoiceField(
@@ -31,8 +35,8 @@ class TipoProdutoGestaoForm(StyledForm):
         fields = ['familia','nome','slug','descricao','ordem','ativo','permite_segmento','exige_segmento']
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        if not self.instance.pk:
-            self.fields['familia'].queryset = FamiliaProduto.objects.filter(ativo=True, removido_em__isnull=True, categoria__ativo=True)
+        selected = self.data.get('familia') if self.is_bound else self.instance.familia_id
+        self.fields['familia'].queryset = FamiliaProduto.objects.filter(pk=selected) if selected else FamiliaProduto.objects.none()
         if self.instance.pk:
             self.fields['segmentos_permitidos'].initial = self.instance.segmentos.filter(tipos_relacionados__ativo=True)
     def clean(self):

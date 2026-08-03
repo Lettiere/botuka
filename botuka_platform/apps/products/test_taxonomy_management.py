@@ -4,7 +4,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from .models import (
-    CategoriaProduto, FamiliaProduto, SegmentoProduto,
+    AtributoProduto, CategoriaProduto, FamiliaProduto, SegmentoProduto,
     TipoProduto, TipoProdutoSegmento,
 )
 
@@ -66,3 +66,20 @@ class TaxonomyManagementTests(TestCase):
         response = self.client.get(reverse('gestao:api_produtos_familias'), {'categoria': 'invalida'})
         self.assertEqual(response.status_code, 400)
         self.assertEqual(response.json()['error'], 'Categoria inválida.')
+
+    def test_attribute_api_is_scoped_to_active_category_attributes(self):
+        valid = AtributoProduto.objects.create(
+            categoria_taxonomia=self.category, nome='Voltagem', chave='voltagem',
+            tipo=AtributoProduto.Tipo.ESCOLHA, opcoes=['110V', '220V'], obrigatorio=True,
+        )
+        AtributoProduto.objects.create(
+            categoria_taxonomia=self.category, nome='Oculto', chave='oculto', ativo=False,
+        )
+        response = self.client.get(
+            reverse('gestao:api_produtos_atributos'), {'categoria': self.category.pk},
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['results'], [{
+            'id': valid.pk, 'nome': 'Voltagem', 'tipo': 'ESCOLHA',
+            'opcoes': ['110V', '220V'], 'obrigatorio': True,
+        }])

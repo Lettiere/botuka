@@ -149,7 +149,13 @@ class Profissao(UUIDModel):
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = gerar_slug_unico(self, self.nome)
+        self.full_clean()
         super().save(*args, **kwargs)
+
+    def clean(self):
+        super().clean()
+        if self.area_id and self.setor_id and self.area.setor_id != self.setor_id:
+            raise ValidationError({'area': 'A área profissional deve pertencer ao setor da profissão.'})
 
     def __str__(self):
         return f'{self.nome} ({self.setor})'
@@ -163,6 +169,9 @@ class TipoServico(UUIDModel):
     ativo = models.BooleanField(default=True, db_column='services_tipo_servico_ativo')
     criado_em = models.DateTimeField(auto_now_add=True, db_column='services_tipo_servico_criado_em')
     atualizado_em = models.DateTimeField(auto_now=True, db_column='services_tipo_servico_atualizado_em')
+    profissoes = models.ManyToManyField(
+        Profissao, through='ProfissaoTipoServico', related_name='tipos_servico', blank=True,
+    )
 
     class Meta:
         ordering = ['nome']
@@ -175,6 +184,37 @@ class TipoServico(UUIDModel):
 
     def __str__(self):
         return self.nome
+
+
+class ProfissaoTipoServico(UUIDModel):
+    id = models.BigAutoField(primary_key=True, db_column='services_profissao_tipo_servico_id')
+    profissao = models.ForeignKey(
+        Profissao, on_delete=models.PROTECT,
+        db_column='services_profissao_tipo_servico_fk_profissao',
+        related_name='vinculos_tipos_servico',
+    )
+    tipo_servico = models.ForeignKey(
+        TipoServico, on_delete=models.PROTECT,
+        db_column='services_profissao_tipo_servico_fk_tipo_servico',
+        related_name='vinculos_profissoes',
+    )
+    ordem = models.PositiveIntegerField(default=0, db_column='services_profissao_tipo_servico_ordem')
+    ativo = models.BooleanField(default=True, db_column='services_profissao_tipo_servico_ativo')
+    criado_em = models.DateTimeField(auto_now_add=True, db_column='services_profissao_tipo_servico_criado_em')
+    atualizado_em = models.DateTimeField(auto_now=True, db_column='services_profissao_tipo_servico_atualizado_em')
+
+    class Meta:
+        ordering = ['ordem', 'tipo_servico__nome']
+        db_table = '"services"."services_profissao_tipo_servico_tb"'
+        constraints = [models.UniqueConstraint(
+            fields=['profissao', 'tipo_servico'], name='services_profissao_tipo_servico_uk',
+        )]
+        indexes = [models.Index(
+            fields=['profissao', 'ativo'], name='services_prof_tipo_ativo_idx',
+        )]
+
+    def __str__(self):
+        return f'{self.profissao} — {self.tipo_servico}'
 
 
 class FormaCobranca(UUIDModel):
@@ -226,7 +266,14 @@ class Servico(UUIDModel):
         blank=True,
     )
     profissao = models.ForeignKey(Profissao, on_delete=models.PROTECT, db_column='services_servico_fk_profissao', related_name='servicos')
-    tipo_servico = models.ForeignKey(TipoServico, on_delete=models.PROTECT, db_column='services_servico_fk_tipo_servico', related_name='servicos')
+    tipo_servico = models.ForeignKey(
+        TipoServico,
+        on_delete=models.PROTECT,
+        db_column='services_servico_fk_tipo_servico',
+        related_name='servicos',
+        null=True,
+        blank=True,
+    )
     forma_cobranca = models.ForeignKey(FormaCobranca, on_delete=models.PROTECT, db_column='services_servico_fk_forma_cobranca', related_name='servicos')
     titulo = models.CharField(max_length=160, db_column='services_servico_titulo')
     slug = models.SlugField(max_length=220, unique=True, blank=True, db_column='services_servico_slug')
@@ -294,8 +341,26 @@ class Servico(UUIDModel):
             raise ValidationError({'area': 'A área profissional deve pertencer ao setor selecionado.'})
         if self.profissao_id and self.setor_id and self.profissao.setor_id != self.setor_id:
             raise ValidationError({'profissao': 'A profissão deve pertencer ao setor selecionado.'})
+        # Registros legados com profissão sem área permanecem editáveis; toda
+        # profissão do novo catálogo possui área e exige o mesmo vínculo.
+        if self.profissao_id and self.profissao.area_id and not self.area_id:
+            raise ValidationError({'area': 'Selecione a área profissional da profissão.'})
         if self.profissao_id and self.profissao.area_id and self.area_id != self.profissao.area_id:
             raise ValidationError({'profissao': 'A profissão deve pertencer à área profissional selecionada.'})
+        if (
+            self.profissao_id and self.tipo_servico_id and self.profissao.area_id
+            and ProfissaoTipoServico.objects.filter(
+                profissao_id=self.profissao_id,
+                ativo=True,
+            ).exists()
+            and not ProfissaoTipoServico.objects.filter(
+                profissao_id=self.profissao_id,
+                tipo_servico_id=self.tipo_servico_id,
+                ativo=True,
+                tipo_servico__ativo=True,
+            ).exists()
+        ):
+            raise ValidationError({'tipo_servico': 'O tipo de serviço não pertence à profissão selecionada.'})
         if self.preco_inicial and self.preco_final and self.preco_inicial > self.preco_final:
             raise ValidationError({'preco_final': 'O preço final não pode ser menor que o inicial.'})
         if not self.atendimento_remoto and not self.atendimento_presencial:

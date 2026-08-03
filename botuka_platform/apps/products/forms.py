@@ -2,10 +2,12 @@ from django import forms
 from django.core.exceptions import ValidationError
 from django.forms import BaseInlineFormSet, inlineformset_factory
 from django.db.models import Q
+from django.core.files.images import get_image_dimensions
 from urllib.parse import parse_qs, urlparse
 
 from apps.core.services.rich_text import sanitizar_html_rico
 from apps.organizations.permissions import empresas_gerenciaveis_para_usuario
+from apps.accounts.permissions import usuario_tem_permissao
 
 from .models import (
     AtributoProduto,
@@ -16,6 +18,7 @@ from .models import (
     ProdutoImagem,
     ProdutoVideo,
     SegmentoProduto,
+    SetorProduto,
     TipoProduto,
     ValorAtributoProduto,
 )
@@ -23,6 +26,13 @@ from .models import (
 
 class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
+
+
+class ProductDecimalField(forms.DecimalField):
+    def to_python(self, value):
+        if isinstance(value, str) and ',' in value and '.' not in value:
+            value = value.replace(',', '.')
+        return super().to_python(value)
 
 
 def youtube_id(url):
@@ -45,6 +55,8 @@ def youtube_id(url):
 
 
 class ProdutoForm(forms.ModelForm):
+    preco = ProductDecimalField(required=False, min_value=0, max_digits=12, decimal_places=2)
+    preco_promocional = ProductDecimalField(required=False, min_value=0, max_digits=12, decimal_places=2)
     imagem_principal_upload = forms.ImageField(
         required=False, label='Imagem principal',
         help_text='JPG, PNG ou WebP. Esta será a capa pública do produto.',
@@ -80,10 +92,10 @@ class ProdutoForm(forms.ModelForm):
             elif not field.widget.attrs.get('class'):
                 field.widget.attrs['class'] = 'form-control'
         step_fields = {
-            1: {'nome', 'titular_tipo', 'empresa_proprietaria', 'marca', 'modelo', 'condicao', 'descricao_curta'},
+            1: {'nome', 'titular_tipo', 'empresa_proprietaria', 'descricao_curta'},
             2: {'setor', 'categoria_taxonomia', 'familia', 'tipo_produto', 'segmento'},
-            3: {'preco', 'preco_promocional', 'moeda', 'preco_sob_consulta', 'unidade_venda', 'quantidade_minima', 'estoque_informativo', 'disponibilidade', 'aceita_encomenda', 'prazo_estimado'},
-            4: {'descricao_completa', 'especificacoes', 'garantia', 'dimensoes', 'peso', 'cor', 'material', 'tamanho', 'origem', 'fabricante'},
+            3: {'marca', 'modelo', 'condicao', 'descricao_completa', 'especificacoes', 'garantia', 'dimensoes', 'peso', 'cor', 'material', 'tamanho', 'origem', 'fabricante'},
+            4: {'preco', 'preco_promocional', 'moeda', 'preco_sob_consulta', 'unidade_venda', 'quantidade_minima', 'estoque_informativo', 'disponibilidade', 'aceita_encomenda', 'prazo_estimado'},
             5: {'whatsapp', 'telefone', 'url_externa', 'destaque', 'publico', 'tags', 'titulo_seo', 'descricao_seo'},
             6: {'imagem_principal_upload', 'galeria_upload', 'imagem_social'},
         }
@@ -105,27 +117,31 @@ class ProdutoForm(forms.ModelForm):
         self.fields['categoria_taxonomia'].required = True
         self.fields['familia'].required = True
         self.fields['tipo_produto'].required = True
+        selected_sector = self.data.get('setor') if self.is_bound else self.instance.setor_id
         saved_category = self.instance.categoria_taxonomia_id
+        selected_category = self.data.get('categoria_taxonomia') if self.is_bound else saved_category
+        self.fields['setor'].queryset = SetorProduto.objects.filter(
+            Q(pk=selected_sector), Q(ativo=True) | Q(pk=self.instance.setor_id),
+        ).distinct()
         self.fields['categoria_taxonomia'].queryset = CategoriaProduto.objects.filter(
-            Q(ativo=True, removido_em__isnull=True) | Q(pk=saved_category)
-        ).distinct().order_by('ordem', 'nome')
-        selected_category = self.data.get('categoria_taxonomia') if self.is_bound else self.instance.categoria_taxonomia_id
+            Q(pk=selected_category), Q(ativo=True, removido_em__isnull=True) | Q(pk=saved_category),
+        ).distinct()
         selected_family = self.data.get('familia') if self.is_bound else self.instance.familia_id
         selected_type = self.data.get('tipo_produto') if self.is_bound else self.instance.tipo_produto_id
         try:
             self.fields['familia'].queryset = FamiliaProduto.objects.filter(
                 Q(ativo=True, removido_em__isnull=True) | Q(pk=self.instance.familia_id),
                 categoria_id=selected_category,
-            ).distinct().order_by('ordem', 'nome') if selected_category else FamiliaProduto.objects.none()
+            ).distinct().order_by('nome') if selected_category else FamiliaProduto.objects.none()
             self.fields['tipo_produto'].queryset = TipoProduto.objects.filter(
                 Q(ativo=True, removido_em__isnull=True) | Q(pk=self.instance.tipo_produto_id),
                 familia_id=selected_family,
-            ).distinct().order_by('ordem', 'nome') if selected_family else TipoProduto.objects.none()
+            ).distinct().order_by('nome') if selected_family else TipoProduto.objects.none()
             self.fields['segmento'].queryset = SegmentoProduto.objects.filter(
             Q(ativo=True, removido_em__isnull=True) | Q(pk=self.instance.segmento_id),
                 tipos_relacionados__tipo_produto_id=selected_type,
                 tipos_relacionados__ativo=True,
-            ).distinct().order_by('ordem', 'nome') if selected_type else SegmentoProduto.objects.none()
+            ).distinct().order_by('nome') if selected_type else SegmentoProduto.objects.none()
         except (TypeError, ValueError):
             self.fields['familia'].queryset = FamiliaProduto.objects.none()
             self.fields['tipo_produto'].queryset = TipoProduto.objects.none()
@@ -168,6 +184,9 @@ class ProdutoForm(forms.ModelForm):
                 self.fields[field_name].widget.attrs['class'] = 'form-check-input'
             else:
                 self.fields[field_name].widget.attrs['class'] = 'form-control'
+            self.fields[field_name].widget.attrs['data-step'] = '3'
+            self.fields[field_name].widget.attrs['data_step'] = '3'
+            self.fields[field_name].widget.attrs['data-dynamic-attribute'] = str(attribute.pk)
 
     def clean(self):
         data = super().clean()
@@ -180,6 +199,17 @@ class ProdutoForm(forms.ModelForm):
             self.add_error('empresa_proprietaria', 'Um produto pessoal não pode pertencer a empresa.')
         if self.fixed_company and company != self.fixed_company:
             self.add_error('empresa_proprietaria', 'A empresa do contexto não pode ser alterada.')
+        if (
+            data.get('titular_tipo') == Produto.TitularTipo.PESSOA_FISICA
+            and data.get('whatsapp')
+            and not usuario_tem_permissao(self.user, 'products.oferecer_whatsapp')
+        ):
+            self.add_error('whatsapp', 'Produtos pessoais utilizam o chat interno; WhatsApp público exige autorização específica.')
+        if (
+            data.get('disponibilidade') == Produto.Disponibilidade.ESGOTADO
+            and data.get('estoque_informativo') not in (None, 0)
+        ):
+            self.add_error('estoque_informativo', 'Produto esgotado não pode informar estoque disponível.')
         for field_name in ('categoria_taxonomia', 'familia', 'tipo_produto', 'segmento'):
             value = data.get(field_name)
             initial_id = getattr(self.instance, f'{field_name}_id', None)
@@ -189,6 +219,14 @@ class ProdutoForm(forms.ModelForm):
             data[name] = sanitizar_html_rico(data.get(name))
         category = data.get('categoria_taxonomia')
         family = data.get('familia')
+        allowed_attribute_ids = {str(item.pk) for item in self.product_attributes}
+        submitted_attribute_ids = {
+            key.removeprefix('atributo_')
+            for key in self.data
+            if key.startswith('atributo_')
+        }
+        if submitted_attribute_ids - allowed_attribute_ids:
+            raise ValidationError('Foram enviados atributos incompatíveis com a categoria selecionada.')
         self.instance.categoria = category.nome if category else self.instance.categoria
         self.instance.subcategoria = family.nome if family else self.instance.subcategoria
         return data
@@ -202,7 +240,45 @@ class ProdutoForm(forms.ModelForm):
                 raise forms.ValidationError(f'{image.name}: limite de 5 MB por imagem.')
             if image.content_type not in {'image/jpeg', 'image/png', 'image/webp'}:
                 raise forms.ValidationError(f'{image.name}: formato não permitido.')
+            try:
+                width, height = get_image_dimensions(image)
+                if not width or not height:
+                    raise ValueError('assinatura de imagem inválida')
+                image.seek(0)
+            except (OSError, TypeError, ValueError) as exc:
+                raise forms.ValidationError(f'{image.name}: o arquivo não contém uma imagem válida.') from exc
         return files
+
+    def clean_imagem_principal_upload(self):
+        image = self.cleaned_data.get('imagem_principal_upload')
+        if image:
+            try:
+                width, height = get_image_dimensions(image)
+                if not width or not height:
+                    raise ValueError('assinatura de imagem inválida')
+                image.seek(0)
+            except (OSError, TypeError, ValueError) as exc:
+                raise forms.ValidationError('A imagem principal enviada é inválida.') from exc
+        return image
+
+    def _total_images_after_save(self):
+        existing = 0
+        if self.instance.pk:
+            removed = set(self.data.getlist('remove_images'))
+            existing = self.instance.imagens.filter(
+                ativo=True, removido_em__isnull=True,
+            ).exclude(uuid__in=removed).count()
+        return (
+            existing
+            + int(bool(self.cleaned_data.get('imagem_principal_upload')))
+            + len(self.cleaned_data.get('galeria_upload') or ())
+        )
+
+    def validate_image_limit(self):
+        if self._total_images_after_save() > 12:
+            self.add_error('galeria_upload', 'O produto pode manter no máximo 12 imagens ativas.')
+            return False
+        return True
 
     def save_attributes(self, product):
         active_ids = []

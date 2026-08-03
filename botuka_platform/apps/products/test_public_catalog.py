@@ -6,6 +6,8 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
+from apps.core.models import Perfil, PerfilPermissao, Permissao
+
 from .models import CategoriaProduto, FamiliaProduto, Produto, SegmentoProduto, TipoProduto
 from .public_catalog import produtos_para_home, produtos_publicos
 
@@ -16,6 +18,13 @@ class PublicProductCatalogTests(TestCase):
         cls.user = get_user_model().objects.create_user(
             username='catalog-seller', password='safe-password', telefone='(14) 99999-9999',
         )
+        profile = Perfil.objects.create(nome='VENDEDOR CATÁLOGO')
+        cls.user.perfil = profile
+        cls.user.save(update_fields=['perfil'])
+        for code in ('products.acessar', 'products.oferecer_whatsapp'):
+            PerfilPermissao.objects.create(
+                perfil=profile, permissao=Permissao.objects.get(codigo=code),
+            )
         cls.category = CategoriaProduto.objects.create(nome='Catálogo', slug='catalogo-publico')
         cls.family = FamiliaProduto.objects.create(categoria=cls.category, nome='Família catálogo', slug='familia-catalogo')
         cls.type = TipoProduto.objects.create(familia=cls.family, nome='Tipo catálogo', slug='tipo-catalogo')

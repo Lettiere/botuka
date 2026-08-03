@@ -24,11 +24,27 @@ from .public_catalog import produtos_publicos
 from .services import (
     calcular_limite, gerar_codigo_interno, validar_documentos_publicacao,
     validar_nova_criacao, whatsapp_produto,
+    validar_transicao_status,
+    PRODUCT_STATUS_TRANSITIONS,
 )
+from .taxonomy_views import api_categorias, api_familias, api_setores, api_tipos
 
 
 def _allowed(user, code):
     return usuario_tem_permissao(user, code)
+
+
+STATUS_PERMISSIONS = {
+    Produto.Status.EM_ANALISE: 'products.enviar_analise',
+    Produto.Status.APROVADO: 'products.aprovar',
+    Produto.Status.PUBLICADO: 'products.publicar',
+    Produto.Status.REJEITADO: 'products.rejeitar',
+    Produto.Status.PAUSADO: 'products.pausar',
+    Produto.Status.ARQUIVADO: 'products.arquivar',
+    Produto.Status.RASCUNHO: 'products.restaurar',
+    Produto.Status.ESGOTADO: 'products.editar_proprios',
+    Produto.Status.INDISPONIVEL: 'products.editar_proprios',
+}
 
 
 @login_required
@@ -96,7 +112,10 @@ def painel_criar(request, empresa_uuid=None):
         fixed_company=fixed_company,
     )
     video_formset = ProdutoVideoFormSet(request.POST or None, instance=form.instance, prefix='videos')
-    if request.method == 'POST' and form.is_valid() and video_formset.is_valid():
+    form_valid = form.is_valid() if request.method == 'POST' else False
+    if form_valid:
+        form_valid = form.validate_image_limit()
+    if request.method == 'POST' and form_valid and video_formset.is_valid():
         company = form.cleaned_data.get('empresa_proprietaria')
         needed = 'products.criar_empresa' if company else 'products.criar_proprio'
         if not _allowed(request.user, needed):
@@ -132,7 +151,11 @@ def painel_detalhe(request, uuid):
     limite = calcular_limite(request.user, item.titular_tipo, item.empresa_proprietaria)
     return render(request, 'painel/produtos/detalhe.html', {
         'produto': item, 'limite': limite, 'pode_editar': pode_editar(request.user, item),
-        'status_opcoes': Produto.Status.choices,
+        'status_opcoes': [
+            choice for choice in Produto.Status.choices
+            if choice[0] in PRODUCT_STATUS_TRANSITIONS.get(item.status, set())
+            and _allowed(request.user, STATUS_PERMISSIONS[choice[0]])
+        ],
         'url_publica_vendas': f"{settings.VENDAS_URL}/produtos/{item.slug}/",
     })
 
@@ -145,7 +168,10 @@ def painel_editar(request, uuid):
     original = (item.titular_tipo, item.empresa_proprietaria_id)
     form = ProdutoForm(request.POST or None, request.FILES or None, instance=item, user=request.user)
     video_formset = ProdutoVideoFormSet(request.POST or None, instance=item, prefix='videos')
-    if request.method == 'POST' and form.is_valid() and video_formset.is_valid():
+    form_valid = form.is_valid() if request.method == 'POST' else False
+    if form_valid:
+        form_valid = form.validate_image_limit()
+    if request.method == 'POST' and form_valid and video_formset.is_valid():
         target = (form.cleaned_data['titular_tipo'], getattr(form.cleaned_data.get('empresa_proprietaria'), 'pk', None))
         if target != original:
             validar_nova_criacao(request.user, target[0], form.cleaned_data.get('empresa_proprietaria'))
@@ -175,15 +201,15 @@ def painel_editar(request, uuid):
 def painel_status(request, uuid):
     item = get_object_or_404(produtos_do_usuario(request.user), uuid=uuid)
     target = request.POST.get('status')
-    permission = {
-        Produto.Status.EM_ANALISE: 'products.enviar_analise', Produto.Status.APROVADO: 'products.aprovar',
-        Produto.Status.PUBLICADO: 'products.publicar', Produto.Status.REJEITADO: 'products.rejeitar',
-        Produto.Status.PAUSADO: 'products.pausar', Produto.Status.ARQUIVADO: 'products.arquivar',
-        Produto.Status.RASCUNHO: 'products.restaurar', Produto.Status.ESGOTADO: 'products.editar_proprios',
-        Produto.Status.INDISPONIVEL: 'products.editar_proprios',
-    }.get(target)
+    permission = STATUS_PERMISSIONS.get(target)
     if not permission or not _allowed(request.user, permission):
         raise PermissionDenied
+    rejection_reason = request.POST.get('motivo_rejeicao', '').strip()
+    try:
+        validar_transicao_status(item, target, rejection_reason)
+    except ValidationError as exc:
+        messages.error(request, '; '.join(exc.messages))
+        return redirect('painel:produto_detalhe', uuid=item.uuid)
     if target == Produto.Status.PUBLICADO:
         try:
             validar_documentos_publicacao(item)
@@ -195,10 +221,18 @@ def painel_status(request, uuid):
     if target == Produto.Status.APROVADO:
         item.aprovado_em = timezone.now()
         item.aprovado_por = request.user
+    if target == Produto.Status.REJEITADO:
+        item.motivo_rejeicao = rejection_reason
+    elif target in {Produto.Status.EM_ANALISE, Produto.Status.APROVADO}:
+        item.motivo_rejeicao = ''
     old = item.status
-    item.status = target
-    item.save()
-    AuditoriaProduto.objects.create(produto=item, usuario=request.user, acao='STATUS', dados={'anterior': old, 'novo': target})
+    with transaction.atomic():
+        item.status = target
+        item.save()
+        AuditoriaProduto.objects.create(
+            produto=item, usuario=request.user, acao='STATUS',
+            dados={'anterior': old, 'novo': target, 'motivo': rejection_reason},
+        )
     return redirect('painel:produto_detalhe', uuid=item.uuid)
 
 

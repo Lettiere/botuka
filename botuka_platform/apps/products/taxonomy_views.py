@@ -11,7 +11,7 @@ from apps.accounts.authorization import pode
 from apps.accounts.permissions import usuario_e_master
 from apps.gestao.decorators import staff_required
 
-from .models import CategoriaProduto, FamiliaProduto, Produto, SegmentoProduto, TipoProduto
+from .models import AtributoProduto, CategoriaProduto, FamiliaProduto, Produto, SegmentoProduto, SetorProduto, TipoProduto
 from .taxonomy_forms import (
     CategoriaProdutoGestaoForm, FamiliaProdutoGestaoForm,
     SegmentoProdutoGestaoForm, TipoProdutoGestaoForm,
@@ -144,24 +144,59 @@ def _valid_id(model, value):
         return None
 
 
+def _select2_response(request, queryset, extra_fields=()):
+    query = request.GET.get('q', '').strip()[:100]
+    if query:
+        queryset = queryset.filter(Q(nome__icontains=query) | Q(slug__icontains=query))
+    try:
+        page_number = max(int(request.GET.get('page', 1)), 1)
+    except (TypeError, ValueError):
+        page_number = 1
+    page = Paginator(queryset.order_by('ordem', 'nome'), 20).get_page(page_number)
+    results = []
+    for item in page.object_list:
+        row = {'id': item.pk, 'uuid': str(item.uuid), 'nome': item.nome, 'text': item.nome}
+        row.update({field: getattr(item, field) for field in extra_fields})
+        results.append(row)
+    return JsonResponse({'results': results, 'pagination': {'more': page.has_next()}})
+
+
+def api_setores(request):
+    _api_allowed(request)
+    return _select2_response(request, SetorProduto.objects.filter(ativo=True))
+
+
+def api_categorias(request):
+    _api_allowed(request)
+    raw = request.GET.get('setor') or request.GET.get('setor_id')
+    sector_id = _valid_id(SetorProduto, raw)
+    if raw and not sector_id:
+        return JsonResponse({'results': [], 'pagination': {'more': False}, 'error': 'Setor inválido.'}, status=400)
+    qs = CategoriaProduto.objects.filter(ativo=True, removido_em__isnull=True)
+    qs = qs.filter(setor_id=sector_id) if sector_id else qs
+    return _select2_response(request, qs)
+
+
 def api_familias(request):
     _api_allowed(request)
-    raw = request.GET.get('categoria')
+    raw = request.GET.get('categoria') or request.GET.get('categoria_id')
     category_id = _valid_id(CategoriaProduto, raw)
     if raw and not category_id:
         return JsonResponse({'results': [], 'error': 'Categoria inválida.'}, status=400)
-    qs = FamiliaProduto.objects.filter(categoria_id=category_id, ativo=True, removido_em__isnull=True) if category_id else FamiliaProduto.objects.none()
-    return JsonResponse({'results': list(qs.order_by('ordem', 'nome').values('id', 'uuid', 'nome'))})
+    qs = FamiliaProduto.objects.filter(ativo=True, removido_em__isnull=True)
+    qs = qs.filter(categoria_id=category_id) if category_id else qs
+    return _select2_response(request, qs)
 
 
 def api_tipos(request):
     _api_allowed(request)
-    raw = request.GET.get('familia')
+    raw = request.GET.get('familia') or request.GET.get('familia_id')
     family_id = _valid_id(FamiliaProduto, raw)
     if raw and not family_id:
         return JsonResponse({'results': [], 'error': 'Família inválida.'}, status=400)
-    qs = TipoProduto.objects.filter(familia_id=family_id, ativo=True, removido_em__isnull=True) if family_id else TipoProduto.objects.none()
-    return JsonResponse({'results': list(qs.order_by('ordem', 'nome').values('id', 'uuid', 'nome', 'permite_segmento', 'exige_segmento'))})
+    qs = TipoProduto.objects.filter(ativo=True, removido_em__isnull=True)
+    qs = qs.filter(familia_id=family_id) if family_id else qs
+    return _select2_response(request, qs, ('permite_segmento', 'exige_segmento'))
 
 
 def api_segmentos(request):
@@ -178,5 +213,23 @@ def api_segmentos(request):
     return JsonResponse({
         'permite_segmento': bool(item and item.permite_segmento),
         'exige_segmento': bool(item and item.exige_segmento),
-        'results': list(qs.order_by('ordem', 'nome').values('id', 'uuid', 'nome')),
+        'results': list(qs.order_by('nome').values('id', 'uuid', 'nome')),
     })
+
+
+def api_atributos(request):
+    _api_allowed(request)
+    raw = request.GET.get('categoria')
+    category_id = _valid_id(CategoriaProduto, raw)
+    if raw and not category_id:
+        return JsonResponse({'results': [], 'error': 'Categoria inválida.'}, status=400)
+    attributes = AtributoProduto.objects.filter(
+        categoria_taxonomia_id=category_id, ativo=True,
+    ).order_by('ordem', 'nome') if category_id else AtributoProduto.objects.none()
+    return JsonResponse({'results': [
+        {
+            'id': item.pk, 'nome': item.nome, 'tipo': item.tipo,
+            'opcoes': item.opcoes, 'obrigatorio': item.obrigatorio,
+        }
+        for item in attributes
+    ]})

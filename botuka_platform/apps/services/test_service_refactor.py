@@ -11,7 +11,8 @@ from apps.core.services.contacts import telefone_para_whatsapp
 from apps.core.services.public_sharing import obter_url_publica
 from apps.core.services.rich_text import sanitizar_html_rico
 from apps.services.models import (
-    FormaCobranca, Profissao, Servico, ServicoImagem, Setor, TipoServico,
+    AreaProfissional, FormaCobranca, Profissao, ProfissaoTipoServico,
+    Servico, ServicoImagem, Setor, TipoServico,
 )
 
 
@@ -41,13 +42,16 @@ class ServicePanelRefactorTests(TestCase):
     def setUpTestData(cls):
         cls.owner = get_user_model().objects.create_user('service-owner', password='senha')
         cls.setor = Setor.objects.create(nome='Casa')
-        cls.profissao = Profissao.objects.create(setor=cls.setor, nome='Prestador')
+        cls.area = AreaProfissional.objects.create(setor=cls.setor, nome='Manutenção residencial')
+        cls.profissao = Profissao.objects.create(setor=cls.setor, area=cls.area, nome='Prestador')
         cls.tipo = TipoServico.objects.create(nome='Manutenção')
+        ProfissaoTipoServico.objects.create(profissao=cls.profissao, tipo_servico=cls.tipo)
         cls.cobranca = FormaCobranca.objects.create(nome='Por serviço')
         cls.servico = Servico.objects.create(
             usuario_responsavel=cls.owner,
             prestador_tipo=Servico.PrestadorTipo.PESSOA_FISICA,
             setor=cls.setor,
+            area=cls.area,
             profissao=cls.profissao,
             tipo_servico=cls.tipo,
             forma_cobranca=cls.cobranca,
@@ -61,7 +65,7 @@ class ServicePanelRefactorTests(TestCase):
     def payload(self, **changes):
         data = {
             'prestador_tipo': Servico.PrestadorTipo.PESSOA_FISICA,
-            'empresa': '', 'setor': self.setor.pk, 'area': '',
+            'empresa': '', 'setor': self.setor.pk, 'area': self.area.pk,
             'profissao': self.profissao.pk, 'tipo_servico': self.tipo.pk,
             'forma_cobranca': self.cobranca.pk, 'titulo': self.servico.titulo,
             'descricao_curta': 'Atendimento residencial',

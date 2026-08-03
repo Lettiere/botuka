@@ -45,8 +45,10 @@ urlpatterns = [
     # --- Serviços (UUID padrão: todas as rotas dependentes de serviço) ---
     path('servicos/', views.servicos_lista, name='servicos_lista'),
     path('servicos/novo/', views.servico_criar, name='servico_criar'),
+    path('servicos/ajax/setores/', views.servicos_ajax_setores, name='servicos_ajax_setores'),
     path('servicos/ajax/areas/', views.servicos_ajax_areas, name='servicos_ajax_areas'),
     path('servicos/ajax/profissoes/', views.servicos_ajax_profissoes, name='servicos_ajax_profissoes'),
+    path('servicos/ajax/tipos/', views.servicos_ajax_tipos, name='servicos_ajax_tipos'),
     path('servicos/<uuid:uuid>/', views.servico_detalhe, name='servico_detalhe'),
     path('servicos/<uuid:uuid>/editar/', views.servico_editar, name='servico_editar'),
     path('servicos/<uuid:uuid>/excluir/', views.servico_excluir, name='servico_excluir'),

@@ -1,11 +1,57 @@
 <section class="showcase-section" id="produtos">
   <div class="container-botuka">
-    <div class="section-title"><div><h2>Produtos em destaque</h2><small>Encontre produtos e ofertas de empresas da cidade.</small></div><a href="{% url 'products:loja' %}" class="feed-link">Ver todos os produtos</a></div>
-    {% if produtos_destaque %}<div class="row g-3">{% for produto in produtos_destaque %}
-      <div class="col-lg-3 col-md-4 col-6"><article class="showcase-card reveal">
-        {% with image=produto.imagem_principal %}{% if image %}<img class="showcase-img" style="width:100%;object-fit:cover" src="{{ image.imagem.url }}" alt="{{ image.texto_alternativo }}" loading="lazy">{% else %}<div class="showcase-img" style="background:#eef2f6"></div>{% endif %}{% endwith %}
-        <div class="showcase-body"><div class="feed-type">{{ produto.categoria_taxonomia.nome }}</div><div class="showcase-title">{{ produto.nome }}</div><p class="showcase-text">{% if produto.preco_sob_consulta %}Preço sob consulta{% else %}R$ {{ produto.preco_atual|floatformat:2 }}{% endif %}{% if produto.empresa_proprietaria %} · {{ produto.empresa_proprietaria.nome_fantasia }}{% endif %}</p><a href="{{ produto.get_absolute_url }}" class="feed-link">Ver produto</a></div>
-      </article></div>
-    {% endfor %}</div>{% else %}<p>Nenhum produto em destaque publicado no momento.</p>{% endif %}
+    <div class="section-title">
+      <div>
+        <h2>Produtos em destaque</h2>
+        <small>Encontre produtos e ofertas de empresas da cidade.</small>
+      </div>
+      <a href="{% url 'products:loja' %}" class="feed-link">Ver todos os produtos</a>
+    </div>
+    {% if produtos_destaque %}
+      <div class="row g-2 g-md-3 justify-content-center" style="--bs-gutter-x:1rem;">
+        {% for produto in produtos_destaque %}
+          <div class="col-6 col-sm-4 col-md-3 col-lg-2 d-flex">
+            <article class="showcase-card reveal" style="width:100%;min-width:0;flex:1 1 0%;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04);padding:0.5rem 0.5rem 1rem 0.5rem;">
+              {% with image=produto.imagem_principal %}
+                {% if image %}
+                  <div style="width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:8px;background:#eef2f6;display:flex;align-items:center;justify-content:center;">
+                    <img
+                      class="showcase-img"
+                      style="width:100%;height:100%;object-fit:cover;display:block;"
+                      src="{{ image.imagem.url }}"
+                      alt="{{ image.texto_alternativo }}"
+                      loading="lazy"
+                    >
+                  </div>
+                {% else %}
+                  <div class="showcase-img" style="width:100%;aspect-ratio:1/1;background:#eef2f6;border-radius:8px"></div>
+                {% endif %}
+              {% endwith %}
+              <div class="showcase-body" style="padding:0.5rem 0 0 0; font-size:0.98em;">
+                <div class="feed-type" style="font-size:0.87em;color:#789;margin-bottom:0.15em;">
+                  {{ produto.categoria_taxonomia.nome }}
+                </div>
+                <div class="showcase-title" style="font-size:1.07em;font-weight:600;line-height:1.18;margin-bottom:0.2em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+                  {{ produto.nome }}
+                </div>
+                <p class="showcase-text" style="margin:0;margin-bottom:0.36em;font-size:0.99em;">
+                  {% if produto.preco_sob_consulta %}
+                    Preço sob consulta
+                  {% else %}
+                    R$ {{ produto.preco_atual|floatformat:2 }}
+                  {% endif %}
+                  {% if produto.empresa_proprietaria %}
+                    · {{ produto.empresa_proprietaria.nome_fantasia }}
+                  {% endif %}
+                </p>
+                <a href="{{ produto.get_absolute_url }}" class="feed-link" style="font-size:0.96em;display:inline-block;padding:0.15em 0;">Ver produto</a>
+              </div>
+            </article>
+          </div>
+        {% endfor %}
+      </div>
+    {% else %}
+      <p style="text-align:center;">Nenhum produto em destaque publicado no momento.</p>
+    {% endif %}
   </div>
 </section>

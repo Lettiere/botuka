@@ -4,7 +4,7 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.db.models import Q
 from django.utils import timezone
 
-from apps.accounts.permissions import usuario_e_master
+from apps.accounts.permissions import usuario_e_master, usuario_tem_permissao
 from apps.organizations.permissions import empresas_gerenciaveis_para_usuario
 from apps.organizations.services.subscription_limits import obter_assinatura_vigente
 
@@ -72,10 +72,35 @@ def validar_documentos_publicacao(produto):
         complete=all((owner.first_name,owner.last_name,owner.telefone or owner.celular,owner.cep,owner.endereco,owner.numero,owner.bairro,owner.cidade_id,owner.estado_id))
     else:
         company=produto.empresa_proprietaria
+        if not company.pode_publicar_produto:
+            raise ValidationError('A empresa não possui autorização ativa para vender produtos.')
         if not cnpj_valido(company.cpf_cnpj): raise ValidationError('A empresa deve possuir CNPJ válido.')
         complete=all((company.razao_social,company.telefone or company.whatsapp or company.email,company.cep,company.endereco,company.numero,company.bairro,company.cidade_id,company.estado_id))
     if not complete: raise ValidationError('Complete o endereço e os dados de contato do titular antes de publicar.')
     return True
+
+
+PRODUCT_STATUS_TRANSITIONS = {
+    Produto.Status.RASCUNHO: {Produto.Status.EM_ANALISE, Produto.Status.ARQUIVADO},
+    Produto.Status.REJEITADO: {Produto.Status.EM_ANALISE, Produto.Status.ARQUIVADO},
+    Produto.Status.EM_ANALISE: {Produto.Status.APROVADO, Produto.Status.REJEITADO, Produto.Status.ARQUIVADO},
+    Produto.Status.APROVADO: {Produto.Status.PUBLICADO, Produto.Status.REJEITADO, Produto.Status.ARQUIVADO},
+    Produto.Status.PUBLICADO: {Produto.Status.PAUSADO, Produto.Status.ESGOTADO, Produto.Status.INDISPONIVEL, Produto.Status.ARQUIVADO},
+    Produto.Status.PAUSADO: {Produto.Status.PUBLICADO, Produto.Status.ARQUIVADO},
+    Produto.Status.ESGOTADO: {Produto.Status.PUBLICADO, Produto.Status.ARQUIVADO},
+    Produto.Status.INDISPONIVEL: {Produto.Status.PUBLICADO, Produto.Status.ARQUIVADO},
+    Produto.Status.ARQUIVADO: {Produto.Status.RASCUNHO},
+}
+
+
+def validar_transicao_status(produto, novo_status, motivo_rejeicao=''):
+    if novo_status not in PRODUCT_STATUS_TRANSITIONS.get(produto.status, set()):
+        raise ValidationError(
+            f'Não é permitido alterar o produto de {produto.get_status_display()} '
+            f'para {dict(Produto.Status.choices).get(novo_status, novo_status)}.'
+        )
+    if novo_status == Produto.Status.REJEITADO and not motivo_rejeicao.strip():
+        raise ValidationError('Informe o motivo da rejeição.')
 import re
 from urllib.parse import quote
 
@@ -97,10 +122,15 @@ def normalizar_whatsapp(value):
 
 
 def whatsapp_produto(produto):
+    responsible_allowed = usuario_tem_permissao(
+        produto.responsavel, 'products.oferecer_whatsapp',
+    )
+    if produto.titular_tipo == Produto.TitularTipo.PESSOA_FISICA and not responsible_allowed:
+        return {'numero': '', 'url': ''}
     candidates = [
         produto.whatsapp,
         getattr(produto.empresa_proprietaria, 'whatsapp', '') if produto.empresa_proprietaria_id else '',
-        getattr(produto.responsavel, 'telefone', ''),
+        getattr(produto.responsavel, 'telefone', '') if responsible_allowed else '',
     ]
     for candidate in candidates:
         try:

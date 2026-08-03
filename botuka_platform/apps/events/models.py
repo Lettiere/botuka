@@ -58,6 +58,7 @@ class Evento(UUIDModel, TimeStampedModel, SoftDeleteModel):
     observacao_ingresso = models.CharField(max_length=300, blank=True)
 
     class Meta:
+        db_table = '"events"."events_evento"'
         ordering = ['inicio', 'titulo']
         indexes = [
             models.Index(fields=['status', 'publico', 'inicio'], name='events_public_status_idx'),
@@ -115,6 +116,7 @@ class InteresseEvento(UUIDModel, TimeStampedModel):
     cancelado_em = models.DateTimeField(null=True, blank=True)
 
     class Meta:
+        db_table = '"events"."events_interesseevento"'
         ordering = ['-criado_em']
         constraints = [
             models.UniqueConstraint(fields=['evento', 'usuario'], name='events_interesse_usuario_uk'),
@@ -140,4 +142,5 @@ class HistoricoEvento(UUIDModel, TimeStampedModel):
     dados = models.JSONField(default=dict, blank=True)
 
     class Meta:
+        db_table = '"events"."events_historicoevento"'
         ordering = ['-criado_em']

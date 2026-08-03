@@ -7,7 +7,7 @@ from django.urls import reverse
 from apps.core.public_links import TipoLink, normalizar_link_publico
 from apps.locations.models import Cidade, Estado, Pais
 from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade, EmpresaLink
-from apps.services.models import AreaProfissional, FormaCobranca, Profissao, Servico, ServicoLink, Setor, TipoServico
+from apps.services.models import AreaProfissional, FormaCobranca, Profissao, ProfissaoTipoServico, Servico, ServicoLink, Setor, TipoServico
 from apps.accounts.master_services import garantir_usuario_master
 from apps.services.permissions import servicos_disponiveis_para_usuario
 
@@ -40,6 +40,7 @@ class LinksQrCodeTests(TestCase):
         cls.area_profissional = AreaProfissional.objects.create(setor=setor, nome='Desenvolvimento')
         profissao = Profissao.objects.create(setor=setor, area=cls.area_profissional, nome='Desenvolvedor')
         tipo = TipoServico.objects.create(nome='Consultoria')
+        ProfissaoTipoServico.objects.create(profissao=profissao, tipo_servico=tipo)
         cobranca = FormaCobranca.objects.create(nome='Por hora')
         cls.servico = Servico.objects.create(
             usuario_responsavel=cls.usuario,
@@ -153,12 +154,13 @@ class LinksQrCodeTests(TestCase):
         self.client.force_login(self.usuario)
         resposta = self.client.get(
             reverse('painel:servicos_ajax_areas'),
-            {'setor': self.servico.setor_id},
+            {'setor_id': self.servico.setor_id},
         )
         self.assertEqual(resposta.status_code, 200)
         self.assertEqual(resposta.json()['results'][0]['id'], self.area_profissional.pk)
-        invalida = self.client.get(reverse('painel:servicos_ajax_areas'), {'setor': 'invalido'})
-        self.assertEqual(invalida.status_code, 400)
+        invalida = self.client.get(reverse('painel:servicos_ajax_areas'), {'setor_id': 'invalido'})
+        self.assertEqual(invalida.status_code, 200)
+        self.assertEqual(invalida.json(), {'results': []})
 
     def test_formulario_edicao_preserva_classificacao(self):
         self.client.force_login(self.usuario)
