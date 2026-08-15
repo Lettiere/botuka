@@ -1,6 +1,6 @@
-{% extends "_layout/platform/public.html" %}
+{% extends "_layout/platform/public.html" %}{% load content_tags %}
 {% block public_content %}
-<main id="conteudo-principal" class="public-detail container-botuka business-detail">
+<main id="conteudo-principal" class="public-detail container-botuka business-detail" data-analytics-event="view_company" data-object-type="company" data-object-id="{{ empresa.uuid }}" data-analytics-context="company_page">
   <nav class="public-breadcrumb"><a href="{% url 'home' %}">Início</a><i class="bi bi-chevron-right"></i><a href="{% url 'publico:empresas' %}">Empresas</a><i class="bi bi-chevron-right"></i><span>{{ empresa.nome_exibicao }}</span></nav>
   {% include 'publico/includes/ad_slot.html' with format='leaderboard' %}
   <header class="business-hero">
@@ -16,7 +16,7 @@
   </nav>
   <div class="detail-layout">
     <article>
-      <section class="surface-section"><h2>Sobre a empresa</h2><div class="public-prose">{{ empresa.descricao_completa|default:empresa.descricao_curta|linebreaks }}</div></section>
+      <section class="surface-section"><h2>Sobre a empresa</h2><div class="public-prose rich-text-content">{{ empresa.descricao_completa|default:empresa.descricao_curta|richtext }}</div></section>
       {% if videos %}<section><div class="section-heading"><div><span class="section-kicker">Conheça por dentro</span><h2>Galeria e vídeos</h2></div></div><div class="media-grid">{% for video in videos %}<div class="video-shell"><iframe loading="lazy" src="{{ video.url_embed }}" title="Vídeo de {{ empresa.nome_exibicao }}" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>{% endfor %}</div></section>{% endif %}
       {% if servicos %}<section class="surface-section"><div class="section-heading"><div><span class="section-kicker">Soluções</span><h2>Serviços oferecidos</h2></div></div><div class="media-grid">{% for servico in servicos %}<article class="sidebar-card"><h3><a href="{% url 'publico:servico' servico.slug %}">{{ servico.titulo }}</a></h3><p>{{ servico.descricao_curta }}</p></article>{% endfor %}</div></section>{% endif %}
       {% if vagas %}<section class="surface-section"><div class="section-heading"><div><span class="section-kicker">Oportunidades</span><h2>Vagas abertas</h2></div></div><div class="media-grid">{% for vaga in vagas %}<article class="sidebar-card"><h3>{{ vaga.titulo }}</h3><p>{{ vaga.descricao|truncatewords:20 }}</p></article>{% endfor %}</div></section>{% endif %}
@@ -29,7 +29,13 @@
       {% include 'publico/includes/ad_slot.html' with format='in-content' %}
     </article>
     <aside class="content-sidebar">
-      <div class="sidebar-card contact-card"><h2>Informações</h2>{% if empresa.endereco %}<p><i class="bi bi-geo-alt-fill"></i><span><strong>Endereço</strong>{{ empresa.endereco }}{% if empresa.bairro %}, {{ empresa.bairro }}{% endif %}</span></p>{% endif %}{% if empresa.telefone %}<p><i class="bi bi-telephone-fill"></i><span><strong>Telefone</strong>{{ empresa.telefone }}</span></p>{% endif %}<p><i class="bi bi-clock-fill"></i><span><strong>Atendimento</strong>Consulte os horários com a empresa</span></p></div>
+      <section class="sidebar-card contact-card" aria-labelledby="empresa-informacoes"><h2 id="empresa-informacoes">Informações</h2><div class="company-info-list">
+        {% if endereco_publico %}<article class="company-info-item"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i><div><h3>Endereço</h3><p>{{ endereco_publico }}</p><div class="company-info-actions"><a href="{{ google_maps_url }}" target="_blank" rel="noopener noreferrer" data-analytics-directions>Abrir no Google Maps</a><a href="{{ waze_url }}" target="_blank" rel="noopener noreferrer" data-analytics-directions>Abrir no Waze</a></div></div></article>{% endif %}
+        {% if telefone_url %}<article class="company-info-item"><i class="bi bi-telephone-fill" aria-hidden="true"></i><div><h3>Telefone</h3><p>{{ telefone_formatado }}</p><div class="company-info-actions"><a href="{{ telefone_url }}">Ligar agora</a></div></div></article>{% endif %}
+        {% if whatsapp_url %}<article class="company-info-item"><i class="bi bi-whatsapp" aria-hidden="true"></i><div><h3>WhatsApp</h3><p>{{ whatsapp_formatado }}</p><div class="company-info-actions"><a href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer">Conversar no WhatsApp</a></div></div></article>{% endif %}
+        {% if empresa.email %}<article class="company-info-item"><i class="bi bi-envelope-fill" aria-hidden="true"></i><div><h3>E-mail</h3><p>{{ empresa.email }}</p><div class="company-info-actions"><a href="mailto:{{ empresa.email }}">Enviar e-mail</a></div></div></article>{% endif %}
+        <article class="company-info-item"><i class="bi bi-clock-fill" aria-hidden="true"></i><div><h3>Atendimento</h3><p>{{ empresa.horario_atendimento|default:"Consulte os horários com a empresa"|linebreaksbr }}</p></div></article>
+      </div></section>
       {% include 'publico/includes/ad_slot.html' with format='sidebar' %}
     </aside>
   </div>

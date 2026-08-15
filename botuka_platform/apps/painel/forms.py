@@ -252,7 +252,9 @@ class EmpresaForm(forms.ModelForm):
         }
         widgets = {
             'descricao_curta': forms.TextInput(attrs={'maxlength': 220}),
-            'descricao_completa': forms.Textarea(attrs={'rows': 4}),
+            'descricao_completa': forms.Textarea(attrs={
+                'rows': 12, 'data-richtext-source': '', 'class': 'richtext-source',
+            }),
             'horario_atendimento': forms.Textarea(attrs={'rows': 3}),
         }
 
@@ -313,6 +315,9 @@ class EmpresaForm(forms.ModelForm):
 
     def clean_logo(self):
         return self._validar_imagem('logo', 2)
+
+    def clean_descricao_completa(self) -> str:
+        return sanitizar_html_rico(self.cleaned_data.get('descricao_completa', ''))
 
     def clean_imagem_capa(self):
         return self._validar_imagem('imagem_capa', 5)

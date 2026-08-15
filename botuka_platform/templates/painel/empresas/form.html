@@ -84,7 +84,7 @@
               {% if field.name == "descricao_curta" or field.name == "descricao_completa" or field.name == "logo" or field.name == "imagem_capa" %}
                 <div class="empresa-field {% if field.name == 'descricao_curta' or field.name == 'descricao_completa' %}full{% endif %}">
                   <label for="{{ field.id_for_label }}">{{ field.label }}</label>
-                  {{ field.errors }}{{ field }}
+                  {{ field.errors }}{% if field.name == "descricao_completa" %}{% include "components/rich_text_editor.html" with field=field %}<small class="text-muted">Formatação segura; scripts, iframes e estilos arbitrários são removidos no servidor.</small>{% else %}{{ field }}{% endif %}
                 </div>
               {% endif %}
             {% endfor %}

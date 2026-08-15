@@ -1,7 +1,7 @@
 {% extends "_layout/platform/public.html" %}{% load static contact_tags content_tags %}
 {% block public_styles %}<link rel="stylesheet" href="{% static 'public/css/service-detail.css' %}">{% endblock %}
 {% block public_content %}
-<main id="conteudo-principal" class="public-detail container-botuka service-public">
+<main id="conteudo-principal" class="public-detail container-botuka service-public" data-analytics-event="view_service" data-object-type="service" data-object-id="{{ servico.uuid }}" data-analytics-context="service_page">
   <nav class="public-breadcrumb"><a href="{% url 'home' %}">Início</a><i class="bi bi-chevron-right"></i><a href="{% url 'publico:servicos' %}">Serviços</a><i class="bi bi-chevron-right"></i><span>{{ servico.titulo }}</span></nav>
   {% include 'publico/includes/ad_slot.html' with format='leaderboard' %}
   {% with capa=servico.imagens.all|first %}
@@ -12,6 +12,7 @@
   </header>
   {% endwith %}
   <div class="detail-layout service-public__layout"><article><section class="surface-section"><h2>Sobre o serviço</h2><div class="public-prose">{{ servico.descricao_completa|richtext }}</div></section>{% if servico.experiencia %}<section><h2>Experiência e qualificações</h2><div class="public-prose">{{ servico.experiencia|richtext }}</div></section>{% endif %}
+  {% if servico.atributos_adicionais.all %}<section><h2>Características do serviço</h2><dl class="fact-list">{% for item in servico.atributos_adicionais.all %}<div><dt>{{ item.titulo }}</dt><dd>{{ item.valor }} <small>{{ item.get_classificacao_display }}</small>{% if item.observacao %}<br><small>{{ item.observacao }}</small>{% endif %}</dd></div>{% endfor %}</dl></section>{% endif %}
   {% if servico.imagens.all|length > 1 %}<section><h2>Galeria</h2><div class="service-gallery">{% for imagem in servico.imagens.all %}{% if not imagem.principal %}<figure><img src="{{ imagem.imagem.url }}" alt="{{ imagem.texto_alternativo|default:servico.titulo }}" width="640" height="480" loading="lazy" decoding="async">{% if imagem.legenda or imagem.credito %}<figcaption>{{ imagem.legenda }}{% if imagem.credito %} · {{ imagem.credito }}{% endif %}</figcaption>{% endif %}</figure>{% endif %}{% endfor %}</div></section>{% endif %}
   {% if videos %}<section><h2>Vídeos</h2><div class="media-grid">{% for video in videos %}<div class="video-shell"><iframe loading="lazy" src="{{ video.url_embed }}" title="{{ video.titulo|default:servico.titulo }}" allowfullscreen></iframe></div>{% endfor %}</div></section>{% endif %}{% include 'publico/includes/ad_slot.html' with format='in-content' %}</article><aside class="content-sidebar">{% include 'publico/includes/ad_slot.html' with format='sidebar' %}</aside></div>
 </main>

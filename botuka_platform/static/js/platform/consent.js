@@ -84,6 +84,7 @@
     writeChoice(choice);
     hideCompletely();
     window.dispatchEvent(new CustomEvent('botuka:consent-updated', {detail: choice}));
+    if (allowOptional) window.location.reload();
   }
 
   const storedChoice = readCookie() || readStorage();

@@ -3,6 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="csrf-token" content="{{ csrf_token }}">
 {% include "seo/meta.html" %}
 {% include "seo/json_ld.html" %}
 {% include "seo/integrations_head.html" %}
@@ -26,7 +27,7 @@
 
 </head>
 
-<body>
+<body data-page-type="public">
 <a class="skip-link" href="#conteudo-publico">Pular para o conteúdo</a>
 {% include "seo/integrations_body.html" %}
 

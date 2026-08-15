@@ -7,6 +7,8 @@ import uuid
 from django.conf import settings
 from django.db import models
 from django.utils import timezone
+from django.core.exceptions import ValidationError
+from django.utils.html import strip_tags
 
 
 class UUIDModel(models.Model):
@@ -22,6 +24,102 @@ class UUIDModel(models.Model):
 
     class Meta:
         abstract = True
+
+
+class AtributoAdicional(UUIDModel):
+    class Tipo(models.TextChoices):
+        CNH = 'CNH', 'CNH'
+        EXPERIENCIA = 'EXPERIENCIA', 'Experiência'
+        ESCOLARIDADE = 'ESCOLARIDADE', 'Escolaridade'
+        CURSO = 'CURSO', 'Curso'
+        CERTIFICACAO = 'CERTIFICACAO', 'Certificação'
+        DISPONIBILIDADE = 'DISPONIBILIDADE', 'Disponibilidade'
+        VEICULO = 'VEICULO', 'Veículo'
+        IDIOMA = 'IDIOMA', 'Idioma'
+        HABILIDADE = 'HABILIDADE', 'Habilidade'
+        CONHECIMENTO = 'CONHECIMENTO', 'Conhecimento técnico'
+        ATENDIMENTO = 'ATENDIMENTO', 'Atendimento'
+        ESPECIALIDADE = 'ESPECIALIDADE', 'Especialidade'
+        AREA_ATUACAO = 'AREA_ATUACAO', 'Área de atuação'
+        EQUIPAMENTO = 'EQUIPAMENTO', 'Equipamento'
+        PRAZO = 'PRAZO', 'Prazo'
+        LOCAL_ATENDIMENTO = 'LOCAL_ATENDIMENTO', 'Local de atendimento'
+        OUTRO = 'OUTRO', 'Outro'
+
+    class Classificacao(models.TextChoices):
+        OBRIGATORIO = 'OBRIGATORIO', 'Obrigatório'
+        DESEJAVEL = 'DESEJAVEL', 'Desejável'
+        CARACTERISTICA = 'CARACTERISTICA', 'Característica'
+        DIFERENCIAL = 'DIFERENCIAL', 'Diferencial'
+        CONDICAO = 'CONDICAO', 'Condição'
+        INFORMATIVO = 'INFORMATIVO', 'Informativo'
+
+    id = models.BigAutoField(primary_key=True, db_column='core_atributo_adicional_id')
+    vaga = models.ForeignKey(
+        'recruitment.Vaga', null=True, blank=True, on_delete=models.CASCADE,
+        related_name='atributos_adicionais', db_column='core_atributo_fk_vaga',
+    )
+    servico = models.ForeignKey(
+        'services.Servico', null=True, blank=True, on_delete=models.CASCADE,
+        related_name='atributos_adicionais', db_column='core_atributo_fk_servico',
+    )
+    tipo = models.CharField(max_length=32, choices=Tipo.choices, db_column='core_atributo_tipo')
+    nome_personalizado = models.CharField(max_length=100, blank=True, db_column='core_atributo_nome')
+    valor = models.CharField(max_length=240, db_column='core_atributo_valor')
+    classificacao = models.CharField(
+        max_length=24, choices=Classificacao.choices, default=Classificacao.INFORMATIVO,
+        db_column='core_atributo_classificacao',
+    )
+    observacao = models.CharField(max_length=300, blank=True, db_column='core_atributo_observacao')
+    ordem = models.PositiveSmallIntegerField(default=0, db_column='core_atributo_ordem')
+    criado_em = models.DateTimeField(auto_now_add=True, db_column='core_atributo_criado_em')
+    atualizado_em = models.DateTimeField(auto_now=True, db_column='core_atributo_atualizado_em')
+
+    class Meta:
+        ordering = ['ordem', 'id']
+        db_table = '"core"."core_atributo_adicional_tb"'
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(vaga__isnull=False, servico__isnull=True)
+                    | models.Q(vaga__isnull=True, servico__isnull=False)
+                ),
+                name='core_atributo_objeto_xor_ck',
+            ),
+        ]
+        indexes = [
+            models.Index(fields=['vaga', 'tipo'], name='core_atributo_vaga_tipo_idx'),
+            models.Index(fields=['servico', 'tipo'], name='core_atributo_serv_tipo_idx'),
+        ]
+
+    def clean(self):
+        if bool(self.vaga_id) == bool(self.servico_id):
+            raise ValidationError('O atributo deve pertencer a uma vaga ou a um serviço.')
+        self.nome_personalizado = strip_tags(self.nome_personalizado or '').strip()
+        self.valor = strip_tags(self.valor or '').strip()
+        self.observacao = strip_tags(self.observacao or '').strip()
+        if not self.valor:
+            raise ValidationError({'valor': 'Informe o valor do atributo.'})
+        if self.tipo == self.Tipo.OUTRO and not self.nome_personalizado:
+            raise ValidationError({'nome_personalizado': 'Informe o nome do atributo personalizado.'})
+        if self.vaga_id and self.classificacao not in {
+            self.Classificacao.OBRIGATORIO, self.Classificacao.DESEJAVEL,
+            self.Classificacao.INFORMATIVO,
+        }:
+            raise ValidationError({'classificacao': 'Classificação inválida para vaga.'})
+        if self.servico_id and self.classificacao not in {
+            self.Classificacao.CARACTERISTICA, self.Classificacao.DIFERENCIAL,
+            self.Classificacao.CONDICAO, self.Classificacao.INFORMATIVO,
+        }:
+            raise ValidationError({'classificacao': 'Classificação inválida para serviço.'})
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
+
+    @property
+    def titulo(self):
+        return self.nome_personalizado if self.tipo == self.Tipo.OUTRO else self.get_tipo_display()
 
 
 class TimeStampedModel(models.Model):

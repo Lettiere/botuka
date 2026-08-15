@@ -6,7 +6,7 @@
 {% endblock %}
 
 {% block painel_content %}
-  <link rel="stylesheet" href="{% static 'painel/css/servicos.css' %}">
+  <link rel="stylesheet" href="{% static 'painel/css/servicos.css' %}"><link rel="stylesheet" href="{% static 'painel/css/dynamic-attributes.css' %}">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 
   <section class="painel-card servicos-page">
@@ -34,7 +34,7 @@
         </div>
       {% endif %}
 
-      {% include "painel/servicos/_form_sections.html" %}
+      {% include "painel/servicos/_form_sections.html" %}{% include "components/attribute_formset.html" %}
 
       <section class="service-step">
         <div class="service-step-heading">
@@ -63,5 +63,5 @@
 
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" defer></script>
   <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
-  <script src="{% static 'painel/js/servicos.js' %}?v=20260803-5" defer></script>
+  <script src="{% static 'painel/js/servicos.js' %}?v=20260803-5" defer></script><script src="{% static 'painel/js/dynamic-attributes.js' %}" defer></script>
 {% endblock %}

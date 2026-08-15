@@ -1,7 +1,7 @@
 {% extends "painel/base.html" %}{% load static %}
 {% block title %}{{ titulo }} | BOTUKA{% endblock %}
 {% block painel_content %}
-<link rel="stylesheet" href="{% static 'painel/css/servicos.css' %}">
+<link rel="stylesheet" href="{% static 'painel/css/servicos.css' %}"><link rel="stylesheet" href="{% static 'painel/css/dynamic-attributes.css' %}">
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css">
 <section class="painel-card servicos-page">
   <header class="service-panel-header"><div><span class="service-panel-kicker">Serviços</span><h1 class="painel-title">{{ titulo }}</h1><p>Cadastre como profissional autônomo ou por uma empresa que você administra.</p></div><a class="btn btn-outline-secondary" href="{% url 'painel:servicos_lista' %}">Cancelar</a></header>
@@ -10,7 +10,7 @@
         data-profissoes-url="{% url 'painel:servicos_ajax_profissoes' %}"
         data-tipos-url="{% url 'painel:servicos_ajax_tipos' %}">{% csrf_token %}
     {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
-    {% include "painel/servicos/_form_sections.html" %}
+    {% include "painel/servicos/_form_sections.html" %}{% include "components/attribute_formset.html" %}
     <section class="service-step"><div class="service-step-heading"><span class="service-step-number">6</span><div><h2>Área atendida</h2><p>Opcional; informe uma cobertura estruturada.</p></div></div><div class="row g-3">{% for field in area_form %}<div class="col-12 col-md-4"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endfor %}</div></section>
     <section class="service-step"><div class="service-step-heading"><span class="service-step-number">7</span><div><h2>Links e redes sociais</h2><p>Até 15 links públicos e seguros.</p></div></div><div data-link-list></div><button class="btn btn-outline-primary" type="button" data-add-link>Adicionar link</button><template data-link-template><div class="service-link-row" data-link-row><select class="form-select" name="links-TOTAL-tipo_link"><option value="SITE">Site</option><option value="INSTAGRAM">Instagram</option><option value="FACEBOOK">Facebook</option><option value="YOUTUBE">YouTube</option><option value="LINKEDIN">LinkedIn</option><option value="WHATSAPP">WhatsApp</option><option value="OUTRO">Outro</option></select><input class="form-control" name="links-TOTAL-titulo" maxlength="120" placeholder="Título"><input class="form-control" name="links-TOTAL-url" type="url" maxlength="500" placeholder="https://"><input class="form-control" name="links-TOTAL-ordem" type="number" min="0" value="0"><button class="btn btn-outline-danger" type="button" data-remove-link aria-label="Remover link">×</button></div></template></section>
     <div class="form-actions"><button class="btn btn-outline-primary" name="acao" value="rascunho">Salvar como rascunho</button><button class="btn btn-primary" name="acao" value="publicar">Enviar para publicação</button></div>
@@ -18,5 +18,5 @@
 </section>
 <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js" defer></script>
 <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js" defer></script>
-<script src="{% static 'painel/js/servicos.js' %}?v=20260803-5" defer></script>
+<script src="{% static 'painel/js/servicos.js' %}?v=20260803-5" defer></script><script src="{% static 'painel/js/dynamic-attributes.js' %}" defer></script>
 {% endblock %}

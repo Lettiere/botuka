@@ -32,6 +32,7 @@ from .permissions import pode_administrar_vaga, vagas_administraveis
 from .selectors import indicadores_vagas, painel_vagas
 from .services.vacancies import alterar_status, configurar_responsavel, registrar_acao
 from apps.core.seo.page_builders import curriculo_seo, listing_seo, vaga_seo
+from apps.core.attribute_forms import atributo_formset
 
 
 def _vaga_usuario(usuario, uuid):
@@ -73,7 +74,8 @@ def vagas_exportar(request):
 @login_required
 def vaga_criar(request):
     form = VagaForm(request.POST or None, usuario=request.user)
-    if request.method == 'POST' and form.is_valid():
+    atributos = atributo_formset('vaga', instance=form.instance, data=request.POST or None)
+    if request.method == 'POST' and form.is_valid() and atributos.is_valid():
         try:
             with transaction.atomic():
                 vaga = form.save(commit=False)
@@ -84,6 +86,8 @@ def vaga_criar(request):
                 )
                 vaga.status = Vaga.Status.RASCUNHO
                 vaga.save()
+                atributos.instance = vaga
+                atributos.save()
                 registrar_acao(vaga, request.user, 'criacao', request)
                 if request.POST.get('acao') == 'publicar':
                     alterar_status(vaga, request.user, Vaga.Status.PUBLICADA, request)
@@ -92,7 +96,9 @@ def vaga_criar(request):
         else:
             messages.success(request, 'Vaga cadastrada com sucesso.')
             return redirect('painel:vaga_detalhe', uuid=vaga.uuid)
-    return render(request, 'painel/recruitment/form.html', {'titulo': 'Nova vaga', 'form': form})
+    return render(request, 'painel/recruitment/form.html', {
+        'titulo': 'Nova vaga', 'form': form, 'atributos': atributos, 'atributo_contexto': 'vaga',
+    })
 
 
 @login_required
@@ -105,7 +111,8 @@ def vaga_editar(request, uuid):
     vaga = _vaga_usuario(request.user, uuid)
     if not pode_administrar_vaga(request.user, vaga): raise PermissionDenied
     form = VagaForm(request.POST or None, instance=vaga, usuario=request.user)
-    if request.method == 'POST' and form.is_valid():
+    atributos = atributo_formset('vaga', instance=vaga, data=request.POST or None)
+    if request.method == 'POST' and form.is_valid() and atributos.is_valid():
         try:
             with transaction.atomic():
                 vaga = form.save(commit=False)
@@ -115,6 +122,7 @@ def vaga_editar(request, uuid):
                     if form.cleaned_data['tipo_responsavel'] == 'EMPRESA' else None,
                 )
                 vaga.save()
+                atributos.save()
                 registrar_acao(vaga, request.user, 'edicao', request)
                 if request.POST.get('acao') == 'publicar' and vaga.status != Vaga.Status.PUBLICADA:
                     alterar_status(vaga, request.user, Vaga.Status.PUBLICADA, request)
@@ -123,7 +131,9 @@ def vaga_editar(request, uuid):
         else:
             messages.success(request, 'Vaga atualizada com sucesso.')
             return redirect('painel:vaga_detalhe', uuid=vaga.uuid)
-    return render(request, 'painel/recruitment/form.html', {'titulo': 'Editar vaga', 'form': form})
+    return render(request, 'painel/recruitment/form.html', {
+        'titulo': 'Editar vaga', 'form': form, 'atributos': atributos, 'atributo_contexto': 'vaga',
+    })
 
 
 @login_required
@@ -221,9 +231,9 @@ def vagas_publicas(request):
           empresa__status=Empresa.Status.ATIVA, empresa__excluido_em__isnull=True)
         | Q(perfil_pessoa_fisica__isnull=False, perfil_pessoa_fisica__is_active=True),
         status=Vaga.Status.PUBLICADA, publicado_em__isnull=False,
-    ).filter(Q(encerramento__isnull=True) | Q(encerramento__gte=timezone.localdate())).select_related('empresa', 'perfil_pessoa_fisica')
+    ).filter(Q(encerramento__isnull=True) | Q(encerramento__gte=timezone.localdate())).select_related('empresa', 'perfil_pessoa_fisica').prefetch_related('atributos_adicionais')
     q = request.GET.get('q', '').strip()[:100]
-    if q: queryset = queryset.filter(Q(titulo__icontains=q) | Q(descricao__icontains=q) | Q(requisitos__icontains=q) | Q(empresa__nome_fantasia__icontains=q) | Q(bairro__icontains=q))
+    if q: queryset = queryset.filter(Q(titulo__icontains=q) | Q(descricao__icontains=q) | Q(requisitos__icontains=q) | Q(empresa__nome_fantasia__icontains=q) | Q(bairro__icontains=q) | Q(atributos_adicionais__valor__icontains=q) | Q(atributos_adicionais__nome_personalizado__icontains=q)).distinct()
     if request.GET.get('modalidade'): queryset = queryset.filter(modalidade__iexact=request.GET['modalidade'][:30])
     if request.GET.get('contrato'): queryset = queryset.filter(tipo_contrato__iexact=request.GET['contrato'][:40])
     if request.GET.get('bairro'): queryset = queryset.filter(bairro__iexact=request.GET['bairro'][:100])
@@ -237,7 +247,7 @@ def vagas_publicas(request):
 
 def vaga_publica(request, slug):
     vaga = get_object_or_404(
-        Vaga.objects.select_related('empresa', 'perfil_pessoa_fisica').filter(
+        Vaga.objects.select_related('empresa', 'perfil_pessoa_fisica').prefetch_related('atributos_adicionais').filter(
             Q(encerramento__isnull=True) | Q(encerramento__gte=timezone.localdate())
         ), slug=slug, status=Vaga.Status.PUBLICADA,
     )

@@ -3,13 +3,13 @@
     <div class="home-hero__content">
 
       <!-- Versão MOBILE da busca -->
-      <form class="home-hero__search--minimal" id="mainSearch" role="search" autocomplete="off">
+      <form class="home-hero__search--minimal" id="mainSearch" role="search" method="get" action="{% url 'global_search' %}" autocomplete="off">
         <button type="button" class="hero-search-toggle" aria-label="Abrir busca">
           <i class="bi bi-search" style="color: var(--color-yellow, #ffde59);"></i>
         </button>
         <div class="hero-search-input-wrapper" hidden>
           <label class="visually-hidden" for="home-search">O que você procura em Botucatu?</label>
-          <input id="home-search" type="search" placeholder="Pesquisar em Botucatu..." autocomplete="off">
+          <input id="home-search" name="q" type="search" placeholder="Pesquisar em Botucatu..." autocomplete="off">
           <button class="btn-botuka btn-yellow" type="submit" aria-label="Buscar">
             <i class="bi bi-arrow-right"></i>
           </button>
@@ -21,10 +21,10 @@
         <span class="home-hero__kicker"><i class="bi bi-geo-alt-fill"></i> Tudo de Botucatu em um só lugar</span>
         <h1 id="home-hero-title">A cidade acontece.<br><span>O BOTUKA aproxima você.</span></h1>
         <p>Encontre empresas, serviços, vagas, notícias, turismo, eventos e oportunidades na cidade.</p>
-        <form class="home-hero__search" role="search">
+        <form class="home-hero__search" role="search" method="get" action="{% url 'global_search' %}">
           <label class="visually-hidden" for="home-search-desktop">O que você procura em Botucatu?</label>
           <i class="bi bi-search" aria-hidden="true"></i>
-          <input id="home-search-desktop" type="search" placeholder="O que você procura em Botucatu?">
+          <input id="home-search-desktop" name="q" type="search" placeholder="O que você procura em Botucatu?">
           <button class="btn-botuka btn-yellow" type="submit">Buscar</button>
         </form>
         <div class="home-hero__actions">

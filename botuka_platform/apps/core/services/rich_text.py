@@ -5,7 +5,7 @@ from html.parser import HTMLParser
 from urllib.parse import urlparse
 
 ALLOWED_TAGS = {
-    "p", "br", "strong", "b", "em", "i", "h2", "h3", "ul", "ol", "li",
+    "p", "br", "strong", "b", "em", "i", "h2", "h3", "h4", "ul", "ol", "li",
     "blockquote", "a", "hr", "div",
 }
 VOID_TAGS = {"br", "hr"}
@@ -31,6 +31,8 @@ class _Sanitizer(HTMLParser):
             parsed = urlparse(href)
             if href.startswith(("#", "/")) or parsed.scheme in {"http", "https", "mailto"}:
                 clean.extend([("href", href), ("rel", "noopener noreferrer")])
+                if attrs.get("title"):
+                    clean.append(("title", attrs["title"]))
                 if attrs.get("target") == "_blank":
                     clean.append(("target", "_blank"))
         alignment = (attrs.get("style") or "").replace(" ", "").lower()

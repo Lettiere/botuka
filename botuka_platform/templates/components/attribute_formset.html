@@ -1,0 +1,37 @@
+<section class="dynamic-attributes" data-attribute-formset data-context="{{ atributo_contexto }}">
+  <header>
+    <div>
+      <h2>{% if atributo_contexto == "vaga" %}Requisitos adicionais{% else %}Características adicionais{% endif %}</h2>
+      <p>Adicione informações estruturadas. O mesmo tipo pode ser usado mais de uma vez.</p>
+    </div>
+  </header>
+  {{ atributos.management_form }}
+  {% if atributos.non_form_errors %}<div class="alert alert-danger">{{ atributos.non_form_errors }}</div>{% endif %}
+  <div data-attribute-rows>
+    {% for attribute_form in atributos %}
+      <div class="dynamic-attribute-row" data-attribute-row>
+        {{ attribute_form.id }}
+        <label>Tipo{{ attribute_form.tipo.errors }}{{ attribute_form.tipo }}</label>
+        <label data-custom-field {% if attribute_form.tipo.value != "OUTRO" %}hidden{% endif %}>Nome personalizado{{ attribute_form.nome_personalizado.errors }}{{ attribute_form.nome_personalizado }}</label>
+        <label>Valor{{ attribute_form.valor.errors }}{{ attribute_form.valor }}</label>
+        <label>Classificação{{ attribute_form.classificacao.errors }}{{ attribute_form.classificacao }}</label>
+        <label>Observação{{ attribute_form.observacao.errors }}{{ attribute_form.observacao }}</label>
+        {{ attribute_form.ordem }}<label class="dynamic-attribute-remove">{{ attribute_form.DELETE }} Remover</label>
+      </div>
+    {% endfor %}
+  </div>
+  <template data-attribute-empty>
+    <div class="dynamic-attribute-row" data-attribute-row>
+      {{ atributos.empty_form.id }}
+      <label>Tipo{{ atributos.empty_form.tipo }}</label>
+      <label data-custom-field hidden>Nome personalizado{{ atributos.empty_form.nome_personalizado }}</label>
+      <label>Valor{{ atributos.empty_form.valor }}</label>
+      <label>Classificação{{ atributos.empty_form.classificacao }}</label>
+      <label>Observação{{ atributos.empty_form.observacao }}</label>
+      {{ atributos.empty_form.ordem }}<label class="dynamic-attribute-remove">{{ atributos.empty_form.DELETE }} Remover</label>
+    </div>
+  </template>
+  <button type="button" class="btn btn-outline-primary" data-add-attribute>
+    + Adicionar {% if atributo_contexto == "vaga" %}requisito{% else %}característica{% endif %}
+  </button>
+</section>

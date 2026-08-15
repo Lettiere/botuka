@@ -35,13 +35,11 @@ $(function(){
   });
 
   $('#mainSearch, #headerSearch').on('submit', function(e){
-    e.preventDefault();
     const value = $(this).find('input').val().trim();
     if(!value){
+      e.preventDefault();
       showToast('Digite o que você procura na cidade.');
-      return;
     }
-    showToast('Buscando "' + value + '" na região — protótipo visual.');
   });
 
   // O bloqueio do submit do #loginForm foi removido para permitir envio normal ao Django.

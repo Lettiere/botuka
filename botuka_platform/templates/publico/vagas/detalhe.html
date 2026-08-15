@@ -1,6 +1,6 @@
 {% extends "_layout/platform/public.html" %}
 {% block public_content %}
-<main id="conteudo-principal" class="public-detail container-botuka job-detail">
+<main id="conteudo-principal" class="public-detail container-botuka job-detail" data-analytics-event="view_job" data-object-type="job" data-object-id="{{ vaga.uuid }}" data-analytics-context="job_page">
   <nav class="public-breadcrumb"><a href="{% url 'home' %}">Início</a> / <a href="{% url 'recruitment_public:vagas' %}">Vagas</a> / {{ vaga.titulo }}</nav>
   {% include 'publico/includes/ad_slot.html' with format='leaderboard' %}
   <header class="job-hero">
@@ -19,6 +19,7 @@
     <section class="surface-section"><h2>Sobre a vaga</h2><div class="public-prose">{{ vaga.descricao|linebreaks }}</div></section>
     {% if vaga.responsabilidades %}<section class="surface-section"><h2>Responsabilidades</h2><div class="public-prose">{{ vaga.responsabilidades|linebreaks }}</div></section>{% endif %}
     {% if vaga.requisitos %}<section class="surface-section"><h2>Requisitos</h2><div class="public-prose">{{ vaga.requisitos|linebreaks }}</div></section>{% endif %}
+    {% if vaga.atributos_adicionais.all %}<section class="surface-section"><h2>Requisitos adicionais</h2><h3>Obrigatórios</h3><dl class="fact-list">{% for item in vaga.atributos_adicionais.all %}{% if item.classificacao == "OBRIGATORIO" %}<div><dt>{{ item.titulo }}</dt><dd>{{ item.valor }}{% if item.observacao %}<small>{{ item.observacao }}</small>{% endif %}</dd></div>{% endif %}{% endfor %}</dl><h3>Desejáveis</h3><dl class="fact-list">{% for item in vaga.atributos_adicionais.all %}{% if item.classificacao == "DESEJAVEL" %}<div><dt>{{ item.titulo }}</dt><dd>{{ item.valor }}{% if item.observacao %}<small>{{ item.observacao }}</small>{% endif %}</dd></div>{% endif %}{% endfor %}</dl><h3>Informativos</h3><dl class="fact-list">{% for item in vaga.atributos_adicionais.all %}{% if item.classificacao == "INFORMATIVO" %}<div><dt>{{ item.titulo }}</dt><dd>{{ item.valor }}{% if item.observacao %}<small>{{ item.observacao }}</small>{% endif %}</dd></div>{% endif %}{% endfor %}</dl></section>{% endif %}
     {% if vaga.beneficios %}<section class="surface-section"><h2>Benefícios</h2><div class="public-prose">{{ vaga.beneficios|linebreaks }}</div></section>{% endif %}
   </article><aside class="content-sidebar"><div class="sidebar-card"><h2>Resumo</h2><dl class="fact-list"><div><dt>Contratante</dt><dd>{{ vaga.responsavel_publico }}</dd></div><div><dt>Contrato</dt><dd>{{ vaga.tipo_contrato }}</dd></div><div><dt>Modalidade</dt><dd>{{ vaga.modalidade }}</dd></div>{% if not vaga.ocultar_salario and vaga.salario_minimo %}<div><dt>Faixa salarial</dt><dd>R$ {{ vaga.salario_minimo }}{% if vaga.salario_maximo %} a R$ {{ vaga.salario_maximo }}{% endif %}</dd></div>{% endif %}</dl>{% include 'publico/includes/share.html' with share_title=vaga.titulo %}</div></aside></div>
 </main>

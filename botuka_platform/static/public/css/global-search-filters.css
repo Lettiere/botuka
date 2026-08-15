@@ -1,0 +1,25 @@
+.global-search__groups a,
+.global-search__suggestions a {
+  padding: .5rem .75rem;
+  border: 1px solid var(--public-line);
+  border-radius: 999px;
+  background: var(--public-surface);
+  color: var(--public-muted);
+  font-size: .8rem;
+  text-decoration: none;
+}
+.global-search__groups a:hover,
+.global-search__groups a:focus-visible,
+.global-search__groups a[aria-current="page"] {
+  border-color: var(--public-blue);
+  background: var(--public-blue);
+  color: #fff;
+}
+.global-search__groups a strong { color: inherit; }
+.global-search__suggestions {
+  display: flex;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin-top: 1rem;
+}

@@ -7,14 +7,17 @@
 
     <div class="location-shell d-none" aria-hidden="true"></div>
 
-    <form class="header-search d-flex align-items-center ms-2 flex-grow-1" id="headerSearch" role="search" style="max-width:390px;">
+    <form class="header-search d-flex align-items-center ms-2 flex-grow-1" id="headerSearch" role="search" method="get" action="{% url 'global_search' %}" style="max-width:390px;">
       <div class="input-group flex-nowrap">
         <span class="input-group-text bg-white border-end-0" id="search-icon"><i class="bi bi-search text-secondary"></i></span>
         <input type="search"
+               name="q"
+               value="{{ request.GET.q }}"
                class="form-control border-start-0"
                placeholder="Buscar na cidade..."
                aria-label="Buscar na cidade"
                aria-describedby="search-icon">
+        <button class="visually-hidden" type="submit">Buscar</button>
       </div>
     </form>
 

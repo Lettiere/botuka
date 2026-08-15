@@ -33,7 +33,7 @@
 {% block public_content %}
 <div class="article-reading-progress" data-reading-progress aria-hidden="true"><span></span></div>
 {% load sharing_tags %}{% public_url artigo as article_public_url %}
-<main id="conteudo-principal" class="article-detail-page" data-public-url="{{ article_public_url }}">
+<main id="conteudo-principal" class="article-detail-page" data-public-url="{{ article_public_url }}" data-analytics-event="view_content" data-object-type="content" data-object-id="{{ artigo.uuid }}" data-analytics-context="article_page">
   <div class="article-detail-page__container">
     {% include "publico/news/includes/breadcrumb_news.html" %}
     {% include "publico/includes/ad_slot.html" with format="leaderboard" %}

@@ -207,7 +207,7 @@ body.galeria-modal-open {
 {% endblock %}
 
 {% block public_content %}
-<main class="container py-5">
+<main class="container py-5" data-analytics-event="view_item" data-object-type="product" data-object-id="{{ produto.uuid }}" data-analytics-context="product_page">
   <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb bg-body rounded shadow-sm px-3 py-2 align-items-center gap-1 mb-0">
       <li class="breadcrumb-item"><a href="/" class="link-primary">Início</a></li>

@@ -505,6 +505,15 @@ class TagYuBotuka(SoftDeleteMixin):
         db_table = '"media"."media_tag_tb"'
         ordering = ['nome']
 
+    def clean(self):
+        duplicate = type(self).all_objects.filter(
+            nome__iexact=self.nome, excluido_em__isnull=True,
+        )
+        if self.pk:
+            duplicate = duplicate.exclude(pk=self.pk)
+        if duplicate.exists():
+            raise ValidationError({'nome': 'Já existe uma tag com este nome.'})
+
     def save(self, *args, **kwargs):
         if not self.slug:
             self.slug = gerar_slug_unico(self, self.nome)

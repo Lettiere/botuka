@@ -6,6 +6,7 @@ from django.views.decorators.cache import cache_page
 from django.urls import path, include
 
 from apps.core.views import home, offline, pwa_manifest, service_worker
+from apps.core.search.views import global_search
 from apps.core.seo.sitemaps import SITEMAPS
 from apps.core.seo.views import robots_txt
 
@@ -14,6 +15,7 @@ handler403 = 'apps.core.views.permission_denied'
 handler500 = 'apps.core.views.server_error'
 
 urlpatterns = [
+    path("", include("apps.analytics.urls")),
     path("", include("apps.core.sharing_urls")),
     path('robots.txt', cache_page(3600)(robots_txt), name='robots_txt'),
     path('sitemap.xml', cache_page(3600)(sitemap_index), {'sitemaps': SITEMAPS, 'sitemap_url_name': 'sitemap-section'}, name='sitemap-index'),
@@ -27,6 +29,7 @@ urlpatterns = [
     path("", include("apps.media.public_urls")),
     path("", include("apps.news.public_urls")),
     path("", include("apps.government.public_urls")),
+    path("busca/", global_search, name="global_search"),
     path("", home, name="home"),
     path("manifest.webmanifest", pwa_manifest, name="pwa_manifest"),
     path("service-worker.js", service_worker, name="service_worker"),

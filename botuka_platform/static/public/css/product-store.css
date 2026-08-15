@@ -79,3 +79,6 @@ body {
     padding: 14px;
   }
 }
+.product-store .card, .product-store .card-body, .product-store .card-footer { min-width: 0; max-width: 100%; }
+.product-store .card :where(h2, p, small, strong, a) { overflow-wrap: anywhere; word-break: break-word; }
+.product-store .card-body > p:first-of-type { display: -webkit-box; overflow: hidden; -webkit-box-orient: vertical; -webkit-line-clamp: 4; }

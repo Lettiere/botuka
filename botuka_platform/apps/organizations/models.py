@@ -13,6 +13,7 @@ from django.utils import timezone
 from apps.core.models import SoftDeleteModel, TimeStampedModel, UUIDModel
 from apps.core.models import EnderecoCore
 from apps.core.public_links import TipoLink, normalizar_link_publico, url_embed_youtube
+from apps.core.services.rich_text import sanitizar_html_rico
 from apps.core.utils import gerar_slug_unico
 from apps.locations.models import Bairro, Cidade, Estado
 from apps.taxonomy.models import Categoria
@@ -697,6 +698,7 @@ class Empresa(UUIDModel):
         self.cep = normalizar_digitos(self.cep)
         self.telefone = normalizar_digitos(self.telefone)
         self.whatsapp = normalizar_digitos(self.whatsapp)
+        self.descricao_completa = sanitizar_html_rico(self.descricao_completa)
 
         if not self.slug:
             self.slug = gerar_slug_unico(self, self.nome_fantasia)

@@ -47,6 +47,7 @@ from apps.painel.forms import (
     ServicoLinkForm,
 )
 from apps.core.models import Auditoria
+from apps.core.attribute_forms import atributo_formset
 from apps.integrations.cnpj.exceptions import CNPJError
 from apps.integrations.cnpj.services import consultar_cnpj
 from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade, EmpresaEndereco, EmpresaLink, EmpresaSolicitacao, EmpresaUsuario, UsuarioLimitePersonalizado
@@ -800,13 +801,14 @@ def servicos_lista(request: HttpRequest) -> HttpResponse:
 @login_required
 def servico_criar(request: HttpRequest) -> HttpResponse:
     form = ServicoForm(request.POST or None, usuario=request.user)
+    atributos = atributo_formset('servico', instance=form.instance, data=request.POST or None)
     area_form = ServicoAreaForm(request.POST or None, prefix='area')
     links_forms = _formularios_links_post(request) if request.method == 'POST' else []
     if request.method == 'POST':
         arquivos, erros_upload = _validar_uploads_servico(request)
         area_informada = bool(request.POST.get('area-tipo_area'))
         links_validos = all(link_form.is_valid() for link_form in links_forms)
-        valido = form.is_valid() and links_validos and not erros_upload and (area_form.is_valid() if area_informada else True)
+        valido = form.is_valid() and atributos.is_valid() and links_validos and not erros_upload and (area_form.is_valid() if area_informada else True)
         if valido:
             servico = form.save(commit=False)
             servico.usuario_responsavel = request.user
@@ -829,6 +831,8 @@ def servico_criar(request: HttpRequest) -> HttpResponse:
                         request.user, servico.prestador_tipo, servico.empresa,
                     )
                     servico.save()
+                    atributos.instance = servico
+                    atributos.save()
                     if area_informada:
                         area = area_form.save(commit=False)
                         area.servico = servico
@@ -852,6 +856,8 @@ def servico_criar(request: HttpRequest) -> HttpResponse:
         'form': form,
         'area_form': area_form,
         'links_forms': links_forms,
+        'atributos': atributos,
+        'atributo_contexto': 'servico',
         'profissional_responsavel': request.user,
     })
 
@@ -951,8 +957,9 @@ def servico_editar(request: HttpRequest, uuid) -> HttpResponse:
 
     if request.method == 'POST':
         form = ServicoForm(request.POST, request.FILES, instance=servico, usuario=request.user)
+        atributos = atributo_formset('servico', instance=servico, data=request.POST)
         arquivos, erros_upload = _validar_uploads_servico(request)
-        valido = form.is_valid() and not erros_upload
+        valido = form.is_valid() and atributos.is_valid() and not erros_upload
         acao = request.POST.get('acao', 'salvar')
         # Validar vínculo de empresa
         if valido:
@@ -972,6 +979,7 @@ def servico_editar(request: HttpRequest, uuid) -> HttpResponse:
         if valido:
             with transaction.atomic():
                 servico_obj.save()
+                atributos.save()
                 _salvar_imagens_servico(request, servico_obj)
             messages.success(request, 'Serviço atualizado com sucesso.')
             return redirect('painel:servico_detalhe', uuid=servico_obj.uuid)
@@ -979,6 +987,7 @@ def servico_editar(request: HttpRequest, uuid) -> HttpResponse:
             form.add_error(None, erro)
     else:
         form = ServicoForm(instance=servico, usuario=request.user)
+        atributos = atributo_formset('servico', instance=servico)
 
     return render(request, 'painel/servicos/form.html', {
         'titulo': 'Editar serviço',
@@ -986,6 +995,8 @@ def servico_editar(request: HttpRequest, uuid) -> HttpResponse:
         'servico': servico,
         'imagens': servico.imagens.filter(ativo=True).order_by('-principal', 'ordem'),
         'profissional_responsavel': request.user,
+        'atributos': atributos,
+        'atributo_contexto': 'servico',
     })
 
 

@@ -65,6 +65,7 @@
 
         <div class="empresa-actions">
           <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresas_lista' %}"><i class="bi bi-arrow-left"></i> Lista</a>
+          <a class="empresa-btn empresa-btn-light" href="{% url 'analytics:company_dashboard' empresa.uuid %}"><i class="bi bi-graph-up-arrow"></i> Analytics</a>
           {% if pode_editar %}
             <a class="empresa-btn empresa-btn-primary" href="{% url 'painel:empresa_editar' empresa.uuid %}"><i class="bi bi-pencil"></i> Editar</a>
             <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_links' empresa.uuid %}"><i class="bi bi-link-45deg"></i> Links</a>

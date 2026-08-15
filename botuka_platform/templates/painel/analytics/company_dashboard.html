@@ -1,0 +1,27 @@
+{% extends "painel/base.html" %}
+{% block title %}Analytics de {{ empresa.nome_exibicao }} | BOTUKA{% endblock %}
+{% block painel_content %}
+<style>
+  .analytics{max-width:1180px;margin:0 auto;color:#172033}.analytics *{min-width:0}.analytics-head{display:flex;justify-content:space-between;gap:20px;align-items:end;margin-bottom:22px}.analytics-head h1{font-weight:900;margin:4px 0}.analytics-muted{color:#667085}.analytics-filter{display:flex;gap:8px;flex-wrap:wrap}.analytics-filter select,.analytics-filter input,.analytics-filter button{min-height:44px;border:1px solid #d9dee7;border-radius:10px;padding:8px 12px;background:#fff}.analytics-filter button{background:#172033;color:#fff;font-weight:800}.analytics-cards{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.metric,.analytics-panel{background:#fff;border:1px solid #e6eaf0;border-radius:16px;padding:18px;box-shadow:0 8px 24px rgba(15,23,42,.05)}.metric span{color:#667085}.metric strong{display:block;font-size:30px;margin:5px 0}.change{font-size:13px}.change.positive{color:#067647}.change.negative{color:#b42318}.analytics-grid{display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-top:16px}.analytics-panel h2{font-size:18px;font-weight:900;margin:0 0 16px}.chart{height:220px;display:flex;gap:4px;align-items:end;border-bottom:1px solid #e6eaf0}.bar{flex:1;background:#ffd230;border-radius:5px 5px 0 0;min-width:2px}.analytics-table{width:100%;border-collapse:collapse}.analytics-table th,.analytics-table td{padding:10px 6px;border-bottom:1px solid #eef1f5;text-align:left;overflow-wrap:anywhere}.analytics-table th:last-child,.analytics-table td:last-child{text-align:right}.insights{margin:0;padding-left:20px}.insights li+li{margin-top:10px}@media(max-width:850px){.analytics-cards{grid-template-columns:repeat(2,1fr)}.analytics-grid{grid-template-columns:1fr}.analytics-head{align-items:flex-start;flex-direction:column}}@media(max-width:480px){.analytics-cards{grid-template-columns:1fr}.analytics-filter>*{width:100%}}
+</style>
+<div class="analytics">
+  <header class="analytics-head">
+    <div><a href="{% url 'painel:empresa_detalhe' empresa.uuid %}">← Voltar à empresa</a><h1>Analytics 360°</h1><p class="analytics-muted">{{ empresa.nome_exibicao }} · {{ start|date:"d/m/Y" }} a {{ end|date:"d/m/Y" }}</p></div>
+    <form class="analytics-filter" method="get">
+      <label><span class="visually-hidden">Período</span><select name="period" onchange="this.form.submit()">
+        <option value="today" {% if period == "today" %}selected{% endif %}>Hoje</option><option value="7" {% if period == "7" %}selected{% endif %}>7 dias</option><option value="30" {% if period == "30" %}selected{% endif %}>30 dias</option><option value="90" {% if period == "90" %}selected{% endif %}>90 dias</option><option value="month" {% if period == "month" %}selected{% endif %}>Este mês</option><option value="previous_month" {% if period == "previous_month" %}selected{% endif %}>Mês anterior</option><option value="custom" {% if period == "custom" %}selected{% endif %}>Personalizado</option>
+      </select></label>
+      <input type="date" name="start" value="{{ start|date:'Y-m-d' }}" aria-label="Data inicial"><input type="date" name="end" value="{{ end|date:'Y-m-d' }}" aria-label="Data final"><button type="submit">Aplicar</button>
+    </form>
+  </header>
+  <section class="analytics-cards">
+    {% for label, value, change in cards %}<article class="metric"><span>{{ label }}</span><strong>{{ value }}</strong>{% if change == None %}<small class="change">Sem base anterior</small>{% else %}<small class="change {% if change > 0 %}positive{% elif change < 0 %}negative{% endif %}">{{ change }}% vs. período anterior</small>{% endif %}</article>{% endfor %}
+  </section>
+  <section class="analytics-grid">
+    <article class="analytics-panel"><h2>Visualizações por dia</h2><div class="chart" role="img" aria-label="Gráfico de visualizações diárias">{% for point in series %}<span class="bar" style="height:{{ point.height }}%" title="{{ point.date|date:'d/m' }}: {{ point.views }}"></span>{% endfor %}</div></article>
+    <article class="analytics-panel"><h2>Insights</h2><ul class="insights">{% for insight in insights %}<li>{{ insight }}</li>{% endfor %}</ul></article>
+    <article class="analytics-panel"><h2>Canais de aquisição</h2><table class="analytics-table"><thead><tr><th>Origem / mídia</th><th>Eventos</th></tr></thead><tbody>{% for row in sources %}<tr><td>{{ row.source|default:"Direto" }}{% if row.medium %} / {{ row.medium }}{% endif %}</td><td>{{ row.total }}</td></tr>{% empty %}<tr><td colspan="2">Sem dados no período.</td></tr>{% endfor %}</tbody></table></article>
+    <article class="analytics-panel"><h2>Termos de busca</h2><table class="analytics-table"><thead><tr><th>Termo</th><th>Seleções</th></tr></thead><tbody>{% for row in terms %}<tr><td>{{ row.term }}</td><td>{{ row.selections }}</td></tr>{% empty %}<tr><td colspan="2">Sem buscas atribuídas.</td></tr>{% endfor %}</tbody></table></article>
+  </section>
+</div>
+{% endblock %}
