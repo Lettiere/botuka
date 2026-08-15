@@ -1,0 +1,162 @@
+/* HERO GRID RESPONSIVE */
+  .hero-grid-responsive {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 44px;
+    align-items: stretch;
+  }
+  .hero-main {
+    flex: 2 1 330px;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .today-panel {
+    flex: 1 1 320px;
+    min-width: 0;
+    max-width: 410px;
+    margin-left: 18px;
+  }
+  @media (max-width: 992px) {
+    .hero-grid-responsive {
+      flex-direction: column;
+      gap: 32px;
+    }
+    .today-panel {
+      max-width: 100%;
+      margin-left: 0;
+    }
+  }
+
+  /* City-status-grid responsiva */
+  .city-status-grid-responsive {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 12px;
+    margin-top: 16px;
+  }
+  @media (max-width:768px) {
+    .city-status-grid-responsive {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+    }
+    .city-status-grid-responsive .status-item.only-mobile {
+      display: flex;
+    }
+  }
+  @media (min-width:769px) {
+    .city-status-grid-responsive .status-item.only-mobile {
+      display: none !important;
+    }
+  }
+  @media (max-width:480px) {
+    .city-status-grid-responsive {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+    }
+    .city-status-grid-responsive .status-item.only-mobile {
+      display: flex;
+    }
+  }
+  /* Centraliza os cards de status */
+  .city-status-grid-responsive .status-item {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 15px 8px 10px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    text-align: center;
+    align-items: center;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    min-width: 0;
+  }
+  .city-status-grid-responsive .status-icon {
+    margin-bottom: 7px;
+  }
+  .city-status-grid-responsive .status-value {
+    font-size: 1.15rem;
+    font-weight: 700;
+    color: var(--botuka-yellow);
+    margin-bottom: 3px;
+    margin-top: 0;
+  }
+  .city-status-grid-responsive .status-label {
+    font-size: .98rem;
+    color: var(--text);
+    font-weight: 600;
+    text-transform: capitalize;
+    margin-bottom: 0;
+  }
+  /* Garante que o 9° card não aparece no desktop */
+  .city-status-grid-responsive .status-item.only-mobile {
+    display: none;
+  }
+
+  /* Filter-grid responsivo no modal */
+  .filter-grid-responsive {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(120px,1fr));
+    gap: 18px;
+  }
+  @media (max-width:768px) {
+    .filter-grid-responsive {
+      grid-template-columns: repeat(2,1fr);
+      gap: 10px;
+    }
+  }
+  @media (max-width:480px) {
+    .filter-grid-responsive {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+  }
+
+  /* Espaçamento lateral para mobile usando classe utilitária */
+  @media (max-width: 576px) {
+    .px-mobile {
+      padding-left: 14px !important;
+      padding-right: 14px !important;
+    }
+  }
+  /* Visual dos ícones do modal: maior e centralizado */
+  .filter-icon {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    margin-bottom: 8px;
+    transition: transform .14s;
+  }
+  .filter-option:hover .filter-icon {
+    transform: scale(1.17) rotate(-7deg);
+    filter: drop-shadow(0px 4px 8px rgba(34,34,34,0.09));
+  }
+  .filter-option span {
+    font-size: .98rem;
+    font-weight: 700;
+    color: var(--text);
+  }
+  .filter-option {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 18px 8px 14px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    transition: box-shadow 0.15s, border 0.15s;
+    min-width: 0;
+    cursor: pointer;
+    margin: 0;
+    align-items: center;
+    text-decoration: none;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+  }
+  .filter-option:hover,
+  .filter-option:focus {
+    background: var(--surface-2);
+    box-shadow: var(--shadow-hover);
+    border-color: var(--botuka-yellow);
+    outline: none;
+    text-decoration: none;
+  }

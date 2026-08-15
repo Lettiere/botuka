@@ -62,3 +62,8 @@ desktop.ini
 .venv-restored/
 .venv-botuka313/
 .python-deps313/
+/botuka_platform/.cursor/
+*.bak_*
+*.pre_deploy_*
+/media
+/static

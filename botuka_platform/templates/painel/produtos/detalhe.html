@@ -4,6 +4,15 @@
 <section class="painel-card products-page"><header class="products-header"><div><span class="products-kicker">{{ produto.get_status_display }}</span><h1 class="painel-title">{{ produto.nome }}</h1><p>{{ produto.descricao_curta }}</p></div><div class="d-flex gap-2">{% if produto.status == "PUBLICADO" %}<a class="btn btn-success" href="{{ url_publica_vendas }}" target="_blank" rel="noopener">Visualizar no BOTUKA Vendas</a>{% endif %}{% if pode_editar %}<a class="btn btn-outline-primary" href="{% url 'painel:produto_editar' produto.uuid %}">Editar</a><a class="btn btn-primary" href="{% url 'painel:produto_imagens' produto.uuid %}">Imagens</a>{% endif %}</div></header>
 <div class="product-summary"><div><small>Categoria</small><strong>{{ produto.categoria }}</strong></div><div><small>Preço</small><strong>{% if produto.preco_sob_consulta %}Sob consulta{% else %}R$ {{ produto.preco }}{% endif %}</strong></div><div><small>Limite utilizado</small><strong>{{ limite.utilizado }} / {{ limite.efetivo|default:"Ilimitado" }}</strong></div></div>
 <div class="product-description">{{ produto.descricao_completa|safe }}</div>
-{% if status_opcoes %}<form method="post" action="{% url 'painel:produto_status' produto.uuid %}" class="d-flex flex-wrap gap-2 mt-4">{% csrf_token %}<select class="form-select" name="status">{% for value,label in status_opcoes %}<option value="{{ value }}">{{ label }}</option>{% endfor %}</select><label class="visually-hidden" for="motivo-rejeicao">Motivo da rejeição</label><input class="form-control" id="motivo-rejeicao" name="motivo_rejeicao" maxlength="2000" placeholder="Motivo obrigatório ao rejeitar"><button class="btn btn-primary">Alterar status</button></form>{% endif %}
+{% if status_opcoes %}<form method="post" action="{% url 'painel:produto_status' produto.uuid %}" class="d-flex flex-wrap gap-2 mt-4">{% csrf_token %}<div class="w-100 mb-2">
+  <strong>Status atual:</strong>
+  <span class="badge text-bg-secondary">{{ produto.get_status_display }}</span>
+</div>
+<select class="form-select" name="status" required>
+  <option value="" selected disabled>Selecione o novo status</option>
+  {% for value,label in status_opcoes %}
+    <option value="{{ value }}">{{ label }}</option>
+  {% endfor %}
+</select><label class="visually-hidden" for="motivo-rejeicao">Motivo da rejeição</label><input class="form-control" id="motivo-rejeicao" name="motivo_rejeicao" maxlength="2000" placeholder="Motivo obrigatório ao rejeitar"><button class="btn btn-primary">Alterar status</button></form>{% endif %}
 <form method="post" action="{% url 'painel:produto_excluir' produto.uuid %}" class="mt-3">{% csrf_token %}<button class="btn btn-sm btn-outline-danger" data-panel-confirm="Remover este produto?" data-bs-toggle="modal" data-bs-target="#panelConfirmModal">Remover produto</button></form>
 </section>{% endblock %}

@@ -7,4 +7,5 @@ urlpatterns = [
     path('vagas/<slug:slug>/', views.vaga_publica, name='vaga'),
     path('vagas/<slug:slug>/candidatar/', views.candidatar, name='candidatar'),
     path('curriculos/<uuid:uuid>/', views.curriculo_publico_view, name='curriculo'),
+    path('curriculos/<uuid:uuid>/pdf/', views.curriculo_publico_pdf, name='curriculo_download'),
 ]

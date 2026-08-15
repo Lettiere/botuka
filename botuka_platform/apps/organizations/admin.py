@@ -2,6 +2,7 @@
 
 from django.contrib import admin
 from django.core.exceptions import PermissionDenied
+from django.utils import timezone
 
 from apps.accounts.permissions import usuario_e_master
 
@@ -67,73 +68,364 @@ class UsuarioLimitePersonalizadoAdmin(MasterOnlyAdminMixin, admin.ModelAdmin):
         super().save_model(request, obj, form, change)
 
 
+class EmpresaCapacidadeInline(admin.StackedInline):
+    """Capacidades comerciais e institucionais vinculadas à empresa."""
+
+    model = EmpresaCapacidade
+    extra = 0
+    min_num = 0
+    show_change_link = False
+    autocomplete_fields = ("capacidade",)
+
+    fields = (
+        ("capacidade", "status", "ativo"),
+        "motivo_rejeicao",
+        ("aprovado_por", "aprovado_em"),
+        ("criado_em", "atualizado_em"),
+    )
+
+    readonly_fields = (
+        "aprovado_por",
+        "aprovado_em",
+        "criado_em",
+        "atualizado_em",
+    )
+
+    verbose_name = "Capacidade da empresa"
+    verbose_name_plural = "Capacidades e autorizações da empresa"
+
+    def get_queryset(self, request):
+        return (
+            super()
+            .get_queryset(request)
+            .select_related("capacidade", "aprovado_por")
+            .order_by("capacidade__nome")
+        )
+
+    def get_extra(self, request, obj=None, **kwargs):
+        return 0
+
+    def has_view_permission(self, request, obj=None):
+        return usuario_e_master(request.user)
+
+    def has_add_permission(self, request, obj=None):
+        return usuario_e_master(request.user)
+
+    def has_change_permission(self, request, obj=None):
+        return usuario_e_master(request.user)
+
+    def has_delete_permission(self, request, obj=None):
+        return usuario_e_master(request.user)
+
+
 @admin.register(Empresa)
 class EmpresaAdmin(admin.ModelAdmin):
     list_display = (
-        'nome_fantasia',
-        'tipo_cadastro',
-        'cpf_cnpj',
-        'cidade',
-        'estado',
-        'status',
-        'usuario_proprietario',
-        'ativo',
-        'verificada',
-        'status_institucional',
-        'oficial',
+        "nome_fantasia",
+        "tipo_cadastro",
+        "cpf_cnpj",
+        "cidade",
+        "estado",
+        "status",
+        "usuario_proprietario",
+        "ativo",
+        "perfil_publico",
+        "verificada",
+        "pode_vender_produtos",
+        "status_institucional",
+        "oficial",
     )
+
     list_filter = (
-        'status',
-        'tipo_cadastro',
-        'ativo',
-        'verificada',
-        'perfil_publico',
-        'estado',
-        'cidade',
-        'tipo_organizacao',
-        'status_institucional',
-        'oficial',
+        "status",
+        "tipo_cadastro",
+        "ativo",
+        "verificada",
+        "perfil_publico",
+        "estado",
+        "cidade",
+        "tipo_organizacao",
+        "status_institucional",
+        "oficial",
     )
+
     search_fields = (
-        'nome_fantasia',
-        'razao_social',
-        'cpf_cnpj',
-        'email',
-        'usuario_proprietario__username',
-        'usuario_proprietario__email',
+        "nome_fantasia",
+        "razao_social",
+        "cpf_cnpj",
+        "email",
+        "telefone",
+        "whatsapp",
+        "usuario_proprietario__username",
+        "usuario_proprietario__email",
     )
+
     autocomplete_fields = (
-        'usuario_proprietario',
-        'categoria_empresa',
-        'estado',
-        'cidade',
+        "usuario_proprietario",
+        "categoria_empresa",
+        "estado",
+        "cidade",
+        "autorizada_por",
     )
-    readonly_fields = ('uuid', 'criado_em', 'atualizado_em', 'excluido_em')
+
+    readonly_fields = (
+        "uuid",
+        "pode_vender_produtos",
+        "pode_publicar_servicos",
+        "pode_receber_leads_status",
+        "criado_em",
+        "atualizado_em",
+        "excluido_em",
+        "qr_token",
+        "qr_atualizado_em",
+    )
+
     list_select_related = (
-        'usuario_proprietario',
-        'categoria_empresa',
-        'cidade',
-        'estado',
+        "usuario_proprietario",
+        "categoria_empresa",
+        "cidade",
+        "estado",
     )
-    ordering = ('nome_fantasia',)
-    prepopulated_fields = {'slug': ('nome_fantasia',)}
+
+    ordering = ("nome_fantasia",)
+    prepopulated_fields = {"slug": ("nome_fantasia",)}
+    save_on_top = True
+
+    fieldsets = (
+        (
+            "Identificação da empresa",
+            {
+                "fields": (
+                    "usuario_proprietario",
+                    "tipo_cadastro",
+                    "nome_fantasia",
+                    "razao_social",
+                    "slug",
+                    "categoria_empresa",
+                    "status",
+                    "ativo",
+                ),
+            },
+        ),
+        (
+            "Dados fiscais e cadastrais",
+            {
+                "fields": (
+                    "cpf_cnpj",
+                    "inscricao_estadual",
+                    "inscricao_municipal",
+                    "natureza_juridica",
+                    "porte",
+                    "data_abertura",
+                    "situacao_cadastral",
+                ),
+            },
+        ),
+        (
+            "Contato",
+            {
+                "fields": (
+                    "telefone",
+                    "whatsapp",
+                    "email",
+                    "site",
+                ),
+            },
+        ),
+        (
+            "Endereço",
+            {
+                "fields": (
+                    "cep",
+                    "endereco",
+                    "numero",
+                    "complemento",
+                    "bairro",
+                    "cidade",
+                    "estado",
+                    "latitude",
+                    "longitude",
+                ),
+            },
+        ),
+        (
+            "Apresentação pública",
+            {
+                "fields": (
+                    "descricao_curta",
+                    "descricao_completa",
+                    "logo",
+                    "imagem_capa",
+                    "perfil_publico",
+                    "verificada",
+                ),
+            },
+        ),
+        (
+            "Atendimento e operação",
+            {
+                "fields": (
+                    "atende_online",
+                    "atende_local",
+                    "horario_atendimento",
+                    "aceita_leads",
+                    "canal_preferencial_lead",
+                    "distribuicao_lead",
+                ),
+            },
+        ),
+        (
+            "Autorizações calculadas",
+            {
+                "fields": (
+                    "pode_vender_produtos",
+                    "pode_publicar_servicos",
+                    "pode_receber_leads_status",
+                ),
+                "description": (
+                    "Estes indicadores são calculados pelas capacidades "
+                    "aprovadas exibidas no final da página."
+                ),
+            },
+        ),
+        (
+            "Identidade institucional",
+            {
+                "fields": (
+                    "tipo_organizacao",
+                    "status_institucional",
+                    "institucional",
+                    "oficial",
+                    "parceira_oficial",
+                    "selo_oficial",
+                    "verificada_institucionalmente",
+                    "autorizada_por",
+                    "autorizada_em",
+                    "observacao_institucional",
+                ),
+                "classes": ("collapse",),
+            },
+        ),
+        (
+            "QR Code",
+            {
+                "fields": (
+                    "qr_ativo",
+                    "qr_token",
+                    "qr_atualizado_em",
+                ),
+                "classes": ("collapse",),
+            },
+        ),
+        (
+            "Auditoria",
+            {
+                "fields": (
+                    "uuid",
+                    "criado_em",
+                    "atualizado_em",
+                    "excluido_em",
+                ),
+                "classes": ("collapse",),
+            },
+        ),
+    )
 
     institutional_fields = (
-        'tipo_organizacao', 'status_institucional', 'institucional', 'oficial',
-        'parceira_oficial', 'selo_oficial', 'verificada_institucionalmente',
-        'autorizada_por', 'autorizada_em', 'observacao_institucional',
+        "tipo_organizacao",
+        "status_institucional",
+        "institucional",
+        "oficial",
+        "parceira_oficial",
+        "selo_oficial",
+        "verificada_institucionalmente",
+        "autorizada_por",
+        "autorizada_em",
+        "observacao_institucional",
     )
+
+    @admin.display(
+        boolean=True,
+        description="Pode vender produtos",
+    )
+    def pode_vender_produtos(self, obj):
+        if not obj:
+            return False
+        return obj.pode_publicar_produto
+
+    @admin.display(
+        boolean=True,
+        description="Pode publicar serviços",
+    )
+    def pode_publicar_servicos(self, obj):
+        if not obj:
+            return False
+        return obj.pode_publicar_servico
+
+    @admin.display(
+        boolean=True,
+        description="Pode receber leads",
+    )
+    def pode_receber_leads_status(self, obj):
+        if not obj:
+            return False
+        return obj.pode_receber_lead
+
+    def get_inlines(self, request, obj=None):
+        if usuario_e_master(request.user):
+            return (EmpresaCapacidadeInline,)
+        return ()
 
     def get_readonly_fields(self, request, obj=None):
         fields = list(super().get_readonly_fields(request, obj))
+
         if not usuario_e_master(request.user):
             fields.extend(self.institutional_fields)
+
         return tuple(dict.fromkeys(fields))
 
     def save_model(self, request, obj, form, change):
-        if not usuario_e_master(request.user) and set(form.changed_data) & set(self.institutional_fields):
-            raise PermissionDenied('Somente MASTER altera identidade institucional.')
+        if (
+            not usuario_e_master(request.user)
+            and set(form.changed_data) & set(self.institutional_fields)
+        ):
+            raise PermissionDenied(
+                "Somente MASTER altera identidade institucional."
+            )
+
         super().save_model(request, obj, form, change)
+
+    def save_formset(self, request, form, formset, change):
+        instances = formset.save(commit=False)
+
+        for deleted in formset.deleted_objects:
+            deleted.delete()
+
+        for instance in instances:
+            if isinstance(instance, EmpresaCapacidade):
+                if instance.status == EmpresaCapacidade.Status.APROVADA:
+                    if not instance.aprovado_por_id:
+                        instance.aprovado_por = request.user
+
+                    if not instance.aprovado_em:
+                        instance.aprovado_em = timezone.now()
+
+                    instance.motivo_rejeicao = ""
+
+                elif instance.status == EmpresaCapacidade.Status.REJEITADA:
+                    if not instance.aprovado_por_id:
+                        instance.aprovado_por = request.user
+
+                    if not instance.aprovado_em:
+                        instance.aprovado_em = timezone.now()
+
+                elif instance.status == EmpresaCapacidade.Status.PENDENTE:
+                    instance.aprovado_por = None
+                    instance.aprovado_em = None
+
+            instance.save()
+
+        formset.save_m2m()
 
 
 @admin.register(EmpresaUsuario)

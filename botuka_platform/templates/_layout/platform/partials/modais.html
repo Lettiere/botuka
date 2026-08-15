@@ -212,6 +212,12 @@ Modal de Login/Cadastro - BOTUKA, com integração Django.
                 method="post"
                 action="{% url 'accounts:login' %}">
             {% csrf_token %}
+            <input
+              type="hidden"
+              name="next"
+              value="{{ request.GET.next|default:'home' }}"
+              data-login-next
+            >
             <div class="input-group-login mb-3">
               <i class="bi bi-envelope"></i>
               <input 
@@ -348,4 +354,30 @@ Modal de Login/Cadastro - BOTUKA, com integração Django.
     }
   }
 })();
+</script>
+
+
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const params = new URLSearchParams(window.location.search);
+
+  if (params.get("login") !== "1") {
+    return;
+  }
+
+  const modalElement = document.getElementById("loginModal");
+
+  if (!modalElement || typeof bootstrap === "undefined") {
+    return;
+  }
+
+  const nextInput = modalElement.querySelector("[data-login-next]");
+  const nextValue = params.get("next");
+
+  if (nextInput && nextValue && nextValue.startsWith("/")) {
+    nextInput.value = nextValue;
+  }
+
+  bootstrap.Modal.getOrCreateInstance(modalElement).show();
+});
 </script>

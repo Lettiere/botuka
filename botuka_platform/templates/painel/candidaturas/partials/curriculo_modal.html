@@ -1,0 +1,252 @@
+<div class="candidate-resume">
+
+  <header class="candidate-resume__header">
+    <div>
+      <span class="jobs-eyebrow">
+        <i class="bi bi-file-earmark-person"></i>
+        Currículo recebido
+      </span>
+
+      <h2>{{ candidato.get_full_name|default:candidato.username }}</h2>
+
+      <p>
+        {{ curriculo.titulo_profissional|default:"Profissional candidato" }}
+        {% if curriculo.area_profissional %}
+          · {{ curriculo.area_profissional }}
+        {% endif %}
+      </p>
+    </div>
+
+    <span class="jobs-badge">
+      {{ candidatura.get_status_display }}
+    </span>
+  </header>
+
+  <div class="candidate-resume__summary">
+    {% if curriculo.cidade or curriculo.estado %}
+      <span>
+        <i class="bi bi-geo-alt"></i>
+        {{ curriculo.cidade }}
+        {% if curriculo.cidade and curriculo.estado %} · {% endif %}
+        {{ curriculo.estado }}
+      </span>
+    {% endif %}
+
+    {% if curriculo.email %}
+      <a href="mailto:{{ curriculo.email }}">
+        <i class="bi bi-envelope"></i>
+        {{ curriculo.email }}
+      </a>
+    {% endif %}
+
+    {% if curriculo.telefone %}
+      <a href="tel:{{ curriculo.telefone }}">
+        <i class="bi bi-telephone"></i>
+        {{ curriculo.telefone }}
+      </a>
+    {% endif %}
+  </div>
+
+  {% if candidatura.mensagem %}
+    <section class="candidate-section candidate-section--message">
+      <h3>Mensagem da candidatura</h3>
+      <p>{{ candidatura.mensagem|linebreaksbr }}</p>
+    </section>
+  {% endif %}
+
+  {% if curriculo.objetivo_profissional %}
+    <section class="candidate-section">
+      <h3>Objetivo profissional</h3>
+      <p>{{ curriculo.objetivo_profissional|linebreaksbr }}</p>
+    </section>
+  {% endif %}
+
+  {% if curriculo.resumo %}
+    <section class="candidate-section">
+      <h3>Resumo profissional</h3>
+      <p>{{ curriculo.resumo|linebreaksbr }}</p>
+    </section>
+  {% endif %}
+
+  {% if curriculo.experiencias %}
+    <section class="candidate-section">
+      <h3>Experiências profissionais</h3>
+
+      {% for item in curriculo.experiencias %}
+        <article class="candidate-record">
+          <h4>{{ item.cargo }}</h4>
+          <strong>{{ item.empresa }}</strong>
+
+          {% if item.inicio or item.fim or item.atual %}
+            <small>
+              {{ item.inicio|default:"" }}
+              {% if item.inicio %} — {% endif %}
+              {% if item.atual %}Atual{% else %}{{ item.fim|default:"" }}{% endif %}
+            </small>
+          {% endif %}
+
+          {% if item.descricao %}
+            <p>{{ item.descricao|linebreaksbr }}</p>
+          {% endif %}
+        </article>
+      {% endfor %}
+    </section>
+  {% endif %}
+
+  {% if curriculo.formacoes %}
+    <section class="candidate-section">
+      <h3>Formação acadêmica</h3>
+
+      <div class="candidate-grid">
+        {% for item in curriculo.formacoes %}
+          <article class="candidate-record">
+            <h4>{{ item.curso }}</h4>
+            <p>
+              {{ item.instituicao }}
+              {% if item.nivel %} · {{ item.nivel }}{% endif %}
+            </p>
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if curriculo.cursos %}
+    <section class="candidate-section">
+      <h3>Cursos e certificações</h3>
+
+      <div class="candidate-grid">
+        {% for item in curriculo.cursos %}
+          <article class="candidate-record">
+            <h4>{{ item.nome }}</h4>
+            <p>{{ item.instituicao }}</p>
+
+            {% if item.carga_horaria %}
+              <small>{{ item.carga_horaria }} horas</small>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if curriculo.habilidades %}
+    <section class="candidate-section">
+      <h3>Habilidades</h3>
+
+      <div class="candidate-tags">
+        {% for item in curriculo.habilidades %}
+          <span>
+            {{ item.nome }}
+            {% if item.nivel %} · {{ item.nivel }}{% endif %}
+          </span>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if curriculo.idiomas %}
+    <section class="candidate-section">
+      <h3>Idiomas</h3>
+
+      <div class="candidate-tags">
+        {% for item in curriculo.idiomas %}
+          <span>{{ item.nome }} · {{ item.nivel }}</span>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if curriculo.projetos %}
+    <section class="candidate-section">
+      <h3>Projetos</h3>
+
+      <div class="candidate-grid">
+        {% for item in curriculo.projetos %}
+          <article class="candidate-record">
+            <h4>{{ item.titulo }}</h4>
+
+            {% if item.tecnologias %}
+              <small>{{ item.tecnologias }}</small>
+            {% endif %}
+
+            {% if item.descricao %}
+              <p>{{ item.descricao|linebreaksbr }}</p>
+            {% endif %}
+
+            {% if item.url %}
+              <a
+                class="jobs-button jobs-button--light jobs-button--small"
+                href="{{ item.url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Abrir projeto
+              </a>
+            {% endif %}
+          </article>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+
+  {% if curriculo.linkedin or curriculo.github or curriculo.portfolio or curriculo.site_profissional %}
+    <section class="candidate-section">
+      <h3>Links profissionais</h3>
+
+      <div class="candidate-links">
+        {% if curriculo.linkedin %}
+          <a href="{{ curriculo.linkedin }}" target="_blank" rel="noopener noreferrer">
+            LinkedIn
+          </a>
+        {% endif %}
+
+        {% if curriculo.github %}
+          <a href="{{ curriculo.github }}" target="_blank" rel="noopener noreferrer">
+            GitHub
+          </a>
+        {% endif %}
+
+        {% if curriculo.portfolio %}
+          <a href="{{ curriculo.portfolio }}" target="_blank" rel="noopener noreferrer">
+            Portfólio
+          </a>
+        {% endif %}
+
+        {% if curriculo.site_profissional %}
+          <a href="{{ curriculo.site_profissional }}" target="_blank" rel="noopener noreferrer">
+            Site profissional
+          </a>
+        {% endif %}
+      </div>
+    </section>
+  {% endif %}
+
+  <section class="candidate-section">
+    <h3>Histórico da candidatura</h3>
+
+    {% for item in historico %}
+      <article class="candidate-history">
+        <strong>
+          {{ item.status_anterior|default:"Início" }}
+          →
+          {{ item.status_novo }}
+        </strong>
+
+        <small>
+          {{ item.criado_em|date:"d/m/Y H:i" }}
+          {% if item.usuario %}
+            · {{ item.usuario.get_full_name|default:item.usuario.username }}
+          {% endif %}
+        </small>
+
+        {% if item.observacao %}
+          <p>{{ item.observacao }}</p>
+        {% endif %}
+      </article>
+    {% empty %}
+      <p>Nenhuma alteração de etapa registrada.</p>
+    {% endfor %}
+  </section>
+
+</div>

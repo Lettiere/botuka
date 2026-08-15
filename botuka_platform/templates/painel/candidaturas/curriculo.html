@@ -1,0 +1,54 @@
+{% extends 'painel/base.html' %}
+{% load static %}
+
+{% block title %}Currículo do candidato | Painel BOTUKA{% endblock %}
+
+{% block styles %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'painel/css/vagas.css' %}">
+{% endblock %}
+
+{% block painel_content %}
+<div class="jobs-page">
+  <div class="jobs-wrap">
+
+    <ol class="jobs-breadcrumb">
+      <li><a href="{% url 'painel:dashboard' %}">Painel</a></li>
+      <li><a href="{% url 'painel:vagas_lista' %}">Vagas</a></li>
+      <li>
+        <a href="{% url 'painel:candidaturas_empresa' vaga.uuid %}">
+          Candidaturas
+        </a>
+      </li>
+      <li>Currículo</li>
+    </ol>
+
+    <header class="jobs-hero">
+      <div>
+        <span class="jobs-eyebrow">
+          <i class="bi bi-file-earmark-person"></i>
+          Análise de candidato
+        </span>
+
+        <h1>{{ candidato.get_full_name|default:candidato.username }}</h1>
+
+        <p>Currículo enviado para a vaga {{ vaga.titulo }}.</p>
+      </div>
+
+      <a
+        class="jobs-button jobs-button--light"
+        href="{% url 'painel:candidaturas_empresa' vaga.uuid %}"
+      >
+        Voltar às candidaturas
+      </a>
+    </header>
+
+    <section class="jobs-panel">
+      <div class="jobs-panel__body">
+        {% include 'painel/candidaturas/partials/curriculo_modal.html' %}
+      </div>
+    </section>
+
+  </div>
+</div>
+{% endblock %}

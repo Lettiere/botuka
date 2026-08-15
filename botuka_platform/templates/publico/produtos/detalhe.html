@@ -1,14 +1,742 @@
 {% extends "_layout/platform/public.html" %}
+{% load static %}
+{% block public_styles %}
+<style>
+/* Galeria de Imagens */
+.galeria-produto {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+/* Principal - área fixa para todas as imagens */
+.galeria-principal-wrapper {
+  position: relative;
+  background: var(--bs-light, #f8f9fa);
+  border-radius: .7rem;
+  box-shadow: 0 2px 10px rgba(0,0,0,.07);
+  height: 420px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+/* Imagem principal com área fixa, object-fit: contain, vertical/horizontal harmonizado */
+.galeria-principal-imagem {
+  width: 100%;
+  height: 420px;
+  max-width: 100%;
+  max-height: 420px;
+  object-fit: contain;
+  transition: transform 0.2s cubic-bezier(.5,1.25,.25,1), box-shadow 0.2s;
+  background: #fff;
+  border-radius: .7rem;
+  box-shadow: 0 1px 4px rgba(0,0,0,.08);
+  cursor: zoom-in;
+  display: block;
+}
+/* Responsivo mobile */
+@media (max-width: 991.98px) {
+  .galeria-principal-wrapper {
+    height: 280px;
+  }
+  .galeria-principal-imagem {
+    height: 280px;
+    max-height: 280px;
+  }
+  .galeria-thumb {
+    width: 48px;
+    height: 48px;
+  }
+}
+.galeria-thumbs {
+  display: flex;
+  gap: 1rem;
+  margin-top: .5rem;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+}
+.galeria-thumb {
+  width: 72px;
+  height: 72px;
+  border-radius: .3rem;
+  overflow: hidden;
+  border: 2px solid transparent;
+  box-shadow: 0 1px 2px rgba(0,0,0,.06);
+  transition: border 0.15s;
+  background: #fff;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.galeria-thumb--ativa,
+.galeria-thumb:focus {
+  border-color: var(--bs-primary, #294adb);
+  outline: none;
+}
+.galeria-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+.galeria-thumb[tabindex] {
+  outline: none;
+}
+/* Modal backdrop - fundo preto opacidade 0.92 */
+.galeria-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.92);
+  z-index: 1090;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  animation: fadeInBg .23s cubic-bezier(.4,0,.2,1);
+  transition: background .25s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .galeria-modal-backdrop,
+  .galeria-principal-imagem,
+  .galeria-thumb {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+@keyframes fadeInBg {
+  from {background:rgba(0,0,0,0);}
+  to {background:rgba(0,0,0,0.92);}
+}
+/* Modal imagem centralizada - área máxima de 90vw x 82vh (NÃO força 100%!) */
+.galeria-modal-imgbox {
+  max-width: 90vw;
+  max-height: 82vh;
+  width: 90vw;
+  height: 82vh;
+  min-width: 0;
+  min-height: 0;
+  user-select: none;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  background: none;
+  /* Extra: impedir seleção fora da área útil */
+  overflow: hidden;
+}
+/* Imagem do modal: width/height auto + limites; object-fit:contain; centralizada */
+.galeria-modal-img {
+  background: #fff;
+  border-radius: .5rem;
+  object-fit: contain;
+  width: auto;
+  height: auto;
+  max-width: 90vw;
+  max-height: 82vh;
+  display: block;
+  margin: auto;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.22);
+  cursor: grab;
+  transition: filter .15s;
+}
+.galeria-modal-img.grabbing {
+  cursor: grabbing;
+}
+.galeria-modal-contador {
+  position: absolute;
+  left: 50%;
+  bottom: 18px;
+  transform: translateX(-50%);
+  color: #f9f9fa;
+  background: rgba(0,0,0,.64);
+  border-radius: 18px;
+  padding: 0 14px;
+  font-size: 1rem;
+  user-select: none;
+  z-index: 1092;
+  letter-spacing: .04em;
+  font-weight: 500;
+}
+.galeria-modal-caption {
+  margin-top: 1rem;
+  color: var(--bs-light, #f4f4f7);
+  text-align: center;
+  font-size: 1.02rem;
+}
+/* Esconde scroll ao mostrar modal da galeria */
+body.galeria-modal-open {
+  overflow: hidden !important;
+  touch-action: none;
+}
+/* Botões do modal mantidos */
+.galeria-modal-btn {
+  background: rgba(255,255,255,0.94);
+  border: none;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 1.3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: absolute;
+  z-index: 1092;
+  transition: background .15s;
+}
+.galeria-modal-btn:focus {
+  outline: 3px solid var(--bs-primary, #294adb);
+}
+.galeria-modal-fechar { top: 24px; right: 36px;}
+.galeria-modal-anterior { left: 32px; top: 50%; transform: translateY(-50%);}
+.galeria-modal-proxima { right: 32px; top: 50%; transform: translateY(-50%);}
+.galeria-modal-zoom-in { bottom: 40px; left: 90px;}
+.galeria-modal-zoom-out { bottom: 40px; left: 150px;}
+.galeria-modal-zoom-reset { bottom: 40px; left: 210px;}
+@media (max-width: 700px) {
+  .galeria-modal-fechar { top: 18px; right: 12px;}
+  .galeria-modal-anterior { left: 6px;}
+  .galeria-modal-proxima { right: 6px;}
+  .galeria-modal-zoom-in,
+  .galeria-modal-zoom-out,
+  .galeria-modal-zoom-reset { left: unset; right: 10px !important; bottom: 12px;}
+  .galeria-modal-zoom-in {right: 108px;}
+  .galeria-modal-zoom-out {right: 62px;}
+  .galeria-modal-zoom-reset {right: 14px;}
+}
+</style>
+{% endblock %}
+
 {% block public_content %}
-<main class="container py-5"><nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="/">Início</a></li><li class="breadcrumb-item active">Produtos</li></ol></nav>
-<article class="row g-5"><div class="col-lg-6">{% with imagem=produto.imagem_principal %}{% if imagem %}<img class="img-fluid rounded shadow-sm w-100" src="{{ imagem.imagem.url }}" alt="{{ imagem.texto_alternativo }}">{% endif %}{% endwith %}
-<div class="row g-2 mt-2">{% for imagem in produto.imagens.all %}<div class="col-3"><img class="img-fluid rounded" src="{{ imagem.imagem.url }}" alt="{{ imagem.texto_alternativo }}"></div>{% endfor %}</div></div>
-<div class="col-lg-6"><span class="badge text-bg-light">{{ produto.categoria_taxonomia.nome|default:produto.categoria }}</span><h1 class="display-5 fw-bold mt-3">{{ produto.nome }}</h1>
-{% if produto.categoria_taxonomia %}<p>{{ produto.categoria_taxonomia.nome }}{% if produto.familia %} › {{ produto.familia.nome }}{% endif %}{% if produto.tipo_produto %} › {{ produto.tipo_produto.nome }}{% endif %}{% if produto.segmento %} · {{ produto.segmento.nome }}{% endif %}</p>{% endif %}
-<p class="lead">{{ produto.descricao_curta }}</p><h2 class="h3 text-primary">{% if produto.preco_sob_consulta %}Preço sob consulta{% elif produto.preco_promocional %}<del class="text-muted fs-6">R$ {{ produto.preco }}</del> R$ {{ produto.preco_promocional }}{% else %}R$ {{ produto.preco }}{% endif %}</h2>
-{% if whatsapp_url %}<a class="btn btn-success btn-lg mt-3" rel="noopener noreferrer nofollow" target="_blank" href="{{ whatsapp_url }}">Falar pelo WhatsApp</a>{% endif %}
-{% if produto.url_externa %}<a class="btn btn-outline-primary btn-lg mt-3" rel="nofollow noopener" target="_blank" href="{{ produto.url_externa }}">Ver site</a>{% endif %}</div></article>
-<section class="mt-5"><h2>Descrição</h2>{{ produto.descricao_completa|safe }}{% if produto.especificacoes %}<h2 class="mt-4">Especificações</h2>{{ produto.especificacoes|safe }}{% endif %}</section>
-{% if produto.videos.all %}<section class="mt-5"><h2>Vídeos</h2><div class="row g-4">{% for video in produto.videos.all %}<div class="col-lg-6"><div class="ratio ratio-16x9"><iframe src="{{ video.embed_url }}" title="{{ video.titulo|default:produto.nome }}" loading="lazy" allowfullscreen></iframe></div>{% if video.titulo %}<p class="mt-2">{{ video.titulo }}</p>{% endif %}</div>{% endfor %}</div></section>{% endif %}
+<main class="container py-5">
+  <nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb bg-body rounded shadow-sm px-3 py-2 align-items-center gap-1 mb-0">
+      <li class="breadcrumb-item"><a href="/" class="link-primary">Início</a></li>
+      <li class="breadcrumb-item active" aria-current="page">Produtos</li>
+      <li class="breadcrumb-item active text-muted" aria-current="page">{{ produto.nome }}</li>
+    </ol>
+  </nav>
+  <article class="row gy-5 gx-xl-5 flex-column-reverse flex-lg-row">
+    <div class="col-12 col-lg-6">
+      <section aria-label="Galeria de Imagens do Produto" class="galeria-produto">
+        {% comment %} 
+        A queryset produto.imagens.all já está correta e ordenada (principal primeiro, se houver). 
+        Usar apenas o 'imagens' e obter a primeira como principal se existir.
+        {% endcomment %}
+        {% with imagens=produto.imagens.all %}
+        {% with imagem_principal=imagens.0 %}
+        <div class="galeria-principal-wrapper" id="galeria-main-imgbox">
+          {% if imagem_principal %}
+            <img 
+              src="{{ imagem_principal.imagem.url }}"
+              alt="{{ imagem_principal.texto_alternativo|default:produto.nome }}"
+              class="galeria-principal-imagem"
+              loading="eager"
+              id="produto-galeria-principal"
+              tabindex="0"
+              aria-label="Ampliar imagem principal"
+              data-image-index="0"
+            >
+          {% else %}
+            <div class="d-flex w-100 h-100 align-items-center justify-content-center text-muted small" style="font-size:1.15rem;">
+              <span>Sem imagem disponível</span>
+            </div>
+          {% endif %}
+        </div>
+        <div class="galeria-thumbs mt-2" role="list">
+          {% if imagens %}
+            {% for imagem in imagens %}
+              <button
+                type="button"
+                class="galeria-thumb{% if forloop.first %} galeria-thumb--ativa{% endif %}"
+                tabindex="0"
+                aria-label="{% if forloop.first %}Principal{% else %}Miniatura {{ forloop.counter }}{% endif %}"
+                data-image-index="{{ forloop.counter0 }}"
+                data-image-src="{{ imagem.imagem.url }}"
+                data-image-alt="{{ imagem.texto_alternativo|default:produto.nome }}"
+              >
+                <img 
+                  src="{{ imagem.imagem.url }}"
+                  alt="{{ imagem.texto_alternativo|default:produto.nome }}"
+                  loading="lazy"
+                >
+              </button>
+            {% endfor %}
+          {% endif %}
+        </div>
+        {% endwith %}
+        {% endwith %}
+      </section>
+    </div>
+    <div class="col-12 col-lg-6">
+      <section aria-label="Informações do Produto">
+        {% if produto.categoria_taxonomia or produto.categoria or produto.familia or produto.marca %}
+        <div class="mb-2 d-flex flex-wrap align-items-center gap-2">
+          {% if produto.categoria_taxonomia %}
+            <span class="badge text-bg-light">{{ produto.categoria_taxonomia.nome }}</span>
+          {% elif produto.categoria %}
+            <span class="badge text-bg-light">{{ produto.categoria }}</span>
+          {% endif %}
+          {% if produto.familia %}
+            <span class="text-secondary small px-2">› {{ produto.familia.nome }}</span>
+          {% endif %}
+          {% if produto.marca %}
+            <span class="badge bg-secondary text-light" title="Marca">{{ produto.marca }}</span>
+          {% endif %}
+        </div>
+        {% endif %}
+        <h1 class="display-5 fw-bold mb-1">{{ produto.nome }}</h1>
+        {% if produto.tipo_produto or produto.modelo or produto.segmento %}
+        <div class="mb-2 small">
+          {% if produto.tipo_produto %}{{ produto.tipo_produto.nome }}{% endif %}
+          {% if produto.modelo %} | {{ produto.modelo }}{% endif %}
+          {% if produto.segmento %} | {{ produto.segmento.nome }}{% endif %}
+        </div>
+        {% endif %}
+        {% if produto.descricao_curta %}
+          <p class="lead">{{ produto.descricao_curta }}</p>
+        {% endif %}
+        <dl class="row small text-secondary mb-0">
+          {% if produto.get_condicao_display %}
+            <dt class="col-5 fw-normal">Condição</dt>
+            <dd class="col-7">{{ produto.get_condicao_display }}</dd>
+          {% endif %}
+          {% if produto.get_disponibilidade_display %}
+            <dt class="col-5 fw-normal">Disponibilidade</dt>
+            <dd class="col-7">{{ produto.get_disponibilidade_display }}</dd>
+          {% endif %}
+          {% if produto.unidade_venda %}
+            <dt class="col-5 fw-normal">Unidade</dt>
+            <dd class="col-7">{{ produto.unidade_venda }}</dd>
+          {% endif %}
+          {% if produto.codigo_publico %}
+            <dt class="col-5 fw-normal">Código</dt>
+            <dd class="col-7">{{ produto.codigo_publico }}</dd>
+          {% endif %}
+          {% if produto.marca %}
+            <dt class="col-5 fw-normal">Marca</dt>
+            <dd class="col-7">{{ produto.marca }}</dd>
+          {% endif %}
+          {% if produto.modelo %}
+            <dt class="col-5 fw-normal">Modelo</dt>
+            <dd class="col-7">{{ produto.modelo }}</dd>
+          {% endif %}
+        </dl>
+        <div class="mt-3 mb-0">
+          {% if produto.preco_sob_consulta %}
+            <div class="h3 text-primary fw-bold mb-1">Preço sob consulta</div>
+          {% elif produto.preco_promocional %}
+            <div>
+              <span class="text-muted fs-6 text-decoration-line-through me-2">R$ {{ produto.preco|floatformat:2 }}</span>
+              <span class="h3 text-primary fw-bold m-0">R$ {{ produto.preco_promocional|floatformat:2 }}</span>
+            </div>
+          {% elif produto.preco %}
+            <div class="h3 fw-bold mb-1">R$ {{ produto.preco|floatformat:2 }}</div>
+          {% endif %}
+        </div>
+        <div class="d-flex gap-3 flex-wrap mt-4 align-items-center">
+          {% if whatsapp_url %}
+            <a
+              class="btn btn-success btn-lg"
+              rel="noopener noreferrer nofollow"
+              target="_blank"
+              href="{{ whatsapp_url }}"
+              aria-label="Falar pelo WhatsApp"
+            >
+              <i class="bi bi-whatsapp me-1" aria-hidden="true"></i> WhatsApp
+            </a>
+          {% endif %}
+          {% if produto.url_externa %}
+            <a
+              class="btn btn-outline-primary btn-lg"
+              rel="nofollow noopener"
+              target="_blank"
+              href="{{ produto.url_externa }}"
+              aria-label="Ver site externo"
+            >
+              <i class="bi bi-globe me-1" aria-hidden="true"></i> Ver site
+            </a>
+          {% endif %}
+        </div>
+        {% if produto.garantia %}
+          <div class="mt-4">
+            <span class="fw-bold small">Garantia:&nbsp;</span>
+            <span class="small text-muted">{{ produto.garantia|safe }}</span>
+          </div>
+        {% endif %}
+      </section>
+    </div>
+  </article>
+
+  <section class="mt-5">
+    <div class="row">
+      <div class="col-lg-8">
+        <h2 class="h4 mb-2">Descrição</h2>
+        {{ produto.descricao_completa|safe }}
+        {% if produto.especificacoes %}
+          <h2 class="h5 mt-4">Especificações</h2>
+          {{ produto.especificacoes|safe }}
+        {% endif %}
+      </div>
+      <div class="col-lg-4">
+        <dl class="row small">
+          {% if produto.get_condicao_display %}
+            <dt class="col-6">Condição</dt>
+            <dd class="col-6">{{ produto.get_condicao_display }}</dd>
+          {% endif %}
+          {% if produto.unidade_venda %}
+            <dt class="col-6">Unidade de venda</dt>
+            <dd class="col-6">{{ produto.unidade_venda }}</dd>
+          {% endif %}
+          {% if produto.codigo_publico %}
+            <dt class="col-6">Código público</dt>
+            <dd class="col-6">{{ produto.codigo_publico }}</dd>
+          {% endif %}
+          {% if produto.marca %}
+            <dt class="col-6">Marca</dt>
+            <dd class="col-6">{{ produto.marca }}</dd>
+          {% endif %}
+          {% if produto.modelo %}
+            <dt class="col-6">Modelo</dt>
+            <dd class="col-6">{{ produto.modelo }}</dd>
+          {% endif %}
+          {% if produto.familia %}
+            <dt class="col-6">Família</dt>
+            <dd class="col-6">{{ produto.familia.nome }}</dd>
+          {% endif %}
+        </dl>
+      </div>
+    </div>
+    {# Removido a segunda exibição de garantia conforme instrução #}
+  </section>
+  {% with videos=produto.videos.all %}
+  {% if videos %}
+    <section class="mt-5">
+      <h2 class="h4 mb-3">Vídeos</h2>
+      <div class="row g-4">
+        {% for video in videos %}
+          <div class="col-lg-6">
+            <div class="ratio ratio-16x9 shadow-sm rounded">
+              <iframe
+                src="{{ video.embed_url }}"
+                title="{{ video.titulo|default:produto.nome }}"
+                loading="lazy"
+                allowfullscreen
+              ></iframe>
+            </div>
+            {% if video.titulo %}
+              <p class="mt-2 small text-secondary">{{ video.titulo }}</p>
+            {% endif %}
+          </div>
+        {% endfor %}
+      </div>
+    </section>
+  {% endif %}
+  {% endwith %}
 </main>
+{% endblock %}
+
+{% block public_scripts %}
+<script>
+(function() {
+  let _modalEscListener, _modalFocusTrap;
+  let currentIndex = 0;
+  let images = [];
+  let altTexts = [];
+  let thumbs = [];
+  let modalAberto = false;
+  let restoreFocus = null;
+  let zoom = 1, offX = 0, offY = 0, dragging = false, dragX = 0, dragY = 0;
+
+  document.addEventListener('DOMContentLoaded', function() {
+    thumbs = Array.prototype.slice.call(document.querySelectorAll('.galeria-thumb'));
+    images = thumbs.map(btn => btn.dataset.imageSrc);
+    altTexts = thumbs.map(btn => btn.dataset.imageAlt);
+    const mainImg = document.getElementById('produto-galeria-principal');
+
+    /**
+     * Atualiza a imagem principal de acordo com o índice
+     */
+    function setMainImage(idx) {
+      idx = (typeof idx === 'number' && images[idx]) ? idx : 0;
+      currentIndex = idx;
+      thumbs.forEach((t, i) => {
+        if (i === idx) t.classList.add('galeria-thumb--ativa');
+        else t.classList.remove('galeria-thumb--ativa');
+      });
+      if (mainImg) {
+        mainImg.src = images[idx] || '';
+        mainImg.alt = altTexts[idx] || '';
+        mainImg.setAttribute('data-image-index', idx);
+      }
+    }
+
+    // Clique nas miniaturas: atualiza principal e índice (NÃO abre modal nem em duplo clique)
+    thumbs.forEach(function(btn, i) {
+      btn.addEventListener('click', function(e) {
+        e.preventDefault();
+        setMainImage(i);
+        // Removido: abrir modal ao duplo clique em miniaturas
+      });
+      btn.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          setMainImage(i);
+        }
+      });
+    });
+
+    // Clique na principal abre o modal na imagem correta
+    if (mainImg) {
+      mainImg.addEventListener('click', function() {
+        const idx = parseInt(mainImg.getAttribute('data-image-index') || 0, 10);
+        abreModal(idx);
+      });
+      mainImg.addEventListener('keydown', function(e){
+        if (e.key==='Enter'||e.key===' '){ 
+          e.preventDefault();
+          const idx = parseInt(mainImg.getAttribute('data-image-index') || 0, 10);
+          abreModal(idx);
+        }
+      });
+    }
+
+    function abreModal(idx) {
+      if (!images.length || typeof images[idx] === 'undefined') return;
+      currentIndex = idx;
+      restoreFocus = document.activeElement;
+      document.body.classList.add('galeria-modal-open');
+      modalAberto = true;
+      zoom = 1; offX = 0; offY = 0;
+
+      // Modal root
+      const backdrop = document.createElement('div');
+      backdrop.className = 'galeria-modal-backdrop';
+      backdrop.setAttribute('tabindex', '-1');
+      backdrop.setAttribute('role', 'dialog');
+      backdrop.setAttribute('aria-modal', 'true');
+      backdrop.id = 'galeria-modal-backdrop';
+
+      // Image box & element
+      const imgbox = document.createElement('div');
+      imgbox.className = 'galeria-modal-imgbox';
+      // Corrigido: agora a imagem usa width/height auto (centrada), com limites, object-fit: contain
+      const imgEl = document.createElement('img');
+      imgEl.src = images[currentIndex];
+      imgEl.alt = altTexts[currentIndex] || '';
+      imgEl.className = 'galeria-modal-img';
+      imgEl.setAttribute('tabindex', '0');
+      imgEl.setAttribute('aria-label', altTexts[currentIndex] || 'Imagem ampliada de produto');
+      imgEl.style.width = 'auto';
+      imgEl.style.height = 'auto';
+      imgEl.style.maxWidth = '90vw';
+      imgEl.style.maxHeight = '82vh';
+      imgEl.style.objectFit = 'contain';
+      imgEl.style.display = 'block';
+      imgEl.style.margin = 'auto';
+
+      imgEl.onload = function() { zoomReset(); };
+
+      // Zoom e arraste
+      function setTransform() {
+        imgEl.style.transform = 'scale(' + zoom + ') translate(' + (offX/zoom) + 'px,' + (offY/zoom) + 'px)';
+      }
+      function zoomIn()  { if (zoom < 4) { zoom = +(zoom+0.15).toFixed(2); setTransform(); } }
+      function zoomOut() { if (zoom > 1) { zoom = +(zoom-0.15).toFixed(2); if (zoom < 1) zoom=1; setTransform(); } }
+      function zoomReset() {zoom=1; offX=offY=0; setTransform(); }
+
+      imgEl.onwheel = function(e) {
+        if (!modalAberto) return;
+        e.preventDefault();
+        if (e.deltaY < 0) zoomIn(); else zoomOut();
+      };
+      imgEl.onmousedown = function(ev) {
+        if (zoom <= 1) return;
+        ev.preventDefault();
+        dragging = true;
+        dragX = ev.clientX - offX;
+        dragY = ev.clientY - offY;
+        imgEl.classList.add('grabbing');
+      };
+      document.addEventListener('mousemove', mouseMoveHandler);
+      document.addEventListener('mouseup', mouseUpHandler);
+      function mouseMoveHandler(ev) {
+        if (!dragging) return;
+        offX = ev.clientX - dragX;
+        offY = ev.clientY - dragY;
+        setTransform();
+      }
+      function mouseUpHandler() {
+        if (!dragging) return;
+        dragging = false;
+        imgEl.classList.remove('grabbing');
+      }
+      imgEl.addEventListener('touchstart', function(ev) {
+        if (zoom <= 1 || !ev.touches.length) return;
+        dragging = true;
+        dragX = ev.touches[0].clientX - offX;
+        dragY = ev.touches[0].clientY - offY;
+        imgEl.classList.add('grabbing');
+      }, {passive:false});
+      imgEl.addEventListener('touchmove', function(ev) {
+        if (!dragging || !ev.touches.length) return;
+        offX = ev.touches[0].clientX - dragX;
+        offY = ev.touches[0].clientY - dragY;
+        if (dragging) ev.preventDefault();
+        setTransform();
+      }, {passive:false});
+      imgEl.addEventListener('touchend', function(ev) {
+        if (!dragging) return;
+        dragging = false;
+        imgEl.classList.remove('grabbing');
+      }, {passive:false});
+
+      imgEl.onclick = function() {
+        if (zoom <= 1.1) zoomIn(); else zoomReset();
+      };
+
+      // Buttons
+      const btnFechar = document.createElement('button');
+      btnFechar.type = 'button';
+      btnFechar.className = 'galeria-modal-btn galeria-modal-fechar';
+      btnFechar.setAttribute('aria-label', 'Fechar');
+      btnFechar.innerHTML = '<span aria-hidden="true">&times;</span><span class="visually-hidden">Fechar</span>';
+      btnFechar.onclick = fechaModal;
+
+      const btnAnt = document.createElement('button');
+      btnAnt.type = 'button';
+      btnAnt.className = 'galeria-modal-btn galeria-modal-anterior';
+      btnAnt.setAttribute('aria-label', 'Anterior');
+      btnAnt.innerHTML = '<span aria-hidden="true">&#8249;</span><span class="visually-hidden">Anterior</span>';
+      btnAnt.onclick = function() { mudaImagem(-1); };
+
+      const btnProx = document.createElement('button');
+      btnProx.type = 'button';
+      btnProx.className = 'galeria-modal-btn galeria-modal-proxima';
+      btnProx.setAttribute('aria-label', 'Próxima');
+      btnProx.innerHTML = '<span aria-hidden="true">&#8250;</span><span class="visually-hidden">Próxima</span>';
+      btnProx.onclick = function() { mudaImagem(1); };
+
+      const btnZoomIn = document.createElement('button');
+      btnZoomIn.type = 'button';
+      btnZoomIn.className = 'galeria-modal-btn galeria-modal-zoom-in';
+      btnZoomIn.setAttribute('aria-label', 'Zoom in');
+      btnZoomIn.innerHTML = '<span aria-hidden="true">+</span><span class="visually-hidden">Zoom in</span>';
+      btnZoomIn.onclick = function(){ zoomIn(); };
+
+      const btnZoomOut = document.createElement('button');
+      btnZoomOut.type = 'button';
+      btnZoomOut.className = 'galeria-modal-btn galeria-modal-zoom-out';
+      btnZoomOut.setAttribute('aria-label', 'Zoom out');
+      btnZoomOut.innerHTML = '<span aria-hidden="true">−</span><span class="visually-hidden">Zoom out</span>';
+      btnZoomOut.onclick = function(){ zoomOut(); };
+
+      const btnZoomReset = document.createElement('button');
+      btnZoomReset.type = 'button';
+      btnZoomReset.className = 'galeria-modal-btn galeria-modal-zoom-reset';
+      btnZoomReset.setAttribute('aria-label', 'Restaurar');
+      btnZoomReset.innerHTML = '<span aria-hidden="true">&#9632;</span><span class="visually-hidden">Restaurar</span>';
+      btnZoomReset.onclick = function(){ zoomReset(); };
+
+      // Counter/Caption
+      const contador = document.createElement('div');
+      contador.className = 'galeria-modal-contador';
+      contador.setAttribute('aria-live', 'polite');
+      contador.textContent = (currentIndex + 1) + ' / ' + images.length;
+
+      let legend;
+      if (altTexts[currentIndex]) {
+        legend = document.createElement('div');
+        legend.className = 'galeria-modal-caption';
+        legend.textContent = altTexts[currentIndex];
+      }
+
+      imgbox.appendChild(imgEl);
+      backdrop.appendChild(imgbox);
+      backdrop.appendChild(btnFechar);
+      if (images.length > 1) {
+        backdrop.appendChild(btnAnt);
+        backdrop.appendChild(btnProx);
+      }
+      backdrop.appendChild(btnZoomIn);
+      backdrop.appendChild(btnZoomOut);
+      backdrop.appendChild(btnZoomReset);
+      backdrop.appendChild(contador);
+      if (legend) backdrop.appendChild(legend);
+
+      // Foco de acessibilidade: ciclo entre botões do modal
+      const focusables = [btnFechar];
+      if (images.length > 1) {
+        focusables.push(btnAnt, btnProx);
+      }
+      focusables.push(btnZoomIn, btnZoomOut, btnZoomReset);
+      function trapFocus(e) {
+        if (!modalAberto) return;
+        if (e.key === 'Tab') {
+          const foc = focusables.filter(b => b && typeof b.focus === "function");
+          if (!foc.length) return;
+          let idx = foc.indexOf(document.activeElement);
+          if (e.shiftKey) {
+            if (idx <= 0) {
+              foc[foc.length-1].focus();
+              e.preventDefault();
+            }
+          } else {
+            if (idx === -1 || idx >= foc.length-1) {
+              foc[0].focus();
+              e.preventDefault();
+            }
+          }
+        }
+      }
+      _modalFocusTrap = trapFocus;
+      document.addEventListener('keydown', trapFocus);
+
+      // Fechamento/backdrop/teclas
+      function escListener(ev) {
+        if (!modalAberto) return;
+        if (ev.key === "Escape") { fechaModal(); }
+        else if (ev.key === "ArrowLeft") { mudaImagem(-1);}
+        else if (ev.key === "ArrowRight") { mudaImagem(1);}
+      }
+      _modalEscListener = escListener;
+      document.addEventListener('keydown', escListener);
+
+      backdrop.addEventListener('click', function(ev) {
+        if (ev.target === backdrop) fechaModal();
+      });
+
+      document.body.appendChild(backdrop);
+      setTimeout(function() { btnFechar.focus(); }, 80);
+
+      function fechaModal() {
+        if (!modalAberto) return;
+        modalAberto = false;
+        document.body.classList.remove('galeria-modal-open');
+        document.removeEventListener('keydown', _modalEscListener);
+        document.removeEventListener('keydown', _modalFocusTrap);
+        document.removeEventListener('mousemove', mouseMoveHandler);
+        document.removeEventListener('mouseup', mouseUpHandler);
+        const el = document.getElementById('galeria-modal-backdrop');
+        if (el) el.remove();
+        if (restoreFocus && typeof restoreFocus.focus === "function") {
+          setTimeout(() => {try{ restoreFocus.focus();}catch(_){}} , 15);
+        }
+        zoomReset();
+        dragging = false;
+      }
+
+      function mudaImagem(delta) {
+        if (images.length < 2) return;
+        currentIndex = (currentIndex + delta + images.length) % images.length;
+        imgEl.src = images[currentIndex];
+        imgEl.alt = altTexts[currentIndex] || '';
+        imgEl.setAttribute('aria-label', altTexts[currentIndex] || 'Imagem ampliada de produto');
+        contador.textContent = (currentIndex+1) + " / " + images.length;
+        if (legend) legend.textContent = altTexts[currentIndex] || '';
+        zoomReset();
+      }
+    }
+  });
+})();
+</script>
 {% endblock %}

@@ -1,6 +1,8 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
 from django.shortcuts import redirect
+from django.urls import reverse
+from urllib.parse import urlencode
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
@@ -9,11 +11,26 @@ from apps.accounts.services import obter_url_pos_login
 Usuario = get_user_model()
 
 
-@require_POST
 def login_usuario(request):
+    redirect_to = request.POST.get("next") or request.GET.get("next") or "home"
+
+    if request.method == "GET":
+        parametros = {"login": "1"}
+
+        if redirect_to != "home" and url_has_allowed_host_and_scheme(
+            redirect_to,
+            allowed_hosts={request.get_host()},
+            require_https=request.is_secure(),
+        ):
+            parametros["next"] = redirect_to
+
+        return redirect(f"{reverse('home')}?{urlencode(parametros)}")
+
+    if request.method != "POST":
+        return redirect("home")
+
     email = request.POST.get("email", "").strip().lower()
     senha = request.POST.get("password", "")
-    redirect_to = request.POST.get("next") or request.GET.get("next") or "home"
 
     user = authenticate(request, username=email, password=senha)
 

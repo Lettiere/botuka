@@ -832,35 +832,48 @@
                 </p>
 
                 {% if evento.aceita_novos_interesses %}
-                  <form
-                    class="event-interest__form"
-                    method="post"
-                    action="{% url 'events:interesse' evento.slug %}"
-                    data-interest-form
-                  >
-                    {% csrf_token %}
-
-                    <button
-                      class="event-button event-button--wide"
-                      type="submit"
-                      data-interest-button
-                      data-label-active="Desmarcar interesse"
-                      data-label-inactive="Eu vou!"
+                  {% if request.user.is_authenticated %}
+                    <form
+                      class="event-interest__form"
+                      method="post"
+                      action="{% url 'events:interesse' evento.slug %}"
+                      data-interest-form
                     >
-                      {% if interesse_ativo %}
-                        Desmarcar interesse
-                      {% else %}
-                        Eu vou!
-                      {% endif %}
-                    </button>
-                  </form>
+                      {% csrf_token %}
 
-                  <div
-                    class="event-interest__feedback"
-                    data-interest-feedback
-                    role="status"
-                    aria-live="polite"
-                  ></div>
+                      <button
+                        class="event-button event-button--wide"
+                        type="submit"
+                        data-interest-button
+                        data-label-active="Desmarcar interesse"
+                        data-label-inactive="Eu vou!"
+                      >
+                        {% if interesse_ativo %}
+                          Desmarcar interesse
+                        {% else %}
+                          Eu vou!
+                        {% endif %}
+                      </button>
+                    </form>
+
+                    <div
+                      class="event-interest__feedback"
+                      data-interest-feedback
+                      role="status"
+                      aria-live="polite"
+                    ></div>
+                  {% else %}
+                    <a
+                      class="event-button event-button--wide"
+                      href="/conta/login/?next={{ evento.get_absolute_url|urlencode }}"
+                    >
+                      Entrar para marcar “Eu vou!”
+                    </a>
+
+                    <p class="event-interest__notice">
+                      Após entrar, você retornará para esta página.
+                    </p>
+                  {% endif %}
                 {% else %}
                   <button
                     class="event-button event-button--wide"

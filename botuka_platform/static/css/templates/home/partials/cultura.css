@@ -1,0 +1,109 @@
+.botuka-card {
+  position: relative;
+  overflow: hidden;
+  border: 0;
+  border-radius: 24px;
+  background: #fff;
+  box-shadow: 0 14px 35px rgba(15, 23, 42, .10);
+  transition: all .28s ease;
+  height: 100%;
+  cursor: pointer;
+}
+
+.botuka-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 22px 45px rgba(15, 23, 42, .18);
+}
+
+.botuka-card-img {
+  height: 180px;
+  overflow: hidden;
+  position: relative;
+}
+
+.botuka-card-img img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform .45s ease;
+}
+
+.botuka-card:hover .botuka-card-img img {
+  transform: scale(1.08);
+}
+
+.botuka-card-badge {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  background: rgba(255, 255, 255, .92);
+  color: #0f172a;
+  font-weight: 800;
+  font-size: .78rem;
+  padding: 7px 12px;
+  border-radius: 999px;
+  box-shadow: 0 8px 20px rgba(0,0,0,.12);
+}
+
+.botuka-card-body {
+  padding: 22px;
+}
+
+.botuka-card-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 16px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #ffb703, #fb8500);
+  color: #fff;
+  font-size: 1.35rem;
+  margin-bottom: 14px;
+}
+
+.botuka-card-title {
+  font-weight: 900;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.botuka-card-text {
+  color: #64748b;
+  font-size: .95rem;
+  line-height: 1.5;
+}
+
+.botuka-card-link {
+  margin-top: 14px;
+  font-weight: 800;
+  color: #fb8500;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  text-decoration: none;
+}
+
+.botuka-card-link i {
+  transition: transform .25s ease;
+}
+
+.botuka-card:hover .botuka-card-link i {
+  transform: translateX(5px);
+}
+
+.botuka-card.is-hidden {
+  opacity: 0;
+  transform: translateY(18px);
+}
+.carousel-control-prev, .carousel-control-next {
+  filter: drop-shadow(0 2px 8px rgba(15,23,42,0.12));
+}
+.carousel-indicators [data-bs-target] {
+  background-color: #ffd230;
+}
+@media (max-width: 575.98px) {
+  .botuka-card-body {
+    padding: 14px;
+  }
+}

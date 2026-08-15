@@ -75,6 +75,7 @@ urlpatterns = [
     path('vagas/<uuid:uuid>/duplicar/', recruitment_views.vaga_duplicar, name='vaga_duplicar'),
     path('vagas/<uuid:uuid>/candidaturas/', recruitment_views.candidaturas_empresa, name='candidaturas_empresa'),
     path('vagas/<uuid:uuid>/candidaturas/exportar/', recruitment_views.candidaturas_exportar, name='candidaturas_exportar'),
+    path('vagas/<uuid:uuid>/candidaturas/<uuid:candidatura_uuid>/curriculo/', recruitment_views.candidatura_curriculo, name='candidatura_curriculo'),
     path('vagas/<uuid:uuid>/candidaturas/<uuid:candidatura_uuid>/status/', recruitment_views.candidatura_status, name='candidatura_status'),
     path('curriculo/', recruitment_views.curriculo_detalhe, name='curriculo'),
     path('curriculo/novo/', recruitment_views.curriculo_novo, name='curriculo_novo'),

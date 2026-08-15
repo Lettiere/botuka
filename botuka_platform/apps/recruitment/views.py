@@ -1,6 +1,8 @@
 from django.contrib import messages
+from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from uuid import uuid4
+from pathlib import Path
 import csv
 
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -9,6 +11,9 @@ from django.core.paginator import Paginator
 from django.db.models import Q
 from django.http import Http404, HttpResponse
 from django.shortcuts import get_object_or_404, redirect, render
+from django.templatetags.static import static
+from django.urls import reverse
+from django.utils.text import slugify
 from django.utils import timezone
 
 from apps.organizations.permissions import empresas_disponiveis_para_usuario
@@ -21,12 +26,12 @@ from .forms import (CandidaturaForm, ContatoPublicoForm, CursoForm,
 from .models import (Candidatura, CandidaturaHistorico, Curso, Curriculo, CurriculoInformacaoAdicional,
                      CurriculoPrivacidade, Experiencia, Formacao, Habilidade,
                      Idioma, Projeto, Vaga)
-from .services import calcular_progresso, concluir_curriculo, curriculo_para_painel, curriculo_publico
+from .services import (calcular_progresso, concluir_curriculo, curriculo_para_candidatura, curriculo_para_painel, curriculo_publico)
 from .services.curriculum import atualizar_etapa_atual
 from .permissions import pode_administrar_vaga, vagas_administraveis
 from .selectors import indicadores_vagas, painel_vagas
 from .services.vacancies import alterar_status, configurar_responsavel, registrar_acao
-from apps.core.seo.page_builders import listing_seo, vaga_seo
+from apps.core.seo.page_builders import curriculo_seo, listing_seo, vaga_seo
 
 
 def _vaga_usuario(usuario, uuid):
@@ -239,20 +244,407 @@ def vaga_publica(request, slug):
     return render(request, 'publico/vagas/detalhe.html', {'vaga': vaga, 'share_object': vaga, 'share_type': 'vaga', 'seo': vaga_seo(request, vaga)})
 
 
-def curriculo_publico_view(request, uuid):
+def _curriculo_publicado(uuid):
     objeto = get_object_or_404(
-        Curriculo.objects.select_related('privacidade').prefetch_related(
-            'experiencia_set', 'formacao_set', 'curso_set', 'habilidades',
-            'idiomas', 'projetos',
-        ), uuid=uuid,
+        Curriculo.objects.select_related(
+            'privacidade',
+            'usuario',
+        ).prefetch_related(
+            'experiencia_set',
+            'formacao_set',
+            'curso_set',
+            'habilidades',
+            'idiomas',
+            'projetos',
+        ),
+        uuid=uuid,
         status=Curriculo.Status.CONCLUIDO,
         visibilidade=Curriculo.Visibilidade.PUBLICO,
-        ativo=True, excluido_em__isnull=True,
+        ativo=True,
+        excluido_em__isnull=True,
     )
+
     dto = curriculo_publico(objeto)
-    if dto is None: raise Http404
-    seo = listing_seo(request, 'Currículo profissional | BOTUKA', 'Perfil profissional público no BOTUKA.', robots='noindex,follow')
-    return render(request, 'publico/vagas/curriculo.html', {'curriculo': dto, 'seo': seo})
+
+    if dto is None:
+        raise Http404
+
+    return objeto, dto
+
+
+def curriculo_publico_view(request, uuid):
+    objeto, dto = _curriculo_publicado(uuid)
+
+    usuario = objeto.usuario
+
+    nome_publico = (
+        usuario.nome_exibicao
+        or usuario.get_full_name()
+        or usuario.get_username()
+    )
+
+    public_url = request.build_absolute_uri(
+        reverse('recruitment_public:curriculo', args=[objeto.uuid])
+    )
+
+    download_url = request.build_absolute_uri(
+        reverse(
+            'recruitment_public:curriculo_download',
+            args=[objeto.uuid],
+        )
+    )
+
+    foto_url = request.build_absolute_uri(
+        usuario.foto.url
+        if usuario.foto
+        else static('img/default/curriculo-social-default.png')
+    )
+
+    return render(request, 'publico/vagas/curriculo.html', {
+        'curriculo': dto,
+        'objeto': objeto,
+        'usuario_curriculo': usuario,
+        'nome_publico': nome_publico,
+        'foto_url': foto_url,
+        'public_url': public_url,
+        'download_url': download_url,
+        'seo': curriculo_seo(request, objeto),
+    })
+
+
+def curriculo_publico_pdf(request, uuid):
+    objeto, dto = _curriculo_publicado(uuid)
+
+    try:
+        from reportlab.lib import colors
+        from reportlab.lib.enums import TA_CENTER
+        from reportlab.lib.pagesizes import A4
+        from reportlab.lib.styles import ParagraphStyle, getSampleStyleSheet
+        from reportlab.lib.units import cm
+        from reportlab.platypus import (
+            HRFlowable,
+            Image,
+            Paragraph,
+            SimpleDocTemplate,
+            Spacer,
+        )
+    except ImportError as exc:
+        raise Http404('Gerador de PDF indisponível.') from exc
+
+    from xml.sax.saxutils import escape
+
+    usuario = objeto.usuario
+
+    nome_publico = (
+        usuario.nome_exibicao
+        or usuario.get_full_name()
+        or usuario.get_username()
+    )
+
+    nome_arquivo = slugify(
+        f'curriculo-{nome_publico}'
+    ) or 'curriculo-profissional'
+
+    response = HttpResponse(content_type='application/pdf')
+    response['Content-Disposition'] = (
+        f'attachment; filename="{nome_arquivo}.pdf"'
+    )
+    response['Cache-Control'] = 'private, no-store, max-age=0'
+
+    styles = getSampleStyleSheet()
+
+    styles.add(ParagraphStyle(
+        name='CurriculoNome',
+        parent=styles['Title'],
+        alignment=TA_CENTER,
+        fontSize=21,
+        leading=25,
+        spaceAfter=4,
+    ))
+
+    styles.add(ParagraphStyle(
+        name='CurriculoCargo',
+        parent=styles['Normal'],
+        alignment=TA_CENTER,
+        fontSize=11,
+        leading=15,
+        textColor=colors.HexColor('#475569'),
+        spaceAfter=10,
+    ))
+
+    styles.add(ParagraphStyle(
+        name='CurriculoSecao',
+        parent=styles['Heading2'],
+        fontSize=13,
+        leading=16,
+        spaceBefore=12,
+        spaceAfter=5,
+        textColor=colors.HexColor('#166534'),
+    ))
+
+    styles.add(ParagraphStyle(
+        name='CurriculoItemTitulo',
+        parent=styles['Heading3'],
+        fontSize=11,
+        leading=14,
+        spaceBefore=6,
+        spaceAfter=2,
+    ))
+
+    styles.add(ParagraphStyle(
+        name='CurriculoTexto',
+        parent=styles['Normal'],
+        fontSize=10,
+        leading=14,
+        spaceAfter=5,
+    ))
+
+    document = SimpleDocTemplate(
+        response,
+        pagesize=A4,
+        rightMargin=1.6 * cm,
+        leftMargin=1.6 * cm,
+        topMargin=1.4 * cm,
+        bottomMargin=1.4 * cm,
+        title=f'Currículo de {nome_publico}',
+        author=nome_publico,
+    )
+
+    story = []
+
+    def safe(value):
+        return escape(str(value or '')).replace('\n', '<br/>')
+
+    def section(title):
+        story.append(Paragraph(safe(title), styles['CurriculoSecao']))
+        story.append(HRFlowable(
+            width='100%',
+            thickness=0.6,
+            color=colors.HexColor('#cbd5e1'),
+            spaceAfter=6,
+        ))
+
+    try:
+        foto_pdf_path = (
+            usuario.foto.path
+            if usuario.foto
+            else str(
+                Path(settings.BASE_DIR)
+                / 'static'
+                / 'img'
+                / 'default'
+                / 'curriculo-social-default.png'
+            )
+        )
+
+        image = Image(
+            foto_pdf_path,
+            width=3.2 * cm,
+            height=3.2 * cm,
+        )
+        image.hAlign = 'CENTER'
+        story.append(image)
+        story.append(Spacer(1, 8))
+    except Exception:
+        pass
+
+    story.append(Paragraph(
+        safe(nome_publico),
+        styles['CurriculoNome'],
+    ))
+
+    story.append(Paragraph(
+        safe(
+            dto.titulo_profissional
+            or dto.area_profissional
+            or 'Perfil profissional'
+        ),
+        styles['CurriculoCargo'],
+    ))
+
+    localizacao = ' · '.join(filter(None, [
+        dto.cidade,
+        dto.estado,
+    ]))
+
+    contatos = ' · '.join(filter(None, [
+        dto.email,
+        dto.telefone,
+        localizacao,
+    ]))
+
+    if contatos:
+        story.append(Paragraph(
+            safe(contatos),
+            styles['CurriculoCargo'],
+        ))
+
+    links = []
+
+    if dto.linkedin:
+        links.append(f'LinkedIn: {dto.linkedin}')
+    if dto.github:
+        links.append(f'GitHub: {dto.github}')
+    if dto.portfolio:
+        links.append(f'Portfólio: {dto.portfolio}')
+    if dto.site_profissional:
+        links.append(f'Site: {dto.site_profissional}')
+
+    if links:
+        story.append(Paragraph(
+            '<br/>'.join(safe(item) for item in links),
+            styles['CurriculoTexto'],
+        ))
+
+    if dto.objetivo_profissional:
+        section('Objetivo profissional')
+        story.append(Paragraph(
+            safe(dto.objetivo_profissional),
+            styles['CurriculoTexto'],
+        ))
+
+    if dto.resumo:
+        section('Resumo profissional')
+        story.append(Paragraph(
+            safe(dto.resumo),
+            styles['CurriculoTexto'],
+        ))
+
+    if dto.experiencias:
+        section('Experiências profissionais')
+
+        for item in dto.experiencias:
+            titulo = ' — '.join(filter(None, [
+                item.get('cargo'),
+                item.get('empresa'),
+            ]))
+
+            story.append(Paragraph(
+                safe(titulo),
+                styles['CurriculoItemTitulo'],
+            ))
+
+            periodo = ' a '.join(filter(None, [
+                item.get('inicio'),
+                'Atual' if item.get('atual') else item.get('fim'),
+            ]))
+
+            if periodo:
+                story.append(Paragraph(
+                    safe(periodo),
+                    styles['CurriculoTexto'],
+                ))
+
+            if item.get('descricao'):
+                story.append(Paragraph(
+                    safe(item['descricao']),
+                    styles['CurriculoTexto'],
+                ))
+
+    if dto.formacoes:
+        section('Formação acadêmica')
+
+        for item in dto.formacoes:
+            story.append(Paragraph(
+                safe(item.get('curso')),
+                styles['CurriculoItemTitulo'],
+            ))
+
+            detalhes = ' · '.join(filter(None, [
+                item.get('instituicao'),
+                item.get('nivel'),
+            ]))
+
+            if detalhes:
+                story.append(Paragraph(
+                    safe(detalhes),
+                    styles['CurriculoTexto'],
+                ))
+
+    if dto.cursos:
+        section('Cursos e certificações')
+
+        for item in dto.cursos:
+            story.append(Paragraph(
+                safe(item.get('nome')),
+                styles['CurriculoItemTitulo'],
+            ))
+
+            detalhes = ' · '.join(filter(None, [
+                item.get('instituicao'),
+                (
+                    f"{item.get('carga_horaria')} horas"
+                    if item.get('carga_horaria')
+                    else ''
+                ),
+            ]))
+
+            if detalhes:
+                story.append(Paragraph(
+                    safe(detalhes),
+                    styles['CurriculoTexto'],
+                ))
+
+    if dto.habilidades:
+        section('Habilidades')
+
+        valores = []
+
+        for item in dto.habilidades:
+            valor = item.get('nome', '')
+
+            if item.get('nivel'):
+                valor += f" — {item['nivel']}"
+
+            valores.append(valor)
+
+        story.append(Paragraph(
+            safe(' • '.join(valores)),
+            styles['CurriculoTexto'],
+        ))
+
+    if dto.idiomas:
+        section('Idiomas')
+
+        valores = []
+
+        for item in dto.idiomas:
+            valor = item.get('nome', '')
+
+            if item.get('nivel'):
+                valor += f" — {item['nivel']}"
+
+            valores.append(valor)
+
+        story.append(Paragraph(
+            safe(' • '.join(valores)),
+            styles['CurriculoTexto'],
+        ))
+
+    if dto.projetos:
+        section('Projetos')
+
+        for item in dto.projetos:
+            story.append(Paragraph(
+                safe(item.get('titulo')),
+                styles['CurriculoItemTitulo'],
+            ))
+
+            if item.get('descricao'):
+                story.append(Paragraph(
+                    safe(item['descricao']),
+                    styles['CurriculoTexto'],
+                ))
+
+            if item.get('url'):
+                story.append(Paragraph(
+                    safe(item['url']),
+                    styles['CurriculoTexto'],
+                ))
+
+    document.build(story)
+
+    return response
 
 
 @login_required
@@ -308,6 +700,62 @@ def candidaturas_empresa(request, uuid):
         raise PermissionDenied
     registrar_acao(vaga, request.user, 'visualizacao_candidaturas', request)
     return render(request, 'painel/candidaturas/lista.html', {'candidaturas': vaga.candidaturas.select_related('usuario', 'curriculo'), 'vaga': vaga})
+
+
+
+@login_required
+def candidatura_curriculo(request, uuid, candidatura_uuid):
+    vaga = _vaga_usuario(request.user, uuid)
+
+    candidatura = get_object_or_404(
+        vaga.candidaturas.select_related(
+            'usuario',
+            'curriculo',
+        ).prefetch_related(
+            'historico__usuario',
+        ),
+        uuid=candidatura_uuid,
+        ativo=True,
+        excluido_em__isnull=True,
+    )
+
+    snapshot = candidatura.curriculo_snapshot
+
+    if not snapshot:
+        snapshot = curriculo_para_candidatura(
+            candidatura.curriculo
+        ).serializar()
+
+    registrar_acao(
+        vaga,
+        request.user,
+        'visualizacao_curriculo_candidato',
+        request,
+        candidatura=str(candidatura.uuid),
+        candidato=str(candidatura.usuario_id),
+        snapshot_versao=candidatura.snapshot_versao,
+    )
+
+    contexto = {
+        'vaga': vaga,
+        'candidatura': candidatura,
+        'candidato': candidatura.usuario,
+        'curriculo': snapshot,
+        'historico': candidatura.historico.select_related('usuario'),
+    }
+
+    if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+        return render(
+            request,
+            'painel/candidaturas/partials/curriculo_modal.html',
+            contexto,
+        )
+
+    return render(
+        request,
+        'painel/candidaturas/curriculo.html',
+        contexto,
+    )
 
 
 @login_required
@@ -576,6 +1024,36 @@ curriculo_projetos = _crud(_PROJETO)
 @login_required
 def curriculo_visualizar(request):
     curriculo = _curriculo_usuario(request.user)
-    if not curriculo: return redirect('painel:curriculo_novo')
-    return render(request, 'painel/curriculo/preview.html', {'curriculo': curriculo_para_painel(curriculo), 'progresso': calcular_progresso(curriculo), 'objeto': curriculo})
+
+    if not curriculo:
+        return redirect('painel:curriculo_novo')
+
+    public_url = ''
+    download_url = ''
+
+    if (
+        curriculo.status == Curriculo.Status.CONCLUIDO
+        and curriculo.visibilidade == Curriculo.Visibilidade.PUBLICO
+    ):
+        public_url = request.build_absolute_uri(
+            reverse(
+                'recruitment_public:curriculo',
+                args=[curriculo.uuid],
+            )
+        )
+
+        download_url = request.build_absolute_uri(
+            reverse(
+                'recruitment_public:curriculo_download',
+                args=[curriculo.uuid],
+            )
+        )
+
+    return render(request, 'painel/curriculo/preview.html', {
+        'curriculo': curriculo_para_painel(curriculo),
+        'progresso': calcular_progresso(curriculo),
+        'objeto': curriculo,
+        'public_url': public_url,
+        'download_url': download_url,
+    })
 curriculo_preview = curriculo_visualizar

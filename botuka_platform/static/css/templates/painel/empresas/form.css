@@ -1,0 +1,27 @@
+.empresa-form-page{background:#f4f7fb;margin:-26px -18px;padding:28px 18px 46px;min-height:72vh}
+  .empresa-form-wrap{width:min(1180px,100%);margin:0 auto}
+  .empresa-form-hero{display:flex;justify-content:space-between;gap:18px;align-items:center;background:#111827;color:#fff;border-radius:24px;padding:26px 28px;margin-bottom:18px;box-shadow:0 18px 50px rgba(15,23,42,.08)}
+  .empresa-form-hero h1{margin:0;font-size:clamp(26px,4vw,38px);font-weight:900}
+  .empresa-form-hero p{margin:8px 0 0;color:rgba(255,255,255,.72)}
+  .empresa-shell{display:grid;grid-template-columns:260px minmax(0,1fr);gap:18px;align-items:start}
+  .empresa-nav,.empresa-card{background:#fff;border:1px solid #e6eaf0;border-radius:18px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
+  .empresa-nav{position:sticky;top:18px;padding:12px}
+  .empresa-nav a{display:flex;align-items:center;gap:10px;padding:12px;border-radius:12px;color:#475467;text-decoration:none;font-weight:800}
+  .empresa-nav a:hover{background:#f8fafc;color:#111827}
+  .empresa-card{padding:24px}
+  .empresa-section{padding-bottom:24px;margin-bottom:24px;border-bottom:1px solid #e6eaf0}
+  .empresa-section:last-child{border-bottom:0;margin-bottom:0;padding-bottom:0}
+  .empresa-section h2{margin:0 0 16px;color:#172033;font-size:20px;font-weight:900}
+  .empresa-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
+  .empresa-field.full{grid-column:1/-1}
+  .empresa-field label{display:block;margin-bottom:7px;color:#344054;font-size:13px;font-weight:800}
+  .empresa-field input:not([type=checkbox]),.empresa-field select,.empresa-field textarea{width:100%;min-height:46px;border:1px solid #d9dee7;border-radius:11px;padding:10px 12px}
+  .empresa-field input:focus,.empresa-field select:focus,.empresa-field textarea:focus{outline:0;border-color:#d9b000;box-shadow:0 0 0 4px rgba(255,210,48,.18)}
+  .empresa-field .errorlist{margin:0 0 7px;padding:9px 12px;list-style:none;border:1px solid #fecaca;border-radius:10px;background:#fef2f2;color:#b42318;font-size:12px;font-weight:700}
+  .empresa-checks{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+  .empresa-check{display:flex;align-items:center;gap:9px;padding:13px;border:1px solid #e6eaf0;border-radius:12px;background:#f8fafc;font-weight:800;color:#344054}
+  .empresa-actions{display:flex;justify-content:flex-end;gap:10px;margin-top:22px}
+  .empresa-btn{min-height:46px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:11px 18px;border-radius:11px;border:0;text-decoration:none;font-weight:850}
+  .empresa-btn-primary{background:#ffd230;color:#111827;box-shadow:0 8px 18px rgba(229,184,0,.22)}
+  .empresa-btn-light{background:#fff;color:#111827;border:1px solid #e6eaf0}
+  @media(max-width:820px){.empresa-form-page{padding:16px 12px 34px}.empresa-form-hero{display:block;border-radius:18px}.empresa-shell{display:block}.empresa-nav{position:static;margin-bottom:14px}.empresa-grid,.empresa-checks{grid-template-columns:1fr}.empresa-actions{flex-direction:column}.empresa-btn{width:100%}}

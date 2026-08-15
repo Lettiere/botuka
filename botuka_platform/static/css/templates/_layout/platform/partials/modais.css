@@ -1,0 +1,170 @@
+.botuka-login-modal {
+  border: none;
+  border-radius: 28px;
+  padding: 34px 30px 26px;
+  background: linear-gradient(180deg, #ffffff 0%, #fff8df 100%);
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.22);
+  position: relative;
+  overflow: hidden;
+}
+
+.botuka-login-modal::before {
+  content: "";
+  position: absolute;
+  width: 180px;
+  height: 180px;
+  background: rgba(255, 210, 48, 0.28);
+  border-radius: 50%;
+  top: -70px;
+  right: -70px;
+}
+
+.login-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  z-index: 2;
+}
+
+.login-header {
+  position: relative;
+  text-align: center;
+  z-index: 1;
+}
+
+.login-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Baloo 2", sans-serif;
+  font-size: 1.6rem;
+  font-weight: 800;
+  color: #1f2937;
+  margin-bottom: 14px;
+}
+
+.brand-dot {
+  width: 14px;
+  height: 14px;
+  background: #ffd230;
+  border-radius: 50%;
+  box-shadow: 0 0 0 6px rgba(255, 210, 48, 0.25);
+}
+
+.login-header h2 {
+  font-size: 1.65rem;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 8px;
+}
+
+.login-header p {
+  font-size: 0.95rem;
+  color: #6b7280;
+  line-height: 1.5;
+  max-width: 360px;
+  margin: 0 auto 24px;
+}
+
+.login-actions {
+  position: relative;
+  z-index: 1;
+  /* Garantir visibilidade explícita do bloco dos formulários */
+  display: block;
+}
+
+.divider {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  color: #9ca3af;
+  font-size: 0.82rem;
+  margin: 22px 0;
+}
+
+.divider::before,
+.divider::after {
+  content: "";
+  flex: 1;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.input-group-login {
+  height: 50px;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  background: #ffffff;
+  display: flex;
+  align-items: center;
+  padding: 0 14px;
+  gap: 10px;
+}
+
+.input-group-login i {
+  color: #9ca3af;
+  font-size: 1.1rem;
+}
+
+.login-input {
+  border: none;
+  box-shadow: none !important;
+  padding: 0;
+  font-size: 0.95rem;
+  background: transparent;
+}
+
+.login-input:focus {
+  border: none;
+  outline: none;
+  box-shadow: none;
+}
+
+.btn-yellow {
+  height: 50px;
+  border-radius: 16px;
+  border: none;
+  background: #ffd230;
+  color: #1f2937;
+  font-weight: 800;
+  transition: 0.2s ease;
+}
+
+.btn-yellow:hover,
+.btn-yellow:focus {
+  background: #f5c400;
+  transform: translateY(-1px);
+}
+
+.btn-soft {
+  height: 48px;
+  border-radius: 16px;
+  border: 1px solid rgba(255, 210, 48, 0.45);
+  background: rgba(255, 210, 48, 0.16);
+  color: #1f2937;
+  font-weight: 700;
+  transition: 0.2s ease;
+}
+
+.btn-soft:hover,
+.btn-soft:focus {
+  background: rgba(255, 210, 48, 0.28);
+}
+
+.login-terms {
+  position: relative;
+  z-index: 1;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 0.75rem;
+  line-height: 1.4;
+  margin: 20px 8px 0;
+}
+
+/* Garante a visibilidade correta dos formulários de login/cadastro */
+#loginFormSection {
+  display: block;
+}
+#cadastroFormSection {
+  display: none;
+}

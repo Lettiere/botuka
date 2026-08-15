@@ -28,6 +28,45 @@ class MultipleFileInput(forms.ClearableFileInput):
     allow_multiple_selected = True
 
 
+class MultipleFileField(forms.FileField):
+    """
+    Campo Django para múltiplos arquivos.
+
+    O FileField padrão espera apenas um UploadedFile. Quando o widget
+    possui allow_multiple_selected=True, o valor recebido é uma lista.
+    Este campo valida cada arquivo individualmente e devolve a lista
+    completa em cleaned_data.
+    """
+
+    def clean(self, data, initial=None):
+        if not data:
+            if self.required:
+                raise forms.ValidationError(
+                    self.error_messages["required"],
+                    code="required",
+                )
+            return []
+
+        files = data if isinstance(data, (list, tuple)) else [data]
+
+        cleaned_files = []
+        errors = []
+
+        for uploaded_file in files:
+            try:
+                cleaned_files.append(
+                    super().clean(uploaded_file, initial)
+                )
+            except forms.ValidationError as exc:
+                errors.extend(exc.error_list)
+
+        if errors:
+            raise forms.ValidationError(errors)
+
+        return cleaned_files
+
+
+
 class ProductDecimalField(forms.DecimalField):
     def to_python(self, value):
         if isinstance(value, str) and ',' in value and '.' not in value:
@@ -61,7 +100,7 @@ class ProdutoForm(forms.ModelForm):
         required=False, label='Imagem principal',
         help_text='JPG, PNG ou WebP. Esta será a capa pública do produto.',
     )
-    galeria_upload = forms.FileField(
+    galeria_upload = MultipleFileField(
         required=False, label='Galeria de imagens',
         widget=MultipleFileInput(attrs={'multiple': True, 'accept': 'image/jpeg,image/png,image/webp'}),
         help_text='Selecione várias imagens para a galeria.',

@@ -50,6 +50,129 @@
           {% endfor %}
         {% endif %}
 
+        {% if public_url %}
+          <section class="profile-content-card">
+            <h2>Compartilhar currículo</h2>
+            <p>
+              Este currículo está público e pode ser aberto sem login em
+              celular, tablet ou computador.
+            </p>
+
+            <label for="curriculum-public-url">Link público</label>
+
+            <input
+              id="curriculum-public-url"
+              type="url"
+              value="{{ public_url }}"
+              readonly
+              style="width:100%; margin-bottom:1rem;"
+            >
+
+            <div class="profile-form-actions">
+              <a
+                class="profile-button profile-button-primary"
+                href="{{ public_url }}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Abrir página pública
+              </a>
+
+              <a class="profile-button" href="{{ download_url }}">
+                Baixar PDF
+              </a>
+
+              <button
+                class="profile-button"
+                id="curriculum-preview-copy"
+                type="button"
+              >
+                Copiar link
+              </button>
+
+              <button
+                class="profile-button"
+                id="curriculum-preview-share"
+                type="button"
+                hidden
+              >
+                Compartilhar
+              </button>
+
+              <a
+                class="profile-button"
+                href="https://wa.me/?text={{ public_url|urlencode }}"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                WhatsApp
+              </a>
+            </div>
+
+            <p
+              id="curriculum-preview-status"
+              role="status"
+              aria-live="polite"
+            ></p>
+          </section>
+
+          <script>
+            document.addEventListener('DOMContentLoaded', function () {
+              const input = document.getElementById('curriculum-public-url');
+              const copy = document.getElementById('curriculum-preview-copy');
+              const share = document.getElementById('curriculum-preview-share');
+              const status = document.getElementById('curriculum-preview-status');
+
+              if (copy) {
+                copy.addEventListener('click', async function () {
+                  try {
+                    await navigator.clipboard.writeText(input.value);
+                    status.textContent = 'Link copiado com sucesso.';
+                  } catch (error) {
+                    input.focus();
+                    input.select();
+                    document.execCommand('copy');
+                    status.textContent = 'Link copiado.';
+                  }
+                });
+              }
+
+              if (share && navigator.share) {
+                share.hidden = false;
+
+                share.addEventListener('click', async function () {
+                  try {
+                    await navigator.share({
+                      title: '{{ curriculo.titulo_profissional|default:"Currículo profissional"|escapejs }}',
+                      text: 'Conheça meu currículo profissional no BOTUKA.',
+                      url: input.value
+                    });
+                  } catch (error) {
+                    if (error.name !== 'AbortError') {
+                      status.textContent = 'Não foi possível compartilhar.';
+                    }
+                  }
+                });
+              }
+            });
+          </script>
+        {% else %}
+          <section class="profile-content-card">
+            <h2>Publicar currículo</h2>
+            <p>
+              Para gerar um link público, conclua o currículo e selecione
+              <strong>Público</strong> na etapa de privacidade.
+            </p>
+
+            <a
+              class="profile-button profile-button-primary"
+              href="{% url 'painel:curriculo_etapa' 10 %}"
+            >
+              Configurar publicação
+            </a>
+          </section>
+        {% endif %}
+
         <div class="profile-form-actions">
           <a class="profile-button profile-button-primary" href="{% url 'painel:curriculo_etapa' 1 %}">Editar currículo</a>
           <a class="profile-button" href="{% url 'painel:curriculo_etapa' 10 %}">Alterar privacidade</a>

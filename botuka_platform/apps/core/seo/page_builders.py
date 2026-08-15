@@ -1,5 +1,7 @@
+from types import SimpleNamespace
 from django.conf import settings
 from django.urls import reverse
+from django.templatetags.static import static
 
 from .builders import breadcrumb, build_seo
 from .schemas import compact, text
@@ -14,6 +16,94 @@ def home_seo(request):
         image_alt='BOTUKA — Sua cidade em um só lugar',
         page_type='WebPage',
     )
+
+
+
+def curriculo_seo(request, curriculo):
+    usuario = curriculo.usuario
+
+    nome = (
+        usuario.nome_exibicao
+        or usuario.get_full_name()
+        or usuario.get_username()
+    )
+
+    titulo_profissional = (
+        curriculo.titulo_profissional
+        or curriculo.area_profissional
+        or 'Perfil profissional'
+    )
+
+    title = f'{nome} — {titulo_profissional} | BOTUKA'
+
+    description = text(
+        curriculo.resumo
+        or curriculo.objetivo_profissional
+        or f'Currículo profissional de {nome} no BOTUKA.'
+    )
+
+    foto = (
+        usuario.foto
+        if usuario.foto
+        else SimpleNamespace(
+            url=static('img/default/curriculo-social-default.png')
+        )
+    )
+    url = safe_absolute_url(request, request.path)
+
+    endereco = compact({
+        '@type': 'PostalAddress',
+        'addressLocality': curriculo.cidade or None,
+        'addressRegion': curriculo.estado or None,
+        'addressCountry': 'BR',
+    })
+
+    same_as = [
+        item for item in (
+            curriculo.linkedin,
+            curriculo.github,
+            curriculo.portfolio,
+            curriculo.site_profissional,
+        )
+        if item
+    ]
+
+    habilidades = [
+        item.nome
+        for item in curriculo.habilidades.filter(
+            ativo=True,
+            excluido_em__isnull=True,
+        )[:30]
+    ]
+
+    schema = compact({
+        '@type': 'Person',
+        '@id': f'{url}#person',
+        'name': nome,
+        'jobTitle': titulo_profissional,
+        'description': description,
+        'url': url,
+        'image': image_url(request, foto),
+        'address': endereco,
+        'sameAs': same_as or None,
+        'knowsAbout': habilidades or None,
+    })
+
+    return build_seo(
+        request,
+        title=title,
+        description=description,
+        image=foto,
+        image_alt=f'Foto profissional de {nome}',
+        robots='noindex,follow,max-image-preview:large',
+        breadcrumbs=[
+            breadcrumb(request, 'Início', reverse('home')),
+            breadcrumb(request, 'Currículo profissional', request.path),
+        ],
+        schemas=[schema],
+        modified_time=curriculo.atualizado_em,
+    )
+
 
 
 def listing_seo(request, title, description, *, robots=None):

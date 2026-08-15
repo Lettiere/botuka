@@ -1,1 +1,518 @@
-{% extends "_layout/platform/public.html" %}{% block public_content %}<main class="container-botuka public-detail"><article><header><span class="section-kicker">Perfil profissional</span><h1>{{ curriculo.titulo_profissional }}</h1><p>{{ curriculo.area_profissional }}</p></header><div class="public-prose"><p>{{ curriculo.resumo }}</p>{% if curriculo.cidade %}<p><i class="bi bi-geo-alt"></i> {{ curriculo.cidade }} {{ curriculo.estado }}</p>{% endif %}{% if curriculo.experiencias %}<h2>Experiências</h2>{% for item in curriculo.experiencias %}<section><h3>{{ item.cargo }}</h3><p>{{ item.empresa }}</p><p>{{ item.descricao }}</p></section>{% endfor %}{% endif %}{% if curriculo.habilidades %}<h2>Habilidades</h2><ul>{% for item in curriculo.habilidades %}<li>{{ item.nome }}{% if item.nivel %} — {{ item.nivel }}{% endif %}</li>{% endfor %}</ul>{% endif %}</div></article></main>{% endblock %}
+{% extends "_layout/platform/public.html" %}
+
+{% block public_styles %}
+<style>
+  .curriculum-public {
+    padding-top: 2rem;
+    padding-bottom: 4rem;
+  }
+
+  .curriculum-public__container {
+    max-width: 980px;
+    margin: 0 auto;
+  }
+
+  .curriculum-public__hero,
+  .curriculum-public__section {
+    background: var(--bs-body-bg, #fff);
+    border: 1px solid rgba(15, 23, 42, .12);
+    border-radius: 20px;
+    padding: clamp(1.2rem, 3vw, 2rem);
+    margin-bottom: 1rem;
+  }
+
+  .curriculum-public__identity {
+    display: grid;
+    grid-template-columns: 150px minmax(0, 1fr);
+    gap: 1.5rem;
+    align-items: center;
+  }
+
+  .curriculum-public__photo {
+    width: 150px;
+    height: 150px;
+    object-fit: cover;
+    object-position: center;
+    border-radius: 50%;
+    border: 4px solid rgba(22, 101, 52, .15);
+  }
+
+  .curriculum-public__photo-placeholder {
+    width: 150px;
+    height: 150px;
+    display: grid;
+    place-items: center;
+    border-radius: 50%;
+    background: rgba(22, 101, 52, .1);
+    font-size: 3rem;
+    font-weight: 700;
+  }
+
+  .curriculum-public__hero h1 {
+    margin: .25rem 0;
+  }
+
+  .curriculum-public__role {
+    font-size: 1.1rem;
+    margin-bottom: .5rem;
+  }
+
+  .curriculum-public__contacts,
+  .curriculum-public__links,
+  .curriculum-public__actions,
+  .curriculum-public__tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: .65rem;
+  }
+
+  .curriculum-public__contacts,
+  .curriculum-public__links {
+    margin-top: .8rem;
+  }
+
+  .curriculum-public__actions {
+    margin-top: 1.25rem;
+  }
+
+  .curriculum-public__button {
+    min-height: 44px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .45rem;
+    padding: .7rem 1rem;
+    border: 1px solid rgba(15, 23, 42, .22);
+    border-radius: 10px;
+    background: var(--bs-body-bg, #fff);
+    color: inherit;
+    font: inherit;
+    font-weight: 600;
+    text-decoration: none;
+    cursor: pointer;
+  }
+
+  .curriculum-public__button--primary {
+    background: #166534;
+    border-color: #166534;
+    color: #fff;
+  }
+
+  .curriculum-public__item {
+    padding: 1rem 0;
+    border-bottom: 1px solid rgba(15, 23, 42, .1);
+  }
+
+  .curriculum-public__item:last-child {
+    border-bottom: 0;
+  }
+
+  .curriculum-public__item h3 {
+    margin-bottom: .25rem;
+  }
+
+  .curriculum-public__tags {
+    padding: 0;
+    list-style: none;
+  }
+
+  .curriculum-public__tags li {
+    padding: .45rem .75rem;
+    border-radius: 999px;
+    background: rgba(22, 101, 52, .1);
+  }
+
+  .curriculum-public__status {
+    min-height: 1.5rem;
+    margin-top: .75rem;
+  }
+
+  @media (max-width: 640px) {
+    .curriculum-public {
+      padding-top: 1rem;
+    }
+
+    .curriculum-public__identity {
+      grid-template-columns: 1fr;
+      text-align: center;
+    }
+
+    .curriculum-public__photo,
+    .curriculum-public__photo-placeholder {
+      margin: 0 auto;
+      width: 120px;
+      height: 120px;
+    }
+
+    .curriculum-public__contacts,
+    .curriculum-public__links,
+    .curriculum-public__actions {
+      justify-content: center;
+    }
+
+    .curriculum-public__button {
+      width: 100%;
+    }
+  }
+
+  @media print {
+    header,
+    footer,
+    .curriculum-public__actions,
+    .curriculum-public__status {
+      display: none !important;
+    }
+
+    .curriculum-public {
+      padding: 0;
+    }
+
+    .curriculum-public__hero,
+    .curriculum-public__section {
+      border: 0;
+      padding: 0;
+    }
+  }
+</style>
+{% endblock %}
+
+{% block public_content %}
+<main class="container-botuka curriculum-public">
+  <div class="curriculum-public__container">
+    <article>
+      <header class="curriculum-public__hero">
+        <div class="curriculum-public__identity">
+          <div>
+            {% if foto_url %}
+              <img
+                class="curriculum-public__photo"
+                src="{{ foto_url }}"
+                alt="Foto profissional de {{ nome_publico }}"
+                width="150"
+                height="150"
+                decoding="async"
+              >
+            {% else %}
+              <div
+                class="curriculum-public__photo-placeholder"
+                aria-label="Usuário sem foto"
+              >
+                {{ nome_publico|slice:":1"|upper }}
+              </div>
+            {% endif %}
+          </div>
+
+          <div>
+            <span class="section-kicker">Perfil profissional</span>
+            <h1>{{ nome_publico }}</h1>
+
+            <p class="curriculum-public__role">
+              {{ curriculo.titulo_profissional|default:curriculo.area_profissional }}
+            </p>
+
+            {% if curriculo.area_profissional and curriculo.area_profissional != curriculo.titulo_profissional %}
+              <p>{{ curriculo.area_profissional }}</p>
+            {% endif %}
+
+            {% if curriculo.cidade or curriculo.estado %}
+              <p>
+                <i class="bi bi-geo-alt"></i>
+                {{ curriculo.cidade }}
+                {% if curriculo.cidade and curriculo.estado %} · {% endif %}
+                {{ curriculo.estado }}
+              </p>
+            {% endif %}
+
+            {% if curriculo.email or curriculo.telefone %}
+              <div class="curriculum-public__contacts">
+                {% if curriculo.email %}
+                  <a href="mailto:{{ curriculo.email }}">
+                    <i class="bi bi-envelope"></i>
+                    {{ curriculo.email }}
+                  </a>
+                {% endif %}
+
+                {% if curriculo.telefone %}
+                  <a href="tel:{{ curriculo.telefone }}">
+                    <i class="bi bi-telephone"></i>
+                    {{ curriculo.telefone }}
+                  </a>
+                {% endif %}
+              </div>
+            {% endif %}
+
+            {% if curriculo.linkedin or curriculo.github or curriculo.portfolio or curriculo.site_profissional %}
+              <div class="curriculum-public__links">
+                {% if curriculo.linkedin %}
+                  <a href="{{ curriculo.linkedin }}" target="_blank" rel="noopener noreferrer">LinkedIn</a>
+                {% endif %}
+                {% if curriculo.github %}
+                  <a href="{{ curriculo.github }}" target="_blank" rel="noopener noreferrer">GitHub</a>
+                {% endif %}
+                {% if curriculo.portfolio %}
+                  <a href="{{ curriculo.portfolio }}" target="_blank" rel="noopener noreferrer">Portfólio</a>
+                {% endif %}
+                {% if curriculo.site_profissional %}
+                  <a href="{{ curriculo.site_profissional }}" target="_blank" rel="noopener noreferrer">Site profissional</a>
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+        </div>
+
+        <div class="curriculum-public__actions">
+          <a
+            class="curriculum-public__button curriculum-public__button--primary"
+            href="{{ download_url }}"
+          >
+            <i class="bi bi-file-earmark-pdf"></i>
+            Baixar PDF
+          </a>
+
+          <button
+            class="curriculum-public__button"
+            id="curriculum-copy"
+            type="button"
+          >
+            <i class="bi bi-copy"></i>
+            Copiar link
+          </button>
+
+          <button
+            class="curriculum-public__button"
+            id="curriculum-share"
+            type="button"
+            hidden
+          >
+            <i class="bi bi-share"></i>
+            Compartilhar
+          </button>
+
+          <a
+            class="curriculum-public__button"
+            href="https://wa.me/?text=Conheça%20meu%20currículo%20profissional:%20{{ public_url|urlencode }}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <i class="bi bi-whatsapp"></i>
+            WhatsApp
+          </a>
+
+          <a
+            class="curriculum-public__button"
+            href="https://www.linkedin.com/sharing/share-offsite/?url={{ public_url|urlencode }}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <i class="bi bi-linkedin"></i>
+            LinkedIn
+          </a>
+
+          <a
+            class="curriculum-public__button"
+            href="mailto:?subject=Currículo profissional de {{ nome_publico|urlencode }}&body={{ public_url|urlencode }}"
+          >
+            <i class="bi bi-envelope"></i>
+            E-mail
+          </a>
+
+          <button
+            class="curriculum-public__button"
+            id="curriculum-print"
+            type="button"
+          >
+            <i class="bi bi-printer"></i>
+            Imprimir
+          </button>
+        </div>
+
+        <p
+          class="curriculum-public__status"
+          id="curriculum-status"
+          role="status"
+          aria-live="polite"
+        ></p>
+      </header>
+
+      {% if curriculo.objetivo_profissional %}
+        <section class="curriculum-public__section">
+          <h2>Objetivo profissional</h2>
+          <p>{{ curriculo.objetivo_profissional|linebreaksbr }}</p>
+        </section>
+      {% endif %}
+
+      {% if curriculo.resumo %}
+        <section class="curriculum-public__section">
+          <h2>Resumo profissional</h2>
+          <p>{{ curriculo.resumo|linebreaksbr }}</p>
+        </section>
+      {% endif %}
+
+      {% if curriculo.experiencias %}
+        <section class="curriculum-public__section">
+          <h2>Experiências profissionais</h2>
+
+          {% for item in curriculo.experiencias %}
+            <div class="curriculum-public__item">
+              <h3>{{ item.cargo }}</h3>
+              {% if item.empresa %}<p><strong>{{ item.empresa }}</strong></p>{% endif %}
+              {% if item.inicio or item.fim or item.atual %}
+                <p>
+                  {{ item.inicio }}
+                  {% if item.inicio %} — {% endif %}
+                  {% if item.atual %}Atual{% else %}{{ item.fim }}{% endif %}
+                </p>
+              {% endif %}
+              {% if item.descricao %}
+                <p>{{ item.descricao|linebreaksbr }}</p>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+
+      {% if curriculo.formacoes %}
+        <section class="curriculum-public__section">
+          <h2>Formação acadêmica</h2>
+
+          {% for item in curriculo.formacoes %}
+            <div class="curriculum-public__item">
+              <h3>{{ item.curso }}</h3>
+              <p>
+                {{ item.instituicao }}
+                {% if item.nivel %} · {{ item.nivel }}{% endif %}
+              </p>
+            </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+
+      {% if curriculo.cursos %}
+        <section class="curriculum-public__section">
+          <h2>Cursos e certificações</h2>
+
+          {% for item in curriculo.cursos %}
+            <div class="curriculum-public__item">
+              <h3>{{ item.nome }}</h3>
+              <p>
+                {{ item.instituicao }}
+                {% if item.carga_horaria %} · {{ item.carga_horaria }} horas{% endif %}
+              </p>
+            </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+
+      {% if curriculo.habilidades %}
+        <section class="curriculum-public__section">
+          <h2>Habilidades</h2>
+
+          <ul class="curriculum-public__tags">
+            {% for item in curriculo.habilidades %}
+              <li>
+                {{ item.nome }}
+                {% if item.nivel %} · {{ item.nivel }}{% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+
+      {% if curriculo.idiomas %}
+        <section class="curriculum-public__section">
+          <h2>Idiomas</h2>
+
+          <ul class="curriculum-public__tags">
+            {% for item in curriculo.idiomas %}
+              <li>{{ item.nome }} · {{ item.nivel }}</li>
+            {% endfor %}
+          </ul>
+        </section>
+      {% endif %}
+
+      {% if curriculo.projetos %}
+        <section class="curriculum-public__section">
+          <h2>Projetos</h2>
+
+          {% for item in curriculo.projetos %}
+            <div class="curriculum-public__item">
+              <h3>{{ item.titulo }}</h3>
+
+              {% if item.descricao %}
+                <p>{{ item.descricao|linebreaksbr }}</p>
+              {% endif %}
+
+              {% if item.tecnologias %}
+                <p><strong>Tecnologias:</strong> {{ item.tecnologias }}</p>
+              {% endif %}
+
+              {% if item.url %}
+                <a
+                  href="{{ item.url }}"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  Ver projeto
+                </a>
+              {% endif %}
+            </div>
+          {% endfor %}
+        </section>
+      {% endif %}
+    </article>
+  </div>
+</main>
+{% endblock %}
+
+{% block public_scripts %}
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const publicUrl = '{{ public_url|escapejs }}';
+    const status = document.getElementById('curriculum-status');
+    const copyButton = document.getElementById('curriculum-copy');
+    const shareButton = document.getElementById('curriculum-share');
+    const printButton = document.getElementById('curriculum-print');
+
+    if (copyButton) {
+      copyButton.addEventListener('click', async function () {
+        try {
+          await navigator.clipboard.writeText(publicUrl);
+          status.textContent = 'Link copiado com sucesso.';
+        } catch (error) {
+          const input = document.createElement('input');
+          input.value = publicUrl;
+          document.body.appendChild(input);
+          input.select();
+          document.execCommand('copy');
+          input.remove();
+          status.textContent = 'Link copiado.';
+        }
+      });
+    }
+
+    if (shareButton && navigator.share) {
+      shareButton.hidden = false;
+
+      shareButton.addEventListener('click', async function () {
+        try {
+          await navigator.share({
+            title: '{{ nome_publico|escapejs }} — {{ curriculo.titulo_profissional|escapejs }}',
+            text: 'Conheça meu currículo profissional no BOTUKA.',
+            url: publicUrl
+          });
+        } catch (error) {
+          if (error.name !== 'AbortError') {
+            status.textContent = 'Não foi possível abrir o compartilhamento.';
+          }
+        }
+      });
+    }
+
+    if (printButton) {
+      printButton.addEventListener('click', function () {
+        window.print();
+      });
+    }
+  });
+</script>
+{% endblock %}

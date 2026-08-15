@@ -1,0 +1,26 @@
+/* ====== CSS from style.css relevant to this section (.cta-city and responsive) ====== */
+.cta-city {
+  background:
+    radial-gradient(380px 180px at 80% 0%, rgba(255,183,3,.22), transparent 70%),
+    var(--botuka-blue);
+  color: #fff;
+  border-radius: var(--radius-lg);
+  padding: 34px;
+  box-shadow: var(--shadow-hover);
+}
+.cta-city p {
+  color: rgba(255,255,255,.76);
+}
+@media (max-width: 768px) {
+  .cta-city {
+    padding: 18px 12px;
+  }
+  .cta-city .row {
+    flex-direction: column;
+    gap: 14px;
+    text-align: left;
+  }
+  .cta-city .col-lg-4 {
+    text-align: left !important;
+  }
+}
