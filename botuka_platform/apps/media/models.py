@@ -6,6 +6,7 @@ from django.urls import reverse
 from django.utils import timezone
 from apps.core.domain import SoftDeleteMixin, texto_sem_html, validar_imagem_publica
 from apps.core.public_links import TipoLink, normalizar_link_publico
+from apps.core.seo.utils import youtube_thumbnail
 from apps.core.utils import gerar_slug_unico
 
 
@@ -341,6 +342,15 @@ class Video(SoftDeleteMixin):
             self.slug = gerar_slug_unico(self, self.titulo)
         if self.status == self.Status.PUBLICADO and not self.publicado_em:
             self.publicado_em = timezone.now()
+
+        # Usa automaticamente a capa pública do YouTube quando nenhuma
+        # thumbnail personalizada foi cadastrada.
+        if self.video_id and not self.thumbnail:
+            self.thumbnail = youtube_thumbnail(
+                self.video_id,
+                quality='hqdefault',
+            )
+
         self.full_clean()
         super().save(*args, **kwargs)
 
