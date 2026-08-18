@@ -1,1 +1,301 @@
-{% extends "social/base.html" %}{% block social_content %}<header class="social-page-heading"><div><span>Privado</span><h1>Mensagens</h1></div></header>{% if conversation_requests %}<section class="social-panel"><h2>Solicitações</h2>{% for item in conversation_requests %}<article class="social-request"><p><strong>{{ item.solicitante.social_profile.nome_publico }}</strong> quer enviar uma mensagem.</p><div><form method="post" action="{% url 'social:conversation_request_decide' item.uuid 'aceitar' %}">{% csrf_token %}<button type="submit">Aceitar</button></form><form method="post" action="{% url 'social:conversation_request_decide' item.uuid 'recusar' %}">{% csrf_token %}<button type="submit">Recusar</button></form></div></article>{% endfor %}</section>{% endif %}<section class="social-panel"><h2>Conversas</h2>{% for conversation in conversations %}<a class="social-conversation-link" href="{% url 'social:conversation_detail' conversation.uuid %}">{% for person in conversation.participantes.all %}{% if person != request.user %}{{ person.social_profile.nome_publico }}{% endif %}{% endfor %}</a>{% empty %}<p class="social-muted">Nenhuma conversa aceita.</p>{% endfor %}</section>{% endblock %}
+{% extends "social/base.html" %}
+
+{% block social_content %}
+
+<header class="social-page-heading">
+    <div>
+        <span>Privado</span>
+        <h1>Mensagens</h1>
+    </div>
+</header>
+
+{% if conversation_requests %}
+<section class="social-panel social-request-panel">
+
+    <header class="social-request-panel-heading">
+        <div>
+            <h2>Solicitações</h2>
+            <p class="social-muted">
+                As mensagens abaixo ainda não fazem parte de uma conversa.
+            </p>
+        </div>
+    </header>
+
+    <div class="social-request-list">
+
+        {% for item in conversation_requests %}
+
+        <article class="social-request social-request-thread">
+
+            <header class="social-request-header">
+
+                <div class="social-request-person">
+
+                    {% if item.solicitante.social_profile.avatar %}
+                    <img
+                        src="{{ item.solicitante.social_profile.avatar.url }}"
+                        alt=""
+                        class="social-request-avatar"
+                    >
+                    {% endif %}
+
+                    <div>
+                        <strong>
+                            {{ item.solicitante.social_profile.nome_publico }}
+                        </strong>
+
+                        <span class="social-muted">
+                            quer iniciar uma conversa
+                        </span>
+                    </div>
+
+                </div>
+
+                <span class="social-request-count">
+                    {{ item.mensagens_pendentes|length }}
+                    {% if item.mensagens_pendentes|length == 1 %}
+                        mensagem
+                    {% else %}
+                        mensagens
+                    {% endif %}
+                </span>
+
+            </header>
+
+
+            <div class="social-request-messages">
+
+                {% for mensagem in item.mensagens_pendentes %}
+
+                <article class="social-request-message">
+
+                    {% if mensagem.story %}
+                    <div class="social-request-context">
+
+                        {% if mensagem.story.imagem %}
+                        <img
+                            src="{{ mensagem.story.imagem.url }}"
+                            alt=""
+                        >
+                        {% endif %}
+
+                        <div>
+                            <small>Resposta a Story</small>
+                            <strong>
+                                {{ mensagem.story.autor.nome_publico }}
+                            </strong>
+                        </div>
+
+                    </div>
+                    {% endif %}
+
+
+                    {% if mensagem.post %}
+                    <div class="social-request-context">
+
+                        {% if mensagem.post.imagem %}
+                        <img
+                            src="{{ mensagem.post.imagem.url }}"
+                            alt=""
+                        >
+                        {% endif %}
+
+                        <div>
+                            <small>Mensagem sobre publicação</small>
+                            <strong>
+                                {{ mensagem.post.autor.nome_publico }}
+                            </strong>
+                        </div>
+
+                    </div>
+                    {% endif %}
+
+
+                    {% if mensagem.texto %}
+                    <p class="social-request-message-text">
+                        {{ mensagem.texto }}
+                    </p>
+                    {% endif %}
+
+                    <time
+                        datetime="{{ mensagem.criado_em|date:'c' }}"
+                        class="social-request-message-time"
+                    >
+                        {{ mensagem.criado_em|date:"d/m/Y H:i" }}
+                    </time>
+
+                </article>
+
+                {% empty %}
+
+                <p class="social-muted">
+                    Solicitação sem mensagens disponíveis.
+                </p>
+
+                {% endfor %}
+
+            </div>
+
+
+            <footer class="social-request-actions">
+
+                <form
+                    method="post"
+                    action="{% url 'social:conversation_request_decide' item.uuid 'aceitar' %}"
+                >
+                    {% csrf_token %}
+
+                    <button
+                        type="submit"
+                        class="social-request-accept"
+                    >
+                        <i class="bi bi-check-lg"></i>
+                        Aceitar conversa
+                    </button>
+                </form>
+
+
+                <form
+                    method="post"
+                    action="{% url 'social:conversation_request_decide' item.uuid 'recusar' %}"
+                >
+                    {% csrf_token %}
+
+                    <button
+                        type="submit"
+                        class="social-request-reject"
+                    >
+                        <i class="bi bi-x-lg"></i>
+                        Recusar
+                    </button>
+                </form>
+
+            </footer>
+
+        </article>
+
+        {% endfor %}
+
+    </div>
+
+</section>
+{% endif %}
+
+
+<section class="social-panel social-conversations-panel">
+    <h2>Conversas</h2>
+
+    <div class="social-conversation-list">
+        {% for conversation in conversations %}
+
+            {% for person in conversation.participantes.all %}
+                {% if person != request.user %}
+
+                    <a
+                        class="social-conversation-card"
+                        href="{% url 'social:conversation_detail' conversation.uuid %}"
+                        aria-label="Abrir conversa com {{ person.social_profile.nome_publico }}"
+                    >
+
+                        <div class="social-conversation-avatar">
+
+                            {% if person.foto %}
+                                <img
+                                    src="{{ person.foto.url }}"
+                                    alt="Foto de {{ person.social_profile.nome_publico }}"
+                                    loading="lazy"
+                                >
+
+                            {% elif person.social_profile.avatar %}
+                                <img
+                                    src="{{ person.social_profile.avatar.url }}"
+                                    alt="Foto de {{ person.social_profile.nome_publico }}"
+                                    loading="lazy"
+                                >
+
+                            {% else %}
+                                <span aria-hidden="true">
+                                    {{ person.social_profile.nome_publico|first|upper }}
+                                </span>
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="social-conversation-summary">
+
+                            <div class="social-conversation-topline">
+
+                                <strong>
+                                    {{ person.social_profile.nome_publico }}
+                                </strong>
+
+                                {% if conversation.ultima_mensagem_em %}
+                                    <time
+                                        datetime="{{ conversation.ultima_mensagem_em|date:'c' }}"
+                                        title="{{ conversation.ultima_mensagem_em }}"
+                                    >
+                                        {{ conversation.ultima_mensagem_em|timesince }}
+                                    </time>
+                                {% endif %}
+
+                            </div>
+
+
+                            <span class="social-conversation-username">
+                                @{{ person.social_profile.slug }}
+                            </span>
+
+
+                            {% if conversation.ultima_mensagem_texto %}
+
+                                <p class="social-conversation-preview">
+                                    {{ conversation.ultima_mensagem_texto|truncatechars:72 }}
+                                </p>
+
+                            {% else %}
+
+                                <p class="social-conversation-preview social-muted">
+                                    Conversa iniciada.
+                                </p>
+
+                            {% endif %}
+
+                        </div>
+
+
+                        <div class="social-conversation-meta">
+
+                            {% if conversation.nao_lidas %}
+                                <span
+                                    class="social-conversation-unread"
+                                    title="{{ conversation.nao_lidas }} mensagens não lidas"
+                                >
+                                    {{ conversation.nao_lidas }}
+                                </span>
+                            {% endif %}
+
+                            <i
+                                class="bi bi-chevron-right"
+                                aria-hidden="true"
+                            ></i>
+
+                        </div>
+
+                    </a>
+
+                {% endif %}
+            {% endfor %}
+
+        {% empty %}
+
+            <p class="social-muted social-conversations-empty">
+                Nenhuma conversa aceita.
+            </p>
+
+        {% endfor %}
+    </div>
+
+</section>
+
+{% endblock %}

@@ -1,3 +1,4 @@
+import os
 from .settings import *  # noqa: F403
 
 ROOT_URLCONF = 'config.urls_social'
@@ -17,3 +18,36 @@ TEMPLATES[0]['OPTIONS']['context_processors'] = [  # noqa: F405
     processor for processor in TEMPLATES[0]['OPTIONS']['context_processors']  # noqa: F405
     if processor not in SOCIAL_EXCLUDED_CONTEXT_PROCESSORS
 ]
+
+# ======================================================================
+# BOTUKA SOCIAL REALTIME
+# ======================================================================
+
+ASGI_APPLICATION = "config.asgi.application"
+
+REDIS_URL = os.getenv("REDIS_URL", "").strip()
+
+if REDIS_URL:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels_redis.core.RedisChannelLayer",
+            "CONFIG": {
+                "hosts": [REDIS_URL],
+            },
+        },
+    }
+else:
+    # Desenvolvimento local com um único processo.
+    # Produção deve informar REDIS_URL.
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer",
+        },
+    }
+
+# ======================================================================
+# BOTUKA SOCIAL DAPHNE
+# ======================================================================
+
+if "daphne" not in INSTALLED_APPS:
+    INSTALLED_APPS = ["daphne", *INSTALLED_APPS]

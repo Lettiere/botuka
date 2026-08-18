@@ -5,8 +5,9 @@ from django.utils import timezone
 from apps.organizations.models import Empresa
 
 from .models import (
-    EmpresaSeguidor, SocialBlock, SocialConversation, SocialConversationRequest,
-    SocialFollow, SocialFollowRequest, SocialPost, SocialPostComment, SocialPostSave, SocialProfile, SocialStory,
+    EmpresaSeguidor, SocialBlock, SocialConversation, SocialConversationRequest, SocialConversationRequestMessage,
+    SocialFollow, SocialFollowRequest, SocialMessage, SocialNotification, SocialPost,
+    SocialPostComment, SocialPostSave, SocialProfile, SocialStory,
 )
 
 
@@ -152,15 +153,71 @@ def story_visivel_para(usuario, uuid):
 
 
 def conversas_para(usuario):
-    return SocialConversation.objects.filter(ativo=True, participantes=usuario).prefetch_related(
-        'participantes__social_profile', 'mensagens__remetente',
-    ).distinct()
+    latest = SocialMessage.objects.filter(conversa=models.OuterRef('pk'), ativo=True).order_by('-criado_em')
+    return SocialConversation.objects.filter(ativo=True, participantes=usuario).annotate(
+        ultima_mensagem_em=models.Subquery(latest.values('criado_em')[:1]),
+        ultima_mensagem_texto=models.Subquery(latest.values('texto')[:1]),
+        nao_lidas=Count('mensagens', filter=Q(mensagens__ativo=True, mensagens__lida_em__isnull=True) & ~Q(mensagens__remetente=usuario)),
+    ).prefetch_related('participantes__social_profile').order_by('-ultima_mensagem_em', '-atualizado_em').distinct()
 
 
 def solicitacoes_conversa_para(usuario):
-    return SocialConversationRequest.objects.filter(
-        destinatario=usuario, status=SocialConversationRequest.Status.PENDENTE,
-    ).select_related('solicitante__social_profile', 'post', 'story')
+    return (
+        SocialConversationRequest.objects
+        .filter(
+            destinatario=usuario,
+            status=SocialConversationRequest.Status.PENDENTE,
+        )
+        .select_related(
+            'solicitante',
+            'solicitante__social_profile',
+            'post',
+            'story',
+        )
+        .prefetch_related(
+            models.Prefetch(
+                'mensagens',
+                queryset=(
+                    SocialConversationRequestMessage.objects
+                    .filter(ativo=True)
+                    .select_related(
+                        'remetente',
+                        'post',
+                        'story',
+                    )
+                    .order_by(
+                        'criado_em',
+                        'pk',
+                    )
+                ),
+                to_attr='mensagens_pendentes',
+            )
+        )
+        .order_by('-criado_em')
+    )
+
+
+def mensagens_da_conversa(conversa, limite=50):
+    ids = SocialMessage.objects.filter(conversa=conversa, ativo=True).order_by('-criado_em').values_list('pk', flat=True)[:limite]
+    return SocialMessage.objects.filter(pk__in=ids).select_related('remetente__social_profile', 'post', 'story').order_by('criado_em', 'pk')
+
+
+def notificacoes_para(usuario, *, somente_nao_lidas=False, desde=None, limite=50):
+    queryset = SocialNotification.objects.filter(destinatario=usuario).select_related('ator__social_profile', 'objeto_tipo')
+    if somente_nao_lidas:
+        queryset = queryset.filter(lida_em__isnull=True)
+    if desde:
+        queryset = queryset.filter(criado_em__gt=desde)
+    return queryset[:limite]
+
+
+def contadores_sociais(usuario):
+    if not usuario or not usuario.is_authenticated:
+        return {'notificacoes': 0, 'mensagens': 0}
+    return {
+        'notificacoes': SocialNotification.objects.filter(destinatario=usuario, lida_em__isnull=True).count(),
+        'mensagens': SocialMessage.objects.filter(conversa__participantes=usuario, ativo=True, lida_em__isnull=True).exclude(remetente=usuario).count(),
+    }
 
 
 def solicitacoes_pendentes_para(usuario):

@@ -18,6 +18,12 @@ class SocialProfile(UUIDModel, TimeStampedModel):
         RESTRITO = 'RESTRITO', 'Restrito'
         PRIVADO = 'PRIVADO', 'Privado'
 
+    class InteracaoPrivada(models.TextChoices):
+        TODOS = 'TODOS', 'Todos'
+        SEGUIDORES = 'SEGUIDORES', 'Seguidores'
+        SEGUINDO = 'SEGUINDO', 'Pessoas que sigo'
+        NINGUEM = 'NINGUEM', 'Ninguém'
+
     id = models.BigAutoField(primary_key=True)
     usuario = models.OneToOneField(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='social_profile')
     slug = models.SlugField(max_length=160, unique=True)
@@ -26,6 +32,10 @@ class SocialProfile(UUIDModel, TimeStampedModel):
     avatar = models.ImageField(upload_to='social/avatars/%Y/%m/', blank=True, null=True)
     visibilidade = models.CharField(max_length=10, choices=Visibilidade.choices, default=Visibilidade.PUBLICO, db_index=True)
     ativo = models.BooleanField(default=True, db_index=True)
+    quem_pode_solicitar_mensagem = models.CharField(max_length=12, choices=InteracaoPrivada.choices, default=InteracaoPrivada.TODOS)
+    quem_pode_responder_story = models.CharField(max_length=12, choices=InteracaoPrivada.choices, default=InteracaoPrivada.TODOS)
+    permitir_reacoes = models.BooleanField(default=True)
+    confirmacao_leitura = models.BooleanField(default=True)
 
     class Meta:
         db_table = 'social_profile_tb'
@@ -166,6 +176,50 @@ class SocialStory(UUIDModel, TimeStampedModel):
         return super().save(*args, **kwargs)
 
 
+class SocialStoryLike(UUIDModel):
+    story = models.ForeignKey(SocialStory, on_delete=models.CASCADE, related_name='curtidas')
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='curtidas_stories')
+    criado_em = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        db_table = 'social_story_like_tb'
+        constraints = [models.UniqueConstraint(fields=['story', 'usuario'], name='social_story_like_unique')]
+        indexes = [models.Index(fields=['story', 'criado_em'], name='social_story_like_idx')]
+
+
+class SocialStoryReaction(UUIDModel, TimeStampedModel):
+    class Tipo(models.TextChoices):
+        LOVE = 'LOVE', 'Amei'
+        HAHA = 'HAHA', 'Engraçado'
+        HEART_EYES = 'HEART_EYES', 'Apaixonado'
+        WOW = 'WOW', 'Surpreso'
+        SAD = 'SAD', 'Triste'
+        CLAP = 'CLAP', 'Aplausos'
+        FIRE = 'FIRE', 'Incrível'
+
+    story = models.ForeignKey(SocialStory, on_delete=models.CASCADE, related_name='reacoes')
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='reacoes_stories')
+    tipo = models.CharField(max_length=12, choices=Tipo.choices)
+
+    class Meta:
+        db_table = 'social_story_reaction_tb'
+        constraints = [models.UniqueConstraint(fields=['story', 'usuario'], name='social_story_reaction_unique')]
+        indexes = [models.Index(fields=['story', 'tipo'], name='social_story_reaction_idx')]
+
+
+class SocialStoryView(UUIDModel):
+    story = models.ForeignKey(SocialStory, on_delete=models.CASCADE, related_name='visualizacoes')
+    usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='stories_visualizados')
+    quantidade = models.PositiveIntegerField(default=1)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    ultima_visualizacao_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'social_story_view_tb'
+        constraints = [models.UniqueConstraint(fields=['story', 'usuario'], name='social_story_view_unique')]
+        indexes = [models.Index(fields=['story', 'criado_em'], name='social_story_view_idx')]
+
+
 class SocialPostLike(UUIDModel):
     post = models.ForeignKey(SocialPost, on_delete=models.CASCADE, related_name='curtidas')
     usuario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='curtidas_sociais')
@@ -241,20 +295,154 @@ class SocialConversationRequest(UUIDModel, TimeStampedModel):
         indexes = [models.Index(fields=['destinatario', 'status', 'criado_em'], name='social_conv_req_inbox_idx')]
 
 
+class SocialConversationRequestMessage(UUIDModel, TimeStampedModel):
+    solicitacao = models.ForeignKey(
+        SocialConversationRequest,
+        on_delete=models.CASCADE,
+        related_name='mensagens',
+    )
+    remetente = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.PROTECT,
+        related_name='mensagens_solicitacao_conversa',
+    )
+    texto = models.TextField(
+        max_length=2000,
+        blank=True,
+        validators=[texto_sem_html],
+    )
+    post = models.ForeignKey(
+        SocialPost,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='mensagens_solicitacao_conversa',
+    )
+    story = models.ForeignKey(
+        SocialStory,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='mensagens_solicitacao_conversa',
+    )
+    ativo = models.BooleanField(default=True)
+
+    class Meta:
+        db_table = 'social_conversation_request_message_tb'
+        ordering = ['criado_em']
+        indexes = [
+            models.Index(
+                fields=['solicitacao', 'criado_em'],
+                name='social_conv_req_msg_date_idx',
+            ),
+        ]
+        constraints = [
+            models.CheckConstraint(
+                condition=(
+                    models.Q(texto__gt='')
+                    | models.Q(post__isnull=False)
+                    | models.Q(story__isnull=False)
+                ),
+                name='social_conv_req_msg_content',
+            ),
+        ]
+
+    def clean(self):
+        if (
+            self.solicitacao_id
+            and self.remetente_id
+            and self.remetente_id != self.solicitacao.solicitante_id
+        ):
+            raise ValidationError({
+                'remetente': 'Somente o solicitante pode enviar mensagens enquanto a solicitação estiver pendente.'
+            })
+
+        if (
+            self.solicitacao_id
+            and self.solicitacao.status != SocialConversationRequest.Status.PENDENTE
+        ):
+            raise ValidationError({
+                'solicitacao': 'Só é possível adicionar mensagens a uma solicitação pendente.'
+            })
+
 class SocialMessage(UUIDModel, TimeStampedModel):
+    class Tipo(models.TextChoices):
+        TEXT = 'TEXT', 'Texto'
+        STORY_REPLY = 'STORY_REPLY', 'Resposta a Story'
+        STORY_REACTION = 'STORY_REACTION', 'Reação a Story'
+        SYSTEM = 'SYSTEM', 'Sistema'
     conversa = models.ForeignKey(SocialConversation, on_delete=models.CASCADE, related_name='mensagens')
     remetente = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='mensagens_sociais')
     texto = models.TextField(max_length=2000, blank=True, validators=[texto_sem_html])
     post = models.ForeignKey(SocialPost, on_delete=models.SET_NULL, null=True, blank=True, related_name='mensagens')
     story = models.ForeignKey(SocialStory, on_delete=models.SET_NULL, null=True, blank=True, related_name='mensagens')
+    tipo = models.CharField(max_length=16, choices=Tipo.choices, default=Tipo.TEXT, db_index=True)
+    contexto_tipo = models.ForeignKey(ContentType, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    contexto_id = models.PositiveBigIntegerField(null=True, blank=True)
+    contexto = GenericForeignKey('contexto_tipo', 'contexto_id')
+    entregue_em = models.DateTimeField(null=True, blank=True)
     lida_em = models.DateTimeField(null=True, blank=True)
     ativo = models.BooleanField(default=True)
 
     class Meta:
         db_table = 'social_message_tb'
         ordering = ['criado_em']
+        indexes = [models.Index(fields=['conversa', 'criado_em'], name='social_message_conv_date_idx'), models.Index(fields=['conversa', 'lida_em'], name='social_message_unread_idx')]
         constraints = [models.CheckConstraint(condition=(models.Q(texto__gt='') | models.Q(post__isnull=False) | models.Q(story__isnull=False)), name='social_message_has_content')]
 
     def clean(self):
         if self.conversa_id and self.remetente_id and not self.conversa.participantes.filter(pk=self.remetente_id).exists():
             raise ValidationError({'remetente': 'Somente participantes podem enviar mensagens.'})
+
+
+class SocialNotification(UUIDModel, TimeStampedModel):
+    class Tipo(models.TextChoices):
+        STORY_LIKE = 'STORY_LIKE', 'Curtida em Story'
+        STORY_REACTION = 'STORY_REACTION', 'Reação em Story'
+        STORY_REPLY = 'STORY_REPLY', 'Resposta a Story'
+        MESSAGE_REQUEST = 'MESSAGE_REQUEST', 'Solicitação de mensagem'
+        MESSAGE_REQUEST_ACCEPTED = 'MESSAGE_REQUEST_ACCEPTED', 'Solicitação aceita'
+        NEW_MESSAGE = 'NEW_MESSAGE', 'Nova mensagem'
+        NEW_FOLLOWER = 'NEW_FOLLOWER', 'Novo seguidor'
+        FOLLOW_REQUEST = 'FOLLOW_REQUEST', 'Solicitação para seguir'
+        FOLLOW_REQUEST_ACCEPTED = 'FOLLOW_REQUEST_ACCEPTED', 'Solicitação para seguir aceita'
+        POST_LIKE = 'POST_LIKE', 'Curtida em post'
+        POST_COMMENT = 'POST_COMMENT', 'Comentário em post'
+        SYSTEM = 'SYSTEM', 'Sistema'
+
+    destinatario = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='notificacoes_sociais')
+    ator = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True, related_name='notificacoes_sociais_geradas')
+    tipo = models.CharField(max_length=32, choices=Tipo.choices, db_index=True)
+    objeto_tipo = models.ForeignKey(ContentType, on_delete=models.SET_NULL, null=True, blank=True, related_name='+')
+    objeto_id = models.PositiveBigIntegerField(null=True, blank=True)
+    objeto = GenericForeignKey('objeto_tipo', 'objeto_id')
+    destino = models.CharField(max_length=500, blank=True)
+    metadata = models.JSONField(default=dict, blank=True)
+    lida_em = models.DateTimeField(null=True, blank=True, db_index=True)
+    chave_dedupe = models.CharField(max_length=160, blank=True)
+
+    class Meta:
+        db_table = 'social_notification_tb'
+        ordering = ['-criado_em']
+        indexes = [models.Index(fields=['destinatario', 'lida_em', 'criado_em'], name='social_notification_inbox_idx')]
+        constraints = [models.UniqueConstraint(fields=['destinatario', 'chave_dedupe'], condition=~models.Q(chave_dedupe=''), name='social_notification_dedupe_unique')]
+
+
+class SocialReport(UUIDModel, TimeStampedModel):
+    class Status(models.TextChoices):
+        ABERTA = 'ABERTA', 'Aberta'
+        EM_ANALISE = 'EM_ANALISE', 'Em análise'
+        ENCERRADA = 'ENCERRADA', 'Encerrada'
+
+    denunciante = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, related_name='denuncias_sociais')
+    alvo_tipo = models.ForeignKey(ContentType, on_delete=models.PROTECT, related_name='+')
+    alvo_id = models.PositiveBigIntegerField()
+    alvo = GenericForeignKey('alvo_tipo', 'alvo_id')
+    motivo = models.CharField(max_length=80)
+    descricao = models.TextField(max_length=1000, blank=True, validators=[texto_sem_html])
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.ABERTA, db_index=True)
+
+    class Meta:
+        db_table = 'social_report_tb'
+        constraints = [models.UniqueConstraint(fields=['denunciante', 'alvo_tipo', 'alvo_id'], condition=models.Q(status='ABERTA'), name='social_report_open_unique')]
+        indexes = [models.Index(fields=['status', 'criado_em'], name='social_report_queue_idx')]

@@ -96,3 +96,1902 @@ html[data-color-mode="monochrome"]{--social-primary:#333;--social-primary-text:#
     right: 16px !important;
     bottom: max(16px, env(safe-area-inset-bottom)) !important;
 }
+
+/* Social 2.0: interações persistentes, mensagens e notificações. */
+.social-header-actions, .social-story-actions, .social-story-reactions,
+.social-message-status, .social-notification-actions {
+    display: flex;
+    align-items: center;
+    gap: .625rem;
+    min-width: 0;
+}
+
+.social-icon-button { position: relative; }
+.social-badge {
+    position: absolute;
+    inset-block-start: -.25rem;
+    inset-inline-end: -.35rem;
+    min-width: 1.15rem;
+    min-height: 1.15rem;
+    padding: .08rem .3rem;
+    border-radius: 999px;
+    background: var(--social-accent, #1667d9);
+    color: #fff;
+    font-size: .68rem;
+    font-weight: 700;
+    line-height: 1;
+    text-align: center;
+}
+
+.social-story-progress {
+    position: absolute;
+    z-index: 25;
+    inset: .5rem 1rem auto;
+    height: .2rem;
+    overflow: hidden;
+    border-radius: 999px;
+    background: rgb(255 255 255 / .35);
+}
+.social-story-progress > span { display: block; width: 100%; height: 100%; background: #fff; }
+.social-story-interactions {
+    position: absolute;
+    z-index: 24;
+    inset-inline: 1rem;
+    bottom: max(4.5rem, calc(env(safe-area-inset-bottom) + 4rem));
+    display: grid;
+    gap: .65rem;
+}
+.social-story-reactions { flex-wrap: wrap; }
+.social-story-reactions button {
+    min-width: 2.75rem;
+    min-height: 2.75rem;
+    border: 1px solid rgb(255 255 255 / .45);
+    border-radius: 999px;
+    background: rgb(0 0 0 / .5);
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+.social-story-reactions button[aria-pressed="true"] { outline: 3px solid #fff; outline-offset: 2px; }
+.social-story-insights { max-width: 38rem; margin: 1rem auto; overflow-wrap: anywhere; }
+
+.social-message-context {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr);
+    gap: .65rem;
+    align-items: center;
+    max-width: 100%;
+    padding: .5rem;
+    border-inline-start: .2rem solid var(--social-accent, #1667d9);
+}
+.social-message-context img { width: 3rem; height: 3rem; border-radius: .5rem; object-fit: cover; }
+.social-message-context > * { min-width: 0; overflow-wrap: anywhere; }
+.social-message-status { justify-content: flex-end; font-size: .75rem; opacity: .75; }
+.social-typing[hidden], .social-badge[hidden] { display: none !important; }
+
+.social-notification-list { display: grid; gap: .75rem; margin: 0; padding: 0; list-style: none; }
+.social-notification {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: .75rem;
+    align-items: start;
+    padding: 1rem;
+    border-radius: .85rem;
+    background: var(--social-surface, #fff);
+    overflow-wrap: anywhere;
+}
+.social-notification.is-unread { border-inline-start: .25rem solid var(--social-accent, #1667d9); }
+
+@media (max-width: 640px) {
+    .social-story-reactions { justify-content: center; }
+    .social-notification { grid-template-columns: minmax(0, 1fr); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .social-story-progress > span { animation: none !important; }
+}
+
+/* BOTUKA STORY VIEWER HOTFIX 20260818 */
+.social-story-insights {
+    position: absolute !important;
+    z-index: 40 !important;
+    left: 50% !important;
+    right: auto !important;
+    bottom: max(1rem, calc(env(safe-area-inset-bottom) + .75rem)) !important;
+    width: min(94vw, 46rem) !important;
+    margin: 0 !important;
+    padding: .9rem 1rem !important;
+    transform: translateX(-50%) !important;
+    display: grid !important;
+    grid-template-columns: repeat(6, minmax(0, 1fr)) !important;
+    gap: .6rem !important;
+    border: 1px solid rgb(255 255 255 / .22) !important;
+    border-radius: 1rem !important;
+    background: rgb(0 0 0 / .62) !important;
+    color: #fff !important;
+    backdrop-filter: blur(14px);
+    box-shadow: 0 .8rem 2rem rgb(0 0 0 / .3);
+}
+.social-story-insights > strong {
+    grid-column: 1 / -1;
+    font-size: .9rem;
+}
+.social-story-insights > span {
+    min-width: 0;
+    text-align: center;
+    font-size: .76rem;
+    color: rgb(255 255 255 / .82);
+    overflow-wrap: anywhere;
+}
+.social-story-interactions {
+    position: absolute !important;
+    z-index: 40 !important;
+    left: 50% !important;
+    right: auto !important;
+    inset-inline: auto !important;
+    bottom: max(1rem, calc(env(safe-area-inset-bottom) + .75rem)) !important;
+    width: min(94vw, 46rem) !important;
+    transform: translateX(-50%) !important;
+    display: grid !important;
+    grid-template-columns: minmax(0, 1fr) auto auto !important;
+    align-items: center !important;
+    gap: .6rem !important;
+}
+.social-story-interactions .social-story-reply {
+    position: static !important;
+    inset: auto !important;
+    left: auto !important;
+    right: auto !important;
+    bottom: auto !important;
+    width: 100% !important;
+    padding: 0 !important;
+    display: flex !important;
+    gap: .5rem !important;
+}
+.social-story-reply input {
+    height: 3rem !important;
+    min-width: 0 !important;
+    padding: 0 1rem !important;
+    border: 1px solid rgb(255 255 255 / .45) !important;
+    border-radius: 999px !important;
+    background: rgb(0 0 0 / .58) !important;
+    color: #fff !important;
+    backdrop-filter: blur(12px);
+}
+.social-story-reply input::placeholder {
+    color: rgb(255 255 255 / .72);
+}
+.social-story-reply button,
+.social-story-like,
+.social-reaction-picker > summary {
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-width: 3rem !important;
+    height: 3rem !important;
+    padding: 0 .75rem !important;
+    border: 1px solid rgb(255 255 255 / .45) !important;
+    border-radius: 999px !important;
+    background: rgb(0 0 0 / .58) !important;
+    color: #fff !important;
+    cursor: pointer !important;
+    list-style: none !important;
+    backdrop-filter: blur(12px);
+}
+.social-reaction-picker {
+    position: relative !important;
+}
+.social-reaction-picker > summary::-webkit-details-marker {
+    display: none;
+}
+.social-story-reactions {
+    position: absolute !important;
+    right: 0 !important;
+    bottom: calc(100% + .6rem) !important;
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    align-items: center !important;
+    gap: .3rem !important;
+    padding: .45rem !important;
+    border: 1px solid rgb(255 255 255 / .2) !important;
+    border-radius: 999px !important;
+    background: rgb(8 10 13 / .94) !important;
+    box-shadow: 0 .8rem 2rem rgb(0 0 0 / .4);
+    backdrop-filter: blur(14px);
+}
+.social-story-reactions button {
+    display: grid !important;
+    place-items: center !important;
+    width: 2.8rem !important;
+    height: 2.8rem !important;
+    min-width: 2.8rem !important;
+    min-height: 2.8rem !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 999px !important;
+    background: transparent !important;
+    font-size: 1.35rem !important;
+}
+.social-story-like[aria-pressed='true'] {
+    background: rgb(190 30 55 / .85) !important;
+}
+@media (min-width: 881px) {
+    .social-story-media img {
+        width: min(100vw, 720px) !important;
+        height: 100dvh !important;
+        max-width: min(100vw, 720px) !important;
+        max-height: 100dvh !important;
+        object-fit: contain !important;
+    }
+}
+@media (max-width: 640px) {
+    .social-story-insights {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        width: calc(100vw - 1rem) !important;
+    }
+    .social-story-interactions {
+        width: calc(100vw - 1rem) !important;
+    }
+    .social-story-reactions {
+        right: 0 !important;
+        max-width: calc(100vw - 1rem) !important;
+        overflow-x: auto !important;
+    }
+}
+
+/* BOTUKA PENDING CONVERSATION THREADS 20260818 */
+
+.social-request-panel {
+    display: grid;
+    gap: 1rem;
+}
+
+.social-request-panel-heading h2 {
+    margin-bottom: .25rem;
+}
+
+.social-request-panel-heading p {
+    margin: 0;
+}
+
+.social-request-list {
+    display: grid;
+    gap: 1rem;
+}
+
+.social-request-thread {
+    padding: 0;
+    overflow: hidden;
+    border: 1px solid var(--social-border);
+    border-radius: var(--social-radius);
+    background: var(--social-surface);
+}
+
+.social-request-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem;
+    border-bottom: 1px solid var(--social-border);
+}
+
+.social-request-person {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    min-width: 0;
+}
+
+.social-request-person > div {
+    display: grid;
+    min-width: 0;
+}
+
+.social-request-person strong {
+    overflow-wrap: anywhere;
+}
+
+.social-request-avatar {
+    width: 3rem;
+    height: 3rem;
+    flex: 0 0 3rem;
+    object-fit: cover;
+    border-radius: 50%;
+}
+
+.social-request-count {
+    flex: 0 0 auto;
+    padding: .35rem .65rem;
+    border-radius: 999px;
+    background: var(--social-surface-secondary);
+    color: var(--social-muted);
+    font-size: .78rem;
+    font-weight: 700;
+}
+
+.social-request-messages {
+    display: grid;
+    gap: .65rem;
+    padding: 1rem;
+    background: var(--social-surface-secondary);
+}
+
+.social-request-message {
+    width: min(100%, 42rem);
+    padding: .85rem 1rem;
+    border: 1px solid var(--social-border);
+    border-radius: .9rem;
+    background: var(--social-surface);
+}
+
+.social-request-message-text {
+    margin: 0;
+    white-space: pre-wrap;
+    overflow-wrap: anywhere;
+}
+
+.social-request-message-time {
+    display: block;
+    margin-top: .45rem;
+    color: var(--social-muted);
+    font-size: .72rem;
+}
+
+.social-request-context {
+    display: grid;
+    grid-template-columns: 3rem minmax(0, 1fr);
+    gap: .65rem;
+    align-items: center;
+    margin-bottom: .75rem;
+    padding: .5rem;
+    border-inline-start: .2rem solid var(--social-primary);
+    background: var(--social-surface-secondary);
+    border-radius: .5rem;
+}
+
+.social-request-context img {
+    width: 3rem;
+    height: 3rem;
+    object-fit: cover;
+    border-radius: .45rem;
+}
+
+.social-request-context > div {
+    display: grid;
+    min-width: 0;
+}
+
+.social-request-context small {
+    color: var(--social-muted);
+}
+
+.social-request-context strong {
+    overflow-wrap: anywhere;
+}
+
+.social-request-actions {
+    display: flex;
+    justify-content: flex-end;
+    gap: .65rem;
+    padding: 1rem;
+    border-top: 1px solid var(--social-border);
+}
+
+.social-request-actions form {
+    margin: 0;
+}
+
+.social-request-actions button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: .4rem;
+    min-height: 2.65rem;
+    padding: 0 1rem;
+    border-radius: .7rem;
+    cursor: pointer;
+    font-weight: 700;
+}
+
+.social-request-accept {
+    border: 1px solid var(--social-primary);
+    background: var(--social-primary);
+    color: var(--social-primary-text);
+}
+
+.social-request-reject {
+    border: 1px solid var(--social-border);
+    background: var(--social-surface);
+    color: var(--social-text);
+}
+
+@media (max-width: 640px) {
+    .social-request-header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .social-request-actions {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .social-request-actions button {
+        width: 100%;
+    }
+}
+
+/* ============================================================
+   BOTUKA STORY VIEWER — RESPONSIVO CONSOLIDADO 20260818
+   Desktop + Tablet + Mobile
+   ============================================================ */
+
+/*
+ * O viewer ocupa a viewport inteira.
+ * Todas as interacoes ficam dentro dele.
+ */
+.social-story-viewer {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 1000 !important;
+
+    width: 100% !important;
+    height: 100dvh !important;
+    min-height: 100dvh !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    overflow: hidden !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+
+    background: #080a0d !important;
+}
+
+
+/* ------------------------------------------------------------
+   MIDIA
+   ------------------------------------------------------------ */
+
+.social-story-media {
+    position: absolute !important;
+    inset: 0 !important;
+
+    width: 100% !important;
+    height: 100dvh !important;
+
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+
+    overflow: hidden !important;
+    background: #080a0d !important;
+}
+
+.social-story-media img {
+    display: block !important;
+
+    width: auto !important;
+    height: auto !important;
+
+    max-width: 100% !important;
+    max-height: 100dvh !important;
+
+    object-fit: contain !important;
+    object-position: center !important;
+}
+
+
+/* ------------------------------------------------------------
+   CABECALHO
+   ------------------------------------------------------------ */
+
+.social-story-viewer > header {
+    position: absolute !important;
+
+    z-index: 50 !important;
+
+    top: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+
+    min-width: 0 !important;
+
+    display: flex !important;
+    align-items: center !important;
+
+    gap: .65rem !important;
+
+    padding:
+        max(.75rem, env(safe-area-inset-top))
+        max(.85rem, env(safe-area-inset-right))
+        .9rem
+        max(.85rem, env(safe-area-inset-left)) !important;
+
+    background:
+        linear-gradient(
+            to bottom,
+            rgba(0,0,0,.82),
+            rgba(0,0,0,.42) 55%,
+            transparent
+        ) !important;
+}
+
+.social-story-viewer > header > a:nth-child(2) {
+    min-width: 0 !important;
+    display: grid !important;
+}
+
+.social-story-viewer > header strong,
+.social-story-viewer > header small {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+}
+
+
+/* ------------------------------------------------------------
+   NAVEGACAO
+   ------------------------------------------------------------ */
+
+.social-story-viewer > nav {
+    position: absolute !important;
+
+    z-index: 30 !important;
+
+    top: 50% !important;
+    left: 1rem !important;
+    right: 1rem !important;
+
+    display: flex !important;
+    justify-content: space-between !important;
+
+    pointer-events: none !important;
+
+    transform: translateY(-50%) !important;
+}
+
+.social-story-viewer > nav a {
+    pointer-events: auto !important;
+}
+
+
+/* ------------------------------------------------------------
+   BARRA DE INTERACOES
+   ------------------------------------------------------------ */
+
+.social-story-interactions {
+    position: absolute !important;
+
+    z-index: 60 !important;
+
+    left: 50% !important;
+    right: auto !important;
+
+    bottom:
+        max(
+            1rem,
+            calc(env(safe-area-inset-bottom) + .75rem)
+        ) !important;
+
+    transform: translateX(-50%) !important;
+
+    width: min(calc(100vw - 2rem), 46rem) !important;
+    max-width: calc(100vw - 2rem) !important;
+
+    display: grid !important;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto
+        auto !important;
+
+    align-items: center !important;
+
+    gap: .55rem !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+
+/* ------------------------------------------------------------
+   FORMULARIO
+   ------------------------------------------------------------ */
+
+.social-story-interactions .social-story-reply {
+    position: static !important;
+
+    inset: auto !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+
+    display: grid !important;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        auto !important;
+
+    align-items: center !important;
+
+    gap: .4rem !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+
+/* ------------------------------------------------------------
+   INPUT
+   ------------------------------------------------------------ */
+
+.social-story-interactions .social-story-reply input[name="texto"] {
+    display: block !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+
+    height: 3rem !important;
+
+    margin: 0 !important;
+
+    padding: 0 1rem !important;
+
+    border:
+        1px solid rgba(255,255,255,.55) !important;
+
+    border-radius: 999px !important;
+
+    background:
+        rgba(8,10,13,.66) !important;
+
+    color: #fff !important;
+
+    outline: none !important;
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+.social-story-interactions
+.social-story-reply
+input[name="texto"]::placeholder {
+    color: rgba(255,255,255,.78) !important;
+}
+
+
+/* ------------------------------------------------------------
+   BOTOES
+   ------------------------------------------------------------ */
+
+.social-story-interactions .social-story-reply button,
+.social-story-interactions .social-story-like,
+.social-story-interactions .social-reaction-picker > summary {
+    box-sizing: border-box !important;
+
+    display: inline-flex !important;
+
+    align-items: center !important;
+    justify-content: center !important;
+
+    width: 3rem !important;
+    min-width: 3rem !important;
+
+    height: 3rem !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+
+    border:
+        1px solid rgba(255,255,255,.48) !important;
+
+    border-radius: 50% !important;
+
+    background:
+        rgba(8,10,13,.66) !important;
+
+    color: #fff !important;
+
+    cursor: pointer !important;
+
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+}
+
+
+/* contador de curtidas */
+.social-story-like {
+    gap: .2rem !important;
+}
+
+
+/* ------------------------------------------------------------
+   REACOES
+   ------------------------------------------------------------ */
+
+.social-reaction-picker {
+    position: relative !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.social-reaction-picker > summary {
+    list-style: none !important;
+}
+
+.social-reaction-picker > summary::-webkit-details-marker {
+    display: none !important;
+}
+
+.social-story-interactions .social-story-reactions {
+    position: absolute !important;
+
+    z-index: 80 !important;
+
+    right: 0 !important;
+
+    bottom: calc(100% + .65rem) !important;
+
+    display: flex !important;
+    flex-wrap: nowrap !important;
+
+    align-items: center !important;
+
+    gap: .25rem !important;
+
+    max-width: min(90vw, 25rem) !important;
+
+    padding: .4rem !important;
+
+    overflow-x: auto !important;
+
+    border:
+        1px solid rgba(255,255,255,.22) !important;
+
+    border-radius: 999px !important;
+
+    background:
+        rgba(8,10,13,.94) !important;
+
+    box-shadow:
+        0 .8rem 2rem rgba(0,0,0,.45) !important;
+}
+
+
+/* ------------------------------------------------------------
+   DESKTOP
+   ------------------------------------------------------------ */
+
+@media (min-width: 881px) {
+
+    /*
+     * Story vertical centralizado.
+     * O fundo preto ocupa o restante da tela.
+     */
+    .social-story-media img {
+        width: min(100%, 720px) !important;
+        height: 100dvh !important;
+
+        max-width: 720px !important;
+        max-height: 100dvh !important;
+
+        object-fit: contain !important;
+    }
+
+    /*
+     * Barra alinhada ao Story, sem atravessar
+     * toda a largura do monitor.
+     */
+    .social-story-interactions {
+        width: min(calc(100vw - 2rem), 700px) !important;
+    }
+}
+
+
+/* ------------------------------------------------------------
+   TABLET / CELULAR
+   ------------------------------------------------------------ */
+
+@media (max-width: 880px) {
+
+    .social-story-media img {
+        width: 100% !important;
+        height: 100dvh !important;
+
+        max-width: 100% !important;
+        max-height: 100dvh !important;
+
+        object-fit: contain !important;
+    }
+
+    .social-story-interactions {
+        width:
+            calc(
+                100vw
+                - max(1rem, env(safe-area-inset-left))
+                - max(1rem, env(safe-area-inset-right))
+            ) !important;
+
+        max-width: none !important;
+    }
+}
+
+
+/* ------------------------------------------------------------
+   CELULAR PEQUENO
+   ------------------------------------------------------------ */
+
+@media (max-width: 520px) {
+
+    .social-story-viewer > header {
+        gap: .5rem !important;
+    }
+
+    .social-story-interactions {
+        grid-template-columns:
+            minmax(0, 1fr)
+            2.75rem
+            2.75rem !important;
+
+        gap: .35rem !important;
+
+        bottom:
+            max(
+                .6rem,
+                calc(env(safe-area-inset-bottom) + .5rem)
+            ) !important;
+    }
+
+    .social-story-interactions .social-story-reply {
+        grid-template-columns:
+            minmax(0, 1fr)
+            2.75rem !important;
+
+        gap: .3rem !important;
+    }
+
+    .social-story-interactions
+    .social-story-reply
+    input[name="texto"] {
+        height: 2.75rem !important;
+
+        padding-left: .85rem !important;
+        padding-right: .85rem !important;
+
+        font-size: 16px !important;
+    }
+
+    .social-story-interactions .social-story-reply button,
+    .social-story-interactions .social-story-like,
+    .social-story-interactions .social-reaction-picker > summary {
+        width: 2.75rem !important;
+        min-width: 2.75rem !important;
+        height: 2.75rem !important;
+    }
+
+    .social-story-like span[data-story-like-count] {
+        font-size: .7rem !important;
+    }
+
+    .social-story-interactions .social-story-reactions {
+        max-width: calc(100vw - 1rem) !important;
+    }
+}
+
+
+/* ------------------------------------------------------------
+   CELULAR MUITO ESTREITO
+   ------------------------------------------------------------ */
+
+@media (max-width: 380px) {
+
+    .social-story-interactions {
+        width: calc(100vw - .75rem) !important;
+        gap: .25rem !important;
+    }
+
+    .social-story-interactions
+    .social-story-reply
+    input[name="texto"] {
+        padding-left: .7rem !important;
+        padding-right: .7rem !important;
+    }
+}
+
+/* BOTUKA_STORY_COMPOSER_MULTILINE_START */
+
+/*
+ * Barra inferior principal.
+ * Fica sobre o Story, sem criar segunda faixa desconectada.
+ */
+.social-story-interactions {
+    position: absolute !important;
+
+    z-index: 100 !important;
+
+    left: 50% !important;
+    right: auto !important;
+
+    bottom:
+        max(
+            .75rem,
+            calc(
+                env(safe-area-inset-bottom)
+                + .5rem
+            )
+        ) !important;
+
+    transform:
+        translateX(-50%) !important;
+
+    width:
+        min(
+            calc(100vw - 2rem),
+            44rem
+        ) !important;
+
+    max-width:
+        calc(100vw - 1rem) !important;
+
+    display: grid !important;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        3rem
+        3rem !important;
+
+    gap: .45rem !important;
+
+    align-items: end !important;
+
+    margin: 0 !important;
+
+    padding: .4rem !important;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, .13) !important;
+
+    border-radius: 1.75rem !important;
+
+    background:
+        rgba(5, 8, 11, .74) !important;
+
+    box-shadow:
+        0 .6rem 2rem
+        rgba(0, 0, 0, .28) !important;
+
+    backdrop-filter:
+        blur(16px) !important;
+
+    -webkit-backdrop-filter:
+        blur(16px) !important;
+}
+
+
+/*
+ * Form = textarea + botão enviar.
+ */
+.social-story-interactions
+.social-story-reply {
+    position: static !important;
+
+    inset: auto !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+
+    display: grid !important;
+
+    grid-template-columns:
+        minmax(0, 1fr)
+        3rem !important;
+
+    align-items: end !important;
+
+    gap: .4rem !important;
+
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+
+/*
+ * Campo real de mensagem.
+ */
+.social-story-interactions
+.social-story-reply
+textarea[name="texto"] {
+    box-sizing: border-box !important;
+
+    display: block !important;
+
+    width: 100% !important;
+    min-width: 0 !important;
+
+    height: auto !important;
+    min-height: 3rem !important;
+
+    /*
+     * JS controla o máximo real de 20 linhas.
+     */
+    max-height: none !important;
+
+    margin: 0 !important;
+
+    padding:
+        .8rem
+        1rem !important;
+
+    resize: none !important;
+
+    overflow-x: hidden !important;
+    overflow-y: hidden;
+
+    white-space: pre-wrap !important;
+
+    overflow-wrap:
+        anywhere !important;
+
+    word-break:
+        break-word !important;
+
+    border:
+        1px solid
+        rgba(255, 255, 255, .48) !important;
+
+    border-radius:
+        1.5rem !important;
+
+    background:
+        rgba(13, 17, 22, .76) !important;
+
+    color:
+        #fff !important;
+
+    font: inherit !important;
+
+    font-size:
+        1rem !important;
+
+    line-height:
+        1.35 !important;
+
+    outline:
+        none !important;
+
+    scrollbar-width:
+        thin;
+}
+
+
+.social-story-interactions
+.social-story-reply
+textarea[name="texto"]:focus {
+    border-color:
+        rgba(255, 255, 255, .9) !important;
+
+    box-shadow:
+        0 0 0 2px
+        rgba(255, 255, 255, .12) !important;
+}
+
+
+.social-story-interactions
+.social-story-reply
+textarea[name="texto"]::placeholder {
+    color:
+        rgba(255, 255, 255, .72) !important;
+}
+
+
+/*
+ * Todos os controles ficam sempre disponíveis.
+ */
+.social-story-interactions
+.social-story-reply
+button,
+
+.social-story-interactions
+.social-story-like,
+
+.social-story-interactions
+.social-reaction-picker > summary {
+    box-sizing:
+        border-box !important;
+
+    display:
+        inline-flex !important;
+
+    align-items:
+        center !important;
+
+    justify-content:
+        center !important;
+
+    width:
+        3rem !important;
+
+    min-width:
+        3rem !important;
+
+    height:
+        3rem !important;
+
+    min-height:
+        3rem !important;
+
+    margin:
+        0 !important;
+
+    padding:
+        0 !important;
+
+    flex:
+        0 0 3rem !important;
+
+    border:
+        1px solid
+        rgba(255,255,255,.42) !important;
+
+    border-radius:
+        50% !important;
+
+    background:
+        rgba(13,17,22,.78) !important;
+
+    color:
+        #fff !important;
+
+    cursor:
+        pointer !important;
+
+    visibility:
+        visible !important;
+
+    opacity:
+        1 !important;
+}
+
+
+/*
+ * Ícones nunca podem encolher ou desaparecer.
+ */
+.social-story-interactions
+button i,
+
+.social-story-interactions
+summary i,
+
+.social-story-interactions
+summary span {
+    flex:
+        0 0 auto !important;
+
+    font-size:
+        1.15rem !important;
+
+    line-height:
+        1 !important;
+}
+
+
+/*
+ * Curtidas.
+ */
+.social-story-like {
+    gap:
+        .15rem !important;
+}
+
+.social-story-like
+[data-story-like-count] {
+    font-size:
+        .7rem !important;
+
+    line-height:
+        1 !important;
+}
+
+
+/*
+ * Reações.
+ */
+.social-reaction-picker {
+    position:
+        relative !important;
+
+    display:
+        block !important;
+
+    margin:
+        0 !important;
+}
+
+.social-reaction-picker > summary {
+    list-style:
+        none !important;
+}
+
+.social-reaction-picker
+> summary::-webkit-details-marker {
+    display:
+        none !important;
+}
+
+
+.social-story-interactions
+.social-story-reactions {
+    position:
+        absolute !important;
+
+    z-index:
+        150 !important;
+
+    right:
+        0 !important;
+
+    bottom:
+        calc(100% + .65rem) !important;
+
+    display:
+        flex !important;
+
+    align-items:
+        center !important;
+
+    gap:
+        .25rem !important;
+
+    width:
+        max-content !important;
+
+    max-width:
+        min(
+            calc(100vw - 1rem),
+            30rem
+        ) !important;
+
+    padding:
+        .45rem !important;
+
+    overflow-x:
+        auto !important;
+
+    border:
+        1px solid
+        rgba(255,255,255,.2) !important;
+
+    border-radius:
+        999px !important;
+
+    background:
+        rgba(5,8,11,.96) !important;
+
+    box-shadow:
+        0 .8rem 2rem
+        rgba(0,0,0,.55) !important;
+}
+
+
+.social-story-reactions button {
+    box-sizing:
+        border-box !important;
+
+    display:
+        inline-flex !important;
+
+    align-items:
+        center !important;
+
+    justify-content:
+        center !important;
+
+    flex:
+        0 0 2.6rem !important;
+
+    width:
+        2.6rem !important;
+
+    height:
+        2.6rem !important;
+
+    padding:
+        0 !important;
+
+    border:
+        0 !important;
+
+    border-radius:
+        50% !important;
+
+    background:
+        rgba(255,255,255,.08) !important;
+
+    font-size:
+        1.35rem !important;
+}
+
+
+/* ============================================================
+   MOBILE
+   ============================================================ */
+
+@media (max-width: 600px) {
+
+    .social-story-interactions {
+        left:
+            max(
+                .5rem,
+                env(safe-area-inset-left)
+            ) !important;
+
+        right:
+            max(
+                .5rem,
+                env(safe-area-inset-right)
+            ) !important;
+
+        width:
+            auto !important;
+
+        max-width:
+            none !important;
+
+        transform:
+            none !important;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            2.75rem
+            2.75rem !important;
+
+        gap:
+            .3rem !important;
+
+        padding:
+            .3rem !important;
+
+        border-radius:
+            1.55rem !important;
+    }
+
+
+    .social-story-interactions
+    .social-story-reply {
+        grid-template-columns:
+            minmax(0, 1fr)
+            2.75rem !important;
+
+        gap:
+            .3rem !important;
+    }
+
+
+    .social-story-interactions
+    .social-story-reply
+    textarea[name="texto"] {
+        min-height:
+            2.75rem !important;
+
+        padding:
+            .7rem
+            .85rem !important;
+
+        /*
+         * Evita zoom automático no iPhone.
+         */
+        font-size:
+            16px !important;
+
+        line-height:
+            1.35 !important;
+
+        border-radius:
+            1.35rem !important;
+    }
+
+
+    .social-story-interactions
+    .social-story-reply
+    button,
+
+    .social-story-interactions
+    .social-story-like,
+
+    .social-story-interactions
+    .social-reaction-picker > summary {
+        width:
+            2.75rem !important;
+
+        min-width:
+            2.75rem !important;
+
+        height:
+            2.75rem !important;
+
+        min-height:
+            2.75rem !important;
+
+        flex-basis:
+            2.75rem !important;
+    }
+
+
+    /*
+     * Quando o textarea cresce muito,
+     * a caixa pode ocupar boa parte da tela,
+     * mas mantém os botões na base.
+     */
+    .social-story-interactions.has-expanded-reply {
+        align-items:
+            end !important;
+    }
+}
+
+
+/* ============================================================
+   MOBILE MUITO ESTREITO
+   ============================================================ */
+
+@media (max-width: 380px) {
+
+    .social-story-interactions {
+        left:
+            .3rem !important;
+
+        right:
+            .3rem !important;
+
+        grid-template-columns:
+            minmax(0, 1fr)
+            2.55rem
+            2.55rem !important;
+
+        gap:
+            .2rem !important;
+    }
+
+
+    .social-story-interactions
+    .social-story-reply {
+        grid-template-columns:
+            minmax(0, 1fr)
+            2.55rem !important;
+
+        gap:
+            .2rem !important;
+    }
+
+
+    .social-story-interactions
+    .social-story-reply
+    button,
+
+    .social-story-interactions
+    .social-story-like,
+
+    .social-story-interactions
+    .social-reaction-picker > summary {
+        width:
+            2.55rem !important;
+
+        min-width:
+            2.55rem !important;
+
+        height:
+            2.55rem !important;
+
+        min-height:
+            2.55rem !important;
+
+        flex-basis:
+            2.55rem !important;
+    }
+}
+
+/* BOTUKA_STORY_COMPOSER_MULTILINE_END */
+
+/* =====================================================================
+   BOTUKA SOCIAL — MENSAGENS / LISTA DE CONVERSAS
+   UI/UX 2026-08
+   ===================================================================== */
+
+.social-conversations-panel {
+    padding: 18px 16px;
+}
+
+.social-conversations-panel > h2 {
+    margin: 0 0 12px;
+    font-size: 1.05rem;
+    font-weight: 700;
+}
+
+.social-conversation-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+
+/* ---------------------------------------------------------------------
+   CARD
+   --------------------------------------------------------------------- */
+
+.social-conversation-card {
+    position: relative;
+
+    display: grid;
+
+    grid-template-columns:
+        72px
+        minmax(0, 1fr)
+        auto;
+
+    align-items: center;
+
+    gap: 14px;
+
+    width: 100%;
+    min-height: 96px;
+
+    padding: 12px 14px;
+
+    border: 1px solid transparent;
+    border-radius: 16px;
+
+    text-decoration: none;
+    color: inherit;
+
+    background: transparent;
+
+    transition:
+        background-color .18s ease,
+        border-color .18s ease,
+        transform .18s ease;
+}
+
+.social-conversation-card:hover {
+    background: rgba(255,255,255,.035);
+    border-color: rgba(255,255,255,.07);
+}
+
+.social-conversation-card:focus-visible {
+    outline: 2px solid var(--social-accent, #5edff2);
+    outline-offset: 2px;
+}
+
+
+/* ---------------------------------------------------------------------
+   AVATAR — SEMPRE PEQUENO E A ESQUERDA
+   --------------------------------------------------------------------- */
+
+.social-conversation-avatar {
+    position: relative;
+
+    width: 72px;
+    height: 72px;
+
+    min-width: 72px;
+    max-width: 72px;
+
+    min-height: 72px;
+    max-height: 72px;
+
+    overflow: hidden;
+
+    border-radius: 16px;
+
+    background: rgba(255,255,255,.055);
+
+    flex: 0 0 72px;
+}
+
+.social-conversation-avatar img {
+    display: block;
+
+    width: 100% !important;
+    height: 100% !important;
+
+    max-width: 72px !important;
+    max-height: 72px !important;
+
+    object-fit: cover;
+    object-position: center;
+
+    border-radius: inherit;
+}
+
+.social-conversation-avatar > span {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    width: 100%;
+    height: 100%;
+
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+
+
+/* ---------------------------------------------------------------------
+   CONTEUDO CENTRAL
+   --------------------------------------------------------------------- */
+
+.social-conversation-summary {
+    min-width: 0;
+
+    display: flex;
+    flex-direction: column;
+
+    justify-content: center;
+
+    gap: 3px;
+}
+
+
+/* nome + horario */
+
+.social-conversation-topline {
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 12px;
+
+    min-width: 0;
+}
+
+.social-conversation-topline strong {
+    min-width: 0;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    font-size: 1rem;
+    font-weight: 700;
+
+    color: var(--social-text, #f5f7f8);
+}
+
+.social-conversation-topline time {
+    flex: 0 0 auto;
+
+    font-size: .78rem;
+    line-height: 1;
+
+    color: var(--social-muted, #a8b0ba);
+}
+
+
+/* username */
+
+.social-conversation-username {
+    display: block;
+
+    min-width: 0;
+
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+
+    font-size: .82rem;
+
+    color: var(--social-muted, #a8b0ba);
+}
+
+
+/* ---------------------------------------------------------------------
+   ULTIMA MENSAGEM
+   MAXIMO 3 LINHAS
+   --------------------------------------------------------------------- */
+
+.social-conversation-preview {
+    display: -webkit-box;
+
+    margin: 4px 0 0;
+
+    overflow: hidden;
+
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 3;
+
+    line-clamp: 3;
+
+    max-height: 4.2em;
+
+    font-size: .9rem;
+    line-height: 1.4;
+
+    color: var(--social-text-soft, #d7dce1);
+
+    overflow-wrap: anywhere;
+    word-break: break-word;
+}
+
+.social-conversation-preview.social-muted {
+    color: var(--social-muted, #8f99a5);
+}
+
+
+/* ---------------------------------------------------------------------
+   META DIREITA
+   --------------------------------------------------------------------- */
+
+.social-conversation-meta {
+    align-self: stretch;
+
+    display: flex;
+    flex-direction: column;
+
+    align-items: center;
+    justify-content: center;
+
+    gap: 8px;
+
+    min-width: 34px;
+}
+
+.social-conversation-unread {
+    display: inline-flex;
+
+    align-items: center;
+    justify-content: center;
+
+    min-width: 24px;
+    height: 24px;
+
+    padding: 0 7px;
+
+    border-radius: 999px;
+
+    font-size: .76rem;
+    font-weight: 700;
+
+    color: #071116;
+    background: var(--social-accent, #5edff2);
+}
+
+.social-conversation-meta .bi-chevron-right {
+    font-size: .9rem;
+
+    color: var(--social-muted, #8f99a5);
+}
+
+
+/* ---------------------------------------------------------------------
+   SEPARADOR SUAVE
+   --------------------------------------------------------------------- */
+
+.social-conversation-card + .social-conversation-card::before {
+    content: "";
+
+    position: absolute;
+
+    top: -3px;
+    left: 86px;
+    right: 14px;
+
+    height: 1px;
+
+    background: rgba(255,255,255,.055);
+}
+
+
+/* ---------------------------------------------------------------------
+   MOBILE
+   --------------------------------------------------------------------- */
+
+@media (max-width: 720px) {
+
+    .social-conversations-panel {
+        padding: 14px 10px;
+    }
+
+    .social-conversation-card {
+        grid-template-columns:
+            58px
+            minmax(0, 1fr)
+            auto;
+
+        gap: 11px;
+
+        min-height: 82px;
+
+        padding: 10px 8px;
+
+        border-radius: 14px;
+    }
+
+    .social-conversation-avatar {
+        width: 58px;
+        height: 58px;
+
+        min-width: 58px;
+        max-width: 58px;
+
+        min-height: 58px;
+        max-height: 58px;
+
+        flex-basis: 58px;
+
+        border-radius: 14px;
+    }
+
+    .social-conversation-avatar img {
+        max-width: 58px !important;
+        max-height: 58px !important;
+    }
+
+    .social-conversation-topline strong {
+        font-size: .94rem;
+    }
+
+    .social-conversation-username {
+        font-size: .77rem;
+    }
+
+    .social-conversation-preview {
+        font-size: .84rem;
+
+        /*
+         * No celular mantemos compacto.
+         * Continua limitado a no máximo 3 linhas.
+         */
+        -webkit-line-clamp: 2;
+        line-clamp: 2;
+
+        max-height: 2.8em;
+    }
+
+    .social-conversation-card + .social-conversation-card::before {
+        left: 69px;
+    }
+}
+
+
+/* ---------------------------------------------------------------------
+   TELAS MUITO PEQUENAS
+   --------------------------------------------------------------------- */
+
+@media (max-width: 420px) {
+
+    .social-conversation-card {
+        grid-template-columns:
+            52px
+            minmax(0, 1fr)
+            26px;
+    }
+
+    .social-conversation-avatar {
+        width: 52px;
+        height: 52px;
+
+        min-width: 52px;
+        max-width: 52px;
+
+        min-height: 52px;
+        max-height: 52px;
+    }
+
+    .social-conversation-avatar img {
+        max-width: 52px !important;
+        max-height: 52px !important;
+    }
+
+    .social-conversation-topline time {
+        font-size: .7rem;
+    }
+
+    .social-conversation-meta {
+        min-width: 26px;
+    }
+}

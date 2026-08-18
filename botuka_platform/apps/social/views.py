@@ -3,7 +3,7 @@ from django.apps import apps
 from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
-from django.http import Http404, HttpResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import get_urlconf, reverse, set_urlconf
 from django.utils.http import url_has_allowed_host_and_scheme
@@ -13,13 +13,13 @@ from urllib.parse import urlparse
 from apps.organizations.models import Empresa
 
 from .forms import SocialPostForm, SocialProfileForm, SocialStoryForm
-from .models import SocialConversation, SocialConversationRequest, SocialFollowRequest, SocialPost, SocialProfile
+from .models import SocialConversation, SocialConversationRequest, SocialFollowRequest, SocialMessage, SocialNotification, SocialPost, SocialProfile, SocialStory, SocialStoryReaction
 from .selectors import (
     comentarios_do_post, feed_para, posts_do_perfil, posts_salvos_por,
     solicitacoes_pendentes_para, solicitacoes_conversa_para, stories_ativos_para, story_visivel_para, conversas_para,
     contagem_seguidores_perfil, conteudo_publico_para_descoberta,
     empresas_seguidas_por, empresas_sugeridas_para, perfis_seguidos_por,
-    perfis_sugeridos_para,
+    perfis_sugeridos_para, mensagens_da_conversa, notificacoes_para, contadores_sociais,
 )
 from .services import (
     bloquear_perfil, comentar_post, compartilhar_conteudo, criar_post, criar_story,
@@ -28,7 +28,10 @@ from .services import (
     decidir_solicitacao_conversa, enviar_mensagem, pode_ver_post, remover_post,
     remover_post_salvo, remover_story, salvar_post, solicitar_ou_enviar_conversa, sincronizar_perfil_publico,
     desbloquear_perfil,
-    registrar_evento_social, seguir_empresa, seguir_usuario, usuario_segue_usuario,
+    alternar_curtida_story, denunciar, insights_story, marcar_conversa_lida,
+    marcar_notificacao_lida, marcar_todas_notificacoes_lidas, reagir_story,
+    registrar_evento_social, registrar_visualizacao_story, seguir_empresa,
+    seguir_usuario, usuario_segue_usuario,
 )
 
 
@@ -194,12 +197,25 @@ def profile_edit(request):
     form = SocialProfileForm(request.POST or None, request.FILES or None, initial={
         'nome_exibicao': request.user.nome_exibicao or profile.nome_publico,
         'biografia': request.user.biografia,
+        'quem_pode_solicitar_mensagem': profile.quem_pode_solicitar_mensagem,
+        'quem_pode_responder_story': profile.quem_pode_responder_story,
+        'permitir_reacoes': profile.permitir_reacoes,
+        'confirmacao_leitura': profile.confirmacao_leitura,
     })
     if request.method == 'POST' and form.is_valid():
         sincronizar_perfil_publico(
             request.user, origem='social', nome_exibicao=form.cleaned_data['nome_exibicao'],
             biografia=form.cleaned_data['biografia'], avatar=form.cleaned_data.get('avatar'),
         )
+        profile.refresh_from_db()
+        profile.quem_pode_solicitar_mensagem = form.cleaned_data['quem_pode_solicitar_mensagem']
+        profile.quem_pode_responder_story = form.cleaned_data['quem_pode_responder_story']
+        profile.permitir_reacoes = form.cleaned_data['permitir_reacoes']
+        profile.confirmacao_leitura = form.cleaned_data['confirmacao_leitura']
+        profile.save(update_fields=[
+            'quem_pode_solicitar_mensagem', 'quem_pode_responder_story',
+            'permitir_reacoes', 'confirmacao_leitura', 'atualizado_em',
+        ])
         messages.success(request, 'Perfil público atualizado.')
         return redirect(profile.get_absolute_url())
     return render(request, 'social/profile_edit.html', {**_social_context(request, section='profile'), 'form': form})
@@ -251,12 +267,33 @@ def story_detail(request, uuid):
         raise Http404
     sequence = list(stories_ativos_para(request.user).values_list('uuid', flat=True))
     index = sequence.index(story.uuid)
+    registrar_visualizacao_story(request.user, story)
     return render(request, 'social/story_detail.html', {
         **_social_context(request, section='story'), 'story': story,
         'previous_story': sequence[index - 1] if index else None,
         'next_story': sequence[index + 1] if index + 1 < len(sequence) else None,
         'is_owner': request.user.is_authenticated and story.autor.usuario_id == request.user.pk,
+        'story_liked': request.user.is_authenticated and story.curtidas.filter(usuario=request.user).exists(),
+        'story_reaction': story.reacoes.filter(usuario=request.user).first() if request.user.is_authenticated else None,
+        'reaction_choices': SocialStoryReaction.Tipo.choices,
+        'story_insights': insights_story(request.user, story) if request.user.is_authenticated and story.autor.usuario_id == request.user.pk else None,
     })
+
+
+@login_required
+@require_POST
+def story_like_toggle(request, uuid):
+    story = get_object_or_404(SocialStory, uuid=uuid, ativo=True)
+    liked = alternar_curtida_story(request.user, story)
+    return JsonResponse({'liked': liked, 'count': story.curtidas.count()})
+
+
+@login_required
+@require_POST
+def story_react(request, uuid):
+    story = get_object_or_404(SocialStory, uuid=uuid, ativo=True)
+    reaction = reagir_story(request.user, story, request.POST.get('reaction'))
+    return JsonResponse({'reaction': reaction.tipo if reaction else None, 'count': story.reacoes.count()})
 
 
 @login_required
@@ -337,18 +374,64 @@ def conversation_request_send(request):
 @login_required
 @require_POST
 def conversation_request_decide(request, uuid, decision):
-    pedido = get_object_or_404(SocialConversationRequest, uuid=uuid)
+    pedido = get_object_or_404(SocialConversationRequest, uuid=uuid, destinatario=request.user)
     decidir_solicitacao_conversa(request.user, pedido, decision == 'aceitar')
     return redirect('social:messages')
 
 
 @login_required
 def conversation_detail(request, uuid):
-    conversation = get_object_or_404(SocialConversation.objects.prefetch_related('participantes__social_profile', 'mensagens__remetente'), uuid=uuid, ativo=True, participantes=request.user)
+    conversation = get_object_or_404(SocialConversation.objects.prefetch_related('participantes__social_profile'), uuid=uuid, ativo=True, participantes=request.user)
     if request.method == 'POST':
-        enviar_mensagem(request.user, conversation, texto=request.POST.get('texto', ''))
+        item = enviar_mensagem(request.user, conversation, texto=request.POST.get('texto', ''))
+        if request.headers.get('x-requested-with') == 'XMLHttpRequest':
+            return JsonResponse({'id': str(item.uuid), 'text': item.texto, 'created_at': item.criado_em.isoformat(), 'status': 'delivered'})
         return redirect('social:conversation_detail', uuid=uuid)
-    return render(request, 'social/conversation_detail.html', {**_social_context(request, section='messages'), 'conversation': conversation})
+    marcar_conversa_lida(request.user, conversation)
+    return render(request, 'social/conversation_detail.html', {**_social_context(request, section='messages'), 'conversation': conversation, 'conversation_messages': mensagens_da_conversa(conversation)})
+
+
+@login_required
+def notifications(request):
+    category = request.GET.get('filter', 'all')
+    items = notificacoes_para(request.user, somente_nao_lidas=category == 'unread')
+    return render(request, 'social/notifications.html', {**_social_context(request, section='notifications'), 'notifications': items, 'notification_filter': category})
+
+
+@login_required
+@require_POST
+def notification_read(request, uuid):
+    item = get_object_or_404(SocialNotification, uuid=uuid, destinatario=request.user)
+    marcar_notificacao_lida(request.user, item)
+    return _redirect(request, 'social:notifications')
+
+
+@login_required
+@require_POST
+def notifications_read_all(request):
+    marcar_todas_notificacoes_lidas(request.user)
+    return _redirect(request, 'social:notifications')
+
+
+@login_required
+def realtime_state(request):
+    counters = contadores_sociais(request.user)
+    since = request.GET.get('since')
+    newest = notificacoes_para(request.user, desde=since, limite=10)
+    return JsonResponse({'event': 'state.updated', 'counters': counters, 'notifications': [{'id': str(item.uuid), 'type': item.tipo, 'destination': item.destino, 'created_at': item.criado_em.isoformat()} for item in newest]})
+
+
+@login_required
+@require_POST
+def report_content(request, target_type, uuid):
+    models = {'profile': SocialProfile, 'post': SocialPost, 'story': SocialStory, 'message': SocialMessage}
+    model = models.get(target_type)
+    if not model:
+        raise Http404
+    target = get_object_or_404(model, uuid=uuid)
+    denunciar(request.user, target, motivo=request.POST.get('motivo', ''), descricao=request.POST.get('descricao', ''))
+    messages.success(request, 'Denúncia registrada para análise.')
+    return _redirect(request, 'social:home')
 
 
 def _official_spec(kind):

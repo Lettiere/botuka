@@ -5,6 +5,7 @@ from datetime import timedelta
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser
+from django.core.cache import cache
 from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import IntegrityError
@@ -21,9 +22,10 @@ from apps.organizations.permissions import (
 )
 
 from .models import (
-    EmpresaSeguidor, SocialBlock, SocialConversationRequest, SocialFollow,
+    EmpresaSeguidor, SocialBlock, SocialConversation, SocialConversationRequest, SocialConversationRequestMessage, SocialFollow,
     SocialFollowRequest, SocialPost, SocialPostComment, SocialPostLike,
-    SocialPostSave, SocialProfile, SocialStory,
+    SocialPostSave, SocialProfile, SocialStory, SocialStoryLike,
+    SocialStoryReaction, SocialStoryView, SocialNotification, SocialReport,
 )
 from .selectors import (
     contagem_seguidores_empresa, contagem_seguidores_perfil, posts_do_perfil,
@@ -32,11 +34,12 @@ from .selectors import (
     perfis_sugeridos_para,
 )
 from .services import (
-    bloquear_perfil, comentar_post, compartilhar_conteudo, criar_post, criar_story,
+    alternar_curtida_story, bloquear_perfil, comentar_post, compartilhar_conteudo,
+    criar_notificacao, criar_post, criar_story, denunciar, insights_story,
     curtir_post, decidir_follow_request, deixar_de_seguir_empresa,
     deixar_de_seguir_usuario, descurtir_post, get_or_create_social_profile,
     decidir_solicitacao_conversa, pode_ver_post, remover_post, remover_post_salvo,
-    remover_story, salvar_post, seguir_empresa, seguir_usuario,
+    reagir_story, registrar_visualizacao_story, remover_story, salvar_post, seguir_empresa, seguir_usuario,
     sincronizar_perfil_publico, solicitar_ou_enviar_conversa,
 )
 
@@ -325,6 +328,9 @@ class SocialRuntimeIsolationTests(SimpleTestCase):
 
 @override_settings(MEDIA_ROOT=tempfile.mkdtemp(prefix='botuka-social-tests-'))
 class SocialContentTests(SocialBase):
+    def setUp(self):
+        cache.clear()
+
     @staticmethod
     def image(name='foto.png'):
         return SimpleUploadedFile(name, b'\x89PNG\r\n\x1a\n' + b'0' * 32, content_type='image/png')
@@ -372,21 +378,221 @@ class SocialContentTests(SocialBase):
         self.assertEqual(self.client.get(reverse('social:story_detail', args=[story.uuid])).status_code, 404)
 
     def test_solicitacao_conversa_aceite_mensagem_e_recusa(self):
-        post = criar_post(self.owner, imagem=self.image('message.png'))
-        pedido, created = solicitar_ou_enviar_conversa(self.owner, self.target, texto='Olá', post=post)
-        self.assertTrue(created)
-        self.assertEqual(pedido.status, SocialConversationRequest.Status.PENDENTE)
-        decidir_solicitacao_conversa(self.target, pedido, True)
+        post = criar_post(
+            self.owner,
+            imagem=self.image('message.png'),
+        )
+
+        pedido, is_request = solicitar_ou_enviar_conversa(
+            self.owner,
+            self.target,
+            texto='Olá',
+            post=post,
+        )
+
+        self.assertTrue(is_request)
+
+        self.assertEqual(
+            pedido.status,
+            SocialConversationRequest.Status.PENDENTE,
+        )
+
+        self.assertIsNone(
+            pedido.conversa,
+        )
+
+        self.assertEqual(
+            SocialConversationRequest.objects.filter(
+                solicitante=self.owner,
+                destinatario=self.target,
+                status=SocialConversationRequest.Status.PENDENTE,
+            ).count(),
+            1,
+        )
+
+        self.assertEqual(
+            SocialConversationRequestMessage.objects.filter(
+                solicitacao=pedido,
+                ativo=True,
+            ).count(),
+            1,
+        )
+
+        primeira = pedido.mensagens.get()
+
+        self.assertEqual(
+            primeira.texto,
+            'Olá',
+        )
+
+        self.assertEqual(
+            primeira.post,
+            post,
+        )
+
+        # ----------------------------------------------------
+        # SEGUNDO ENVIO ANTES DO ACEITE
+        # ----------------------------------------------------
+
+        mesmo_pedido, is_request = solicitar_ou_enviar_conversa(
+            self.owner,
+            self.target,
+            texto='Segunda mensagem',
+        )
+
+        self.assertTrue(is_request)
+
+        self.assertEqual(
+            mesmo_pedido.pk,
+            pedido.pk,
+        )
+
+        # Continua existindo uma unica solicitacao.
+        self.assertEqual(
+            SocialConversationRequest.objects.filter(
+                solicitante=self.owner,
+                destinatario=self.target,
+                status=SocialConversationRequest.Status.PENDENTE,
+            ).count(),
+            1,
+        )
+
+        # Mas agora existem duas mensagens pendentes.
+        self.assertEqual(
+            pedido.mensagens.filter(
+                ativo=True,
+            ).count(),
+            2,
+        )
+
+        mensagens_pendentes = list(
+            pedido.mensagens
+            .filter(ativo=True)
+            .order_by('criado_em', 'pk')
+        )
+
+        self.assertEqual(
+            mensagens_pendentes[0].texto,
+            'Olá',
+        )
+
+        self.assertEqual(
+            mensagens_pendentes[1].texto,
+            'Segunda mensagem',
+        )
+
+        # Ainda nao existe conversa antes do aceite.
+        self.assertFalse(
+            SocialConversation.objects.filter(
+                participantes=self.owner,
+            ).filter(
+                participantes=self.target,
+            ).exists()
+        )
+
+        # ----------------------------------------------------
+        # ACEITE
+        # ----------------------------------------------------
+
+        decidir_solicitacao_conversa(
+            self.target,
+            pedido,
+            True,
+        )
+
         pedido.refresh_from_db()
-        self.assertEqual(pedido.status, SocialConversationRequest.Status.ACEITA)
-        self.assertEqual(pedido.conversa.mensagens.get().post, post)
-        mensagem, is_request = solicitar_ou_enviar_conversa(self.owner, self.target, texto='Depois do aceite')
+
+        self.assertEqual(
+            pedido.status,
+            SocialConversationRequest.Status.ACEITA,
+        )
+
+        self.assertIsNotNone(
+            pedido.conversa,
+        )
+
+        mensagens_chat = list(
+            pedido.conversa.mensagens
+            .order_by('criado_em', 'pk')
+        )
+
+        self.assertEqual(
+            len(mensagens_chat),
+            2,
+        )
+
+        self.assertEqual(
+            mensagens_chat[0].texto,
+            'Olá',
+        )
+
+        self.assertEqual(
+            mensagens_chat[0].post,
+            post,
+        )
+
+        self.assertEqual(
+            mensagens_chat[1].texto,
+            'Segunda mensagem',
+        )
+
+        # ----------------------------------------------------
+        # DEPOIS DO ACEITE
+        # ----------------------------------------------------
+
+        mensagem, is_request = solicitar_ou_enviar_conversa(
+            self.owner,
+            self.target,
+            texto='Depois do aceite',
+        )
+
         self.assertFalse(is_request)
-        self.assertEqual(mensagem.conversa, pedido.conversa)
-        recusada, _ = solicitar_ou_enviar_conversa(self.owner, self.third, texto='Pedido')
-        decidir_solicitacao_conversa(self.third, recusada, False)
+
+        self.assertEqual(
+            mensagem.conversa,
+            pedido.conversa,
+        )
+
+        self.assertEqual(
+            pedido.conversa.mensagens.count(),
+            3,
+        )
+
+        # ----------------------------------------------------
+        # RECUSA
+        # ----------------------------------------------------
+
+        recusada, is_request = solicitar_ou_enviar_conversa(
+            self.owner,
+            self.third,
+            texto='Pedido',
+        )
+
+        self.assertTrue(is_request)
+
+        decidir_solicitacao_conversa(
+            self.third,
+            recusada,
+            False,
+        )
+
+        recusada.refresh_from_db()
+
+        self.assertEqual(
+            recusada.status,
+            SocialConversationRequest.Status.RECUSADA,
+        )
+
+        self.assertIsNone(
+            recusada.conversa,
+        )
+
         with self.assertRaises(PermissionDenied):
-            solicitar_ou_enviar_conversa(self.owner, self.third, texto='Spam')
+            solicitar_ou_enviar_conversa(
+                self.owner,
+                self.third,
+                texto='Spam',
+            )
 
     def test_bloqueio_impede_solicitacao_de_conversa(self):
         bloquear_perfil(self.owner, self.target_profile)
@@ -458,3 +664,78 @@ class SocialContentTests(SocialBase):
         self.assertIn('next=http%3A%2F%2F127.0.0.1%3A7800%2Fsocial%2F', good.url)
         bad = self.client.get(reverse('accounts:login'), {'next': 'https://evil.example/phishing'})
         self.assertNotIn('evil.example', bad.url)
+
+    def test_story_like_reaction_view_and_private_insights(self):
+        story = criar_story(self.owner, imagem=self.image('story-social2.png'))
+        self.assertTrue(alternar_curtida_story(self.target, story))
+        self.assertFalse(alternar_curtida_story(self.target, story))
+        self.assertFalse(SocialStoryLike.objects.filter(story=story, usuario=self.target).exists())
+        reaction = reagir_story(self.target, story, SocialStoryReaction.Tipo.LOVE)
+        self.assertEqual(reaction.tipo, SocialStoryReaction.Tipo.LOVE)
+        reaction = reagir_story(self.target, story, SocialStoryReaction.Tipo.FIRE)
+        self.assertEqual(reaction.tipo, SocialStoryReaction.Tipo.FIRE)
+        self.assertEqual(SocialStoryReaction.objects.filter(story=story, usuario=self.target).count(), 1)
+        visualizacao, created = registrar_visualizacao_story(self.target, story)
+        self.assertTrue(created)
+        self.assertEqual(visualizacao.quantidade, 1)
+
+        visualizacao, created = registrar_visualizacao_story(self.target, story)
+        self.assertFalse(created)
+        self.assertEqual(visualizacao.quantidade, 2)
+
+        insights = insights_story(self.owner, story)
+        self.assertEqual(insights['visualizacoes'], 2)
+        self.assertEqual(insights['alcance'], 1)
+
+        registrar_visualizacao_story(self.owner, story)
+
+        insights = insights_story(self.owner, story)
+        self.assertEqual(insights['visualizacoes'], 2)
+        self.assertEqual(insights['alcance'], 1)
+        with self.assertRaises(PermissionDenied):
+            insights_story(self.target, story)
+
+    def test_story_expired_or_blocked_rejects_interactions(self):
+        story = criar_story(self.owner, imagem=self.image('story-expired.png'))
+        SocialStory.objects.filter(pk=story.pk).update(expira_em=timezone.now() - timedelta(seconds=1))
+        story.refresh_from_db()
+        with self.assertRaises(PermissionDenied):
+            alternar_curtida_story(self.target, story)
+        story.expira_em = timezone.now() + timedelta(hours=1)
+        story.save(update_fields=['expira_em', 'atualizado_em'])
+        bloquear_perfil(self.owner, self.target_profile)
+        with self.assertRaises(PermissionDenied):
+            reagir_story(self.target, story, SocialStoryReaction.Tipo.WOW)
+
+    def test_notifications_dedupe_self_suppression_and_read_routes(self):
+        story = criar_story(self.owner, imagem=self.image('notification.png'))
+        first, created = criar_notificacao(self.owner, SocialNotification.Tipo.STORY_LIKE, ator=self.target, objeto=story, chave_dedupe='stable-event')
+        self.assertTrue(created)
+        duplicate, created = criar_notificacao(self.owner, SocialNotification.Tipo.STORY_LIKE, ator=self.target, objeto=story, chave_dedupe='stable-event')
+        self.assertFalse(created)
+        self.assertEqual(first.pk, duplicate.pk)
+        self.assertEqual(criar_notificacao(self.owner, SocialNotification.Tipo.SYSTEM, ator=self.owner), (None, False))
+        self.client.force_login(self.owner)
+        self.assertEqual(self.client.get(reverse('social:notifications')).status_code, 200)
+        self.assertEqual(self.client.post(reverse('social:notification_read', args=[first.uuid])).status_code, 302)
+        first.refresh_from_db()
+        self.assertIsNotNone(first.lida_em)
+
+    def test_notification_ownership_and_realtime_state(self):
+        notification, _ = criar_notificacao(self.owner, SocialNotification.Tipo.SYSTEM, destino='/social/')
+        self.client.force_login(self.target)
+        self.assertEqual(self.client.post(reverse('social:notification_read', args=[notification.uuid])).status_code, 404)
+        response = self.client.get(reverse('social:realtime_state'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()['event'], 'state.updated')
+
+    def test_generic_report_is_idempotent_and_sanitized(self):
+        post = criar_post(self.owner, imagem=self.image('reported.png'))
+        report, created = denunciar(self.target, post, motivo='spam', descricao='Revisar conteúdo')
+        self.assertTrue(created)
+        duplicate, created = denunciar(self.target, post, motivo='outro')
+        self.assertFalse(created)
+        self.assertEqual(report.pk, duplicate.pk)
+        self.assertEqual(SocialReport.objects.filter(denunciante=self.target).count(), 1)
+        with self.assertRaises(ValidationError):
+            denunciar(self.third, post, motivo='x', descricao='<script>alert(1)</script>')

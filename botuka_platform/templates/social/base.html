@@ -9,7 +9,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
   <link rel="stylesheet" href="{% static 'social/css/social.css' %}">
 </head>
-<body data-page-type="social">
+<body data-page-type="social" data-realtime-url="{% if request.user.is_authenticated %}{% url 'social:realtime_state' %}{% endif %}">
 {% include "seo/integrations_body.html" %}
 <a class="social-skip" href="#social-main">Pular para o conteúdo</a>
 {% include "social/components/mobile_header.html" %}
@@ -23,6 +23,7 @@
 {% include "social/components/create_dialog.html" %}
 {% include "seo/consent.html" %}
 <script src="{% static 'social/js/social.js' %}" defer></script>
+<script src="{% static 'social/js/story.js' %}" defer></script><script src="{% static 'social/js/chat.js' %}" defer></script><script src="{% static 'social/js/realtime.js' %}" defer></script>
 <script src="{% static 'js/platform/analytics.js' %}" defer></script>
 <script src="{% static 'js/platform/consent.js' %}" defer></script>
 </body></html>
