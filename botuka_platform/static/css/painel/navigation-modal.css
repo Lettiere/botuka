@@ -104,6 +104,57 @@ body.navigation-modal-open { overflow: hidden; }
 }
 .navigation-modal__close:hover { background: var(--nav-modal-accent); color: #172033; }
 .navigation-modal__body { min-height: 0; overflow-x: hidden; overflow-y: auto; padding: 24px; overscroll-behavior: contain; }
+.user-nav-social-shortcut {
+  position: relative;
+  display: grid;
+  grid-template-columns: 48px minmax(0, 1fr) auto;
+  min-width: 0;
+  min-height: 72px;
+  align-items: center;
+  gap: 14px;
+  margin: 0 0 18px;
+  padding: 11px 16px 11px 12px;
+  overflow: hidden;
+  color: var(--nav-modal-text);
+  background: linear-gradient(110deg, rgba(255, 210, 48, .18), var(--nav-modal-surface) 42%);
+  border: 1px solid var(--nav-modal-border);
+  border-left: 4px solid var(--nav-modal-accent);
+  border-radius: 17px;
+  text-decoration: none;
+  transition: transform .18s ease, border-color .18s ease, box-shadow .18s ease;
+}
+.user-nav-social-shortcut__icon {
+  display: grid;
+  width: 46px;
+  height: 46px;
+  flex: 0 0 auto;
+  place-items: center;
+  color: #172033;
+  background: var(--nav-modal-accent);
+  border: 1px solid rgba(23, 32, 51, .12);
+  border-radius: 14px;
+  font-size: 1.18rem;
+}
+.user-nav-social-shortcut__content { min-width: 0; }
+.user-nav-social-shortcut__content strong,
+.user-nav-social-shortcut__content small {
+  display: block;
+  overflow-wrap: anywhere;
+}
+.user-nav-social-shortcut__content strong { color: var(--nav-modal-text); font-size: 1rem; line-height: 1.25; }
+.user-nav-social-shortcut__content small { margin-top: 3px; color: var(--nav-modal-muted); font-size: .78rem; line-height: 1.35; }
+.user-nav-social-shortcut__arrow { color: var(--nav-modal-muted); font-size: 1.05rem; transition: transform .18s ease; }
+.user-nav-social-shortcut:hover {
+  color: var(--nav-modal-text);
+  border-color: #d8ae14;
+  box-shadow: 0 8px 20px rgba(15, 23, 42, .09);
+  transform: translateY(-2px);
+}
+.user-nav-social-shortcut:hover .user-nav-social-shortcut__arrow { transform: translate(2px, -2px); }
+.user-nav-social-shortcut:focus-visible {
+  outline: 3px solid var(--nav-modal-accent);
+  outline-offset: 3px;
+}
 .navigation-modal__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px; align-items: start; }
 .navigation-group { overflow: hidden; background: var(--nav-modal-surface); border: 1px solid var(--nav-modal-border); border-radius: 17px; }
 .navigation-group--admin { border-color: #d8ae14; box-shadow: inset 0 3px 0 var(--nav-modal-accent); }
@@ -214,6 +265,14 @@ body.navigation-modal-open { overflow: hidden; }
   .navigation-modal__identity p:last-child { max-width: 230px; }
   .navigation-modal__search { grid-column: 1 / -1; grid-row: 2; }
   .navigation-modal__body { padding: 14px 14px calc(18px + env(safe-area-inset-bottom)); }
+  .user-nav-social-shortcut {
+    grid-template-columns: 44px minmax(0, 1fr) auto;
+    min-height: 68px;
+    gap: 11px;
+    margin-bottom: 12px;
+    padding: 10px 13px 10px 10px;
+  }
+  .user-nav-social-shortcut__icon { width: 42px; height: 42px; border-radius: 12px; }
   .navigation-modal__grid { grid-template-columns: 1fr; gap: 10px; }
   .navigation-group__chevron { display: block; transition: transform .2s ease; }
   .navigation-group__heading[aria-expanded="false"] .navigation-group__chevron { transform: rotate(-90deg); }
@@ -227,3 +286,92 @@ body.navigation-modal-open { overflow: hidden; }
   .navigation-modal__footer a { display: none; }
   .navigation-modal__footer form, .navigation-modal__footer button { width: 100%; justify-content: center; }
 }
+
+/* BOTUKA SOCIAL CARD */
+.user-nav-social-card {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 14px;
+    margin: 0 20px 18px;
+    padding: 14px 16px;
+    border: 1px solid #f0c62b;
+    border-radius: 16px;
+    background:
+        linear-gradient(
+            135deg,
+            rgba(255, 209, 0, 0.14),
+            rgba(255, 255, 255, 0.96) 60%
+        );
+    color: #182238;
+    text-decoration: none;
+    transition:
+        transform .18s ease,
+        box-shadow .18s ease,
+        border-color .18s ease;
+}
+
+.user-nav-social-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 10px 26px rgba(17, 24, 39, 0.10);
+    border-color: #d7a900;
+    color: #182238;
+}
+
+.user-nav-social-card:focus-visible {
+    outline: 3px solid rgba(255, 193, 7, 0.48);
+    outline-offset: 3px;
+}
+
+.user-nav-social-card__icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    background: #fff4c7;
+    color: #8d6d00;
+    font-size: 1.25rem;
+}
+
+.user-nav-social-card__content {
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.user-nav-social-card__content strong {
+    font-size: 1rem;
+    line-height: 1.2;
+}
+
+.user-nav-social-card__content small {
+    color: #66758f;
+    font-size: .82rem;
+    line-height: 1.3;
+}
+
+.user-nav-social-card__action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: .82rem;
+    font-weight: 700;
+    white-space: nowrap;
+    color: #8d6d00;
+}
+
+@media (max-width: 720px) {
+    .user-nav-social-card {
+        grid-template-columns: auto minmax(0, 1fr);
+        margin: 0 14px 16px;
+    }
+
+    .user-nav-social-card__action {
+        grid-column: 2;
+        justify-self: start;
+    }
+}
+/* /BOTUKA SOCIAL CARD */

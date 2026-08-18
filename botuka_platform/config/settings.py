@@ -51,6 +51,9 @@ IS_PRODUCTION = APP_ENV.strip().lower() in {'prod', 'production'}
 if IS_PRODUCTION and DEBUG:
     raise ImproperlyConfigured('DEBUG deve ser False quando APP_ENV=production.')
 PLATFORM_URL = config('PLATFORM_URL', default='http://127.0.0.1:7700')
+BOTUKA_PLATFORM_BASE_URL = config('BOTUKA_PLATFORM_BASE_URL', default=PLATFORM_URL).rstrip('/')
+BOTUKA_SOCIAL_BASE_URL = config('BOTUKA_SOCIAL_BASE_URL', default='http://127.0.0.1:7800').rstrip('/')
+BOTUKA_RUNTIME = config('BOTUKA_RUNTIME', default='platform')
 SERVICES_URL = config('SERVICES_URL', default='http://127.0.0.1:7701')
 VENDAS_URL = config('VENDAS_URL', default='http://127.0.0.1:7710').rstrip('/')
 PUBLIC_BASE_URL = config('PUBLIC_BASE_URL', default='https://botuka.com.br')
@@ -169,6 +172,7 @@ INSTALLED_APPS = [
     'apps.gestao.apps.GestaoConfig',
     'apps.painel.apps.PainelConfig',
     'apps.analytics.apps.AnalyticsConfig',
+    'apps.social.apps.SocialConfig',
 ]
 
 AUTH_USER_MODEL = 'accounts.Usuario'
@@ -209,6 +213,7 @@ TEMPLATES = [
                 'apps.gestao.context_processors.public_urls',
                 'apps.gestao.context_processors.publicar_options',
                 'apps.painel.navigation.painel_navigation',
+                'apps.social.context_processors.runtime_urls',
                 'apps.core.context_processors.seo.seo_context',
                 'apps.core.context_processors.weather.weather',
             ],

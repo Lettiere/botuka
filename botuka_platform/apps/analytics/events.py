@@ -7,6 +7,14 @@ ALLOWED_EVENTS = {
     'view_event', 'event_impression', 'event_interest', 'share',
     'view_job', 'job_impression', 'job_application_start', 'job_application_complete',
     'view_public_resume', 'view_content', 'generate_lead', 'engaged_view',
+    'follow_user', 'unfollow_user', 'follow_company', 'unfollow_company',
+    'social_feed_view', 'social_discovery_view', 'social_profile_view',
+    'social_following_view', 'theme_changed', 'accessibility_color_mode_changed',
+    'social_post_create', 'social_post_like', 'social_post_unlike',
+    'social_post_comment', 'social_post_save', 'social_post_unsave',
+    'social_story_create', 'social_story_view', 'social_follow_request',
+    'social_follow_approve', 'social_follow_reject', 'social_block',
+    'social_unblock', 'social_share_platform_content',
 }
 
 ALLOWED_METADATA = {

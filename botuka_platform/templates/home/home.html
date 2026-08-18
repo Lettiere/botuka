@@ -2,6 +2,13 @@
 {% extends "_layout/platform/public.html" %}
 {% load static %}
 
+{% block public_styles %}
+{{ block.super }}
+<link rel="stylesheet" href="{% static 'css/templates/_layout/platform/platform_home.css' %}">
+<link rel="stylesheet" href="{% static 'css/home.css' %}">
+<link rel="stylesheet" href="{% static 'css/templates/home/partials/hero.css' %}">
+{% endblock %}
+
 {% block public_content %}
 
 {% include "pwa/install_prompt.html" %}

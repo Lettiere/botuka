@@ -10,8 +10,7 @@ class PanelNavigationTests(TestCase):
         "BOTUKA News", "YoBotuka", "Prefeitura", "Turismo",
         "Empresas", "Serviços", "Produtos", "Novo produto",
         "Conversas de produtos", "Denúncias de produtos", "Vagas",
-        "Currículo", "Candidaturas", "Eventos", "Publicações",
-        "Rede social", "Mensagens", "Esportes",
+        "Currículo", "Candidaturas", "Eventos", "Rede Social", "Esportes",
     )
 
     def make_user(self, username, profile_name, *permissions):
@@ -44,8 +43,23 @@ class PanelNavigationTests(TestCase):
         items = [item for group in response.context["painel_module_groups"] for item in group["items"]]
         self.assertEqual(
             {item["label"] for item in items},
-            {"Empresas", "Serviços", "Currículo", "Candidaturas"},
+            {"Empresas", "Serviços", "Currículo", "Candidaturas", "Rede Social"},
         )
+
+    def test_comunidade_exibe_somente_atalho_central_do_social(self):
+        user = self.make_user("comunidade_nav", "CIDADAO_COMUNIDADE_NAV")
+        self.client.force_login(user)
+        response = self.client.get(reverse("painel:dashboard"))
+        community = next(
+            group for group in response.context["painel_module_groups"]
+            if group["label"] == "Comunidade"
+        )
+        self.assertEqual(community["items"], [{
+            "label": "Rede Social",
+            "description": "Feed, conexões e comunidade",
+            "icon": "bi-people-fill",
+            "url": "http://127.0.0.1:7800/social/",
+        }])
 
     def test_permissao_especifica_exibe_somente_modulo_autorizado(self):
         user = self.make_user(

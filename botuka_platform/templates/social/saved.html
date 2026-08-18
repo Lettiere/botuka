@@ -1,0 +1,1 @@
+{% extends "social/base.html" %}{% block social_content %}<h1>Posts salvos</h1>{% for post in posts %}{% include "social/components/post_card.html" %}{% empty %}<p class="social-muted">Nenhum post salvo.</p>{% endfor %}{% endblock %}

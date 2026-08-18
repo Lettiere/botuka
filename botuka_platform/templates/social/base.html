@@ -1,0 +1,28 @@
+{% load static %}<!DOCTYPE html>
+<html lang="pt-BR" data-social-theme="light" data-color-mode="standard">
+<head>
+  <meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="csrf-token" content="{{ csrf_token }}">
+  {% include "seo/meta.html" %}{% include "seo/integrations_head.html" %}
+  <script src="{% static 'social/js/preferences.js' %}"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <link rel="stylesheet" href="{% static 'social/css/social.css' %}">
+</head>
+<body data-page-type="social">
+{% include "seo/integrations_body.html" %}
+<a class="social-skip" href="#social-main">Pular para o conteúdo</a>
+{% include "social/components/mobile_header.html" %}
+<div class="social-app">
+  {% include "social/components/sidebar.html" %}
+  <main class="social-main" id="social-main" tabindex="-1">{% block social_content %}{% endblock %}</main>
+  {% include "social/components/right_rail.html" %}
+</div>
+{% include "social/components/burger.html" %}
+{% include "social/components/bottom_nav.html" %}
+{% include "social/components/create_dialog.html" %}
+{% include "seo/consent.html" %}
+<script src="{% static 'social/js/social.js' %}" defer></script>
+<script src="{% static 'js/platform/analytics.js' %}" defer></script>
+<script src="{% static 'js/platform/consent.js' %}" defer></script>
+</body></html>

@@ -1,12 +1,17 @@
 """Navegação do painel derivada das permissões reais de domínio."""
 
-from django.urls import reverse
+from django.conf import settings
+from django.urls import NoReverseMatch, reverse
 from apps.accounts.authorization import criar_verificador_permissoes
 
 
 def painel_navigation(request, permission_checker=None):
     user = getattr(request, "user", None)
     if not user or not user.is_authenticated:
+        return {"painel_module_groups": [], "painel_capabilities": {}}
+    try:
+        reverse('painel:dashboard')
+    except NoReverseMatch:
         return {"painel_module_groups": [], "painel_capabilities": {}}
     cached = getattr(request, "_painel_navigation_cache", None)
     if cached is not None:
@@ -105,15 +110,12 @@ def painel_navigation(request, permission_checker=None):
             {"label": "Eventos", "icon": "bi-calendar-event-fill", "url": reverse("painel:eventos_lista")},
         ]})
 
-    community = []
-    if _can("publicacoes.visualizar"):
-        community.append({"label": "Publicações", "icon": "bi-megaphone-fill", "url": reverse("painel:publicacoes_lista")})
-    if _can("rede_social.acessar"):
-        community.append({"label": "Rede social", "icon": "bi-share-fill", "url": reverse("painel:rede_social")})
-    if _can("mensagens.acessar"):
-        community.append({"label": "Mensagens", "icon": "bi-chat-dots-fill", "url": reverse("painel:mensagens")})
-    if community:
-        groups.append({"label": "Comunidade", "items": community})
+    groups.append({"label": "Comunidade", "items": [{
+        "label": "Rede Social",
+        "description": "Feed, conexões e comunidade",
+        "icon": "bi-people-fill",
+        "url": f"{settings.BOTUKA_SOCIAL_BASE_URL}/social/",
+    }]})
 
     if _can(
         "sports.gerenciar", "sports.criar", "sports.editar", "sports.publicar",

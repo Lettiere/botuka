@@ -1,0 +1,1 @@
+{% extends "social/base.html" %}{% block social_content %}<section class="social-content-card"><h1>Editar perfil público</h1><p>Nome, foto e biografia também serão atualizados no seu perfil BOTUKA.</p><form method="post" enctype="multipart/form-data">{% csrf_token %}{{ form.as_p }}<button class="social-button" type="submit">Salvar perfil</button></form></section>{% endblock %}

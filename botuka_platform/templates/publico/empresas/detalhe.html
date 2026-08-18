@@ -11,6 +11,8 @@
     </div>
   </header>
   <nav class="detail-actions" aria-label="Ações da empresa">
+    <span class="btn-botuka btn-soft" aria-label="Seguidores da empresa"><i class="bi bi-people"></i> {{ followers_count }} seguidores</span>
+    {% if request.user.is_authenticated %}<form method="post" action="{{ botuka_social_base_url }}/social/empresas/{{ empresa.uuid }}/{% if is_following_company %}deixar-de-seguir{% else %}seguir{% endif %}/">{% csrf_token %}<input type="hidden" name="next" value="{{ request.build_absolute_uri }}"><button class="btn-botuka {% if is_following_company %}btn-soft{% else %}btn-yellow{% endif %}" type="submit"><i class="bi bi-person-plus"></i> {% if is_following_company %}Seguindo{% else %}Seguir{% endif %}</button></form>{% else %}<button class="btn-botuka btn-yellow" type="button" data-bs-toggle="modal" data-bs-target="#loginModal"><i class="bi bi-person-plus"></i> Seguir</button>{% endif %}
     {% for link in links %}<a class="btn-botuka {% if forloop.first %}btn-yellow{% else %}btn-soft{% endif %}" href="{{ link.url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right"></i>{{ link.titulo|default:link.get_tipo_link_display }}</a>{% endfor %}
     {% include 'publico/includes/share.html' with share_title=empresa.nome_exibicao %}
   </nav>

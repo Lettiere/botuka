@@ -14,6 +14,8 @@ from apps.core.seo.page_builders import empresa_seo, listing_seo, servico_seo
 from apps.core.services.contacts import formatar_telefone, normalizar_telefone, telefone_para_whatsapp
 from apps.products.models import Produto
 from apps.recruitment.models import Vaga
+from apps.social.selectors import contagem_seguidores_empresa
+from apps.social.services import usuario_segue_empresa
 
 
 def empresas_publicas(request):
@@ -111,6 +113,8 @@ def empresa_publica(request, slug):
         'whatsapp_formatado': formatar_telefone(empresa.whatsapp),
         'whatsapp_url': whatsapp_url,
         'vendas_loja_url': f"{settings.VENDAS_URL}/lojas/{empresa.slug}/",
+        'followers_count': contagem_seguidores_empresa(empresa),
+        'is_following_company': usuario_segue_empresa(request.user, empresa),
     })
 
 

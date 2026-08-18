@@ -1,12 +1,15 @@
 from django.contrib import messages
 from django.contrib.auth import authenticate, get_user_model, login, logout
+from django.conf import settings
+from django.db import transaction
 from django.shortcuts import redirect
 from django.urls import reverse
-from urllib.parse import urlencode
+from urllib.parse import urlencode, urlparse
 from django.utils.http import url_has_allowed_host_and_scheme
 from django.views.decorators.http import require_POST
 
 from apps.accounts.services import obter_url_pos_login
+from apps.social.services import get_or_create_social_profile
 
 Usuario = get_user_model()
 
@@ -19,7 +22,7 @@ def login_usuario(request):
 
         if redirect_to != "home" and url_has_allowed_host_and_scheme(
             redirect_to,
-            allowed_hosts={request.get_host()},
+            allowed_hosts={request.get_host(), urlparse(settings.BOTUKA_SOCIAL_BASE_URL).netloc},
             require_https=request.is_secure(),
         ):
             parametros["next"] = redirect_to
@@ -39,7 +42,7 @@ def login_usuario(request):
         messages.success(request, "Login realizado com sucesso.")
         if redirect_to != "home" and url_has_allowed_host_and_scheme(
             redirect_to,
-            allowed_hosts={request.get_host()},
+            allowed_hosts={request.get_host(), urlparse(settings.BOTUKA_SOCIAL_BASE_URL).netloc},
             require_https=request.is_secure(),
         ):
             return redirect(redirect_to)
@@ -47,7 +50,7 @@ def login_usuario(request):
         return redirect(obter_url_pos_login(user))
 
     messages.error(request, "E-mail ou senha inválidos.")
-    return redirect("home")
+    return redirect(f'{settings.BOTUKA_PLATFORM_BASE_URL}/')
 
 
 def cadastro_usuario(request):
@@ -71,12 +74,14 @@ def cadastro_usuario(request):
         messages.error(request, "Este e-mail já está cadastrado.")
         return redirect("home")
 
-    user = Usuario.objects.create_user(
-        username=email,
-        email=email,
-        password=senha,
-        first_name=nome,
-    )
+    with transaction.atomic():
+        user = Usuario.objects.create_user(
+            username=email,
+            email=email,
+            password=senha,
+            first_name=nome,
+        )
+        get_or_create_social_profile(user)
 
     login(request, user)
     messages.success(request, "Conta criada com sucesso. Bem-vindo ao BOTUKA!")

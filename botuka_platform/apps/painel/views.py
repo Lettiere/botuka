@@ -144,6 +144,9 @@ def perfil(request: HttpRequest) -> HttpResponse:
 
         if form.is_valid():
             form.save()
+            if secao in {'dados', 'foto', 'apresentacao'}:
+                from apps.social.services import sincronizar_perfil_publico
+                sincronizar_perfil_publico(request.user, origem='platform')
             messages.success(request, 'Perfil atualizado com sucesso.')
 
     empresas = request.user.organizacoes.all()

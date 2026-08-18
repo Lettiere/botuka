@@ -15,6 +15,7 @@ handler403 = 'apps.core.views.permission_denied'
 handler500 = 'apps.core.views.server_error'
 
 urlpatterns = [
+    path("", include("apps.social.platform_urls")),
     path("", include("apps.analytics.urls")),
     path("", include("apps.core.sharing_urls")),
     path('robots.txt', cache_page(3600)(robots_txt), name='robots_txt'),

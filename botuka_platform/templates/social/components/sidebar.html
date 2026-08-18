@@ -1,0 +1,10 @@
+<aside class="social-sidebar" aria-label="Navegação social"><a class="social-brand" href="{% url 'social:home' %}"><span></span>BOTUKA</a><nav><a class="social-back-site" href="{{ botuka_platform_home_url }}"><i class="bi bi-arrow-left"></i>Voltar ao site</a>
+  <a {% if social_section == 'feed' %}aria-current="page"{% endif %} href="{% url 'social:home' %}"><i class="bi bi-house"></i>Início</a>
+  <a {% if social_section == 'following' %}aria-current="page"{% endif %} href="{% url 'social:following' %}"><i class="bi bi-people"></i>Conexões</a>
+  <a {% if social_section == 'messages' %}aria-current="page"{% endif %} href="{% url 'social:messages' %}"><i class="bi bi-chat-dots"></i>Mensagens</a>
+  <a {% if social_section == 'explore' %}aria-current="page"{% endif %} href="{% url 'social:explore' %}"><i class="bi bi-compass"></i>Explorar</a>
+  <span class="social-nav-label">BOTUKA</span>
+  <a href="{% url 'social:events' %}"><i class="bi bi-calendar-event"></i>Eventos</a><a href="{% url 'social:jobs' %}"><i class="bi bi-briefcase"></i>Vagas</a><a href="{% url 'social:companies' %}"><i class="bi bi-buildings"></i>Empresas</a><a href="{% url 'social:services' %}"><i class="bi bi-tools"></i>Serviços</a><a href="{% url 'social:news' %}"><i class="bi bi-newspaper"></i>Notícias</a>
+  <a href="{% url 'social:saved_posts' %}"><i class="bi bi-bookmark"></i>Salvos</a>
+  {% if request.user.is_authenticated %}<span class="social-nav-label">VOCÊ</span><a href="{{ botuka_platform_base_url }}/painel/"><i class="bi bi-grid"></i>Central do Criador</a><a href="{% url 'social:profile_edit' %}"><i class="bi bi-gear"></i>Editar perfil</a>{% endif %}
+</nav><button class="social-more" type="button" data-burger-open><i class="bi bi-three-dots"></i>Mais</button></aside>

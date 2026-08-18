@@ -36,7 +36,7 @@
       </header>
 
       <div class="navigation-modal__body">
-        <div class="navigation-modal__grid">
+<div class="navigation-modal__grid">
           <section class="navigation-group" data-navigation-group>
             <button class="navigation-group__heading" type="button" data-navigation-group-toggle aria-expanded="true">
               <span><i class="bi bi-person-circle" aria-hidden="true"></i> Minha conta</span>
@@ -49,7 +49,28 @@
             </div>
           </section>
 
-          {% for group in painel_module_groups %}
+
+<!-- BOTUKA SOCIAL — ATALHO UNICO -->
+<a
+    class="user-nav-social-card"
+    href="{{ botuka_social_home_url }}"
+    aria-label="Abrir BOTUKA Social — Feed, conexões e comunidade"
+>
+    <span class="user-nav-social-card__icon" aria-hidden="true">
+        <i class="bi bi-people-fill"></i>
+    </span>
+
+    <span class="user-nav-social-card__content">
+        <strong>BOTUKA Social</strong>
+        <small>Feed, conexões e comunidade</small>
+    </span>
+
+    <span class="user-nav-social-card__action" aria-hidden="true">
+        Abrir <i class="bi bi-arrow-up-right"></i>
+    </span>
+</a>
+<!-- /BOTUKA SOCIAL — ATALHO UNICO -->
+{% for group in painel_module_groups %}
             <section class="navigation-group" data-navigation-group>
               <button class="navigation-group__heading" type="button" data-navigation-group-toggle aria-expanded="true">
                 <span><i class="bi bi-grid" aria-hidden="true"></i> {{ group.label }}</span>
@@ -57,7 +78,7 @@
               </button>
               <div class="navigation-group__links">
                 {% for item in group.items %}
-                  <a href="{{ item.url }}" data-navigation-link><i class="bi {{ item.icon }}"></i><span><strong>{{ item.label }}</strong><small>Acessar módulo</small></span></a>
+                  <a href="{{ item.url }}" data-navigation-link><i class="bi {{ item.icon }}"></i><span><strong>{{ item.label }}</strong><small>{{ item.description|default:"Acessar módulo" }}</small></span></a>
                 {% endfor %}
               </div>
             </section>
