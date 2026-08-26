@@ -56,7 +56,7 @@
             <article class="equipe-item">
               <div>
                 <div class="equipe-user">
-                  <div class="equipe-avatar">{{ vinculo.usuario|first|upper }}</div>
+                  <div class="equipe-avatar">{{ vinculo.usuario.nome_exibicao|default:vinculo.usuario.username|first|upper }}</div>
                   <div>
                     <strong>{{ vinculo.usuario }}</strong>
                     <span>{{ vinculo.usuario.email|default:"E-mail não informado" }}</span>
@@ -70,10 +70,66 @@
                   {% if vinculo.pode_publicar_servico %}<span class="equipe-badge">Publica</span>{% endif %}
                   {% if vinculo.pode_gerenciar_equipe %}<span class="equipe-badge">Equipe</span>{% endif %}
                   <span class="equipe-badge">{{ vinculo.ativo|yesno:"Ativo,Inativo" }}</span>
+
+                  {# BOTUKA_AGENDA_PROFISSIONAL_31C #}
+                  {% if vinculo.agenda_profissional %}
+                    {% if vinculo.agenda_profissional.ativo %}
+                      <span class="equipe-badge">
+                        <i class="bi bi-calendar2-check"></i>
+                        Profissional da Agenda
+                      </span>
+                    {% else %}
+                      <span class="equipe-badge">
+                        Agenda desabilitada
+                      </span>
+                    {% endif %}
+                  {% endif %}
                 </div>
               </div>
 
               <div class="equipe-actions">
+
+                {% if empresa.pode_publicar_servico and vinculo.ativo %}
+                  <form method="post">
+                    {% csrf_token %}
+
+                    <input
+                      type="hidden"
+                      name="vinculo_id"
+                      value="{{ vinculo.pk }}"
+                    >
+
+                    {% if vinculo.agenda_profissional and vinculo.agenda_profissional.ativo %}
+                      <input
+                        type="hidden"
+                        name="acao"
+                        value="agenda_profissional_desativar"
+                      >
+
+                      <button
+                        class="equipe-btn equipe-btn-light"
+                        type="submit"
+                      >
+                        <i class="bi bi-calendar2-x"></i>
+                        Desabilitar Agenda
+                      </button>
+                    {% else %}
+                      <input
+                        type="hidden"
+                        name="acao"
+                        value="agenda_profissional_ativar"
+                      >
+
+                      <button
+                        class="equipe-btn equipe-btn-primary"
+                        type="submit"
+                      >
+                        <i class="bi bi-calendar2-plus"></i>
+                        Habilitar na Agenda
+                      </button>
+                    {% endif %}
+                  </form>
+                {% endif %}
                 {% if not vinculo.proprietario %}
                   <form method="post">
                     {% csrf_token %}

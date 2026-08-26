@@ -1,0 +1,8 @@
+<nav class="d-flex flex-wrap gap-2 mb-4" aria-label="Navegação da Agenda">
+  <a class="btn btn-outline-primary" href="{% url 'painel:empresa_agenda' empresa.uuid %}">Resumo</a>
+  <a class="btn btn-outline-primary" href="{% url 'painel:empresa_equipe' empresa.uuid %}">Profissionais</a>
+  <a class="btn btn-outline-primary" href="{% url 'painel:agenda_vinculo_lista' empresa.uuid %}">Serviços da Agenda</a>
+  <a class="btn btn-outline-primary" href="{% url 'painel:agenda_disponibilidade_lista' empresa.uuid %}">Disponibilidades</a>
+  <a class="btn btn-outline-primary" href="{% url 'painel:agenda_bloqueio_lista' empresa.uuid %}">Bloqueios</a>
+  <a class="btn btn-outline-primary" href="{% url 'painel:agenda_agendamento_lista' empresa.uuid %}">Agendamentos</a>
+</nav>

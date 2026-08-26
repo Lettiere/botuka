@@ -1,0 +1,5 @@
+{% extends "painel/base.html" %}
+{% block title %}Agendamentos | BOTUKA{% endblock %}
+{% block content %}<div class="container py-4"><h1 class="h3">Agendamentos</h1><p class="text-muted">{{ empresa.nome_exibicao }}</p>{% include "painel/agenda/_nav.html" %}
+<div class="table-responsive"><table class="table align-middle"><thead><tr><th>Data</th><th>Profissional</th><th>Serviço</th><th>Cliente</th><th>Status</th><th></th></tr></thead><tbody>
+{% for item in itens %}<tr><td>{{ item.inicio|date:"d/m/Y H:i" }}</td><td>{{ item.profissional }}</td><td>{{ item.servico }}</td><td>{{ item.cliente }}</td><td>{{ item.get_status_display }}</td><td><a class="btn btn-sm btn-outline-primary" href="{% url 'painel:agenda_agendamento_detalhe' empresa.uuid item.pk %}">Visualizar</a></td></tr>{% empty %}<tr><td colspan="6">Nenhum agendamento encontrado.</td></tr>{% endfor %}</tbody></table></div></div>{% endblock %}

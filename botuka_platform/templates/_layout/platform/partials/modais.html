@@ -261,6 +261,7 @@ Modal de Login/Cadastro - BOTUKA, com integração Django.
                 method="post"
                 action="{% url 'accounts:cadastro' %}">
             {% csrf_token %}
+            <input type="hidden" name="next" value="{{ request.GET.next|default:'home' }}" data-cadastro-next>
             <div class="input-group-login mb-3">
               <i class="bi bi-person"></i>
               <input 
@@ -372,10 +373,14 @@ document.addEventListener("DOMContentLoaded", function () {
   }
 
   const nextInput = modalElement.querySelector("[data-login-next]");
+  const cadastroNextInput = modalElement.querySelector("[data-cadastro-next]");
   const nextValue = params.get("next");
 
   if (nextInput && nextValue && nextValue.startsWith("/")) {
     nextInput.value = nextValue;
+  }
+  if (cadastroNextInput && nextValue && nextValue.startsWith("/")) {
+    cadastroNextInput.value = nextValue;
   }
 
   bootstrap.Modal.getOrCreateInstance(modalElement).show();

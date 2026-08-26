@@ -16,7 +16,7 @@ from apps.core.public_links import TipoLink, normalizar_link_publico, url_embed_
 from apps.core.services.rich_text import sanitizar_html_rico
 from apps.core.utils import gerar_slug_unico
 from apps.locations.models import Bairro, Cidade, Estado
-from apps.taxonomy.models import Categoria
+from apps.taxonomy.models import Categoria, Subcategoria
 
 
 def normalizar_digitos(valor: str | None) -> str:
@@ -283,6 +283,32 @@ class EmpresaManager(models.Manager):
 
 
 class Empresa(UUIDModel):
+    class Atuacao(models.TextChoices):
+        COMERCIO = 'COMERCIO', 'Comércio'
+        SERVICOS = 'SERVICOS', 'Serviços'
+        COMERCIO_E_SERVICOS = 'COMERCIO_E_SERVICOS', 'Comércio e serviços'
+
+    class ModalidadeComercial(models.TextChoices):
+        VAREJO = 'VAREJO', 'Varejo'
+        ATACADO = 'ATACADO', 'Atacado'
+        AMBOS = 'AMBOS', 'Varejo e atacado'
+
+    CAPACIDADES_CONTROLADAS_POR_ATUACAO = frozenset({
+        'VENDER_PRODUTOS',
+        'PRESTAR_SERVICOS',
+        'GERENCIAR_EQUIPE',
+        'ACEITAR_AGENDAMENTOS',
+    })
+    CAPACIDADES_POR_ATUACAO = {
+        Atuacao.COMERCIO: frozenset({'VENDER_PRODUTOS'}),
+        Atuacao.SERVICOS: frozenset({
+            'PRESTAR_SERVICOS',
+            'GERENCIAR_EQUIPE',
+            'ACEITAR_AGENDAMENTOS',
+        }),
+        Atuacao.COMERCIO_E_SERVICOS: CAPACIDADES_CONTROLADAS_POR_ATUACAO,
+    }
+
     """Empresa, negócio informal, MEI ou atuação autônoma do usuário."""
 
     class TipoCadastro(models.TextChoices):
@@ -353,6 +379,15 @@ class Empresa(UUIDModel):
         default=TipoCadastro.INFORMAL,
         db_column='platform_empresa_tipo_cadastro',
         verbose_name='tipo de cadastro',
+    )
+    atuacao = models.CharField(
+        max_length=20,
+        choices=Atuacao.choices,
+        null=True,
+        blank=True,
+        db_column='platform_empresa_atuacao',
+        verbose_name='atuação',
+        help_text='Classificação do negócio; não concede capacidades operacionais.',
     )
     tipo_organizacao = models.CharField(
         max_length=30,
@@ -450,6 +485,24 @@ class Empresa(UUIDModel):
         related_name='empresas',
         verbose_name='categoria da empresa',
     )
+    subcategoria_empresa = models.ForeignKey(
+        Subcategoria,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        db_column='platform_empresa_subcategoria_empresa_fk',
+        related_name='empresas',
+        verbose_name='subcategoria da empresa',
+    )
+    modalidade_comercial = models.CharField(
+        max_length=10,
+        choices=ModalidadeComercial.choices,
+        blank=True,
+        db_column='platform_empresa_modalidade_comercial',
+        verbose_name='modalidade comercial',
+        help_text='Aplicável quando a empresa comercializa produtos.',
+    )
+
     descricao_curta = models.CharField(
         max_length=220,
         blank=True,
@@ -669,6 +722,26 @@ class Empresa(UUIDModel):
     def clean(self) -> None:
         super().clean()
 
+        if self.atuacao == self.Atuacao.SERVICOS and self.modalidade_comercial:
+            raise ValidationError({
+                'modalidade_comercial': (
+                    'Empresa exclusivamente de serviços não possui modalidade comercial.'
+                ),
+            })
+
+        if (
+            self.atuacao in {
+                self.Atuacao.COMERCIO,
+                self.Atuacao.COMERCIO_E_SERVICOS,
+            }
+            and not self.modalidade_comercial
+        ):
+            raise ValidationError({
+                'modalidade_comercial': (
+                    'Informe a modalidade comercial para esta atuação.'
+                ),
+            })
+
         documento = normalizar_digitos(self.cpf_cnpj)
         if documento:
             if self.tipo_cadastro in {
@@ -760,12 +833,35 @@ class Empresa(UUIDModel):
         return vinculo.endereco if vinculo else None
 
     @property
+    def capacidades_elegiveis_por_atuacao(self) -> frozenset[str]:
+        if not self.atuacao:
+            return self.CAPACIDADES_CONTROLADAS_POR_ATUACAO
+        return self.CAPACIDADES_POR_ATUACAO.get(self.atuacao, frozenset())
+
+    def pode_solicitar_capacidade(self, codigo: str) -> bool:
+        codigo = (codigo or '').strip().upper()
+        if codigo not in self.CAPACIDADES_CONTROLADAS_POR_ATUACAO:
+            return True
+        if codigo not in self.capacidades_elegiveis_por_atuacao:
+            return False
+        if codigo == 'ACEITAR_AGENDAMENTOS':
+            return self._tem_capacidade_aprovada('PRESTAR_SERVICOS')
+        return True
+
+    @property
     def pode_publicar_produto(self) -> bool:
         return self._tem_capacidade_aprovada('VENDER_PRODUTOS')
 
     @property
     def pode_publicar_servico(self) -> bool:
         return self._tem_capacidade_aprovada('PRESTAR_SERVICOS')
+
+    @property
+    def pode_aceitar_agendamentos(self) -> bool:
+        return (
+            self._tem_capacidade_aprovada('PRESTAR_SERVICOS')
+            and self._tem_capacidade_aprovada('ACEITAR_AGENDAMENTOS')
+        )
 
     @property
     def pode_receber_lead(self) -> bool:
@@ -1100,6 +1196,10 @@ class EmpresaCapacidade(UUIDModel, StatusCapacidadeMixin):
     class Meta:
         db_table = '"platform"."platform_empresa_capacidade_tb"'
         constraints = [models.UniqueConstraint(fields=['empresa', 'capacidade'], name='platform_empresa_capacidade_uk')]
+
+    @property
+    def compativel_com_atuacao(self) -> bool:
+        return self.empresa.pode_solicitar_capacidade(self.capacidade.codigo)
 
 
 class EmpresaPropriedade(UUIDModel):

@@ -11,7 +11,7 @@ from django.db.models import Q
 from django.utils import timezone
 
 from apps.core.models import EnderecoCore, PessoaDocumento
-from apps.organizations.models import Empresa, EmpresaLink, EmpresaUsuario
+from apps.organizations.models import Capacidade, Empresa, EmpresaLink, EmpresaUsuario
 from apps.organizations.models import EmpresaCapacidade, EmpresaSolicitacao, UsuarioLimitePersonalizado
 from apps.organizations.permissions import empresas_gerenciaveis_para_usuario
 from apps.services.models import (
@@ -219,12 +219,15 @@ class EmpresaForm(forms.ModelForm):
         model = Empresa
         fields = [
             'tipo_cadastro',
+            'atuacao',
             'razao_social',
             'nome_fantasia',
             'cpf_cnpj',
             'inscricao_estadual',
             'inscricao_municipal',
             'categoria_empresa',
+            'subcategoria_empresa',
+            'modalidade_comercial',
             'descricao_curta',
             'descricao_completa',
             'telefone',
@@ -248,7 +251,10 @@ class EmpresaForm(forms.ModelForm):
         ]
         labels = {
             'cpf_cnpj': 'CPF/CNPJ',
+            'atuacao': 'Atuação',
             'categoria_empresa': 'Categoria',
+            'subcategoria_empresa': 'Subcategoria',
+            'modalidade_comercial': 'Modalidade comercial',
         }
         widgets = {
             'descricao_curta': forms.TextInput(attrs={'maxlength': 220}),
@@ -266,6 +272,45 @@ class EmpresaForm(forms.ModelForm):
                 field.widget.attrs.setdefault('class', 'form-check-input')
             else:
                 field.widget.attrs.setdefault('class', 'form-control')
+
+        # SUBCATEGORIA ECONOMICA FILTRADA
+        subcategoria_field = self.fields.get('subcategoria_empresa')
+
+        if subcategoria_field is not None:
+            categoria_id = None
+
+            if self.is_bound:
+                categoria_id = self.data.get('categoria_empresa')
+            elif self.instance and self.instance.pk:
+                categoria_id = self.instance.categoria_empresa_id
+
+            queryset = subcategoria_field.queryset.filter(
+                ativo=True,
+                removido_em__isnull=True,
+            )
+
+            if categoria_id:
+                try:
+                    categoria_id = int(categoria_id)
+                except (TypeError, ValueError):
+                    categoria_id = None
+
+            if categoria_id:
+                queryset = queryset.filter(
+                    categoria_id=categoria_id
+                )
+            else:
+                queryset = queryset.none()
+
+            subcategoria_field.queryset = queryset.order_by(
+                'nome'
+            )
+
+        self.fields['modalidade_comercial'].required = False
+        self.fields['atuacao'].required = True
+        self.fields['atuacao'].help_text = (
+            'Classifica o negócio, sem conceder capacidades automaticamente.'
+        )
 
         self.fields['nome_fantasia'].required = True
         self.fields['estado'].required = True
@@ -335,6 +380,31 @@ class EmpresaForm(forms.ModelForm):
             raise forms.ValidationError('Use imagem JPG, PNG ou WEBP.')
 
         return imagem
+
+
+    def clean_subcategoria_empresa(self):
+        subcategoria = self.cleaned_data.get(
+            'subcategoria_empresa'
+        )
+
+        categoria = self.cleaned_data.get(
+            'categoria_empresa'
+        )
+
+        if subcategoria is None:
+            return None
+
+        if categoria is None:
+            raise forms.ValidationError(
+                'Selecione uma categoria antes da subcategoria.'
+            )
+
+        if subcategoria.categoria_id != categoria.id:
+            raise forms.ValidationError(
+                'A subcategoria selecionada não pertence à categoria informada.'
+            )
+
+        return subcategoria
 
     def clean(self) -> dict:
         cleaned_data = super().clean()
@@ -528,6 +598,33 @@ class EmpresaCapacidadeForm(forms.ModelForm):
         model = EmpresaCapacidade
         fields = ['capacidade']
 
+    def __init__(self, *args, empresa=None, **kwargs):
+        self.empresa = empresa
+        super().__init__(*args, **kwargs)
+        queryset = Capacidade.objects.filter(ativo=True).order_by('nome')
+        if empresa is not None:
+            elegiveis = [
+                capacidade.pk
+                for capacidade in queryset
+                if empresa.pode_solicitar_capacidade(capacidade.codigo)
+            ]
+            existentes = empresa.capacidades_empresa.values_list(
+                'capacidade_id', flat=True,
+            )
+            queryset = queryset.filter(pk__in=elegiveis).exclude(pk__in=existentes)
+        self.fields['capacidade'].queryset = queryset
+
+    def clean_capacidade(self):
+        capacidade = self.cleaned_data['capacidade']
+        if (
+            self.empresa is not None
+            and not self.empresa.pode_solicitar_capacidade(capacidade.codigo)
+        ):
+            raise forms.ValidationError(
+                'Esta capacidade não é compatível com a atuação da empresa.'
+            )
+        return capacidade
+
 
 class EmpresaResponsavelForm(forms.ModelForm):
     class Meta:
@@ -594,8 +691,15 @@ class ServicoContatoForm(BaseServicoForm):
 
 
 class ServicoForm(BaseServicoForm):
-    def __init__(self, *args, usuario=None, **kwargs):
+    def __init__(
+        self,
+        *args,
+        usuario=None,
+        empresa_contexto=None,
+        **kwargs,
+    ):
         self.usuario = usuario
+        self.empresa_contexto = empresa_contexto
         super().__init__(*args, **kwargs)
 
         self.fields['area'].queryset = AreaProfissional.objects.none()
@@ -650,11 +754,26 @@ class ServicoForm(BaseServicoForm):
             )
 
         if usuario is not None:
-            self.fields['empresa'].queryset = (
+            empresas_permitidas = (
                 empresas_gerenciaveis_para_usuario(usuario)
                 .filter(ativo=True)
                 .order_by('nome_fantasia')
             )
+
+            if empresa_contexto is not None:
+                empresas_permitidas = empresas_permitidas.filter(
+                    pk=empresa_contexto.pk
+                )
+
+                self.fields['empresa'].initial = empresa_contexto
+                self.fields['empresa'].disabled = True
+
+                self.fields['prestador_tipo'].initial = (
+                    Servico.PrestadorTipo.EMPRESA
+                )
+                self.fields['prestador_tipo'].disabled = True
+
+            self.fields['empresa'].queryset = empresas_permitidas
 
     def clean(self):
         cleaned = super().clean()

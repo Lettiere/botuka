@@ -1,0 +1,162 @@
+{% extends "painel/base.html" %}
+
+{% block title %}Agenda de {{ empresa.nome_exibicao }} | BOTUKA{% endblock %}
+
+{% block content %}
+<style>
+.agenda-page{background:#f4f7fb;margin:-26px -18px;padding:28px 18px 46px;min-height:72vh}
+.agenda-wrap{width:min(1220px,100%);margin:0 auto}
+.agenda-hero{display:flex;justify-content:space-between;gap:18px;align-items:center;background:#111827;color:#fff;border-radius:24px;padding:26px 28px;margin-bottom:20px}
+.agenda-hero h1{margin:0;font-size:clamp(26px,4vw,38px);font-weight:900}
+.agenda-hero p{margin:7px 0 0;color:rgba(255,255,255,.72)}
+.agenda-back{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:11px;background:#fff;color:#111827;text-decoration:none;font-weight:850}
+.agenda-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:20px}
+.agenda-stat{background:#fff;border:1px solid #e6eaf0;border-radius:17px;padding:18px}
+.agenda-stat strong{display:block;font-size:28px;color:#111827}
+.agenda-stat span{color:#667085;font-size:13px;font-weight:700}
+.agenda-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.agenda-card{background:#fff;border:1px solid #e6eaf0;border-radius:18px;padding:20px}
+.agenda-card h2{margin:0 0 15px;font-size:19px;color:#172033;font-weight:900}
+.agenda-item{padding:12px 0;border-bottom:1px solid #edf0f4}
+.agenda-item:last-child{border-bottom:0}
+.agenda-item strong{display:block;color:#172033}
+.agenda-item small{display:block;color:#667085;margin-top:3px}
+@media(max-width:900px){.agenda-stats{grid-template-columns:repeat(2,1fr)}.agenda-grid{grid-template-columns:1fr}}
+@media(max-width:620px){.agenda-page{padding:16px 12px 34px}.agenda-hero{display:block}.agenda-back{margin-top:15px}.agenda-stats{grid-template-columns:1fr}}
+</style>
+
+<div class="agenda-page">
+<div class="agenda-wrap">
+
+<header class="agenda-hero">
+    <div>
+        <h1>Agenda</h1>
+        <p>{{ empresa.nome_exibicao }}</p>
+    </div>
+
+    <a class="agenda-back" href="{% url 'painel:empresa_detalhe' empresa.uuid %}">
+        <i class="bi bi-arrow-left"></i>
+        Voltar para empresa
+    </a>
+</header>
+
+{% include "painel/agenda/_nav.html" %}
+
+<section class="agenda-stats">
+
+    <div class="agenda-stat">
+        <strong>{{ profissionais|length }}</strong>
+        <span>Profissionais</span>
+    </div>
+
+    <div class="agenda-stat">
+        <strong>{{ servicos_agenda|length }}</strong>
+        <span>Serviços vinculados</span>
+    </div>
+
+    <div class="agenda-stat">
+        <strong>{{ disponibilidades|length }}</strong>
+        <span>Disponibilidades</span>
+    </div>
+
+    <div class="agenda-stat">
+        <strong>{{ bloqueios|length }}</strong>
+        <span>Bloqueios</span>
+    </div>
+
+    <div class="agenda-stat">
+        <strong>{{ agendamentos|length }}</strong>
+        <span>Agendamentos</span>
+    </div>
+
+</section>
+
+<div class="agenda-grid">
+
+<section class="agenda-card">
+    <h2>Profissionais</h2>
+
+    {% for profissional in profissionais %}
+        <div class="agenda-item">
+            <strong>{{ profissional.usuario }}</strong>
+            <small>{{ profissional.empresa_usuario.get_funcao_display }}</small>
+        </div>
+    {% empty %}
+        <p class="text-muted">Nenhum profissional configurado.</p>
+    {% endfor %}
+</section>
+
+<section class="agenda-card">
+    <h2>Serviços</h2>
+
+    {% for item in servicos_agenda %}
+        <div class="agenda-item">
+            <strong>{{ item.servico }}</strong>
+            <small>
+                {{ item.profissional.usuario }}
+                · {{ item.duracao_minutos }} minutos
+            </small>
+        </div>
+    {% empty %}
+        <p class="text-muted">Nenhum serviço vinculado.</p>
+    {% endfor %}
+</section>
+
+<section class="agenda-card">
+    <h2>Disponibilidade semanal</h2>
+
+    {% for item in disponibilidades %}
+        <div class="agenda-item">
+            <strong>{{ item.profissional.usuario }}</strong>
+            <small>
+                {{ item.get_dia_semana_display }}
+                · {{ item.hora_inicio|time:"H:i" }}
+                até {{ item.hora_fim|time:"H:i" }}
+            </small>
+        </div>
+    {% empty %}
+        <p class="text-muted">Nenhuma disponibilidade cadastrada.</p>
+    {% endfor %}
+</section>
+
+<section class="agenda-card">
+    <h2>Bloqueios</h2>
+
+    {% for item in bloqueios %}
+        <div class="agenda-item">
+            <strong>{{ item.profissional.usuario }}</strong>
+            <small>
+                {{ item.get_tipo_display }}
+                · {{ item.inicio|date:"d/m/Y H:i" }}
+                até {{ item.fim|date:"d/m/Y H:i" }}
+            </small>
+        </div>
+    {% empty %}
+        <p class="text-muted">Nenhum bloqueio ativo.</p>
+    {% endfor %}
+</section>
+
+<section class="agenda-card" style="grid-column:1/-1">
+    <h2>Agendamentos</h2>
+
+    {% for item in agendamentos %}
+        <div class="agenda-item">
+            <strong>
+                {{ item.inicio|date:"d/m/Y H:i" }}
+                · {{ item.profissional }}
+            </strong>
+            <small>
+                {{ item.servico }}
+                · Cliente: {{ item.cliente }}
+                · {{ item.get_status_display }}
+            </small>
+        </div>
+    {% empty %}
+        <p class="text-muted">Nenhum agendamento encontrado.</p>
+    {% endfor %}
+</section>
+
+</div>
+</div>
+</div>
+{% endblock %}

@@ -74,6 +74,22 @@
           {% if pode_gerenciar_equipe %}
             <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_equipe' empresa.uuid %}"><i class="bi bi-people"></i> Equipe</a>
           {% endif %}
+
+          {# BOTUKA_EMPRESA_SERVICOS_30C #}
+          {% if pode_servicos_empresa %}
+            <a
+              class="empresa-btn empresa-btn-light"
+              href="{% url 'painel:servicos_lista' %}?empresa={{ empresa.id }}"
+            >
+              <i class="bi bi-tools"></i> Serviços
+            </a>
+          {% endif %}
+
+          {% if empresa.pode_aceitar_agendamentos %}
+            <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_agenda' empresa.uuid %}">
+              <i class="bi bi-calendar2-week"></i> Agenda
+            </a>
+          {% endif %}
           {% if pode_institucional %}
             <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_institucional' empresa.uuid %}"><i class="bi bi-shield-check"></i> Institucional</a>
           {% endif %}
@@ -157,6 +173,36 @@
           <p class="text-muted mb-0">Você pode visualizar esta empresa, mas não alterar configurações.</p>
         {% endif %}
       </article>
+      {# BOTUKA_EMPRESA_SERVICOS_CARD_30C #}
+      {% if pode_servicos_empresa %}
+      <article class="empresa-card">
+        <h2>Serviços</h2>
+
+        <ul class="empresa-list">
+          <li>
+            Total
+            <strong>{{ servicos_empresa_total }}</strong>
+          </li>
+        </ul>
+
+        <div class="empresa-actions">
+          <a
+            class="empresa-btn empresa-btn-light"
+            href="{% url 'painel:servicos_lista' %}?empresa={{ empresa.id }}"
+          >
+            Ver serviços
+          </a>
+
+          <a
+            class="empresa-btn empresa-btn-primary"
+            href="{% url 'painel:servico_criar' %}?empresa={{ empresa.id }}"
+          >
+            Novo serviço
+          </a>
+        </div>
+      </article>
+      {% endif %}
+
       {% if pode_produtos %}
       <article class="empresa-card">
         <h2>Produtos</h2>

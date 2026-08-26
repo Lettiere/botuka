@@ -1,0 +1,8 @@
+{% extends "_layout/platform/public.html" %}
+{% block public_content %}
+<main class="public-detail container-botuka"><nav class="public-breadcrumb"><a href="{% url 'agenda_public:servico' empresa.slug servico.slug %}">{{ servico.titulo }}</a><i class="bi bi-chevron-right"></i><span>Confirmar</span></nav>
+<section class="surface-section"><span class="section-kicker">Revise os dados</span><h1>Confirmar agendamento</h1>{% if erro %}<div class="alert alert-warning">{{ erro }}</div>{% endif %}
+<dl class="fact-list"><div><dt>Empresa</dt><dd>{{ empresa.nome_exibicao }}</dd></div><div><dt>Serviço</dt><dd>{{ servico.titulo }}</dd></div><div><dt>Profissional</dt><dd>{{ profissional_nome }}</dd></div><div><dt>Data</dt><dd>{{ inicio|date:"d/m/Y" }}</dd></div><div><dt>Horário</dt><dd>{{ inicio|time:"H:i" }}</dd></div><div><dt>Duração</dt><dd>{{ vinculo.duracao_minutos }} minutos</dd></div></dl>
+{% if not erro %}{% if request.user.is_authenticated %}<form method="post">{% csrf_token %}{{ form.inicio }}<button class="btn-botuka btn-yellow" type="submit">Confirmar agendamento</button></form>{% else %}<p>Entre ou crie sua conta para concluir.</p><a class="btn-botuka btn-yellow" href="{% url 'accounts:login' %}?next={{ next_url|urlencode }}">Entrar para confirmar</a>{% endif %}{% endif %}
+</section></main>
+{% endblock %}

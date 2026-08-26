@@ -66,7 +66,7 @@
           <h2>Identificação</h2>
           <div class="empresa-grid">
             {% for field in form %}
-              {% if field.name == "tipo_cadastro" or field.name == "razao_social" or field.name == "nome_fantasia" or field.name == "cpf_cnpj" or field.name == "inscricao_estadual" or field.name == "inscricao_municipal" or field.name == "categoria_empresa" %}
+              {% if field.name == "tipo_cadastro" or field.name == "atuacao" or field.name == "razao_social" or field.name == "nome_fantasia" or field.name == "cpf_cnpj" or field.name == "inscricao_estadual" or field.name == "inscricao_municipal" or field.name == "categoria_empresa" or field.name == "subcategoria_empresa" or field.name == "modalidade_comercial" %}
                 <div class="empresa-field {% if field.name == 'nome_fantasia' or field.name == 'razao_social' %}full{% endif %}">
                   <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                   {{ field.errors }}{{ field }}
@@ -151,4 +151,120 @@
     </form>
   </div>
 </div>
+
+
+<script>
+// BOTUKA_SUBCATEGORIA_DINAMICA
+document.addEventListener("DOMContentLoaded", function () {
+    const categoria = document.getElementById(
+        "id_categoria_empresa"
+    );
+
+    const subcategoria = document.getElementById(
+        "id_subcategoria_empresa"
+    );
+
+    if (!categoria || !subcategoria) {
+        return;
+    }
+
+    const endpoint =
+        "{% url 'painel:empresa_subcategorias_json' %}";
+
+    const valorInicial = subcategoria.value;
+
+    async function carregarSubcategorias(
+        manterValor = false
+    ) {
+        const categoriaId = categoria.value;
+
+        subcategoria.innerHTML = "";
+
+        const optionVazia =
+            document.createElement("option");
+
+        optionVazia.value = "";
+        optionVazia.textContent = "---------";
+
+        subcategoria.appendChild(
+            optionVazia
+        );
+
+        if (!categoriaId) {
+            subcategoria.disabled = true;
+            return;
+        }
+
+        subcategoria.disabled = true;
+
+        try {
+            const resposta = await fetch(
+                endpoint
+                + "?categoria="
+                + encodeURIComponent(
+                    categoriaId
+                ),
+                {
+                    headers: {
+                        "X-Requested-With":
+                            "XMLHttpRequest"
+                    }
+                }
+            );
+
+            if (!resposta.ok) {
+                throw new Error(
+                    "Falha ao carregar subcategorias."
+                );
+            }
+
+            const dados =
+                await resposta.json();
+
+            for (
+                const item
+                of dados.subcategorias
+            ) {
+                const option =
+                    document.createElement(
+                        "option"
+                    );
+
+                option.value = item.id;
+                option.textContent =
+                    item.nome;
+
+                if (
+                    manterValor
+                    && String(item.id)
+                        === String(valorInicial)
+                ) {
+                    option.selected = true;
+                }
+
+                subcategoria.appendChild(
+                    option
+                );
+            }
+
+            subcategoria.disabled = false;
+
+        } catch (erro) {
+            console.error(erro);
+
+            subcategoria.disabled = false;
+        }
+    }
+
+    categoria.addEventListener(
+        "change",
+        function () {
+            carregarSubcategorias(false);
+        }
+    );
+
+    carregarSubcategorias(true);
+});
+</script>
+
 {% endblock %}

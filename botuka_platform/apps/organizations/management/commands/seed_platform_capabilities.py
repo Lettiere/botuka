@@ -6,6 +6,7 @@ from apps.organizations.models import Capacidade
 CAPACIDADES = [
     ('VENDER_PRODUTOS', 'Vender produtos'),
     ('PRESTAR_SERVICOS', 'Prestar serviços'),
+    ('ACEITAR_AGENDAMENTOS', 'Aceitar agendamentos'),
     ('CONTRATAR_SERVICOS', 'Contratar serviços'),
     ('PUBLICAR_VAGAS', 'Publicar vagas'),
     ('GERAR_LEADS', 'Gerar leads'),

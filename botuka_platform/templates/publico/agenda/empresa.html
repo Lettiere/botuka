@@ -1,0 +1,14 @@
+{% extends "_layout/platform/public.html" %}
+{% block public_content %}
+<main class="public-detail container-botuka">
+  <nav class="public-breadcrumb"><a href="{% url 'publico:empresa' empresa.slug %}">{{ empresa.nome_exibicao }}</a><i class="bi bi-chevron-right"></i><span>Agenda</span></nav>
+  <header class="surface-section"><span class="section-kicker">Agenda online</span><h1>Agendar com {{ empresa.nome_exibicao }}</h1><p>Escolha um serviço para consultar profissionais e horários disponíveis.</p></header>
+  {% if not agenda_habilitada %}
+    {% include "public/components/empty_state.html" with title="Agenda temporariamente indisponível" description="Esta empresa não está aceitando agendamentos online no momento." icon="bi-calendar-x" %}
+  {% elif servicos %}
+    <section class="media-grid" aria-label="Serviços agendáveis">{% for servico in servicos %}<article class="sidebar-card"><span class="city-tag">{{ servico.setor }}</span><h2>{{ servico.titulo }}</h2><p>{{ servico.descricao_curta }}</p><a class="btn-botuka btn-yellow" href="{% url 'agenda_public:servico' empresa.slug servico.slug %}">Escolher serviço</a></article>{% endfor %}</section>
+  {% else %}
+    {% include "public/components/empty_state.html" with title="Nenhum serviço agendável" description="A empresa ainda não disponibilizou serviços com profissionais e horários online." icon="bi-calendar-x" %}
+  {% endif %}
+</main>
+{% endblock %}

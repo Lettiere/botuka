@@ -8,6 +8,12 @@ from apps.recruitment import views as recruitment_views
 app_name = 'painel'
 
 urlpatterns = [
+    path(
+        'empresas/api/subcategorias/',
+        views.empresa_subcategorias_json,
+        name='empresa_subcategorias_json',
+    ),
+
     path('', include('apps.products.panel_urls')),
     path('', include('apps.events.panel_urls')),
     path('', include('apps.tourism.panel_urls')),
@@ -32,6 +38,7 @@ urlpatterns = [
     path('empresas/<uuid:uuid>/editar/', views.empresa_editar, name='empresa_editar'),
     path('empresas/<uuid:uuid>/institucional/', views.empresa_institucional, name='empresa_institucional'),
     path('empresas/<uuid:uuid>/equipe/', views.empresa_equipe, name='empresa_equipe'),
+    path('empresas/<uuid:uuid>/agenda/', include('apps.agenda.urls')),
     path('empresas/<uuid:uuid>/links/', views.empresa_links, name='empresa_links'),
     path('empresas/<uuid:uuid>/qrcode/', views.empresa_qrcode, name='empresa_qrcode'),
     path('empresas/<uuid:uuid>/capacidades/', views.empresa_capacidades, name='empresa_capacidades'),

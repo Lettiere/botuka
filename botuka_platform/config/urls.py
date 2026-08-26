@@ -23,6 +23,7 @@ urlpatterns = [
     path('sitemaps/<section>.xml', cache_page(3600)(sitemap), {'sitemaps': SITEMAPS}, name='sitemap-section'),
     path("", include("apps.core.events_urls")),
     path("", include("apps.services.urls")),
+    path("", include("apps.agenda.public_urls")),
     path("", include("apps.products.public_urls")),
     path("", include("apps.recruitment.public_urls")),
     path("", include("apps.tourism.public_urls")),

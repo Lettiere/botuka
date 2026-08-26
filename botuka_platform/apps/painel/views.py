@@ -50,6 +50,14 @@ from apps.core.models import Auditoria
 from apps.core.attribute_forms import atributo_formset
 from apps.integrations.cnpj.exceptions import CNPJError
 from apps.integrations.cnpj.services import consultar_cnpj
+from apps.agenda.models import (
+    AgendaProfissional,
+    AgendaProfissionalServico,
+    AgendaDisponibilidade,
+    AgendaBloqueio,
+    Agendamento,
+)
+from apps.taxonomy.models import Subcategoria
 from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade, EmpresaEndereco, EmpresaLink, EmpresaSolicitacao, EmpresaUsuario, UsuarioLimitePersonalizado
 from apps.organizations.plans import (
     LimiteUsuarioService, obter_assinatura_vigente,
@@ -325,6 +333,8 @@ def empresa_detalhe(request: HttpRequest, uuid) -> HttpResponse:
             'conversas_comerciais': Conversa.objects.filter(empresa=empresa, ativo=True).count(),
             'limite_produtos': limite_produtos,
             'pode_produtos': usuario_tem_permissao(request.user, 'products.visualizar'),
+            'pode_servicos_empresa': empresa.pode_publicar_servico,
+            'servicos_empresa_total': Servico.objects.filter(empresa=empresa).count(),
             'pode_criar_produto_empresa': usuario_tem_permissao(request.user, 'products.criar_empresa'),
             'vendas_loja_url': f"{settings.VENDAS_URL}/lojas/{empresa.slug}/",
         },
@@ -533,14 +543,139 @@ def empresa_equipe(request: HttpRequest, uuid) -> HttpResponse:
         acao = request.POST.get('acao', 'adicionar')
 
         if acao in {'ativar', 'desativar'}:
-            vinculo = get_object_or_404(EmpresaUsuario, empresa=empresa, pk=request.POST.get('vinculo_id'))
+            vinculo = get_object_or_404(
+                EmpresaUsuario,
+                empresa=empresa,
+                pk=request.POST.get('vinculo_id'),
+            )
+
             if vinculo.proprietario:
-                messages.error(request, 'O proprietário não pode ser desativado por este fluxo.')
+                messages.error(
+                    request,
+                    'O proprietário não pode ser desativado por este fluxo.',
+                )
             else:
                 vinculo.ativo = acao == 'ativar'
-                vinculo.save(update_fields=['ativo', 'atualizado_em'])
-                messages.success(request, 'Vínculo atualizado com sucesso.')
-            return redirect('painel:empresa_equipe', uuid=empresa.uuid)
+                vinculo.save(
+                    update_fields=[
+                        'ativo',
+                        'atualizado_em',
+                    ]
+                )
+
+                if not vinculo.ativo:
+                    AgendaProfissional.objects.filter(
+                        empresa_usuario=vinculo,
+                        ativo=True,
+                    ).update(
+                        ativo=False,
+                        atualizado_em=timezone.now(),
+                    )
+
+                messages.success(
+                    request,
+                    'Vínculo atualizado com sucesso.',
+                )
+
+            return redirect(
+                'painel:empresa_equipe',
+                uuid=empresa.uuid,
+            )
+
+        if acao in {
+            'agenda_profissional_ativar',
+            'agenda_profissional_desativar',
+        }:
+            vinculo = get_object_or_404(
+                EmpresaUsuario.objects.select_related(
+                    'empresa',
+                    'usuario',
+                ),
+                empresa=empresa,
+                pk=request.POST.get('vinculo_id'),
+            )
+
+            if not vinculo.ativo:
+                messages.error(
+                    request,
+                    'Ative o membro da equipe antes de habilitá-lo na Agenda.',
+                )
+                return redirect(
+                    'painel:empresa_equipe',
+                    uuid=empresa.uuid,
+                )
+
+            if not empresa.pode_publicar_servico:
+                messages.error(
+                    request,
+                    'A empresa precisa estar autorizada a prestar serviços antes de configurar profissionais da Agenda.',
+                )
+                return redirect(
+                    'painel:empresa_equipe',
+                    uuid=empresa.uuid,
+                )
+
+            if acao == 'agenda_profissional_ativar':
+                profissional, criado = (
+                    AgendaProfissional.objects.get_or_create(
+                        empresa_usuario=vinculo,
+                        defaults={
+                            'ativo': True,
+                        },
+                    )
+                )
+
+                if not criado and not profissional.ativo:
+                    profissional.ativo = True
+                    profissional.save(
+                        update_fields=[
+                            'ativo',
+                            'atualizado_em',
+                        ]
+                    )
+
+                messages.success(
+                    request,
+                    'Profissional habilitado na Agenda.',
+                )
+
+            else:
+                profissional = (
+                    AgendaProfissional.objects
+                    .filter(
+                        empresa_usuario=vinculo,
+                    )
+                    .first()
+                )
+
+                if profissional is None:
+                    messages.info(
+                        request,
+                        'Este membro ainda não é profissional da Agenda.',
+                    )
+                elif profissional.ativo:
+                    profissional.ativo = False
+                    profissional.save(
+                        update_fields=[
+                            'ativo',
+                            'atualizado_em',
+                        ]
+                    )
+
+                    messages.success(
+                        request,
+                        'Profissional desabilitado da Agenda sem apagar o histórico.',
+                    )
+                else:
+                    messages.info(
+                        request,
+                        'O profissional já está desabilitado na Agenda.',
+                    )
+
+            return redirect(
+                'painel:empresa_equipe',
+                uuid=empresa.uuid,
+            )
 
         form = EmpresaUsuarioForm(request.POST, empresa=empresa, ator=request.user)
         if form.is_valid():
@@ -550,7 +685,10 @@ def empresa_equipe(request: HttpRequest, uuid) -> HttpResponse:
     else:
         form = EmpresaUsuarioForm(empresa=empresa, ator=request.user)
 
-    vinculos = empresa.usuarios_vinculados.select_related('usuario').order_by(
+    vinculos = empresa.usuarios_vinculados.select_related(
+        'usuario',
+        'agenda_profissional',
+    ).order_by(
         '-proprietario',
         '-administrador',
         'usuario__first_name',
@@ -638,7 +776,7 @@ def empresa_capacidades(request: HttpRequest, uuid) -> HttpResponse:
         raise PermissionDenied
 
     if request.method == 'POST':
-        form = EmpresaCapacidadeForm(request.POST)
+        form = EmpresaCapacidadeForm(request.POST, empresa=empresa)
         if form.is_valid():
             capacidade = form.save(commit=False)
             capacidade.empresa = empresa
@@ -647,7 +785,7 @@ def empresa_capacidades(request: HttpRequest, uuid) -> HttpResponse:
             messages.success(request, 'Capacidade solicitada com sucesso.')
             return redirect('painel:empresa_capacidades', uuid=empresa.uuid)
     else:
-        form = EmpresaCapacidadeForm()
+        form = EmpresaCapacidadeForm(empresa=empresa)
 
     capacidades = empresa.capacidades_empresa.select_related('capacidade').order_by('-criado_em')
     return render(request, 'painel/empresas/capacidades.html', {'empresa': empresa, 'form': form, 'capacidades': capacidades})
@@ -803,7 +941,39 @@ def servicos_lista(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def servico_criar(request: HttpRequest) -> HttpResponse:
-    form = ServicoForm(request.POST or None, usuario=request.user)
+    empresa_contexto = None
+    empresa_id = request.GET.get('empresa', '').strip()
+
+    if empresa_id:
+        if not empresa_id.isdigit():
+            raise PermissionDenied
+
+        empresa_contexto = get_object_or_404(
+            empresas_disponiveis_para_usuario(request.user),
+            pk=empresa_id,
+        )
+
+        if not usuario_pode_gerenciar_empresa(
+            request.user,
+            empresa_contexto,
+        ):
+            raise PermissionDenied
+
+        if not empresa_contexto.pode_publicar_servico:
+            messages.warning(
+                request,
+                'Esta empresa não possui autorização para publicar serviços.',
+            )
+            return redirect(
+                'painel:empresa_detalhe',
+                uuid=empresa_contexto.uuid,
+            )
+
+    form = ServicoForm(
+        request.POST or None,
+        usuario=request.user,
+        empresa_contexto=empresa_contexto,
+    )
     atributos = atributo_formset('servico', instance=form.instance, data=request.POST or None)
     area_form = ServicoAreaForm(request.POST or None, prefix='area')
     links_forms = _formularios_links_post(request) if request.method == 'POST' else []
@@ -815,6 +985,10 @@ def servico_criar(request: HttpRequest) -> HttpResponse:
         if valido:
             servico = form.save(commit=False)
             servico.usuario_responsavel = request.user
+
+            if empresa_contexto is not None:
+                servico.prestador_tipo = Servico.PrestadorTipo.EMPRESA
+                servico.empresa = empresa_contexto
             try:
                 validar_contexto_servico(
                     request.user, servico.prestador_tipo, servico.empresa,
@@ -862,6 +1036,7 @@ def servico_criar(request: HttpRequest) -> HttpResponse:
         'atributos': atributos,
         'atributo_contexto': 'servico',
         'profissional_responsavel': request.user,
+        'empresa_contexto': empresa_contexto,
     })
 
 
@@ -1324,3 +1499,155 @@ def mensagens(request: HttpRequest) -> HttpResponse:
 @painel_permission_required('configuracoes.editar')
 def configuracoes(request: HttpRequest) -> HttpResponse:
     return render_pagina(request, 'painel/configuracoes/index.html', 'Configurações')
+
+
+
+@login_required
+def empresa_agenda(request: HttpRequest, uuid) -> HttpResponse:
+    empresa = _empresa_autorizada(request, uuid)
+
+    if not usuario_pode_gerenciar_empresa(request.user, empresa):
+        raise PermissionDenied
+
+    if not empresa.pode_aceitar_agendamentos:
+        messages.warning(
+            request,
+            'Esta empresa não possui a capacidade de Agenda habilitada.'
+        )
+        return redirect('painel:empresa_detalhe', uuid=empresa.uuid)
+
+    profissionais = (
+        AgendaProfissional.objects
+        .filter(
+            empresa_usuario__empresa=empresa,
+            ativo=True,
+        )
+        .select_related(
+            'empresa_usuario',
+            'empresa_usuario__usuario',
+        )
+        .order_by(
+            'empresa_usuario__usuario__nome_exibicao',
+            'empresa_usuario__usuario__first_name',
+        )
+    )
+
+    servicos = (
+        AgendaProfissionalServico.objects
+        .filter(
+            profissional__empresa_usuario__empresa=empresa,
+            ativo=True,
+        )
+        .select_related(
+            'profissional',
+            'profissional__empresa_usuario',
+            'profissional__empresa_usuario__usuario',
+            'servico',
+        )
+    )
+
+    disponibilidades = (
+        AgendaDisponibilidade.objects
+        .filter(
+            profissional__empresa_usuario__empresa=empresa,
+            ativo=True,
+        )
+        .select_related(
+            'profissional',
+            'profissional__empresa_usuario',
+            'profissional__empresa_usuario__usuario',
+        )
+    )
+
+    bloqueios = (
+        AgendaBloqueio.objects
+        .filter(
+            profissional__empresa_usuario__empresa=empresa,
+            ativo=True,
+        )
+        .select_related(
+            'profissional',
+            'profissional__empresa_usuario',
+            'profissional__empresa_usuario__usuario',
+        )
+        .order_by('inicio')
+    )
+
+    agendamentos = (
+        Agendamento.objects
+        .filter(
+            profissional_servico__profissional__empresa_usuario__empresa=empresa,
+        )
+        .select_related(
+            'cliente',
+            'profissional_servico',
+            'profissional_servico__servico',
+            'profissional_servico__profissional',
+            'profissional_servico__profissional__empresa_usuario',
+            'profissional_servico__profissional__empresa_usuario__usuario',
+        )
+        .order_by('inicio')[:50]
+    )
+
+    contexto = {
+        'empresa': empresa,
+        'profissionais': profissionais,
+        'servicos_agenda': servicos,
+        'disponibilidades': disponibilidades,
+        'bloqueios': bloqueios,
+        'agendamentos': agendamentos,
+    }
+
+    return render(
+        request,
+        'painel/agenda/dashboard.html',
+        contexto,
+    )
+
+@login_required
+def empresa_subcategorias_json(
+    request: HttpRequest,
+) -> JsonResponse:
+    categoria_id = request.GET.get('categoria')
+
+    if not categoria_id:
+        return JsonResponse(
+            {
+                'subcategorias': [],
+            }
+        )
+
+    try:
+        categoria_id = int(categoria_id)
+    except (TypeError, ValueError):
+        return JsonResponse(
+            {
+                'subcategorias': [],
+            },
+            status=400,
+        )
+
+    qs = (
+        Subcategoria.objects
+        .filter(
+            categoria_id=categoria_id,
+            ativo=True,
+            removido_em__isnull=True,
+        )
+        .order_by(
+            'ordem',
+            'nome',
+        )
+    )
+
+    return JsonResponse(
+        {
+            'subcategorias': [
+                {
+                    'id': item.pk,
+                    'nome': item.nome,
+                }
+                for item in qs
+            ]
+        }
+    )

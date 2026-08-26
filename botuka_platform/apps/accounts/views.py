@@ -61,6 +61,7 @@ def cadastro_usuario(request):
     email = request.POST.get("email", "").strip().lower()
     senha = request.POST.get("password", "")
     senha_confirmacao = request.POST.get("password_confirm", "")
+    redirect_to = request.POST.get("next") or "home"
 
     if not nome or not email or not senha:
         messages.error(request, "Preencha todos os campos obrigatórios.")
@@ -85,6 +86,12 @@ def cadastro_usuario(request):
 
     login(request, user)
     messages.success(request, "Conta criada com sucesso. Bem-vindo ao BOTUKA!")
+    if redirect_to != "home" and url_has_allowed_host_and_scheme(
+        redirect_to,
+        allowed_hosts={request.get_host(), urlparse(settings.BOTUKA_SOCIAL_BASE_URL).netloc},
+        require_https=request.is_secure(),
+    ):
+        return redirect(redirect_to)
     return redirect(obter_url_pos_login(user))
 
 

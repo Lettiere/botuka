@@ -16,6 +16,7 @@ from apps.products.models import Produto
 from apps.recruitment.models import Vaga
 from apps.social.selectors import contagem_seguidores_empresa
 from apps.social.services import usuario_segue_empresa
+from apps.agenda.public_services import servicos_agendaveis, vinculos_agendaveis
 
 
 def empresas_publicas(request):
@@ -59,7 +60,11 @@ def servico_publico(request, slug):
     if servico.empresa_id and not servico.empresa.pode_publicar_servico:
         raise Http404
     links = servico.links.filter(ativo=True, excluido_em__isnull=True).order_by('-destaque', 'ordem')
-    return render(request, 'publico/servicos/detalhe.html', {'servico': servico, 'share_object': servico, 'share_type': 'servico', 'links': links, 'videos': [link for link in links if link.url_embed][:6], 'seo': servico_seo(request, servico)})
+    agenda_disponivel = bool(
+        servico.empresa_id
+        and vinculos_agendaveis(empresa=servico.empresa, servico=servico)
+    )
+    return render(request, 'publico/servicos/detalhe.html', {'servico': servico, 'share_object': servico, 'share_type': 'servico', 'links': links, 'videos': [link for link in links if link.url_embed][:6], 'seo': servico_seo(request, servico), 'agenda_disponivel': agenda_disponivel})
 
 
 def empresa_publica(request, slug):
@@ -79,6 +84,7 @@ def empresa_publica(request, slug):
         empresa=empresa, ativo=True, excluido_em__isnull=True,
         status=Servico.Status.PUBLICADO,
     )[:6]
+    servicos_agenda = servicos_agendaveis(empresa)
     vagas = Vaga.objects.filter(
         empresa=empresa, ativo=True, excluido_em__isnull=True,
         status=Vaga.Status.PUBLICADA,
@@ -106,6 +112,7 @@ def empresa_publica(request, slug):
         'links': links, 'videos': [link for link in links if link.url_embed][:6],
         'seo': empresa_seo(request, empresa), 'produtos': produtos[:6],
         'servicos': servicos, 'vagas': vagas,
+        'agenda_disponivel': servicos_agenda.exists(),
         'endereco_publico': endereco_publico,
         'google_maps_url': google_maps_url, 'waze_url': waze_url,
         'telefone_formatado': formatar_telefone(empresa.telefone),

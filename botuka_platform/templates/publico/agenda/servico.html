@@ -1,0 +1,27 @@
+{% extends "_layout/platform/public.html" %}
+{% block public_content %}
+<main class="public-detail container-botuka">
+  <nav class="public-breadcrumb"><a href="{% url 'agenda_public:empresa' empresa.slug %}">Agenda de {{ empresa.nome_exibicao }}</a><i class="bi bi-chevron-right"></i><span>{{ servico.titulo }}</span></nav>
+  <header class="surface-section"><span class="section-kicker">Agendamento</span><h1>{{ servico.titulo }}</h1><p>Escolha o profissional e a data. A consulta de horários não reserva o atendimento.</p></header>
+  {% if profissionais %}
+  <section class="surface-section" data-agenda-picker data-slots-pattern="{% url 'agenda_public:slots' '00000000-0000-0000-0000-000000000000' %}" data-confirm-pattern="{% url 'agenda_public:confirmar' '00000000-0000-0000-0000-000000000000' %}">
+    <h2>{% if profissionais|length == 1 %}Profissional disponível{% else %}Escolha o profissional{% endif %}</h2>
+    {% for profissional in profissionais %}<label class="sidebar-card" style="display:block;margin-bottom:10px"><input type="radio" name="profissional" value="{{ profissional.uuid }}" {% if profissionais|length == 1 %}checked{% endif %}> <strong>{{ profissional.nome }}</strong><br><small>Duração: {{ profissional.duracao }} minutos</small></label>{% endfor %}
+    <label for="agenda-data"><strong>Data</strong></label><input id="agenda-data" type="date" min="{% now 'Y-m-d' %}" class="form-control" style="max-width:280px;margin:8px 0 18px">
+    <div id="agenda-slots" class="d-flex flex-wrap gap-2" aria-live="polite"><p>Selecione uma data para consultar os horários.</p></div>
+  </section>
+  {% else %}
+    {% include "public/components/empty_state.html" with title="Serviço sem agenda disponível" description="Não há profissional habilitado para agendamento online neste serviço." icon="bi-person-x" %}
+  {% endif %}
+</main>
+{% if profissionais %}<script>
+(() => {
+  const root=document.querySelector('[data-agenda-picker]'); const date=document.getElementById('agenda-data'); const box=document.getElementById('agenda-slots');
+  const uuidPattern='00000000-0000-0000-0000-000000000000';
+  async function load(){ const selected=document.querySelector('input[name="profissional"]:checked'); if(!selected||!date.value){box.innerHTML='<p>Selecione profissional e data.</p>';return;} box.innerHTML='<p>Consultando horários…</p>';
+    const url=root.dataset.slotsPattern.replace(uuidPattern,selected.value)+'?data='+encodeURIComponent(date.value); const response=await fetch(url,{headers:{'Accept':'application/json'}}); if(!response.ok){box.innerHTML='<p>Não foi possível consultar esta data.</p>';return;} const data=await response.json();
+    if(!data.slots.length){box.innerHTML='<p>Nenhum horário disponível nesta data.</p>';return;} box.innerHTML=''; data.slots.forEach(slot=>{const a=document.createElement('a');a.className='btn-botuka btn-soft';a.textContent=slot.horario;a.href=root.dataset.confirmPattern.replace(uuidPattern,selected.value)+'?inicio='+encodeURIComponent(slot.inicio);box.appendChild(a);}); }
+  date.addEventListener('change',load); document.querySelectorAll('input[name="profissional"]').forEach(item=>item.addEventListener('change',load));
+})();
+</script>{% endif %}
+{% endblock %}

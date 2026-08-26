@@ -782,7 +782,7 @@
     <div class="servicos-hero__actions">
       <a
         class="btn btn-primary servicos-primary-action"
-        href="{% url 'painel:servico_criar' %}"
+        href="{% url 'painel:servico_criar' %}{% if request.GET.empresa %}?empresa={{ request.GET.empresa }}{% endif %}"
       >
         <i class="bi bi-plus-lg" aria-hidden="true"></i>
         <span>Novo serviço</span>
@@ -1128,9 +1128,16 @@
 
       {% empty %}
         {% if total_servicos == 0 %}
-          {% url 'painel:servico_criar' as empty_action_url %}
-
-          {% include "painel/components/empty_state.html" with empty_icon="bi-briefcase" empty_title="Nenhum serviço cadastrado" empty_text="Cadastre o primeiro serviço oferecido por um profissional ou empresa vinculada." empty_action_label="Cadastrar primeiro serviço" empty_action_url=empty_action_url %}
+          {% url 'painel:servico_criar' as empty_action_base_url %}
+          {% if request.GET.empresa %}
+            {% with empresa_query='?empresa='|add:request.GET.empresa %}
+              {% with empty_action_url=empty_action_base_url|add:empresa_query %}
+                {% include "painel/components/empty_state.html" with empty_icon="bi-briefcase" empty_title="Nenhum serviço cadastrado" empty_text="Cadastre o primeiro serviço oferecido por um profissional ou empresa vinculada." empty_action_label="Cadastrar primeiro serviço" empty_action_url=empty_action_url %}
+              {% endwith %}
+            {% endwith %}
+          {% else %}
+            {% include "painel/components/empty_state.html" with empty_icon="bi-briefcase" empty_title="Nenhum serviço cadastrado" empty_text="Cadastre o primeiro serviço oferecido por um profissional ou empresa vinculada." empty_action_label="Cadastrar primeiro serviço" empty_action_url=empty_action_base_url %}
+          {% endif %}
         {% else %}
           <div class="servicos-filter-empty">
             <div class="servicos-filter-empty__icon">

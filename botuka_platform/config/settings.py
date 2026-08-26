@@ -160,6 +160,7 @@ INSTALLED_APPS = [
     'apps.locations.apps.LocationsConfig',
     'apps.organizations.apps.OrganizationsConfig',
     'apps.services.apps.ServicesConfig',
+    'apps.agenda.apps.AgendaConfig',
     'apps.recruitment.apps.RecruitmentConfig',
     'apps.tourism.apps.TourismConfig',
     'apps.sports.apps.SportsConfig',
