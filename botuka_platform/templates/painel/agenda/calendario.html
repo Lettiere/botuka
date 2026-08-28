@@ -1,0 +1,472 @@
+{% extends "painel/base.html" %}
+{% block title %}Calendário da Agenda | BOTUKA
+<style>
+.agcal-mobile-days{display:none}
+@media(max-width:768px){
+  .agcal-mobile-days{
+    display:flex;
+    gap:7px;
+    overflow-x:auto;
+    padding:0 0 12px;
+  }
+  .agcal-mobile-days button{
+    flex:0 0 auto;
+    border:1px solid #dde3ec;
+    background:#fff;
+    border-radius:10px;
+    padding:8px 11px;
+    font-weight:800;
+    color:#172033;
+  }
+  .agcal-mobile-days button.active{
+    background:#172033;
+    color:#fff;
+    border-color:#172033;
+  }
+  .agcal-week .agcal-day{
+    display:none;
+  }
+  .agcal-week .agcal-day.is-mobile-active{
+    display:block;
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const week = document.querySelector('[data-agcal-week]');
+  if (!week) return;
+
+  const days = [...week.querySelectorAll('[data-agcal-day]')];
+  const mobileNav = document.querySelector('.agcal-mobile-days');
+
+  if (!days.length || !mobileNav) return;
+
+  const activate = (target) => {
+    days.forEach(day => {
+      day.classList.toggle(
+        'is-mobile-active',
+        day.dataset.date === target.dataset.date
+      );
+    });
+
+    mobileNav.querySelectorAll('button').forEach(button => {
+      button.classList.toggle(
+        'active',
+        button.dataset.date === target.dataset.date
+      );
+    });
+  };
+
+  days.forEach((day, index) => {
+    const head = day.querySelector('.agcal-day-head');
+    const button = document.createElement('button');
+
+    button.type = 'button';
+    button.dataset.date = day.dataset.date;
+    button.textContent = head?.innerText.trim().replace(/\s+/g, ' ') || day.dataset.date;
+
+    button.addEventListener('click', () => activate(day));
+    mobileNav.appendChild(button);
+
+    if (day.classList.contains('today') || index === 0) {
+      if (!days.some(item => item.classList.contains('is-mobile-active'))) {
+        activate(day);
+      }
+    }
+  });
+});
+</script>
+
+{% endblock %}
+
+{% block content %}
+
+<style>
+.agcal-page{
+  max-width:1500px;
+  margin:auto;
+  padding:24px 12px 48px;
+}
+.agcal-head{
+  display:flex;
+  justify-content:space-between;
+  gap:18px;
+  align-items:flex-end;
+  flex-wrap:wrap;
+  margin-bottom:4px;
+}
+.agcal-head h1{
+  margin:0;
+  font-weight:900;
+  color:#172033;
+}
+.agcal-tools{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.agcal-tools select{
+  min-width:220px;
+}
+.agcal-week{
+  display:grid;
+  grid-template-columns:repeat(7,minmax(150px,1fr));
+  gap:8px;
+  overflow-x:auto;
+  padding-bottom:10px;
+}
+.agcal-day{
+  min-width:150px;
+  border:1px solid #e3e7ee;
+  border-radius:17px;
+  background:#fff;
+  overflow:hidden;
+}
+.agcal-day.today{
+  box-shadow:0 0 0 2px #f2c500 inset;
+}
+.agcal-day-head{
+  min-height:66px;
+  padding:11px 10px;
+  border-bottom:1px solid #edf0f4;
+  background:#fafbfc;
+}
+.agcal-day-head strong{
+  display:block;
+  color:#172033;
+}
+.agcal-day-head span{
+  color:#667085;
+  font-size:12px;
+}
+.agcal-timeline{
+  height:1020px;
+  position:relative;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      transparent 0,
+      transparent 29px,
+      #eef1f5 30px
+    );
+}
+.agcal-working,
+.agcal-availability,
+.agcal-event{
+  position:absolute;
+  left:4px;
+  right:4px;
+  border-radius:8px;
+  padding:5px 6px;
+  overflow:hidden;
+  font-size:11px;
+}
+.agcal-working{
+  background:#f4f7fa;
+  border:1px dashed #cbd3dd;
+  z-index:1;
+}
+.agcal-availability{
+  left:8px;
+  right:8px;
+  background:rgba(21,128,61,.09);
+  border-left:3px solid #15803d;
+  z-index:2;
+}
+.agcal-event{
+  z-index:5;
+  box-shadow:0 2px 8px rgba(15,23,42,.12);
+}
+.agcal-event.agendamento{
+  background:#172033;
+  color:#fff;
+  border-left:4px solid #f2c500;
+}
+.agcal-event.bloqueio{
+  background:#fee2e2;
+  color:#991b1b;
+  border-left:4px solid #dc2626;
+}
+.agcal-event.buffer{
+  background:#fff4c2;
+  color:#614d00;
+  border-left:4px solid #eab308;
+}
+.agcal-event a{
+  color:inherit;
+  text-decoration:none;
+  display:block;
+}
+.agcal-event strong,
+.agcal-availability strong{
+  display:block;
+  line-height:1.15;
+}
+.agcal-event small,
+.agcal-availability small{
+  display:block;
+  opacity:.82;
+  margin-top:2px;
+}
+.agcal-legend{
+  display:flex;
+  gap:14px;
+  flex-wrap:wrap;
+  margin:14px 0;
+  font-size:12px;
+  color:#667085;
+}
+.agcal-legend span{
+  display:inline-flex;
+  align-items:center;
+  gap:6px;
+}
+.agcal-dot{
+  width:11px;
+  height:11px;
+  border-radius:3px;
+  display:inline-block;
+}
+.agcal-dot.open{background:#d9dee5}
+.agcal-dot.available{background:#86c99b}
+.agcal-dot.booked{background:#172033}
+.agcal-dot.blocked{background:#ef4444}
+.agcal-dot.buffer{background:#eab308}
+
+@media(max-width:768px){
+  .agcal-page{
+    padding:16px 8px 36px;
+  }
+  .agcal-week{
+    display:flex;
+    flex-direction:column;
+    overflow:visible;
+  }
+  .agcal-day{
+    width:100%;
+  }
+  .agcal-timeline{
+    height:700px;
+  }
+  .agcal-tools{
+    width:100%;
+  }
+  .agcal-tools select{
+    width:100%;
+  }
+}
+</style>
+
+<div class="agcal-page">
+
+  <div class="agcal-head">
+    <div>
+      <h1>Calendário operacional</h1>
+      <div class="text-muted">
+        {{ inicio_semana|date:"d/m/Y" }}
+        até
+        {{ fim_semana|date:"d/m/Y" }}
+      </div>
+    </div>
+
+    <div class="agcal-tools">
+
+      <a class="btn btn-outline-secondary"
+         href="?data={{ anterior|date:'Y-m-d' }}{% if profissional_selecionado %}&profissional={{ profissional_selecionado.pk }}{% endif %}">
+        <i class="bi bi-chevron-left"></i>
+      </a>
+
+      <a class="btn btn-outline-secondary"
+         href="?data={{ hoje|date:'Y-m-d' }}{% if profissional_selecionado %}&profissional={{ profissional_selecionado.pk }}{% endif %}">
+        Hoje
+      </a>
+
+      <a class="btn btn-outline-secondary"
+         href="?data={{ proxima|date:'Y-m-d' }}{% if profissional_selecionado %}&profissional={{ profissional_selecionado.pk }}{% endif %}">
+        <i class="bi bi-chevron-right"></i>
+      </a>
+
+      <form method="get">
+        <input type="hidden"
+               name="data"
+               value="{{ inicio_semana|date:'Y-m-d' }}">
+
+        <select name="profissional"
+                class="form-select"
+                onchange="this.form.submit()">
+
+          <option value="">Todos os profissionais</option>
+
+          {% for profissional in profissionais %}
+            <option value="{{ profissional.pk }}"
+              {% if profissional_selecionado.pk == profissional.pk %}selected{% endif %}>
+              {{ profissional.usuario }}
+            </option>
+          {% endfor %}
+
+        </select>
+      </form>
+
+    </div>
+  </div>
+
+  {% include "painel/agenda/_nav.html" %}
+
+  {% if not funcionamento_configurado %}
+    <div class="alert alert-warning">
+      Funcionamento da empresa ainda não configurado.
+      O motor mantém temporariamente a disponibilidade profissional como referência.
+    </div>
+  {% endif %}
+
+  <div class="agcal-legend">
+    <span><i class="agcal-dot open"></i> Empresa aberta</span>
+    <span><i class="agcal-dot available"></i> Profissional disponível</span>
+    <span><i class="agcal-dot booked"></i> Agendamento</span>
+    <span><i class="agcal-dot blocked"></i> Bloqueio</span>
+    <span><i class="agcal-dot buffer"></i> Buffer</span>
+  </div>
+
+  <div class="agcal-mobile-days" aria-label="Selecionar dia"></div><div class="agcal-week" data-agcal-week>
+
+    {% for dia in dias %}
+      <section class="agcal-day {% if dia.hoje %}today{% endif %}" data-agcal-day data-date="{{ dia.data|date:'Y-m-d' }}">
+
+        <header class="agcal-day-head">
+          <strong>{{ dia.data|date:"l" }}</strong>
+          <span>{{ dia.data|date:"d/m" }}</span>
+        </header>
+
+        <div class="agcal-timeline">
+
+          {% for bloco in dia.funcionamentos %}
+            <div class="agcal-working"
+                 style="top:{{ bloco.top }}%;height:{{ bloco.height }}%;">
+              <strong>{{ bloco.titulo }}</strong>
+              <small>{{ bloco.subtitulo }}</small>
+            </div>
+          {% endfor %}
+
+          {% for bloco in dia.disponibilidades %}
+            <div class="agcal-availability"
+                 style="top:{{ bloco.top }}%;height:{{ bloco.height }}%;">
+              <strong>{{ bloco.titulo }}</strong>
+              <small>{{ bloco.subtitulo }}</small>
+            </div>
+          {% endfor %}
+
+          {% for bloco in dia.eventos %}
+            <div class="agcal-event {{ bloco.tipo }}"
+                 style="top:{{ bloco.top }}%;height:{{ bloco.height }}%;">
+
+              {% if bloco.href %}
+                <a href="{{ bloco.href }}">
+              {% endif %}
+
+              <strong>{{ bloco.titulo }}</strong>
+
+              <small>
+                {{ bloco.inicio|date:"H:i" }}–{{ bloco.fim|date:"H:i" }}
+                {% if bloco.subtitulo %}
+                  · {{ bloco.subtitulo }}
+                {% endif %}
+              </small>
+
+              {% if bloco.href %}
+                </a>
+              {% endif %}
+
+            </div>
+          {% endfor %}
+
+        </div>
+
+      </section>
+    {% endfor %}
+
+  </div>
+
+</div>
+
+
+<style>
+.agcal-mobile-days{display:none}
+@media(max-width:768px){
+  .agcal-mobile-days{
+    display:flex;
+    gap:7px;
+    overflow-x:auto;
+    padding:0 0 12px;
+  }
+  .agcal-mobile-days button{
+    flex:0 0 auto;
+    border:1px solid #dde3ec;
+    background:#fff;
+    border-radius:10px;
+    padding:8px 11px;
+    font-weight:800;
+    color:#172033;
+  }
+  .agcal-mobile-days button.active{
+    background:#172033;
+    color:#fff;
+    border-color:#172033;
+  }
+  .agcal-week .agcal-day{
+    display:none;
+  }
+  .agcal-week .agcal-day.is-mobile-active{
+    display:block;
+  }
+}
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+  const week = document.querySelector('[data-agcal-week]');
+  if (!week) return;
+
+  const days = [...week.querySelectorAll('[data-agcal-day]')];
+  const mobileNav = document.querySelector('.agcal-mobile-days');
+
+  if (!days.length || !mobileNav) return;
+
+  const activate = (target) => {
+    days.forEach(day => {
+      day.classList.toggle(
+        'is-mobile-active',
+        day.dataset.date === target.dataset.date
+      );
+    });
+
+    mobileNav.querySelectorAll('button').forEach(button => {
+      button.classList.toggle(
+        'active',
+        button.dataset.date === target.dataset.date
+      );
+    });
+  };
+
+  days.forEach((day, index) => {
+    const head = day.querySelector('.agcal-day-head');
+    const button = document.createElement('button');
+
+    button.type = 'button';
+    button.dataset.date = day.dataset.date;
+    button.textContent = head?.innerText.trim().replace(/\s+/g, ' ') || day.dataset.date;
+
+    button.addEventListener('click', () => activate(day));
+    mobileNav.appendChild(button);
+
+    if (day.classList.contains('today') || index === 0) {
+      if (!days.some(item => item.classList.contains('is-mobile-active'))) {
+        activate(day);
+      }
+    }
+  });
+});
+</script>
+
+{% endblock %}

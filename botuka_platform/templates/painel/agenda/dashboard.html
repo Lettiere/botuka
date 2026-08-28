@@ -65,9 +65,14 @@
     </div>
 
     <div class="agenda-stat">
-        <strong>{{ agendamentos|length }}</strong>
-        <span>Agendamentos</span>
+        <strong>{{ agenda_resumo.proximos_total }}</strong>
+        <span>Próximos atendimentos</span>
     </div>
+    <div class="agenda-stat"><strong>{{ agenda_resumo.hoje_total }}</strong><span>Atendimentos hoje</span></div>
+    <div class="agenda-stat"><strong>{{ agenda_resumo.pendentes_total }}</strong><span>Pendentes</span></div>
+    <div class="agenda-stat"><strong>{{ agenda_resumo.confirmados_total }}</strong><span>Confirmados</span></div>
+    <div class="agenda-stat"><strong>{{ agenda_resumo.concluidos_total }}</strong><span>Concluídos</span></div>
+    <div class="agenda-stat"><strong>{{ agenda_resumo.cancelados_total }}</strong><span>Cancelados</span></div>
 
 </section>
 
@@ -137,7 +142,7 @@
 </section>
 
 <section class="agenda-card" style="grid-column:1/-1">
-    <h2>Agendamentos</h2>
+    <h2>Próximos atendimentos</h2>
 
     {% for item in agendamentos %}
         <div class="agenda-item">
@@ -152,7 +157,7 @@
             </small>
         </div>
     {% empty %}
-        <p class="text-muted">Nenhum agendamento encontrado.</p>
+        <p class="text-muted">Nenhum atendimento futuro. Compartilhe a Agenda pública ou confirme se profissionais, serviços e horários estão ativos.</p>
     {% endfor %}
 </section>
 

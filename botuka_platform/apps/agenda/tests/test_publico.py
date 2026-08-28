@@ -12,16 +12,21 @@ from apps.agenda.models import (
     Agendamento,
     AgendaBloqueio,
     AgendaDisponibilidade,
+    AgendaDisponibilidadeData,
     AgendaProfissional,
     AgendaProfissionalServico,
 )
 from apps.agenda.public_services import (
     cancelar_agendamento_cliente,
+    calendario_servico_publico,
     criar_agendamento_publico,
+    empresas_agendaveis,
     gerar_slots,
     nome_publico_profissional,
+    pesquisar_agenda_publica,
     servicos_agendaveis,
     vinculos_agendaveis,
+    vinculos_com_disponibilidade,
 )
 from apps.locations.models import Cidade, Estado, Pais
 from apps.organizations.models import Empresa, EmpresaCapacidade, EmpresaUsuario
@@ -57,6 +62,223 @@ class AgendaPublicaTests(test_operacao.AgendaOperacaoTests):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.servico_a.titulo)
         self.assertContains(perfil, 'Agendar horário')
+
+    def test_landing_lista_somente_cadeia_com_disponibilidade(self):
+        response = self.http.get(reverse('agenda_public:home'))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.empresa_a.nome_exibicao)
+        self.assertIn(self.empresa_a, empresas_agendaveis())
+        AgendaDisponibilidade.objects.filter(
+            profissional=self.prof_a
+        ).update(ativo=False)
+        response = self.http.get(reverse('agenda_public:home'))
+        self.assertNotContains(response, self.empresa_a.nome_exibicao)
+        self.assertEqual(vinculos_com_disponibilidade(empresa=self.empresa_a), [])
+
+    def test_pesquisa_publica_abre_com_formulario_e_slot_real(self):
+        response = self.http.get(reverse('agenda_public:home'), {
+            'data': self.inicio.date().isoformat(),
+        })
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'data-agenda-search')
+        self.assertContains(response, self.servico_a.titulo)
+        self.assertContains(response, reverse(
+            'agenda_public:confirmar', args=[self.vinculo_a.uuid]
+        ))
+        self.assertContains(response, self.inicio.strftime('%H:%M'))
+
+    def test_servico_exibe_calendario_semanal_e_navegacao_futura(self):
+        response = self.http.get(reverse(
+            'agenda_public:servico', args=[self.empresa_a.slug, self.servico_a.slug]
+        ), {'inicio': self.inicio.date().isoformat()})
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Semana anterior')
+        self.assertContains(response, 'Próxima semana')
+        self.assertContains(response, 'Próximo horário disponível')
+        self.assertEqual(len(response.context['calendario']['dias']), 7)
+        self.assertTrue(response.context['calendario']['proximo'])
+
+    def test_qualquer_profissional_e_especifico_usam_slots_reais(self):
+        outro_usuario = get_user_model().objects.create_user(
+            'agenda-segundo', 'agenda-segundo@example.com', 'senha'
+        )
+        outro_usuario.nome_exibicao = 'Segundo Profissional'
+        outro_usuario.save(update_fields=['nome_exibicao'])
+        membro = EmpresaUsuario.objects.create(
+            empresa=self.empresa_a, usuario=outro_usuario, ativo=True,
+        )
+        profissional = AgendaProfissional.objects.create(empresa_usuario=membro)
+        vinculo = AgendaProfissionalServico.objects.create(
+            profissional=profissional, servico=self.servico_a, duracao_minutos=60,
+        )
+        AgendaDisponibilidade.objects.create(
+            profissional=profissional, dia_semana=self.inicio.weekday(),
+            hora_inicio=time(9), hora_fim=time(12),
+        )
+        qualquer = calendario_servico_publico(
+            servico=self.servico_a, inicio=self.inicio.date(),
+        )
+        especifico = calendario_servico_publico(
+            servico=self.servico_a, inicio=self.inicio.date(),
+            vinculo_uuid=vinculo.uuid,
+        )
+        self.assertEqual(len(qualquer['vinculos']), 2)
+        self.assertEqual(especifico['vinculos'], [vinculo])
+        self.assertTrue(especifico['proximo'])
+
+    def test_confirmacao_resume_escolha_e_login_preserva_url(self):
+        url = reverse('agenda_public:confirmar', args=[self.vinculo_a.uuid])
+        response = self.http.get(url, {'inicio': self.inicio.isoformat()})
+        self.assertContains(response, self.empresa_a.nome_exibicao)
+        self.assertContains(response, self.servico_a.titulo)
+        self.assertContains(response, 'Entrar para confirmar')
+        self.assertContains(response, 'Criar conta')
+        self.assertContains(response, 'next=')
+        self.assertContains(response, self.inicio.strftime('%H:%M'))
+
+    def test_criacao_redireciona_para_estado_de_sucesso(self):
+        self.http.force_login(self.cliente)
+        response = self.http.post(reverse(
+            'agenda_public:confirmar', args=[self.vinculo_a.uuid]
+        ), {'inicio': self.inicio.isoformat()})
+        self.assertEqual(response.status_code, 302)
+        self.assertIn('criado=1', response.url)
+        success = self.http.get(response.url)
+        self.assertContains(success, 'Agendamento solicitado com sucesso')
+        self.assertContains(success, 'Protocolo')
+
+    def test_meus_agendamentos_separa_proximos_passados_cancelados(self):
+        proximo = self._agendamento(Agendamento.Status.PENDENTE)
+        Agendamento.objects.create(
+            profissional_servico=self.vinculo_a, cliente=self.cliente,
+            inicio=self.inicio + timedelta(hours=1),
+            fim=self.inicio + timedelta(hours=2),
+            status=Agendamento.Status.CANCELADO,
+        )
+        self.http.force_login(self.cliente)
+        response = self.http.get(reverse('agenda_public:meus_agendamentos'))
+        self.assertContains(response, 'Próximos')
+        self.assertContains(response, 'Passados')
+        self.assertContains(response, 'Cancelados')
+        self.assertIn(proximo, response.context['proximos'])
+        self.assertEqual(len(response.context['cancelados']), 1)
+
+    def test_visao_profissional_exige_login_e_escopa_usuario(self):
+        url = reverse('agenda_public:minha_agenda_profissional')
+        anonimo = self.http.get(url)
+        self.assertEqual(anonimo.status_code, 302)
+        self.http.force_login(self.membro_a)
+        autorizado = self.http.get(url)
+        self.assertEqual(autorizado.status_code, 200)
+        self.assertContains(autorizado, 'Minha Agenda profissional')
+        self.assertIn(self.prof_a, autorizado.context['profissionais'])
+        self.http.force_login(self.owner_b)
+        outro = self.http.get(url)
+        self.assertNotIn(self.prof_a, outro.context['profissionais'])
+
+    def test_dashboard_empresa_expoe_metricas_reais(self):
+        self.http.force_login(self.owner_a)
+        response = self.http.get(reverse(
+            'painel:empresa_agenda', args=[self.empresa_a.uuid]
+        ))
+        self.assertEqual(response.status_code, 200)
+        resumo = response.context['agenda_resumo']
+        for chave in ('hoje_total', 'pendentes_total', 'confirmados_total', 'concluidos_total', 'cancelados_total'):
+            self.assertIn(chave, resumo)
+
+    def test_pesquisa_por_servico_profissao_tipo_area_empresa_e_profissional(self):
+        self.membro_a.nome_exibicao = 'Ana Agenda'
+        self.membro_a.save(update_fields=['nome_exibicao'])
+        termos = (
+            self.servico_a.titulo, self.servico_a.profissao.nome,
+            self.servico_a.tipo_servico.nome, self.servico_a.area.nome,
+            self.empresa_a.nome_exibicao, 'Ana Agenda',
+        )
+        for termo in termos:
+            with self.subTest(termo=termo):
+                resultados = pesquisar_agenda_publica({
+                    'q': termo, 'data': self.inicio.date().isoformat(),
+                })
+                self.assertEqual([item['vinculo'] for item in resultados], [self.vinculo_a])
+
+    def test_filtros_presencial_online_e_localizacao(self):
+        data = self.inicio.date().isoformat()
+        self.assertTrue(pesquisar_agenda_publica({
+            'modalidade': 'presencial', 'data': data,
+        }))
+        self.assertFalse(pesquisar_agenda_publica({
+            'modalidade': 'online', 'data': data,
+        }))
+        Servico.all_objects.filter(pk=self.servico_a.pk).update(
+            atendimento_presencial=False, atendimento_remoto=True,
+        )
+        self.assertTrue(pesquisar_agenda_publica({
+            'modalidade': 'online', 'data': data,
+        }))
+        self.assertTrue(pesquisar_agenda_publica({
+            'localizacao': 'Cidade Agenda', 'data': data,
+        }))
+        self.assertFalse(pesquisar_agenda_publica({
+            'localizacao': 'Cidade inexistente', 'data': data,
+        }))
+
+    def test_pesquisa_sem_disponibilidade_exibe_estado_vazio(self):
+        AgendaDisponibilidade.objects.filter(
+            profissional=self.prof_a,
+        ).update(ativo=False)
+        response = self.http.get(reverse('agenda_public:home'), {
+            'q': self.servico_a.titulo,
+            'data': self.inicio.date().isoformat(),
+        })
+        self.assertContains(response, 'Nenhum horário disponível para estes filtros.')
+        self.assertNotContains(response, reverse(
+            'agenda_public:confirmar', args=[self.vinculo_a.uuid]
+        ))
+
+    def test_bloqueio_remove_resultado_da_pesquisa(self):
+        AgendaBloqueio.objects.create(
+            profissional=self.prof_a,
+            inicio=self.inicio.replace(hour=0),
+            fim=self.inicio.replace(hour=23, minute=59),
+            tipo=AgendaBloqueio.Tipo.OUTRO,
+        )
+        resultados = pesquisar_agenda_publica({
+            'data': self.inicio.date().isoformat(),
+        })
+        self.assertEqual(resultados, [])
+
+    def test_agendamento_existente_remove_slot_da_pesquisa(self):
+        self._agendamento(Agendamento.Status.CONFIRMADO)
+        response = self.http.get(reverse('agenda_public:home'), {
+            'data': self.inicio.date().isoformat(),
+        })
+        self.assertNotContains(response, f'>{self.inicio:%H:%M}<')
+        self.assertContains(response, '>11:00<')
+
+    def test_mobile_pwa_usa_a_mesma_rota_responsiva(self):
+        response = self.http.get(
+            reverse('agenda_public:home'),
+            HTTP_USER_AGENT='Mozilla/5.0 (Linux; Android 14) Mobile',
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'agenda/css/public-search.css')
+        self.assertContains(response, 'agenda/js/public-search.js')
+        self.assertContains(response, 'agenda-result-card')
+
+    def test_landing_exclui_capacidade_ou_vinculo_inativo(self):
+        EmpresaCapacidade.objects.filter(
+            empresa=self.empresa_a,
+            capacidade__codigo='ACEITAR_AGENDAMENTOS',
+        ).update(ativo=False)
+        self.assertNotIn(self.empresa_a, empresas_agendaveis())
+        EmpresaCapacidade.objects.filter(
+            empresa=self.empresa_a,
+            capacidade__codigo='ACEITAR_AGENDAMENTOS',
+        ).update(ativo=True)
+        AgendaProfissionalServico.objects.filter(pk=self.vinculo_a.pk).update(
+            ativo=False
+        )
+        self.assertNotIn(self.empresa_a, empresas_agendaveis())
 
     def test_empresa_sem_agenda_nao_oferece_servico(self):
         EmpresaCapacidade.objects.filter(
@@ -104,6 +326,54 @@ class AgendaPublicaTests(test_operacao.AgendaOperacaoTests):
             'agenda_public:servico', args=[self.empresa_a.slug, self.servico_a.slug]
         ))
         self.assertEqual(len(response.context['profissionais']), 2)
+
+    def test_disponibilidade_data_substitui_semanal(self):
+        AgendaDisponibilidadeData.objects.create(
+            profissional=self.prof_a,
+            data=self.inicio.date(),
+            hora_inicio=time(14),
+            hora_fim=time(17),
+        )
+
+        horas = [slot.time() for slot in self._slots()]
+
+        self.assertEqual(
+            horas,
+            [time(14), time(15), time(16)],
+        )
+        self.assertNotIn(time(8), horas)
+        self.assertNotIn(time(10), horas)
+
+    def test_disponibilidade_data_nao_altera_outra_data_recorrente(self):
+        AgendaDisponibilidadeData.objects.create(
+            profissional=self.prof_a,
+            data=self.inicio.date(),
+            hora_inicio=time(14),
+            hora_fim=time(17),
+        )
+
+        outra_data = self.inicio.date() + timedelta(days=7)
+        agora = timezone.make_aware(
+            datetime.combine(
+                self.inicio.date() - timedelta(days=1),
+                time(0),
+            )
+        )
+
+        horas = [
+            slot.time()
+            for slot in self._slots(
+                data=outra_data,
+                agora=agora,
+            )
+        ]
+
+        self.assertIn(time(8), horas)
+        self.assertIn(time(17), horas)
+        self.assertNotEqual(
+            horas,
+            [time(14), time(15), time(16)],
+        )
 
     def test_uma_disponibilidade_e_fronteiras(self):
         slots = self._slots()
@@ -308,6 +578,55 @@ class AgendaPublicaTests(test_operacao.AgendaOperacaoTests):
         nome = nome_publico_profissional(self.prof_a)
         self.assertEqual(nome, 'Profissional')
         self.assertNotIn('@', nome)
+
+    def test_autocomplete_tipado_e_escopado_na_cadeia_publica(self):
+        response = self.http.get(
+            reverse('agenda_public:autocomplete'), {'q': 'Agenda'}
+        )
+        self.assertEqual(response.status_code, 200)
+        sugestoes = response.json()['sugestoes']
+        self.assertTrue(sugestoes)
+        self.assertTrue(all(item['tipo'] in {
+            'Serviço', 'Profissão', 'Área', 'Tipo de serviço',
+            'Profissional', 'Empresa',
+        } for item in sugestoes))
+        self.assertNotContains(response, self.owner_b.email)
+
+    def test_perfil_publico_profissional_tem_somente_empresa_correta(self):
+        response = self.http.get(reverse('agenda_public:profissional', args=[
+            self.empresa_a.slug, self.prof_a.uuid,
+        ]))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, self.servico_a.titulo)
+        self.assertNotContains(response, self.servico_b.titulo)
+        outro = self.http.get(reverse('agenda_public:profissional', args=[
+            self.empresa_b.slug, self.prof_a.uuid,
+        ]))
+        self.assertEqual(outro.status_code, 404)
+
+    def test_perfil_empresa_exibe_profissional_e_nao_expoe_cpf(self):
+        self.membro_a.cpf = '52998224725'
+        self.membro_a.save()
+        response = self.http.get(reverse(
+            'agenda_public:empresa', args=[self.empresa_a.slug]
+        ))
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, nome_publico_profissional(self.prof_a))
+        self.assertNotContains(response, self.membro_a.cpf)
+        self.assertNotContains(response, self.servico_b.titulo)
+
+    def test_sob_consulta_usa_solicitacao_sem_pagamento(self):
+        self.servico_a.preco_sob_consulta = True
+        self.servico_a.preco_inicial = None
+        self.servico_a.preco_final = None
+        self.servico_a.save()
+        self.http.force_login(self.cliente)
+        response = self.http.get(reverse(
+            'agenda_public:confirmar', args=[self.vinculo_a.uuid]
+        ), {'inicio': self.inicio.isoformat()})
+        self.assertContains(response, 'Contratação sob consulta')
+        self.assertContains(response, 'Solicitar agendamento')
+        self.assertNotContains(response, 'Pagar e confirmar')
 
 
 class AgendaConcorrenciaTests(TransactionTestCase):

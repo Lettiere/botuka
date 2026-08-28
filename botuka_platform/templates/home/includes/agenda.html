@@ -1,0 +1,329 @@
+{% if empresas_agenda %}
+<section class="home-domain city-section home-agenda" id="agenda" aria-labelledby="home-agenda-title">
+  <div class="container-botuka">
+
+    <header class="city-section__header">
+      <div>
+        <span class="section-kicker">
+          <i class="bi bi-calendar2-check" aria-hidden="true"></i>
+          Agenda Botuka
+        </span>
+        <h2 id="home-agenda-title">Seu próximo horário começa aqui</h2>
+        <p>Encontre empresas com serviços, profissionais e horários disponíveis.</p>
+      </div>
+
+      <a class="btn-botuka btn-botuka-outline" href="{% url 'agenda_public:home' %}">
+        Ver todas as agendas
+      </a>
+    </header>
+
+    <div class="city-feature-grid">
+
+      {% with empresa=empresas_agenda.0 %}
+      <article class="city-feature-card home-agenda__featured">
+
+        <div class="city-media">
+          {% if empresa.imagem_capa %}
+            <img
+              src="{{ empresa.imagem_capa.url }}"
+              alt="{{ empresa.nome_exibicao }}"
+              loading="lazy"
+              decoding="async"
+            >
+          {% elif empresa.logo %}
+            <img
+              src="{{ empresa.logo.url }}"
+              alt="{{ empresa.nome_exibicao }}"
+              loading="lazy"
+              decoding="async"
+              class="home-agenda__logo-image"
+            >
+          {% else %}
+            <i class="bi bi-calendar2-check" aria-hidden="true"></i>
+          {% endif %}
+        </div>
+
+        <div class="city-card__body">
+          <span class="city-tag">
+            <i class="bi bi-calendar-check"></i>
+            Agenda ativa
+          </span>
+
+          <h3>{{ empresa.nome_exibicao }}</h3>
+
+          <p>
+            {{ empresa.descricao_curta|default:"Consulte serviços, profissionais e horários disponíveis."|truncatechars:150 }}
+          </p>
+
+          <ul class="city-meta">
+            {% if empresa.endereco_resumido %}
+              <li>
+                <i class="bi bi-geo-alt"></i>
+                {{ empresa.endereco_resumido }}
+              </li>
+            {% endif %}
+
+            <li>
+              <i class="bi bi-clock"></i>
+              Horários disponíveis
+            </li>
+          </ul>
+
+          <a class="btn-botuka" href="{% url 'agenda_public:empresa' empresa.slug %}">
+            Escolher serviço
+          </a>
+        </div>
+
+      </article>
+      {% endwith %}
+
+
+      <div class="city-side-list">
+        {% for empresa in empresas_agenda|slice:"1:4" %}
+          <a
+            class="city-side-item home-agenda__side-item"
+            href="{% url 'agenda_public:empresa' empresa.slug %}"
+          >
+
+            <span class="home-agenda__side-icon">
+              {% if empresa.logo %}
+                <img
+                  src="{{ empresa.logo.url }}"
+                  alt=""
+                  loading="lazy"
+                  decoding="async"
+                >
+              {% else %}
+                <i class="bi bi-calendar-check"></i>
+              {% endif %}
+            </span>
+
+            <span>
+              <strong>{{ empresa.nome_exibicao }}</strong>
+
+              <small>
+                Agenda ativa
+                {% if empresa.endereco_resumido %}
+                  · {{ empresa.endereco_resumido }}
+                {% endif %}
+              </small>
+            </span>
+
+          </a>
+        {% endfor %}
+      </div>
+
+    </div>
+
+
+    {% if empresas_agenda|length > 1 %}
+    <div class="city-strip-wrap home-agenda__strip-wrap">
+
+      <button
+        class="city-arrow"
+        type="button"
+        data-city-scroll="agenda-strip"
+        data-direction="-1"
+        aria-label="Agendas anteriores"
+      >
+        <i class="bi bi-chevron-left"></i>
+      </button>
+
+      <div class="city-strip" id="agenda-strip">
+
+        {% for empresa in empresas_agenda|slice:"1:" %}
+          <a
+            class="city-mini-card home-agenda__mini-card"
+            href="{% url 'agenda_public:empresa' empresa.slug %}"
+          >
+            <span class="city-tag">
+              Agenda ativa
+            </span>
+
+            <strong>
+              {{ empresa.nome_exibicao }}
+            </strong>
+
+            <small>
+              {% if empresa.endereco_resumido %}
+                {{ empresa.endereco_resumido }}
+              {% else %}
+                Consulte serviços e horários disponíveis
+              {% endif %}
+            </small>
+          </a>
+        {% endfor %}
+
+      </div>
+
+      <button
+        class="city-arrow"
+        type="button"
+        data-city-scroll="agenda-strip"
+        data-direction="1"
+        aria-label="Próximas agendas"
+      >
+        <i class="bi bi-chevron-right"></i>
+      </button>
+
+    </div>
+    {% endif %}
+
+  </div>
+</section>
+
+<style>
+.home-agenda {
+  background:
+    linear-gradient(
+      180deg,
+      rgba(255,255,255,1) 0%,
+      rgba(248,250,252,1) 100%
+    );
+}
+
+.home-agenda__featured .city-media {
+  min-height: 290px;
+}
+
+.home-agenda__featured .city-media img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-agenda__featured .city-media .home-agenda__logo-image {
+  object-fit: contain;
+  padding: 2rem;
+  background: #fff;
+}
+
+.home-agenda__side-item {
+  align-items: center;
+}
+
+.home-agenda__side-icon {
+  width: 58px;
+  height: 58px;
+  flex: 0 0 58px;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border-radius: 14px;
+  background: #172033;
+  color: #ffd230;
+  font-size: 1.35rem;
+}
+
+.home-agenda__side-icon img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.home-agenda__strip-wrap {
+  margin-top: 1.25rem;
+}
+
+.home-agenda__mini-card {
+  min-width: 245px;
+}
+
+@media (max-width: 700px) {
+  .home-agenda__featured .city-media {
+    min-height: 210px;
+  }
+
+  .home-agenda__mini-card {
+    min-width: 220px;
+  }
+}
+</style>
+
+{% else %}
+
+<section class="home-agenda" id="agenda" aria-labelledby="home-agenda-title">
+  <div class="container-botuka">
+
+    <header class="city-section__header">
+      <div>
+        <span class="section-kicker">
+          <i class="bi bi-calendar2-check"></i>
+          Agenda Botuka
+        </span>
+
+        <h2 id="home-agenda-title">Seu próximo horário começa aqui</h2>
+
+        <p>
+          Encontre empresas com serviços, profissionais e horários disponíveis.
+        </p>
+      </div>
+
+      <a class="btn-botuka btn-yellow" href="{% url 'agenda_public:home' %}">
+        Conhecer a Agenda
+      </a>
+    </header>
+
+    <div class="home-agenda__empty">
+      <i class="bi bi-calendar-plus"></i>
+
+      <div>
+        <strong>Novas agendas chegando</strong>
+        <p>
+          Empresas aparecerão aqui quando toda a operação estiver disponível.
+        </p>
+      </div>
+
+      <a href="{% url 'agenda_public:home' %}">
+        Conhecer a Agenda
+      </a>
+    </div>
+
+  </div>
+</section>
+
+<style>
+.home-agenda {
+  padding: clamp(3rem,7vw,5rem) 0;
+}
+
+.home-agenda__empty {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1.2rem;
+  border: 1px solid #e4e7ec;
+  border-radius: 1rem;
+  background: #fff;
+}
+
+.home-agenda__empty > i {
+  font-size: 2rem;
+  color: #172033;
+}
+
+.home-agenda__empty p {
+  margin: 0;
+  color: #667085;
+}
+
+.home-agenda__empty a {
+  margin-left: auto;
+  color: #172033;
+  font-weight: 800;
+}
+
+@media (max-width:600px) {
+  .home-agenda__empty {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .home-agenda__empty a {
+    width: 100%;
+    margin-left: 0;
+  }
+}
+</style>
+
+{% endif %}

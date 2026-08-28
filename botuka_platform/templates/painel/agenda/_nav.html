@@ -1,8 +1,62 @@
-<nav class="d-flex flex-wrap gap-2 mb-4" aria-label="Navegação da Agenda">
-  <a class="btn btn-outline-primary" href="{% url 'painel:empresa_agenda' empresa.uuid %}">Resumo</a>
-  <a class="btn btn-outline-primary" href="{% url 'painel:empresa_equipe' empresa.uuid %}">Profissionais</a>
-  <a class="btn btn-outline-primary" href="{% url 'painel:agenda_vinculo_lista' empresa.uuid %}">Serviços da Agenda</a>
-  <a class="btn btn-outline-primary" href="{% url 'painel:agenda_disponibilidade_lista' empresa.uuid %}">Disponibilidades</a>
-  <a class="btn btn-outline-primary" href="{% url 'painel:agenda_bloqueio_lista' empresa.uuid %}">Bloqueios</a>
-  <a class="btn btn-outline-primary" href="{% url 'painel:agenda_agendamento_lista' empresa.uuid %}">Agendamentos</a>
+<nav class="agenda-admin-nav" aria-label="Navegação da Agenda">
+  <a href="{% url 'painel:empresa_agenda' empresa.uuid %}">
+    <i class="bi bi-speedometer2"></i> Resumo
+  </a>
+
+  <a href="{% url 'painel:agenda_calendario' empresa.uuid %}">
+    <i class="bi bi-calendar-week"></i> Calendário
+  </a>
+
+  <a href="{% url 'painel:agenda_funcionamento_lista' empresa.uuid %}">
+    <i class="bi bi-clock"></i> Funcionamento
+  </a>
+
+  <a href="{% url 'painel:empresa_equipe' empresa.uuid %}">
+    <i class="bi bi-people"></i> Profissionais
+  </a>
+
+  <a href="{% url 'painel:agenda_vinculo_lista' empresa.uuid %}">
+    <i class="bi bi-scissors"></i> Serviços e duração
+  </a>
+
+  <a href="{% url 'painel:agenda_disponibilidade_lista' empresa.uuid %}">
+    <i class="bi bi-calendar-check"></i> Disponibilidades
+  </a>
+
+  <a href="{% url 'painel:agenda_bloqueio_lista' empresa.uuid %}">
+    <i class="bi bi-calendar-x"></i> Bloqueios
+  </a>
+
+  <a href="{% url 'painel:agenda_agendamento_lista' empresa.uuid %}">
+    <i class="bi bi-journal-check"></i> Agendamentos
+  </a>
 </nav>
+
+<style>
+.agenda-admin-nav{
+  display:flex;
+  gap:8px;
+  overflow-x:auto;
+  padding:4px 0 16px;
+  margin-bottom:18px;
+  scrollbar-width:thin;
+}
+.agenda-admin-nav a{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  padding:10px 14px;
+  border:1px solid #dde3ec;
+  border-radius:12px;
+  background:#fff;
+  color:#172033;
+  text-decoration:none;
+  font-size:13px;
+  font-weight:800;
+  white-space:nowrap;
+}
+.agenda-admin-nav a:hover{
+  border-color:#f3c623;
+  background:#fffdf3;
+}
+</style>

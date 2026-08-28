@@ -5,6 +5,11 @@ from . import views
 
 urlpatterns = [
     path('', views.dashboard, name='empresa_agenda'),
+    path('calendario/', views.calendario_operacional, name='agenda_calendario'),
+    path('funcionamento/', views.funcionamento_lista, name='agenda_funcionamento_lista'),
+    path('funcionamento/novo/', views.funcionamento_form, name='agenda_funcionamento_criar'),
+    path('funcionamento/<int:pk>/editar/', views.funcionamento_form, name='agenda_funcionamento_editar'),
+    path('funcionamento/<int:pk>/status/', views.funcionamento_status, name='agenda_funcionamento_status'),
     path('servicos/', views.vinculo_lista, name='agenda_vinculo_lista'),
     path('servicos/novo/', views.vinculo_form, name='agenda_vinculo_criar'),
     path('servicos/<int:pk>/editar/', views.vinculo_form, name='agenda_vinculo_editar'),

@@ -1,10 +1,12 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
 from django.utils import timezone
 
 from apps.core.models import UUIDModel
-from apps.organizations.models import EmpresaUsuario
+from apps.organizations.models import Empresa, EmpresaUsuario
 from apps.services.models import Servico
 
 
@@ -143,6 +145,16 @@ class AgendaProfissionalServico(UUIDModel):
         db_column='agenda_profissional_servico_duracao_minutos',
     )
 
+    buffer_antes_minutos = models.PositiveIntegerField(
+        default=0,
+        db_column='agenda_profissional_servico_buffer_antes_minutos',
+    )
+
+    buffer_depois_minutos = models.PositiveIntegerField(
+        default=0,
+        db_column='agenda_profissional_servico_buffer_depois_minutos',
+    )
+
     ativo = models.BooleanField(
         default=True,
         db_column='agenda_profissional_servico_ativo',
@@ -174,6 +186,10 @@ class AgendaProfissionalServico(UUIDModel):
 
     def clean(self):
         super().clean()
+        for campo in ('buffer_antes_minutos', 'buffer_depois_minutos'):
+            valor = getattr(self, campo, 0)
+            if valor is not None and valor > 1440:
+                raise ValidationError({campo: 'O buffer não pode exceder 24 horas.'})
 
         if not self.profissional_id or not self.servico_id:
             return
@@ -213,6 +229,81 @@ class AgendaProfissionalServico(UUIDModel):
 
     def __str__(self):
         return f'{self.profissional} — {self.servico}'
+
+
+class AgendaFuncionamentoEmpresa(UUIDModel):
+    """Faixa semanal que limita a operação da Agenda de uma empresa."""
+
+    class DiaSemana(models.IntegerChoices):
+        SEGUNDA = 0, 'Segunda-feira'
+        TERCA = 1, 'Terça-feira'
+        QUARTA = 2, 'Quarta-feira'
+        QUINTA = 3, 'Quinta-feira'
+        SEXTA = 4, 'Sexta-feira'
+        SABADO = 5, 'Sábado'
+        DOMINGO = 6, 'Domingo'
+
+    id = models.BigAutoField(primary_key=True, db_column='agenda_funcionamento_empresa_id')
+    empresa = models.ForeignKey(
+        Empresa, on_delete=models.CASCADE, related_name='funcionamentos_agenda',
+        db_column='agenda_funcionamento_empresa_fk_empresa',
+    )
+    dia_semana = models.PositiveSmallIntegerField(
+        choices=DiaSemana.choices, db_column='agenda_funcionamento_empresa_dia_semana',
+    )
+    hora_inicio = models.TimeField(db_column='agenda_funcionamento_empresa_hora_inicio')
+    hora_fim = models.TimeField(db_column='agenda_funcionamento_empresa_hora_fim')
+    ativo = models.BooleanField(default=True, db_column='agenda_funcionamento_empresa_ativo')
+    criado_em = models.DateTimeField(auto_now_add=True, db_column='agenda_funcionamento_empresa_criado_em')
+    atualizado_em = models.DateTimeField(auto_now=True, db_column='agenda_funcionamento_empresa_atualizado_em')
+
+    class Meta:
+        db_table = '"agenda"."agenda_funcionamento_empresa_tb"'
+        ordering = ['empresa_id', 'dia_semana', 'hora_inicio']
+        verbose_name = 'funcionamento da empresa na Agenda'
+        verbose_name_plural = 'funcionamentos das empresas na Agenda'
+        constraints = [
+            models.UniqueConstraint(
+                fields=['empresa', 'dia_semana', 'hora_inicio', 'hora_fim'],
+                name='agenda_func_empresa_periodo_uk',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(dia_semana__gte=0, dia_semana__lte=6),
+                name='agenda_func_empresa_dia_ck',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(hora_fim__gt=models.F('hora_inicio')),
+                name='agenda_func_empresa_horario_ck',
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=['empresa', 'dia_semana', 'ativo'],
+                name='agenda_func_empresa_dia_idx',
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+        if self.hora_inicio and self.hora_fim and self.hora_fim <= self.hora_inicio:
+            raise ValidationError({'hora_fim': 'O horário final deve ser posterior ao inicial.'})
+        if self.empresa_id is None or self.dia_semana is None or not self.hora_inicio or not self.hora_fim:
+            return
+        conflitos = AgendaFuncionamentoEmpresa.objects.filter(
+            empresa=self.empresa, dia_semana=self.dia_semana, ativo=True,
+            hora_inicio__lt=self.hora_fim, hora_fim__gt=self.hora_inicio,
+        )
+        if self.pk:
+            conflitos = conflitos.exclude(pk=self.pk)
+        if conflitos.exists():
+            raise ValidationError('Já existe um período de funcionamento conflitante.')
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return f'{self.empresa} — {self.get_dia_semana_display()} {self.hora_inicio:%H:%M}-{self.hora_fim:%H:%M}'
 
 
 class AgendaDisponibilidade(UUIDModel):
@@ -336,6 +427,133 @@ class AgendaDisponibilidade(UUIDModel):
         return (
             f'{self.profissional} — '
             f'{self.get_dia_semana_display()} '
+            f'{self.hora_inicio:%H:%M}-{self.hora_fim:%H:%M}'
+        )
+
+
+class AgendaDisponibilidadeData(UUIDModel):
+    """
+    Faixa de disponibilidade específica para uma data do calendário.
+
+    Quando existir disponibilidade específica para uma data,
+    ela poderá sobrescrever a disponibilidade semanal recorrente.
+    """
+
+    id = models.BigAutoField(
+        primary_key=True,
+        db_column='agenda_disponibilidade_data_id',
+    )
+
+    profissional = models.ForeignKey(
+        AgendaProfissional,
+        on_delete=models.CASCADE,
+        related_name='disponibilidades_data',
+        db_column='agenda_disponibilidade_data_fk_profissional',
+    )
+
+    data = models.DateField(
+        db_column='agenda_disponibilidade_data_data',
+    )
+
+    hora_inicio = models.TimeField(
+        db_column='agenda_disponibilidade_data_hora_inicio',
+    )
+
+    hora_fim = models.TimeField(
+        db_column='agenda_disponibilidade_data_hora_fim',
+    )
+
+    ativo = models.BooleanField(
+        default=True,
+        db_column='agenda_disponibilidade_data_ativo',
+    )
+
+    criado_em = models.DateTimeField(
+        auto_now_add=True,
+        db_column='agenda_disponibilidade_data_criado_em',
+    )
+
+    atualizado_em = models.DateTimeField(
+        auto_now=True,
+        db_column='agenda_disponibilidade_data_atualizado_em',
+    )
+
+    class Meta:
+        db_table = '"agenda"."agenda_disponibilidade_data_tb"'
+        ordering = [
+            'profissional_id',
+            'data',
+            'hora_inicio',
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=[
+                    'profissional',
+                    'data',
+                    'hora_inicio',
+                    'hora_fim',
+                ],
+                name='agenda_disponibilidade_data_uk',
+            ),
+            models.CheckConstraint(
+                condition=models.Q(
+                    hora_fim__gt=models.F('hora_inicio')
+                ),
+                name='agenda_disponibilidade_data_horario_ck',
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=['profissional', 'data', 'ativo'],
+                name='agenda_disp_data_prof_idx',
+            ),
+        ]
+
+    def clean(self):
+        super().clean()
+
+        if self.hora_inicio and self.hora_fim:
+            if self.hora_fim <= self.hora_inicio:
+                raise ValidationError({
+                    'hora_fim':
+                    'O horário final deve ser posterior ao horário inicial.'
+                })
+
+        if not self.profissional_id:
+            return
+
+        if not self.profissional.ativo:
+            raise ValidationError({
+                'profissional': 'O profissional precisa estar ativo.'
+            })
+
+        if not self.data or not self.hora_inicio or not self.hora_fim:
+            return
+
+        conflitos = AgendaDisponibilidadeData.objects.filter(
+            profissional=self.profissional,
+            data=self.data,
+            ativo=True,
+            hora_inicio__lt=self.hora_fim,
+            hora_fim__gt=self.hora_inicio,
+        )
+
+        if self.pk:
+            conflitos = conflitos.exclude(pk=self.pk)
+
+        if conflitos.exists():
+            raise ValidationError(
+                'Já existe uma disponibilidade conflitante nesta data.'
+            )
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return (
+            f'{self.profissional} — '
+            f'{self.data:%d/%m/%Y} '
             f'{self.hora_inicio:%H:%M}-{self.hora_fim:%H:%M}'
         )
 
@@ -547,25 +765,67 @@ class Agendamento(UUIDModel):
 
         inicio_local = timezone.localtime(self.inicio)
         fim_local = timezone.localtime(self.fim)
+        ocupacao_inicio = inicio_local - timedelta(
+            minutes=vinculo.buffer_antes_minutos
+        )
+        ocupacao_fim = fim_local + timedelta(
+            minutes=vinculo.buffer_depois_minutos
+        )
 
-        disponibilidade = AgendaDisponibilidade.objects.filter(
+        mesma_data = (
+            ocupacao_inicio.date() == ocupacao_fim.date()
+        )
+
+        disponibilidades_data = AgendaDisponibilidadeData.objects.filter(
             profissional=profissional,
+            data=ocupacao_inicio.date(),
             ativo=True,
-            dia_semana=inicio_local.weekday(),
-            hora_inicio__lte=inicio_local.time(),
-            hora_fim__gte=fim_local.time(),
-        ).exists()
+        )
+
+        if disponibilidades_data.exists():
+            disponibilidade = (
+                mesma_data
+                and disponibilidades_data.filter(
+                    hora_inicio__lte=ocupacao_inicio.time(),
+                    hora_fim__gte=ocupacao_fim.time(),
+                ).exists()
+            )
+        else:
+            disponibilidade = (
+                mesma_data
+                and AgendaDisponibilidade.objects.filter(
+                    profissional=profissional,
+                    ativo=True,
+                    dia_semana=ocupacao_inicio.weekday(),
+                    hora_inicio__lte=ocupacao_inicio.time(),
+                    hora_fim__gte=ocupacao_fim.time(),
+                ).exists()
+            )
 
         if not disponibilidade:
             raise ValidationError(
                 'O horário está fora da disponibilidade do profissional.'
             )
 
+        empresa = profissional.empresa
+        if empresa and AgendaFuncionamentoEmpresa.objects.filter(empresa=empresa).exists():
+            funcionamento = (
+                ocupacao_inicio.date() == ocupacao_fim.date()
+                and AgendaFuncionamentoEmpresa.objects.filter(
+                empresa=empresa, ativo=True,
+                dia_semana=ocupacao_inicio.weekday(),
+                hora_inicio__lte=ocupacao_inicio.time(),
+                hora_fim__gte=ocupacao_fim.time(),
+                ).exists()
+            )
+            if not funcionamento:
+                raise ValidationError('O horário está fora do funcionamento da empresa.')
+
         bloqueado = AgendaBloqueio.objects.filter(
             profissional=profissional,
             ativo=True,
-            inicio__lt=self.fim,
-            fim__gt=self.inicio,
+            inicio__lt=ocupacao_fim,
+            fim__gt=ocupacao_inicio,
         ).exists()
 
         if bloqueado:
@@ -579,14 +839,20 @@ class Agendamento(UUIDModel):
                 self.Status.PENDENTE,
                 self.Status.CONFIRMADO,
             ],
-            inicio__lt=self.fim,
-            fim__gt=self.inicio,
-        )
+        ).select_related('profissional_servico')
 
         if self.pk:
             conflitos = conflitos.exclude(pk=self.pk)
 
-        if conflitos.exists():
+        if any(
+            outro.inicio - timedelta(
+                minutes=outro.profissional_servico.buffer_antes_minutos
+            ) < ocupacao_fim
+            and outro.fim + timedelta(
+                minutes=outro.profissional_servico.buffer_depois_minutos
+            ) > ocupacao_inicio
+            for outro in conflitos
+        ):
             raise ValidationError(
                 'Já existe outro agendamento para este profissional nesse horário.'
             )

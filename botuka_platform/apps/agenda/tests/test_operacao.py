@@ -15,6 +15,7 @@ from apps.agenda.models import (
     Agendamento,
     AgendaBloqueio,
     AgendaDisponibilidade,
+    AgendaDisponibilidadeData,
     AgendaProfissional,
     AgendaProfissionalServico,
 )
@@ -107,15 +108,15 @@ class AgendaOperacaoTests(TestCase):
         cls.vinculo_a = AgendaProfissionalServico.objects.create(
             profissional=cls.prof_a, servico=cls.servico_a, duracao_minutos=60
         )
-        cls.disponibilidade_a = AgendaDisponibilidade.objects.create(
-            profissional=cls.prof_a,
-            dia_semana=0,
-            hora_inicio=time(8),
-            hora_fim=time(18),
-        )
         agora = timezone.now()
         dias = (7 - agora.weekday()) % 7 or 7
         proxima_segunda = (agora + timedelta(days=dias)).date()
+        cls.disponibilidade_a = AgendaDisponibilidade.objects.create(
+            profissional=cls.prof_a,
+            dia_semana=proxima_segunda.weekday(),
+            hora_inicio=time(8),
+            hora_fim=time(18),
+        )
         cls.inicio = timezone.make_aware(datetime.combine(proxima_segunda, time(10)))
 
     @classmethod
@@ -143,7 +144,13 @@ class AgendaOperacaoTests(TestCase):
     def test_criar_vinculo_valido(self):
         outro = self._servico(self.owner_a, self.empresa_a, 'Outro serviço A')
         form = ProfissionalServicoForm(
-            {'profissional': self.prof_a.pk, 'servico': outro.pk, 'duracao_minutos': 30},
+            {
+                'profissional': self.prof_a.pk,
+                'servico': outro.pk,
+                'duracao_minutos': 30,
+                'buffer_antes_minutos': 0,
+                'buffer_depois_minutos': 0,
+            },
             empresa=self.empresa_a,
         )
         self.assertTrue(form.is_valid(), form.errors)
@@ -187,22 +194,43 @@ class AgendaOperacaoTests(TestCase):
 
     def test_criar_disponibilidade_valida(self):
         form = DisponibilidadeForm(
-            {'profissional': self.prof_a.pk, 'dia_semana': 1, 'hora_inicio': '09:00', 'hora_fim': '12:00'},
+            {
+                'profissional': self.prof_a.pk,
+                'data': (timezone.localdate() + timedelta(days=30)).isoformat(),
+                'hora_inicio': '09:00',
+                'hora_fim': '12:00',
+            },
             empresa=self.empresa_a,
         )
         self.assertTrue(form.is_valid(), form.errors)
         form.save()
 
     def test_impedir_disponibilidade_sobreposta(self):
+        AgendaDisponibilidadeData.objects.create(
+            profissional=self.prof_a,
+            data=self.inicio.date(),
+            hora_inicio=time(8),
+            hora_fim=time(18),
+        )
         form = DisponibilidadeForm(
-            {'profissional': self.prof_a.pk, 'dia_semana': 0, 'hora_inicio': '09:00', 'hora_fim': '11:00'},
+            {
+                'profissional': self.prof_a.pk,
+                'data': self.inicio.date().isoformat(),
+                'hora_inicio': '09:00',
+                'hora_fim': '11:00',
+            },
             empresa=self.empresa_a,
         )
         self.assertFalse(form.is_valid())
 
     def test_disponibilidade_impede_profissional_de_outra_empresa(self):
         form = DisponibilidadeForm(
-            {'profissional': self.prof_b.pk, 'dia_semana': 1, 'hora_inicio': '09:00', 'hora_fim': '11:00'},
+            {
+                'profissional': self.prof_b.pk,
+                'data': (self.inicio.date() + timedelta(days=1)).isoformat(),
+                'hora_inicio': '09:00',
+                'hora_fim': '11:00',
+            },
             empresa=self.empresa_a,
         )
         self.assertFalse(form.is_valid())
@@ -298,21 +326,31 @@ class AgendaOperacaoTests(TestCase):
     def test_membro_inativo_nao_e_profissional_selecionavel(self):
         EmpresaUsuario.objects.filter(pk=self.eu_a.pk).update(ativo=False)
         form = DisponibilidadeForm(
-            {'profissional': self.prof_a.pk, 'dia_semana': 2,
-             'hora_inicio': '09:00', 'hora_fim': '10:00'},
+            {
+                'profissional': self.prof_a.pk,
+                'data': (self.inicio.date() + timedelta(days=2)).isoformat(),
+                'hora_inicio': '09:00',
+                'hora_fim': '10:00',
+            },
             empresa=self.empresa_a,
         )
         self.assertFalse(form.is_valid())
 
     def test_desativacao_preserva_historico(self):
+        disponibilidade = AgendaDisponibilidadeData.objects.create(
+            profissional=self.prof_a,
+            data=self.inicio.date() + timedelta(days=1),
+            hora_inicio=time(9),
+            hora_fim=time(12),
+        )
         self.client.force_login(self.owner_a)
         response = self.client.post(reverse(
             'painel:agenda_disponibilidade_status',
-            args=[self.empresa_a.uuid, self.disponibilidade_a.pk],
+            args=[self.empresa_a.uuid, disponibilidade.pk],
         ), {'ativo': '0'})
         self.assertEqual(response.status_code, 302)
-        self.disponibilidade_a.refresh_from_db()
-        self.assertFalse(self.disponibilidade_a.ativo)
-        self.assertTrue(AgendaDisponibilidade.objects.filter(
-            pk=self.disponibilidade_a.pk
+        disponibilidade.refresh_from_db()
+        self.assertFalse(disponibilidade.ativo)
+        self.assertTrue(AgendaDisponibilidadeData.objects.filter(
+            pk=disponibilidade.pk
         ).exists())

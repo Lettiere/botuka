@@ -28,7 +28,8 @@ class HomeAggregatorTests(TestCase):
             "transmissoes_ao_vivo", "modalidades_esportivas", "campeonatos_ativos",
             "jogos_proximos", "resultados_recentes", "acoes_prefeitura", "orgaos_publicos",
             "eventos_destaque", "eventos_proximos", "cultura_destaque", "cultura_recentes",
-            "gastronomia_destaque", "parques_destaque", "estatisticas_home"}
+            "gastronomia_destaque", "parques_destaque", "empresas_agenda",
+            "estatisticas_home"}
         self.assertTrue(chaves.issubset(contexto))
         self.assertLessEqual(len(contexto["servicos_destaque"]), 6)
         self.assertLessEqual(len(contexto["episodios_ytv"]), 4)
@@ -71,7 +72,7 @@ class HomeAggregatorTests(TestCase):
         self.assertEqual(response.context["eventos_proximos"], [])
 
     def test_includes_e_sql_seguro(self):
-        includes = ["empresas", "servicos", "vagas", "news", "eventos", "cultura",
+        includes = ["empresas", "servicos", "agenda", "vagas", "news", "eventos", "cultura",
             "gastronomia", "parques", "ytv", "esportes", "jogos", "prefeitura", "empty_state"]
         for name in includes:
             self.assertTrue((Path(settings.BASE_DIR) / "templates" / "home" / "includes" / f"{name}.html").is_file())
@@ -86,6 +87,13 @@ class HomeAggregatorTests(TestCase):
         response = self.client.get(reverse("home"))
         self.assertNotContains(response, "Profissionais disponíveis")
         self.assertNotIn("curriculos_publicos", response.context)
+
+    def test_home_e_navbar_expoem_entrada_da_agenda(self):
+        response = self.client.get(reverse("home"))
+        self.assertContains(response, "Agenda Botuka")
+        self.assertContains(response, reverse("agenda_public:home"))
+        self.assertContains(response, "botukaExploreModal")
+        self.assertContains(response, "Explorar recursos")
 
 
 @override_settings(DEBUG=True)

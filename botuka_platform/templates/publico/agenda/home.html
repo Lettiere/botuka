@@ -1,0 +1,105 @@
+{% extends "_layout/platform/public.html" %}
+{% load static %}
+
+{% block title %}Agenda Botuka | Encontre e agende serviços{% endblock %}
+
+{% block public_styles %}<link rel="stylesheet" href="{% static 'agenda/css/public-search.css' %}"><link rel="stylesheet" href="{% static 'agenda/css/agenda3.css' %}">{% endblock %}
+
+{% block public_content %}
+<main class="agenda-search-page">
+  <section class="agenda-search-hero">
+    <div class="container-botuka">
+      <span class="section-kicker"><i class="bi bi-calendar2-check"></i> Agenda Botuka</span>
+      <h1>Encontre um serviço e escolha um horário real</h1>
+      <p>Pesquise profissionais e empresas com disponibilidade confirmada na Agenda Botuka.</p>
+      <form class="agenda-search-form" method="get" action="{% url 'agenda_public:home' %}" role="search" data-agenda-search>
+        <fieldset class="agenda-mode-switch">
+          <legend class="visually-hidden">Modalidade</legend>
+          <label><input type="radio" name="modalidade" value="presencial" {% if filtros.modalidade == 'presencial' %}checked{% endif %}><span><i class="bi bi-geo-alt"></i> Presencial</span></label>
+          <label><input type="radio" name="modalidade" value="online" {% if filtros.modalidade == 'online' %}checked{% endif %}><span><i class="bi bi-camera-video"></i> Online</span></label>
+        </fieldset>
+        <label class="agenda-search-field agenda-autocomplete"><span>Serviço, especialidade ou profissional</span><div><i class="bi bi-search"></i><input name="q" value="{{ filtros.q|default:'' }}" placeholder="Ex.: fotografia, contador, Ana" autocomplete="off" data-agenda-autocomplete data-url="{% url 'agenda_public:autocomplete' %}" aria-autocomplete="list" aria-expanded="false"></div><div class="agenda-suggestions" data-agenda-suggestions role="listbox" hidden></div></label>
+        <label class="agenda-search-field"><span>Cidade ou localização</span><div><i class="bi bi-pin-map"></i><input name="localizacao" value="{{ filtros.localizacao|default:'' }}" placeholder="Ex.: Botucatu"></div></label>
+        <button class="btn-botuka btn-yellow agenda-search-submit" type="submit"><i class="bi bi-search"></i> Pesquisar</button>
+        <details class="agenda-advanced-filters">
+          <summary>Mais filtros</summary>
+          <div class="agenda-advanced-grid">
+            <label>Data<input type="date" name="data" value="{{ filtros.data|default:'' }}"></label>
+            <label>Horário exato<input type="time" name="horario" value="{{ filtros.horario|default:'' }}"></label>
+            <label>Horário aproximado<input type="time" name="horario_aproximado" value="{{ filtros.horario_aproximado|default:'' }}"></label>
+            <label>Período
+              <select name="periodo">
+                <option value="">Qualquer período</option>
+                <option value="manha" {% if filtros.periodo == 'manha' %}selected{% endif %}>Manhã</option>
+                <option value="tarde" {% if filtros.periodo == 'tarde' %}selected{% endif %}>Tarde</option>
+                <option value="noite" {% if filtros.periodo == 'noite' %}selected{% endif %}>Noite</option>
+              </select>
+            </label>
+            <label>Profissional<input name="profissional" value="{{ filtros.profissional|default:'' }}"></label>
+            <label>Empresa<input name="empresa" value="{{ filtros.empresa|default:'' }}"></label>
+          </div>
+        </details>
+      </form>
+      <details class="agenda-guided-search">
+        <summary><i class="bi bi-compass"></i> Ajude-me a encontrar</summary>
+        <form method="get" class="agenda-wizard-form"><p>Responda apenas ao que ajudar. O resultado usa filtros reais, sem recomendação artificial.</p><div class="agenda-wizard-grid"><label>O que você procura?<input name="q" value="{{ filtros.q|default:'' }}" placeholder="Serviço, profissão ou necessidade"></label><label>Como prefere ser atendido?<select name="modalidade"><option value="">Sem preferência</option><option value="presencial">Presencial</option><option value="online">Online</option></select></label><label>Onde?<input name="localizacao" value="{{ filtros.localizacao|default:'' }}" placeholder="Cidade ou bairro"></label><label>Quando?<input type="date" name="data" value="{{ filtros.data|default:'' }}"></label></div><button class="btn-botuka btn-yellow" type="submit">Ver resultados reais</button></form>
+      </details>
+    </div>
+  </section>
+
+  <section class="agenda-results-section" id="resultados" aria-labelledby="agenda-results-title">
+    <div class="container-botuka">
+      <header class="agenda-results-header"><div><span class="section-kicker">Disponibilidade real</span><h2 id="agenda-results-title">{% if busca_ativa %}Resultados da pesquisa{% else %}Próximos horários disponíveis{% endif %}</h2></div>{% if busca_ativa %}<a href="{% url 'agenda_public:home' %}" class="btn-botuka btn-soft">Limpar filtros</a>{% endif %}</header>
+      {% if resultados %}
+        <div class="agenda-result-list">
+          {% for resultado in resultados %}
+            <article class="agenda-result-card">
+              <section class="agenda-result-info">
+                <div class="agenda-professional-avatar">
+                  {% if resultado.profissional.usuario.foto %}<img src="{{ resultado.profissional.usuario.foto.url }}" alt="Foto de {{ resultado.profissional_nome }}">{% else %}<span aria-hidden="true">{{ resultado.profissional_nome|first|upper }}</span>{% endif %}
+                </div>
+                <div class="agenda-result-copy">
+                  <span class="city-tag">{{ resultado.modalidades|join:" · " }}</span>
+                  <h3>{{ resultado.profissional_nome }}</h3>
+                  <p class="agenda-company-name"><i class="bi bi-building"></i> {{ resultado.empresa.nome_exibicao }}</p>
+                  <dl>
+                    <div><dt>Especialidade</dt><dd>{{ resultado.profissao.nome }}{% if resultado.area %} · {{ resultado.area.nome }}{% endif %}</dd></div>
+                    <div><dt>Serviço</dt><dd>{{ resultado.servico.titulo }}</dd></div>
+                    {% if resultado.localizacao %}<div><dt>Local</dt><dd>{{ resultado.localizacao }}</dd></div>{% endif %}
+                    <div><dt>Preço</dt><dd>{% if resultado.servico.preco_sob_consulta %}Sob consulta{% elif resultado.servico.preco_inicial %}A partir de R$ {{ resultado.servico.preco_inicial }}{% else %}Consulte a empresa{% endif %}</dd></div>
+                  </dl>
+                  <a href="{% url 'agenda_public:servico' resultado.empresa.slug resultado.servico.slug %}" class="agenda-service-link">Ver detalhes do serviço</a>
+                </div>
+              </section>
+              <section class="agenda-result-availability" aria-label="Horários de {{ resultado.profissional_nome }}">
+                <div class="agenda-next-day">
+      <span>Próximo horário disponível</span>
+      <strong>
+        {{ resultado.proximo_dia|date:"d/m/Y" }}
+        às {{ resultado.proximo_slot|time:"H:i" }}
+      </strong>
+    </div>
+                <div class="agenda-days" data-agenda-days>
+                  {% for dia in resultado.dias %}
+                    <div class="agenda-day {% if forloop.counter > 3 %}is-extra{% endif %}">
+                      <h4><span>{{ dia.data|date:"D" }}</span>{{ dia.data|date:"d/m" }}</h4>
+                      <div class="agenda-slots">
+                        {% for slot in dia.slots %}<a href="{% url 'agenda_public:confirmar' resultado.vinculo.uuid %}?inicio={{ slot.isoformat|urlencode }}" class="agenda-slot">{{ slot|time:"H:i" }}</a>{% endfor %}
+                      </div>
+                    </div>
+                  {% endfor %}
+                </div>
+                {% if resultado.dias|length > 3 %}<button type="button" class="agenda-more-slots" data-agenda-more>Mostrar mais horários</button>{% endif %}
+              </section>
+            </article>
+          {% endfor %}
+        </div>
+      {% else %}
+        <div class="agenda-empty-state"><i class="bi bi-calendar-x"></i><h3>Nenhum horário disponível para estes filtros.</h3><p>Altere os filtros, remova o profissional específico ou procure outra data.</p><a href="{% url 'agenda_public:home' %}" class="btn-botuka btn-yellow">Alterar filtros</a></div>
+      {% endif %}
+    </div>
+  </section>
+</main>
+{% endblock %}
+
+{% block public_scripts %}<script src="{% static 'agenda/js/public-search.js' %}" defer></script>{% endblock %}
