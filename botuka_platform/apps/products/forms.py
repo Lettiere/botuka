@@ -6,6 +6,7 @@ from django.core.files.images import get_image_dimensions
 from urllib.parse import parse_qs, urlparse
 
 from apps.core.services.rich_text import sanitizar_html_rico
+from apps.core.services.images import optimize_uploaded_image
 from apps.organizations.permissions import empresas_gerenciaveis_para_usuario
 from apps.accounts.permissions import usuario_tem_permissao
 
@@ -286,7 +287,7 @@ class ProdutoForm(forms.ModelForm):
                 image.seek(0)
             except (OSError, TypeError, ValueError) as exc:
                 raise forms.ValidationError(f'{image.name}: o arquivo não contém uma imagem válida.') from exc
-        return files
+        return [optimize_uploaded_image(image, policy='card') for image in files]
 
     def clean_imagem_principal_upload(self):
         image = self.cleaned_data.get('imagem_principal_upload')
@@ -298,7 +299,7 @@ class ProdutoForm(forms.ModelForm):
                 image.seek(0)
             except (OSError, TypeError, ValueError) as exc:
                 raise forms.ValidationError('A imagem principal enviada é inválida.') from exc
-        return image
+        return optimize_uploaded_image(image, policy='card') if image else image
 
     def _total_images_after_save(self):
         existing = 0

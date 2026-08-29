@@ -14,13 +14,16 @@
             <article class="showcase-card reveal" style="width:100%;min-width:0;flex:1 1 0%;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04);padding:0.5rem 0.5rem 1rem 0.5rem;">
               {% with image=produto.imagem_principal %}
                 {% if image %}
-                  <div style="width:100%;aspect-ratio:1/1;overflow:hidden;border-radius:8px;background:#eef2f6;display:flex;align-items:center;justify-content:center;">
+                  <div class="home-product-media" style="width:100%;aspect-ratio:4/3;overflow:hidden;border-radius:8px;background:#eef2f6;display:flex;align-items:center;justify-content:center;">
                     <img
                       class="showcase-img"
-                      style="width:100%;height:100%;object-fit:cover;display:block;"
+                      style="width:100%;height:100%;object-fit:contain;display:block;"
                       src="{{ image.imagem.url }}"
                       alt="{{ image.texto_alternativo }}"
                       loading="lazy"
+                      decoding="async"
+                      width="900"
+                      height="675"
                     >
                   </div>
                 {% else %}

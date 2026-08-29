@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 
 from apps.accounts.permissions import usuario_e_master, usuario_tem_permissao
 from apps.core.services.rich_text import sanitizar_html_rico
+from apps.core.services.images import optimize_uploaded_image
 
 from .models import Evento
 from .permissions import empresas_para_eventos
@@ -53,6 +54,7 @@ class EventoForm(forms.ModelForm):
     def __init__(self, *args, user, **kwargs):
         self.user = user
         super().__init__(*args, **kwargs)
+
         for field in self.fields.values():
             if isinstance(field.widget, forms.CheckboxInput):
                 field.widget.attrs['class'] = 'form-check-input'
@@ -76,6 +78,9 @@ class EventoForm(forms.ModelForm):
             self.fields['empresa_promotora'].initial = companies.first()
             self.fields['empresa_promotora'].disabled = True
             self.fields['empresa_promotora'].help_text = 'Sua única empresa autorizada foi selecionada automaticamente.'
+
+    def clean_imagem_principal(self):
+        return optimize_uploaded_image(self.cleaned_data.get('imagem_principal'), policy='hero')
 
     def clean(self):
         cleaned = super().clean()
