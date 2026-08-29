@@ -1,4 +1,5 @@
 from django import forms
+from apps.core.services.images import optimize_uploaded_image
 
 from apps.accounts.authorization import pode
 
@@ -53,6 +54,12 @@ class ArtigoForm(forms.ModelForm):
             if enviado and str(enviado) != str(proprio or ""):
                 raise forms.ValidationError("Você não pode atribuir outro autor editorial.")
         return cleaned
+
+    def clean_imagem_capa(self):
+        return optimize_uploaded_image(self.cleaned_data.get('imagem_capa'), policy='hero')
+
+    def clean_imagem_social(self):
+        return optimize_uploaded_image(self.cleaned_data.get('imagem_social'), policy='hero')
 
     def clean_conteudo(self):
         conteudo = sanitizar_html_editorial(self.cleaned_data.get("conteudo"))

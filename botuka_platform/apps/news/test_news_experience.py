@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.test import SimpleTestCase, TestCase, override_settings
@@ -9,7 +10,7 @@ from django.utils import timezone
 from apps.core.services.public_sharing import gerar_qrcode_png, obter_url_publica
 from apps.news.models import (
     Artigo, CategoriaNoticia, ComentarioArtigo, CurtidaComentario,
-    EditorialStatus,
+    EditorialStatus, LinkRelacionado,
 )
 from apps.news.sanitizers import sanitizar_html_editorial
 
@@ -87,6 +88,63 @@ class NewsExperienceTests(TestCase):
             resposta,
             'name="twitter:image" content="https://botuka.com.br/'
         )
+
+    def test_seo_prioriza_capa_e_aplica_fallback_institucional(self):
+        Artigo.objects.filter(pk=self.artigo.pk).update(
+            imagem_capa='news/artigos/capa-principal.jpg',
+            imagem_social='news/social/imagem-antiga.jpg',
+        )
+        resposta = self.client.get(self.artigo.get_absolute_url())
+        self.assertContains(
+            resposta,
+            'property="og:image" content="https://botuka.com.br/media/news/artigos/capa-principal.jpg"',
+        )
+        self.assertNotContains(resposta, '/news/social/imagem-antiga.jpg')
+        Artigo.objects.filter(pk=self.artigo.pk).update(
+            imagem_capa='', imagem_social=''
+        )
+        resposta = self.client.get(self.artigo.get_absolute_url())
+        self.assertContains(resposta, settings.SITE_DEFAULT_IMAGE)
+
+    def test_conteudo_vazio_legado_tem_estado_util(self):
+        Artigo.objects.filter(pk=self.artigo.pk).update(conteudo='')
+        resposta = self.client.get(self.artigo.get_absolute_url())
+        self.assertEqual(resposta.status_code, 200)
+        self.assertContains(resposta, 'Conteúdo em atualização')
+        self.assertContains(resposta, 'Voltar para Notícias')
+
+    def test_links_interno_externo_e_legado_relativo(self):
+        interno = LinkRelacionado.objects.create(
+            artigo=self.artigo, tipo=LinkRelacionado.Tipo.SITE,
+            titulo='Notícias BOTUKA', url='https://botuka.com.br/noticias/',
+        )
+        LinkRelacionado.objects.filter(pk=interno.pk).update(url='/noticias/')
+        LinkRelacionado.objects.create(
+            artigo=self.artigo, tipo=LinkRelacionado.Tipo.REFERENCIA,
+            titulo='Referência externa', url='https://example.com/referencia',
+        )
+        resposta = self.client.get(self.artigo.get_absolute_url())
+        self.assertContains(
+            resposta,
+            'href="https://botuka.com.br/noticias/" rel="nofollow"',
+        )
+        self.assertContains(
+            resposta,
+            'href="https://example.com/referencia" target="_blank" rel="noopener noreferrer nofollow"',
+        )
+
+    def test_conteudo_extenso_e_mobile_permanecem_responsivos(self):
+        Artigo.objects.filter(pk=self.artigo.pk).update(
+            conteudo='<h2>Seção</h2><p>' + ('texto ' * 1200) + '</p>'
+        )
+        resposta = self.client.get(
+            self.artigo.get_absolute_url(),
+            HTTP_USER_AGENT='Mozilla/5.0 (Linux; Android 14) Mobile',
+        )
+        self.assertEqual(resposta.status_code, 200)
+        self.assertGreater(resposta.context['tempo_leitura'], 1)
+        self.assertContains(resposta, 'article-richtext')
+        self.assertContains(resposta, 'share-qr-modal')
 
     def test_qrcode_publico_png_svg_e_dominio(self):
         self.assertEqual(

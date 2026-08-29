@@ -1,5 +1,7 @@
 from math import ceil
+from urllib.parse import urlsplit
 
+from django.conf import settings
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import PermissionDenied, ValidationError
@@ -12,6 +14,7 @@ from django.http import HttpResponsePermanentRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.utils import timezone
+from django.utils.html import strip_tags
 from django.views.decorators.http import require_POST
 
 from apps.accounts.permissions import usuario_tem_permissao
@@ -20,6 +23,7 @@ from apps.accounts.models import AcessoModulo
 from apps.core.domain import auditar
 from apps.core.seo.page_builders import artigo_seo, listing_seo
 from apps.core.services.home.adapters.events import obter_eventos
+from apps.core.services.public_urls import build_public_absolute_url
 
 from .models import (
     Artigo, ArtigoBloco, ArtigoFonte, Autor, CategoriaNoticia, Coluna,
@@ -41,6 +45,29 @@ NEWS_AUX_MENU = [
     ("fontes", "Fontes"), ("links", "Links"), ("midias", "Mídias"),
     ("imagens", "Imagens"), ("destaques", "Destaques"),
 ]
+
+
+def _links_publicos_artigo(request, links):
+    """Normaliza links legados e diferencia navegação interna de externa."""
+
+    canonical_host = urlsplit(settings.PUBLIC_BASE_URL).hostname
+    request_host = urlsplit(f"//{request.get_host()}").hostname
+    resultado = []
+    for link in links:
+        try:
+            url = build_public_absolute_url(request, link.url)
+        except (TypeError, ValueError):
+            continue
+        host = urlsplit(url).hostname
+        externo = bool(host and host not in {canonical_host, request_host})
+        resultado.append({
+            'titulo': link.titulo,
+            'url': url,
+            'tipo': link.get_tipo_display(),
+            'externo': externo,
+            'nofollow': link.nofollow,
+        })
+    return resultado
 
 
 def _can(user, *codes):
@@ -212,6 +239,12 @@ def artigo(request, slug):
     total_palavras = len(obj.conteudo.split()) + sum(
         len(bloco.conteudo.split()) for bloco in obj.blocos.all()
     )
+    conteudo_visivel = bool(
+        strip_tags(obj.conteudo or '').strip()
+        or any(strip_tags(bloco.conteudo or '').strip() for bloco in obj.blocos.all())
+        or obj.midias.all()
+        or obj.imagens.all()
+    )
     comentarios_qs = (
         ComentarioArtigo.objects.filter(
             artigo=obj, comentario_raiz__isnull=True,
@@ -238,6 +271,10 @@ def artigo(request, slug):
         "categorias_sidebar": categorias,
         "eventos_sidebar": eventos[:3],
         "tempo_leitura": max(1, ceil(total_palavras / 200)),
+        "conteudo_visivel": conteudo_visivel,
+        "links_publicos": _links_publicos_artigo(
+            request, obj.links_relacionados.all()
+        ),
         "pagina_comentarios": pagina_comentarios,
         "comentario_form": ComentarioForm(),
         "seo": artigo_seo(request, obj),

@@ -1,5 +1,8 @@
 {% load news_extras %}
 <div class="article-richtext" data-article-body>
+  {% if not conteudo_visivel %}
+    <section class="article-empty-content"><i class="bi bi-journal-text" aria-hidden="true"></i><div><h2>Conteúdo em atualização</h2><p>Esta publicação ainda não possui texto detalhado. Consulte o resumo, os links relacionados ou outras notícias do BOTUKA.</p></div></section>
+  {% endif %}
   <div class="article-richtext__lead">{{ artigo.conteudo|richtext }}</div>
   {% for bloco in artigo.blocos.all %}
     <section class="article-content-block article-content-block--{{ bloco.tipo|lower }}">

@@ -1,5 +1,5 @@
-{% if artigo.links_relacionados.all %}
-<section class="article-transparency"><h2>Links relacionados</h2><ul>
-{% for link in artigo.links_relacionados.all %}<li><a href="{{ link.url }}" target="_blank" rel="noopener noreferrer{% if link.nofollow %} nofollow{% endif %}">{{ link.titulo }} <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i></a></li>{% endfor %}
-</ul></section>
+{% if links_publicos %}
+<section class="article-transparency article-links" aria-labelledby="article-links-title"><h2 id="article-links-title">Links relacionados</h2><div>
+{% for link in links_publicos %}<a href="{{ link.url }}"{% if link.externo %} target="_blank" rel="noopener noreferrer{% if link.nofollow %} nofollow{% endif %}"{% elif link.nofollow %} rel="nofollow"{% endif %}><i class="bi bi-{% if link.externo %}box-arrow-up-right{% else %}arrow-right-circle{% endif %}" aria-hidden="true"></i><span><strong>{{ link.titulo }}</strong><small>{{ link.tipo }}{% if link.externo %} · site externo{% else %} · BOTUKA{% endif %}</small></span></a>{% endfor %}
+</div></section>
 {% endif %}

@@ -4,7 +4,8 @@
     {% if artigo.urgente %}<span class="article-urgent"><i class="bi bi-lightning-fill" aria-hidden="true"></i> Urgente</span>{% endif %}
   </div>
   <h1 class="article-title-responsive">{{ artigo.titulo }}</h1>
-  {% with deck=artigo.subtitulo|default:artigo.resumo %}{% if deck %}<p class="article-deck">{{ deck }}</p>{% endif %}{% endwith %}
+  {% if artigo.subtitulo %}<p class="article-deck">{{ artigo.subtitulo }}</p>{% endif %}
+  {% if artigo.resumo and artigo.resumo != artigo.subtitulo %}<p class="article-summary">{{ artigo.resumo }}</p>{% endif %}
   <div class="article-byline">
     <div class="article-byline__author">
       {% if artigo.autor.foto %}
@@ -21,26 +22,4 @@
       {% if artigo.data_fato %}<span><i class="bi bi-geo-alt" aria-hidden="true"></i>Botucatu · fato em {{ artigo.data_fato|date:'d/m/Y' }}</span>{% endif %}
     </div>
   </div>
-  <style>
-    /* Tornar o título do artigo responsivo e evitar quebras não naturais */
-    .article-title-responsive {
-      font-size: clamp(1.5rem, 2.5vw + 1rem, 2.85rem);
-      line-height: 1.12;
-      margin: 0.1em 0 0.3em 0;
-      font-weight: 800;
-      letter-spacing: -0.015em;
-      /* Adiciona: previne quebra excessiva */
-      overflow-wrap: anywhere;
-      word-break: normal;
-      white-space: normal;
-      hyphens: auto;
-      /* Permite maior espaçamento em telas pequenas para não forçar quebra estranha */
-    }
-    @media (max-width: 600px) {
-      .article-title-responsive {
-        font-size: clamp(1.25rem, 6vw, 2.1rem);
-        /* Mantém as propriedades para responsividade */
-      }
-    }
-  </style>
 </header>
