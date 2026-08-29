@@ -1,5 +1,7 @@
+import hashlib
 import logging
 
+from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
 from django.templatetags.static import static
@@ -9,6 +11,29 @@ from apps.core.seo.page_builders import home_seo
 from apps.core.seo.builders import build_seo
 
 logger = logging.getLogger('django.security.csrf')
+
+
+def _pwa_cache_version():
+    """Versão automática do app shell, sobrescrevível pelo identificador do deploy."""
+
+    configured = str(settings.PWA_VERSION).strip()
+    if configured:
+        return configured
+
+    digest = hashlib.sha256()
+    paths = [
+        settings.BASE_DIR / 'templates' / 'pwa' / 'service-worker.js',
+        settings.BASE_DIR / 'templates' / 'pwa' / 'offline.html',
+        settings.BASE_DIR / 'static' / 'css' / 'platform' / 'style.css',
+        settings.BASE_DIR / 'static' / 'css' / 'platform' / 'public-shell.css',
+        settings.BASE_DIR / 'static' / 'js' / 'platform' / 'pwa.js',
+        settings.BASE_DIR / 'static' / 'img' / 'icons' / 'botuka-icon.svg',
+        settings.BASE_DIR / 'static' / 'img' / 'icons' / 'botuka-icon-192.png',
+        settings.BASE_DIR / 'static' / 'img' / 'icons' / 'botuka-icon-512.png',
+    ]
+    for path in paths:
+        digest.update(path.read_bytes())
+    return digest.hexdigest()[:16]
 
 
 def csrf_failure(request, reason=''):
@@ -134,6 +159,7 @@ def service_worker(request):
     response = render(
         request,
         'pwa/service-worker.js',
+        {'pwa_cache_version': _pwa_cache_version()},
         content_type='application/javascript; charset=utf-8',
     )
     response['Service-Worker-Allowed'] = '/'
