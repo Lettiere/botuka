@@ -1,0 +1,235 @@
+schema,tabela,model,app,relacionamentos,grupo,fundamento,risco_ativacao
+agenda,agenda_agendamento_tb,agenda.Agendamento,agenda,profissional_servico->agenda.AgendaProfissionalServico;cliente->accounts.Usuario,E,VÃ­nculo com usuÃ¡rio combinado a operaÃ§Ã£o administrativa ou sistÃªmica.,ALTO
+agenda,agenda_bloqueio_tb,agenda.AgendaBloqueio,agenda,profissional->agenda.AgendaProfissional,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+agenda,agenda_disponibilidade_data_tb,agenda.AgendaDisponibilidadeData,agenda,profissional->agenda.AgendaProfissional,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+agenda,agenda_disponibilidade_tb,agenda.AgendaDisponibilidade,agenda,profissional->agenda.AgendaProfissional,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+agenda,agenda_funcionamento_empresa_tb,agenda.AgendaFuncionamentoEmpresa,agenda,empresa->organizations.Empresa,B,Escopo empresarial com autorizaÃ§Ã£o indireta.,ALTO
+agenda,agenda_profissional_servico_tb,agenda.AgendaProfissionalServico,agenda,profissional->agenda.AgendaProfissional;servico->services.Servico,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+agenda,agenda_profissional_tb,agenda.AgendaProfissional,agenda,empresa_usuario->organizations.EmpresaUsuario;usuario_autonomo->accounts.Usuario,B,Escopo empresarial com autorizaÃ§Ã£o indireta.,ALTO
+core,core_atributo_adicional_tb,core.AtributoAdicional,core,vaga->recruitment.Vaga;servico->services.Servico,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+core,core_auditoria_tb,core.Auditoria,core,usuario->accounts.Usuario,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+core,core_bairro_tb,core.BairroCidade,core,cidade->core.CidadeBrasil;zona->core.ZonaCidade,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+core,core_cidade_tb,core.CidadeBrasil,core,estado->core.EstadoBrasil,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+core,core_cnh_detalhe_tb,core.CNHDetalhe,core,documento->core.PessoaDocumento,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+core,core_configuracao_sistema_tb,core.ConfiguracaoSistema,core,,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+core,core_contato_institucional_tb,core.ContatoInstitucional,core,,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+core,core_documento_requisito_tb,core.DocumentoRequisito,core,tipo_documento->core.TipoDocumento,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+core,core_endereco_tb,core.EnderecoCore,core,bairro->core.BairroCidade;cidade->core.CidadeBrasil;estado->core.EstadoBrasil,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+core,core_estado_tb,core.EstadoBrasil,core,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+core,core_perfil_permissao_tb,core.PerfilPermissao,core,perfil->core.Perfil;permissao->core.Permissao,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+core,core_perfil_tb,core.Perfil,core,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+core,core_permissao_tb,core.Permissao,core,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+core,core_pessoa_documento_tb,core.PessoaDocumento,core,usuario->accounts.Usuario;tipo_documento->core.TipoDocumento;validado_por->accounts.Usuario,E,VÃ­nculo com usuÃ¡rio combinado a operaÃ§Ã£o administrativa ou sistÃªmica.,ALTO
+core,core_regiao_tb,core.RegiaoCidade,core,cidade->core.CidadeBrasil,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+core,core_tipo_documento_tb,core.TipoDocumento,core,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+core,core_usuario_endereco_tb,core.UsuarioEndereco,core,usuario->accounts.Usuario;endereco->core.EnderecoCore,E,VÃ­nculo com usuÃ¡rio combinado a operaÃ§Ã£o administrativa ou sistÃªmica.,ALTO
+core,core_zona_tb,core.ZonaCidade,core,cidade->core.CidadeBrasil,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+events,events_evento,events.Evento,events,proprietario->accounts.Usuario;responsavel_edicao->accounts.Usuario;criador_registro->accounts.Usuario;empresa_promotora->organizations.Empresa,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+events,events_historicoevento,events.HistoricoEvento,events,evento->events.Evento;usuario->accounts.Usuario,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+events,events_interesseevento,events.InteresseEvento,events,evento->events.Evento;usuario->accounts.Usuario,G,"Contagens pÃºblicas, mÃ©tricas e gestores leem terceiros.",ALTO
+government,government_acao_atualizacao_tb,government.AcaoAtualizacao,government,acao->government.AcaoPublica;autor->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+government,government_acao_documento_tb,government.AcaoDocumento,government,acao->government.AcaoPublica,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+government,government_acao_link_tb,government.AcaoLink,government,acao->government.AcaoPublica,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+government,government_acao_tb,government.AcaoPublica,government,orgao->government.OrgaoPublico;autor->accounts.Usuario;revisor->accounts.Usuario;publicador->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+government,government_orgao_tb,government.OrgaoPublico,government,,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+government,government_orgao_usuario_tb,government.OrgaoUsuario,government,orgao->government.OrgaoPublico;usuario->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_apresentador_tb,media.Apresentador,media,,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_banner_tb,media.BannerYuBotuka,media,,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_canal_tb,media.Canal,media,proprietario->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_canal_usuario_tb,media.CanalUsuario,media,canal->media.Canal;usuario->accounts.Usuario;concedido_por->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_categoria_tb,media.CategoriaYuBotuka,media,categoria_pai->media.CategoriaYuBotuka,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_configuracao_tb,media.ConfiguracaoYuBotuka,media,atualizado_por->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_convidado_tb,media.Convidado,media,,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_destaque_tb,media.DestaqueEditorial,media,video->media.Video;canal->media.Canal;categoria->media.CategoriaYuBotuka;programa->media.Programa;playlist->media.Playlist,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+media,media_episodio_tb,media.Episodio,media,programa->media.Programa;temporada->media.Temporada;video_editorial->media.Video,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_historico_editorial_tb,media.HistoricoEditorial,media,video->media.Video;usuario->accounts.Usuario,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+media,media_homologacao_video_tb,media.HomologacaoVideoMigrado,media,video->media.Video;episodio_legado->media.Episodio;homologado_por->accounts.Usuario,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+media,media_motivo_rejeicao_tb,media.MotivoRejeicao,media,,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_patrocinador_tb,media.Patrocinador,media,,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_pauta_tb,media.Pauta,media,programa->media.Programa;responsavel->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_playlist_tb,media.Playlist,media,canal->media.Canal;categoria->media.CategoriaYuBotuka;playlist_pai->media.Playlist;proprietario->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_playlist_video_tb,media.PlaylistVideo,media,playlist->media.Playlist;video->media.Video;adicionado_por->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_programa_apresentador_tb,media.ProgramaApresentador,media,programa->media.Programa;apresentador->media.Apresentador,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_programa_patrocinador_tb,media.ProgramaPatrocinador,media,programa->media.Programa;patrocinador->media.Patrocinador,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_programa_tb,media.Programa,media,canal->media.Canal;categoria_editorial->media.CategoriaYuBotuka;apresentador->accounts.Usuario;produtor->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_tag_tb,media.TagYuBotuka,media,,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_temporada_tb,media.Temporada,media,programa->media.Programa,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_transmissao_apresentador_tb,media.TransmissaoApresentador,media,transmissao->media.Transmissao;apresentador->media.Apresentador,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_transmissao_convidado_tb,media.TransmissaoConvidado,media,transmissao->media.Transmissao;convidado->media.Convidado,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_transmissao_patrocinador_tb,media.TransmissaoPatrocinador,media,transmissao->media.Transmissao;patrocinador->media.Patrocinador,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_transmissao_tb,media.Transmissao,media,episodio->media.Episodio;canal->media.Canal;programa->media.Programa;categoria->media.CategoriaYuBotuka;autor->accounts.Usuario;moderado_por->accounts.Usuario;video_resultante->media.Video;disputa->sports.Disputa;acao_publica->government.AcaoPublica,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_video_apresentador_tb,media.VideoApresentador,media,video->media.Video;apresentador->media.Apresentador,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_video_convidado_tb,media.VideoConvidado,media,video->media.Video;convidado->media.Convidado,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_video_patrocinador_tb,media.VideoPatrocinador,media,video->media.Video;patrocinador->media.Patrocinador,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_video_tag_tb,media.VideoTag,media,video->media.Video;tag->media.TagYuBotuka,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+media,media_video_tb,media.Video,media,categoria->media.CategoriaYuBotuka;canal->media.Canal;programa->media.Programa;temporada->media.Temporada;autor->accounts.Usuario;moderado_por->accounts.Usuario;motivo_rejeicao->media.MotivoRejeicao;arquivado_por->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_artigo_bloco_tb,news.ArtigoBloco,news,artigo->news.Artigo,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_artigo_fonte_tb,news.ArtigoFonte,news,artigo->news.Artigo;organizacao->organizations.Empresa,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_artigo_tag_rel_tb,news.ArtigoTag,news,artigo->news.Artigo;tag->news.Tag,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_artigo_tb,news.Artigo,news,autor->accounts.Usuario;autor_editorial->news.Autor;categoria->news.CategoriaNoticia;coluna->news.Coluna;serie->news.SerieEditorial;revisado_por->accounts.Usuario;publicador->accounts.Usuario;campeonato->sports.Campeonato;acao_publica->government.AcaoPublica;episodio->media.Episodio,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_artigo_tema_rel_tb,news.ArtigoTema,news,artigo->news.Artigo;tema->news.Tema,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_autor_especialidade_rel_tb,news.AutorEspecialidade,news,autor->news.Autor;especialidade->news.EspecialidadeAutor,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_autor_tb,news.Autor,news,usuario->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_categoria_tb,news.CategoriaNoticia,news,categoria_pai->news.CategoriaNoticia,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_coluna_tb,news.Coluna,news,autor->news.Autor,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_colunista_tb,news.Colunista,news,autor->news.Autor,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_comentario_artigo_tb,news.ComentarioArtigo,news,artigo->news.Artigo;usuario->accounts.Usuario;comentario_raiz->news.ComentarioArtigo;respondendo_a->news.ComentarioArtigo;usuario_mencionado->accounts.Usuario;moderado_por->accounts.Usuario,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+news,news_curtida_comentario_tb,news.CurtidaComentario,news,comentario->news.ComentarioArtigo;usuario->accounts.Usuario,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+news,news_denuncia_comentario_tb,news.DenunciaComentario,news,comentario->news.ComentarioArtigo;usuario->accounts.Usuario,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+news,news_destaque_editorial_tb,news.DestaqueEditorial,news,artigo->news.Artigo;categoria->news.CategoriaNoticia,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+news,news_especialidade_autor_tb,news.EspecialidadeAutor,news,,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_historico_editorial_tb,news.HistoricoEditorial,news,artigo->news.Artigo;usuario->accounts.Usuario,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+news,news_imagem_publicacao_tb,news.ImagemPublicacao,news,artigo->news.Artigo,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_link_relacionado_tb,news.LinkRelacionado,news,artigo->news.Artigo,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_midia_incorporada_tb,news.MidiaIncorporada,news,artigo->news.Artigo;episodio->media.Episodio,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_serie_editorial_tb,news.SerieEditorial,news,,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_tag_tb,news.Tag,news,,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+news,news_tema_tb,news.Tema,news,,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+platform,platform_bairro_tb,locations.Bairro,locations,cidade->locations.Cidade,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+platform,platform_capacidade_tb,organizations.Capacidade,organizations,,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+platform,platform_categoria_tb,taxonomy.Categoria,taxonomy,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+platform,platform_cidade_tb,locations.Cidade,locations,estado->locations.Estado,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+platform,platform_cnae_tb,organizations.CNAE,organizations,,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+platform,platform_cnpj_consulta_tb,organizations.CNPJConsulta,organizations,solicitado_por->accounts.Usuario,E,VÃ­nculo com usuÃ¡rio combinado a operaÃ§Ã£o administrativa ou sistÃªmica.,ALTO
+platform,platform_empresa_capacidade_tb,organizations.EmpresaCapacidade,organizations,empresa->organizations.Empresa;capacidade->organizations.Capacidade;aprovado_por->accounts.Usuario,B,Escopo empresarial com autorizaÃ§Ã£o indireta.,ALTO
+platform,platform_empresa_cnae_tb,organizations.EmpresaCNAE,organizations,empresa->organizations.Empresa;cnae->organizations.CNAE,B,Escopo empresarial com autorizaÃ§Ã£o indireta.,ALTO
+platform,platform_empresa_endereco_tb,organizations.EmpresaEndereco,organizations,empresa->organizations.Empresa;endereco->core.EnderecoCore,B,Escopo empresarial com autorizaÃ§Ã£o indireta.,ALTO
+platform,platform_empresa_funcao_tb,organizations.EmpresaFuncao,organizations,,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+platform,platform_empresa_link_tb,organizations.EmpresaLink,organizations,empresa->organizations.Empresa,B,Escopo empresarial com autorizaÃ§Ã£o indireta.,ALTO
+platform,platform_empresa_propriedade_tb,organizations.EmpresaPropriedade,organizations,empresa->organizations.Empresa;usuario->accounts.Usuario;aprovado_por->accounts.Usuario,B,Escopo empresarial com autorizaÃ§Ã£o indireta.,ALTO
+platform,platform_empresa_solicitacao_tb,organizations.EmpresaSolicitacao,organizations,empresa->organizations.Empresa;usuario_solicitante->accounts.Usuario;analisado_por->accounts.Usuario,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+platform,platform_empresa_tb,organizations.Empresa,organizations,usuario_proprietario->accounts.Usuario;autorizada_por->accounts.Usuario;categoria_empresa->taxonomy.Categoria;subcategoria_empresa->taxonomy.Subcategoria;cidade->locations.Cidade;estado->locations.Estado,E,VÃ­nculo com usuÃ¡rio combinado a operaÃ§Ã£o administrativa ou sistÃªmica.,ALTO
+platform,platform_empresa_usuario_funcao_tb,organizations.EmpresaUsuarioFuncao,organizations,empresa_usuario->organizations.EmpresaUsuario;funcao->organizations.EmpresaFuncao,B,Escopo empresarial com autorizaÃ§Ã£o indireta.,ALTO
+platform,platform_empresa_usuario_permissao_tb,organizations.EmpresaUsuarioPermissao,organizations,empresa_usuario->organizations.EmpresaUsuario,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+platform,platform_empresa_usuario_tb,organizations.EmpresaUsuario,organizations,empresa->organizations.Empresa;usuario->accounts.Usuario;convidado_por->accounts.Usuario;autorizado_por->accounts.Usuario,B,Escopo empresarial com autorizaÃ§Ã£o indireta.,ALTO
+platform,platform_endereco_tb,organizations.Endereco,organizations,unidade->organizations.Unidade;cidade->locations.Cidade;bairro->locations.Bairro,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+platform,platform_estado_tb,locations.Estado,locations,pais->locations.Pais,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+platform,platform_organizacao_tb,organizations.Organizacao,organizations,proprietario->accounts.Usuario;categoria->taxonomy.Categoria,E,VÃ­nculo com usuÃ¡rio combinado a operaÃ§Ã£o administrativa ou sistÃªmica.,ALTO
+platform,platform_organizacao_usuario_tb,organizations.OrganizacaoUsuario,organizations,organizacao->organizations.Organizacao;usuario->accounts.Usuario,B,Escopo empresarial com autorizaÃ§Ã£o indireta.,ALTO
+platform,platform_pais_tb,locations.Pais,locations,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+platform,platform_subcategoria_tb,taxonomy.Subcategoria,taxonomy,categoria->taxonomy.Categoria,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+platform,platform_unidade_tb,organizations.Unidade,organizations,organizacao->organizations.Organizacao;responsavel->accounts.Usuario;categoria->taxonomy.Categoria,B,Escopo empresarial com autorizaÃ§Ã£o indireta.,ALTO
+platform,platform_usuario_capacidade_tb,organizations.UsuarioCapacidade,organizations,usuario->accounts.Usuario;capacidade->organizations.Capacidade;aprovado_por->accounts.Usuario,E,VÃ­nculo com usuÃ¡rio combinado a operaÃ§Ã£o administrativa ou sistÃªmica.,ALTO
+platform,platform_usuario_grupo_tb,accounts.UsuarioGrupo,accounts,usuario->accounts.Usuario;grupo->auth.Group,E,VÃ­nculo com usuÃ¡rio combinado a operaÃ§Ã£o administrativa ou sistÃªmica.,ALTO
+platform,platform_usuario_perfil_adicional_tb,accounts.UsuarioPerfil,accounts,usuario->accounts.Usuario;perfil->core.Perfil,E,VÃ­nculo com usuÃ¡rio combinado a operaÃ§Ã£o administrativa ou sistÃªmica.,ALTO
+platform,platform_usuario_permissao_tb,accounts.UsuarioPermissao,accounts,usuario->accounts.Usuario;permissao->auth.Permission,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+platform,platform_usuario_tb,accounts.Usuario,accounts,perfil->core.Perfil;estado->locations.Estado;cidade->locations.Cidade,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,accounts_acessomodulo,accounts.AcessoModulo,accounts,usuario->accounts.Usuario;perfil->core.Perfil;concedido_por->accounts.Usuario;revogado_por->accounts.Usuario,E,VÃ­nculo com usuÃ¡rio combinado a operaÃ§Ã£o administrativa ou sistÃªmica.,ALTO
+public,accounts_auditoriapermissao,accounts.AuditoriaPermissao,accounts,usuario_beneficiado->accounts.Usuario;permissao->core.Permissao;ator->accounts.Usuario,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+public,accounts_concessaopermissao,accounts.ConcessaoPermissao,accounts,acesso->accounts.AcessoModulo;usuario->accounts.Usuario;permissao->core.Permissao;concedida_por->accounts.Usuario;revogada_por->accounts.Usuario,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+public,analytics_analyticsdailycompany,analytics.AnalyticsDailyCompany,analytics,empresa->organizations.Empresa,B,Escopo empresarial com autorizaÃ§Ã£o indireta.,ALTO
+public,analytics_analyticsdailycompanyterm,analytics.AnalyticsDailyCompanyTerm,analytics,empresa->organizations.Empresa,B,Escopo empresarial com autorizaÃ§Ã£o indireta.,ALTO
+public,analytics_analyticsevent,analytics.AnalyticsEvent,analytics,user->accounts.Usuario;empresa->organizations.Empresa,B,Escopo empresarial com autorizaÃ§Ã£o indireta.,ALTO
+public,auth_group,auth.Group,auth,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+public,auth_group_permissions,,framework/implicit,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+public,auth_permission,auth.Permission,auth,content_type->contenttypes.ContentType,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+public,django_admin_log,admin.LogEntry,admin,user->accounts.Usuario;content_type->contenttypes.ContentType,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+public,django_content_type,contenttypes.ContentType,contenttypes,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+public,django_migrations,,framework/implicit,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+public,django_session,sessions.Session,sessions,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+public,platform_assinatura_tb,organizations.Assinatura,organizations,usuario->accounts.Usuario;plano->organizations.Plano;empresa_contratante->organizations.Empresa,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+public,platform_contratacao_empresa_adicional_tb,organizations.ContratacaoEmpresaAdicional,organizations,assinatura->organizations.Assinatura,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,platform_plano_tb,organizations.Plano,organizations,,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,platform_usuario_limite_personalizado_tb,organizations.UsuarioLimitePersonalizado,organizations,usuario->accounts.Usuario;concedido_por->accounts.Usuario,E,VÃ­nculo com usuÃ¡rio combinado a operaÃ§Ã£o administrativa ou sistÃªmica.,ALTO
+public,products_auditoriaproduto,products.AuditoriaProduto,products,produto->products.Produto;usuario->accounts.Usuario,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+public,products_bloqueionegociacao,products.BloqueioNegociacao,products,bloqueador->accounts.Usuario;bloqueado->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,products_conversa,products.Conversa,products,produto->products.Produto;comprador->accounts.Usuario;vendedor->accounts.Usuario;empresa->organizations.Empresa,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,products_denuncianegociacao,products.DenunciaNegociacao,products,denunciante->accounts.Usuario;denunciado->accounts.Usuario;produto->products.Produto;conversa->products.Conversa;mensagem->products.MensagemConversa,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,products_limiteprodutoadicional,products.LimiteProdutoAdicional,products,usuario->accounts.Usuario;empresa->organizations.Empresa;concedido_por->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,products_logverificacaovendedor,products.LogVerificacaoVendedor,products,vendedor->accounts.Usuario;produto->products.Produto;comprador->accounts.Usuario,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+public,products_mensagemconversa,products.MensagemConversa,products,conversa->products.Conversa;remetente->accounts.Usuario,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,products_perfilpublicovendedor,,framework/implicit,,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,products_produto,products.Produto,products,setor->products.SetorProduto;categoria_taxonomia->products.CategoriaProduto;familia->products.FamiliaProduto;tipo_produto->products.TipoProduto;segmento->products.SegmentoProduto;criador_registro->accounts.Usuario;proprietario->accounts.Usuario;responsavel->accounts.Usuario;empresa_proprietaria->organizations.Empresa;aprovado_por->accounts.Usuario;publicado_por->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,products_produtoimagem,products.ProdutoImagem,products,produto->products.Produto,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,products_produtovideo,products.ProdutoVideo,products,produto->products.Produto,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,products_valoratributoproduto,products.ValorAtributoProduto,products,produto->products.Produto;atributo->products.AtributoProduto,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,recruitment_candidatura_historico_tb,recruitment.CandidaturaHistorico,recruitment,candidatura->recruitment.Candidatura;usuario->accounts.Usuario,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+public,recruitment_candidatura_tb,recruitment.Candidatura,recruitment,vaga->recruitment.Vaga;usuario->accounts.Usuario;curriculo->recruitment.Curriculo,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,recruitment_curriculo_info_adicional_tb,recruitment.CurriculoInformacaoAdicional,recruitment,curriculo->recruitment.Curriculo,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,recruitment_curriculo_privacidade_tb,recruitment.CurriculoPrivacidade,recruitment,curriculo->recruitment.Curriculo,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,recruitment_curriculo_tb,recruitment.Curriculo,recruitment,usuario->accounts.Usuario,G,Privado/pÃºblico e leitura autorizada por recrutadores.,ALTO
+public,recruitment_curso_tb,recruitment.Curso,recruitment,curriculo->recruitment.Curriculo,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,recruitment_experiencia_tb,recruitment.Experiencia,recruitment,curriculo->recruitment.Curriculo,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,recruitment_formacao_tb,recruitment.Formacao,recruitment,curriculo->recruitment.Curriculo,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,recruitment_habilidade_tb,recruitment.Habilidade,recruitment,curriculo->recruitment.Curriculo,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,recruitment_idioma_tb,recruitment.Idioma,recruitment,curriculo->recruitment.Curriculo,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,recruitment_projeto_tb,recruitment.Projeto,recruitment,curriculo->recruitment.Curriculo,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,recruitment_vaga_auditoria_tb,recruitment.VagaAuditoria,recruitment,vaga->recruitment.Vaga;usuario->accounts.Usuario,E,"Auditoria, aprovaÃ§Ã£o, permissÃ£o ou workflow cross-user.",ALTO
+public,recruitment_vaga_tb,recruitment.Vaga,recruitment,empresa->organizations.Empresa;perfil_pessoa_fisica->accounts.Usuario;usuario_criador->accounts.Usuario;usuario_responsavel->accounts.Usuario,E,VÃ­nculo com usuÃ¡rio combinado a operaÃ§Ã£o administrativa ou sistÃªmica.,ALTO
+public,social_block_tb,social.SocialBlock,social,bloqueador->social.SocialProfile;bloqueado->social.SocialProfile,D,Bloqueador e bloqueado; policies assimÃ©tricas existentes.,MEDIO
+public,social_conversation_participant_tb,social.SocialConversationParticipant,social,conversa->social.SocialConversation;usuario->accounts.Usuario,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,social_conversation_request_message_tb,social.SocialConversationRequestMessage,social,solicitacao->social.SocialConversationRequest;remetente->accounts.Usuario;post->social.SocialPost;story->social.SocialStory,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,social_conversation_request_tb,social.SocialConversationRequest,social,solicitante->accounts.Usuario;destinatario->accounts.Usuario;post->social.SocialPost;story->social.SocialStory;conversa->social.SocialConversation,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,social_conversation_tb,social.SocialConversation,social,,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,social_empresa_seguidor_tb,social.EmpresaSeguidor,social,usuario->accounts.Usuario;empresa->organizations.Empresa,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,social_follow_request_tb,social.SocialFollowRequest,social,solicitante->social.SocialProfile;destinatario->social.SocialProfile,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,social_follow_tb,social.SocialFollow,social,seguidor->social.SocialProfile;seguido->social.SocialProfile,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,social_message_tb,social.SocialMessage,social,conversa->social.SocialConversation;remetente->accounts.Usuario;post->social.SocialPost;story->social.SocialStory;contexto_tipo->contenttypes.ContentType,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,social_notification_tb,social.SocialNotification,social,destinatario->accounts.Usuario;ator->accounts.Usuario;objeto_tipo->contenttypes.ContentType,G,Leitura do destinatÃ¡rio e INSERT cross-user/sistema.,ALTO
+public,social_post_comment_tb,social.SocialPostComment,social,post->social.SocialPost;autor->social.SocialProfile,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,social_post_like_tb,social.SocialPostLike,social,post->social.SocialPost;usuario->accounts.Usuario,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,social_post_save_tb,social.SocialPostSave,social,post->social.SocialPost;usuario->accounts.Usuario,A,Propriedade direta por usuario_id; policy existente.,BAIXO
+public,social_post_tb,social.SocialPost,social,autor->social.SocialProfile;conteudo_tipo->contenttypes.ContentType,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,social_profile_tb,social.SocialProfile,social,usuario->accounts.Usuario,E,VÃ­nculo com usuÃ¡rio combinado a operaÃ§Ã£o administrativa ou sistÃªmica.,ALTO
+public,social_report_tb,social.SocialReport,social,denunciante->accounts.Usuario;alvo_tipo->contenttypes.ContentType,E,Denunciante cria; moderaÃ§Ã£o analisa terceiros.,ALTO
+public,social_story_like_tb,social.SocialStoryLike,social,story->social.SocialStory;usuario->accounts.Usuario,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,social_story_reaction_tb,social.SocialStoryReaction,social,story->social.SocialStory;usuario->accounts.Usuario,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,social_story_tb,social.SocialStory,social,autor->social.SocialProfile,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,social_story_view_tb,social.SocialStoryView,social,story->social.SocialStory;usuario->accounts.Usuario,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+public,tourism_categoriaturismo,tourism.CategoriaTurismo,tourism,pai->tourism.CategoriaTurismo,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,tourism_contatoturismo,tourism.ContatoTurismo,tourism,usuario_criador->accounts.Usuario;usuario_atualizador->accounts.Usuario;publicado_por->accounts.Usuario;moderado_por->accounts.Usuario;local->tourism.LocalTuristico,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,tourism_empresaturistica,tourism.EmpresaTuristica,tourism,usuario_criador->accounts.Usuario;usuario_atualizador->accounts.Usuario;publicado_por->accounts.Usuario;moderado_por->accounts.Usuario;empresa->organizations.Empresa,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,tourism_estruturaturismo,tourism.EstruturaTurismo,tourism,,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,tourism_experienciaturistica,tourism.ExperienciaTuristica,tourism,usuario_criador->accounts.Usuario;usuario_atualizador->accounts.Usuario;publicado_por->accounts.Usuario;moderado_por->accounts.Usuario;local->tourism.LocalTuristico;guia->tourism.GuiaTuristico;empresa->tourism.EmpresaTuristica,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,tourism_guiaturistico,tourism.GuiaTuristico,tourism,usuario_criador->accounts.Usuario;usuario_atualizador->accounts.Usuario;publicado_por->accounts.Usuario;moderado_por->accounts.Usuario;usuario->accounts.Usuario;empresa->organizations.Empresa,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,tourism_localturistico,tourism.LocalTuristico,tourism,usuario_criador->accounts.Usuario;usuario_atualizador->accounts.Usuario;publicado_por->accounts.Usuario;moderado_por->accounts.Usuario;categoria->tourism.CategoriaTurismo;empresa_responsavel->organizations.Empresa;responsavel_administrativo->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,tourism_localturistico_empresas_relacionadas,,framework/implicit,,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,tourism_localturistico_estruturas,,framework/implicit,,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,tourism_localturistico_guias_relacionados,,framework/implicit,,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,tourism_localturistico_servicos_disponiveis,,framework/implicit,,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,tourism_redesocialturismo,tourism.RedeSocialTurismo,tourism,usuario_criador->accounts.Usuario;usuario_atualizador->accounts.Usuario;publicado_por->accounts.Usuario;moderado_por->accounts.Usuario;local->tourism.LocalTuristico,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,tourism_roteiroturistico,tourism.RoteiroTuristico,tourism,usuario_criador->accounts.Usuario;usuario_atualizador->accounts.Usuario;publicado_por->accounts.Usuario;moderado_por->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,tourism_roteiroturistico_guias,,framework/implicit,,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,tourism_roteiroturistico_locais,,framework/implicit,,F,"Tabela global, de referÃªncia ou sem proprietÃ¡rio individual seguro.",MEDIO
+public,tourism_servicoturismo,tourism.ServicoTurismo,tourism,,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,tourism_turismofoto,tourism.TurismoFoto,tourism,usuario_criador->accounts.Usuario;usuario_atualizador->accounts.Usuario;publicado_por->accounts.Usuario;moderado_por->accounts.Usuario;local->tourism.LocalTuristico,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,tourism_turismoplaylist,tourism.TurismoPlaylist,tourism,usuario_criador->accounts.Usuario;usuario_atualizador->accounts.Usuario;publicado_por->accounts.Usuario;moderado_por->accounts.Usuario;local->tourism.LocalTuristico;guia->tourism.GuiaTuristico;roteiro->tourism.RoteiroTuristico;experiencia->tourism.ExperienciaTuristica;empresa->tourism.EmpresaTuristica,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,tourism_turismoplaylistvideo,tourism.TurismoPlaylistVideo,tourism,playlist->tourism.TurismoPlaylist;video->tourism.TurismoVideo,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+public,tourism_turismovideo,tourism.TurismoVideo,tourism,usuario_criador->accounts.Usuario;usuario_atualizador->accounts.Usuario;publicado_por->accounts.Usuario;moderado_por->accounts.Usuario;local->tourism.LocalTuristico;guia->tourism.GuiaTuristico;empresa->tourism.EmpresaTuristica;roteiro->tourism.RoteiroTuristico;experiencia->tourism.ExperienciaTuristica,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+services,services_area_profissional_tb,services.AreaProfissional,services,setor->services.Setor,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+services,services_cbo_familia_tb,services.CBOFamilia,services,subgrupo->services.CBOSubgrupo,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+services,services_cbo_grande_grupo_tb,services.CBOGrandeGrupo,services,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+services,services_cbo_ocupacao_tb,services.CBOOcupacao,services,familia->services.CBOFamilia,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+services,services_cbo_sinonimo_tb,services.CBOSinonimo,services,ocupacao->services.CBOOcupacao,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+services,services_cbo_subgrupo_principal_tb,services.CBOSubgrupoPrincipal,services,grande_grupo->services.CBOGrandeGrupo,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+services,services_cbo_subgrupo_tb,services.CBOSubgrupo,services,subgrupo_principal->services.CBOSubgrupoPrincipal,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+services,services_forma_cobranca_tb,services.FormaCobranca,services,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+services,services_profissao_cbo_tb,services.ProfissaoCBO,services,profissao->services.Profissao;ocupacao->services.CBOOcupacao,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+services,services_profissao_tb,services.Profissao,services,setor->services.Setor;area->services.AreaProfissional,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+services,services_profissao_tipo_servico_tb,services.ProfissaoTipoServico,services,profissao->services.Profissao;tipo_servico->services.TipoServico,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+services,services_servico_area_tb,services.ServicoArea,services,servico->services.Servico;cidade->core.CidadeBrasil;regiao->core.RegiaoCidade;bairro->core.BairroCidade;estado->core.EstadoBrasil,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+services,services_servico_avaliacao_tb,services.ServicoAvaliacao,services,servico->services.Servico;usuario_avaliador->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+services,services_servico_caracteristica_tb,services.ServicoCaracteristica,services,servico->services.Servico,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+services,services_servico_favorito_tb,services.ServicoFavorito,services,servico->services.Servico;usuario->accounts.Usuario,G,"Propriedade direta, mas Django Admin exige leitura global.",MEDIO
+services,services_servico_imagem_tb,services.ServicoImagem,services,servico->services.Servico,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+services,services_servico_link_tb,services.ServicoLink,services,servico->services.Servico,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+services,services_servico_tb,services.Servico,services,usuario_responsavel->accounts.Usuario;empresa->organizations.Empresa;setor->services.Setor;area->services.AreaProfissional;profissao->services.Profissao;tipo_servico->services.TipoServico;forma_cobranca->services.FormaCobranca,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+services,services_setor_tb,services.Setor,services,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+services,services_tipo_servico_tb,services.TipoServico,services,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+sports,sports_atleta_tb,sports.Atleta,sports,usuario->accounts.Usuario;equipe->sports.Equipe;modalidade->sports.Modalidade;estilo->sports.Estilo;categoria->sports.Categoria,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+sports,sports_campeonato_participante_tb,sports.ParticipanteCampeonato,sports,campeonato->sports.Campeonato;equipe->sports.Equipe;atleta->sports.Atleta,D,Duas ou mais partes relacionadas acessam o registro.,ALTO
+sports,sports_campeonato_tb,sports.Campeonato,sports,organizacao->sports.OrganizacaoEsportiva;modalidade->sports.Modalidade;estilo->sports.Estilo;categoria->sports.Categoria,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+sports,sports_categoria_tb,sports.Categoria,sports,modalidade->sports.Modalidade;estilo->sports.Estilo;categoria_pai->sports.Categoria,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+sports,sports_classificacao_tb,sports.Classificacao,sports,campeonato->sports.Campeonato;participante->sports.ParticipanteCampeonato,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+sports,sports_disputa_tb,sports.Disputa,sports,campeonato->sports.Campeonato;participante_a->sports.ParticipanteCampeonato;participante_b->sports.ParticipanteCampeonato,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+sports,sports_equipe_tb,sports.Equipe,sports,organizacao->sports.OrganizacaoEsportiva;modalidade->sports.Modalidade;estilo->sports.Estilo;categoria->sports.Categoria,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+sports,sports_estilo_tb,sports.Estilo,sports,modalidade->sports.Modalidade,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+sports,sports_modalidade_tb,sports.Modalidade,sports,,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+sports,sports_organizacao_esportiva_tb,sports.OrganizacaoEsportiva,sports,empresa->organizations.Empresa;usuario_responsavel->accounts.Usuario,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+taxonomy,products_atributoproduto,products.AtributoProduto,products,categoria_taxonomia->products.CategoriaProduto,C,ConteÃºdo pÃºblico ou catÃ¡logo operacional com escrita controlada.,ALTO
+taxonomy,products_categoriaproduto,products.CategoriaProduto,products,setor->products.SetorProduto,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+taxonomy,products_familiaproduto,products.FamiliaProduto,products,categoria->products.CategoriaProduto,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+taxonomy,products_segmentoproduto,products.SegmentoProduto,products,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+taxonomy,products_setorproduto,products.SetorProduto,products,,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+taxonomy,products_tipoproduto,products.TipoProduto,products,familia->products.FamiliaProduto,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
+taxonomy,products_tipoprodutosegmento,products.TipoProdutoSegmento,products,tipo_produto->products.TipoProduto;segmento->products.SegmentoProduto,F,"Framework, catÃ¡logo ou referÃªncia global.",BAIXO
