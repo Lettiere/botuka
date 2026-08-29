@@ -16,7 +16,10 @@ from django.urls import reverse
 from django.utils.text import slugify
 from django.utils import timezone
 
-from apps.organizations.permissions import empresas_disponiveis_para_usuario
+from apps.organizations.permissions import (
+    empresas_disponiveis_para_usuario,
+    usuario_pode_publicar_por_empresa,
+)
 from apps.organizations.models import Empresa
 from .forms import (CandidaturaForm, ContatoPublicoForm, CursoForm,
                     CurriculoPrivacidadeForm, ExperienciaForm, FormacaoForm,
@@ -73,7 +76,32 @@ def vagas_exportar(request):
 
 @login_required
 def vaga_criar(request):
-    form = VagaForm(request.POST or None, usuario=request.user)
+    initial = {}
+    empresa_uuid = (request.GET.get('empresa') or '').strip()
+
+    if request.method == 'GET' and empresa_uuid:
+        empresa_inicial = (
+            empresas_disponiveis_para_usuario(request.user)
+            .filter(ativo=True, uuid=empresa_uuid)
+            .first()
+        )
+        if (
+            empresa_inicial
+            and usuario_pode_publicar_por_empresa(
+                request.user,
+                empresa_inicial,
+            )
+        ):
+            initial = {
+                'tipo_responsavel': 'EMPRESA',
+                'empresa': empresa_inicial,
+            }
+
+    form = VagaForm(
+        request.POST or None,
+        usuario=request.user,
+        initial=initial,
+    )
     atributos = atributo_formset('vaga', instance=form.instance, data=request.POST or None)
     if request.method == 'POST' and form.is_valid() and atributos.is_valid():
         try:
