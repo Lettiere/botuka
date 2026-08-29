@@ -174,6 +174,7 @@ INSTALLED_APPS = [
     'apps.painel.apps.PainelConfig',
     'apps.analytics.apps.AnalyticsConfig',
     'apps.social.apps.SocialConfig',
+    'apps.comunicacao.apps.ComunicacaoConfig',
 ]
 
 AUTH_USER_MODEL = 'accounts.Usuario'

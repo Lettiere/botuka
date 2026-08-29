@@ -1,0 +1,770 @@
+{% extends "gestao/base.html" %}
+
+{% block title %}Comunicação | Gestão BOTUKA{% endblock %}
+
+{% block content %}
+
+<style>
+  .com-page{
+    display:grid;
+    gap:24px;
+  }
+
+  .com-hero{
+    position:relative;
+    overflow:hidden;
+    border-radius:22px;
+    padding:30px;
+    background:
+      radial-gradient(circle at 90% 10%,rgba(37,99,235,.24),transparent 30%),
+      radial-gradient(circle at 10% 90%,rgba(14,165,233,.14),transparent 34%),
+      linear-gradient(135deg,#0f172a 0%,#172554 55%,#1e3a8a 100%);
+    color:#fff;
+    box-shadow:0 18px 50px rgba(15,23,42,.16);
+  }
+
+  .com-hero__content{
+    position:relative;
+    z-index:2;
+    max-width:780px;
+  }
+
+  .com-eyebrow{
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:12px;
+    padding:7px 11px;
+    border:1px solid rgba(255,255,255,.18);
+    border-radius:999px;
+    background:rgba(255,255,255,.09);
+    color:#dbeafe;
+    font-size:12px;
+    font-weight:700;
+    letter-spacing:.08em;
+    text-transform:uppercase;
+  }
+
+  .com-hero h1{
+    margin:0;
+    color:#fff;
+    font-size:clamp(28px,4vw,42px);
+    line-height:1.08;
+  }
+
+  .com-hero p{
+    margin:14px 0 0;
+    max-width:680px;
+    color:#dbeafe;
+    font-size:15px;
+    line-height:1.65;
+  }
+
+  .com-status{
+    display:flex;
+    flex-wrap:wrap;
+    gap:8px;
+    margin-top:20px;
+  }
+
+  .com-status span{
+    display:inline-flex;
+    align-items:center;
+    gap:7px;
+    padding:7px 10px;
+    border-radius:999px;
+    background:rgba(255,255,255,.1);
+    color:#e2e8f0;
+    font-size:12px;
+  }
+
+  .com-status__dot{
+    width:8px;
+    height:8px;
+    border-radius:50%;
+    background:#22c55e;
+    box-shadow:0 0 0 4px rgba(34,197,94,.12);
+  }
+
+  .com-section-head{
+    display:flex;
+    align-items:flex-end;
+    justify-content:space-between;
+    gap:16px;
+  }
+
+  .com-section-head h2{
+    margin:0;
+    color:#0f172a;
+    font-size:21px;
+  }
+
+  .com-section-head p{
+    margin:5px 0 0;
+    color:#64748b;
+    font-size:13px;
+  }
+
+  .com-kpis{
+    display:grid;
+    grid-template-columns:repeat(5,minmax(0,1fr));
+    gap:14px;
+  }
+
+  .com-kpi{
+    position:relative;
+    overflow:hidden;
+    border:1px solid #e2e8f0;
+    border-radius:18px;
+    padding:18px;
+    background:#fff;
+    box-shadow:0 8px 25px rgba(15,23,42,.05);
+  }
+
+  .com-kpi::after{
+    content:"";
+    position:absolute;
+    right:-26px;
+    top:-26px;
+    width:78px;
+    height:78px;
+    border-radius:50%;
+    background:#eff6ff;
+  }
+
+  .com-kpi__label{
+    position:relative;
+    z-index:1;
+    color:#64748b;
+    font-size:12px;
+    font-weight:700;
+    text-transform:uppercase;
+    letter-spacing:.04em;
+  }
+
+  .com-kpi__value{
+    position:relative;
+    z-index:1;
+    margin-top:8px;
+    color:#0f172a;
+    font-size:30px;
+    font-weight:800;
+    line-height:1;
+  }
+
+  .com-kpi__hint{
+    position:relative;
+    z-index:1;
+    margin-top:8px;
+    color:#94a3b8;
+    font-size:12px;
+  }
+
+  .com-modules{
+    display:grid;
+    grid-template-columns:repeat(3,minmax(0,1fr));
+    gap:18px;
+  }
+
+  .com-module{
+    display:flex;
+    flex-direction:column;
+    min-height:300px;
+    overflow:hidden;
+    border:1px solid #e2e8f0;
+    border-radius:22px;
+    background:#fff;
+    box-shadow:0 12px 32px rgba(15,23,42,.06);
+    transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease;
+  }
+
+  .com-module:hover{
+    transform:translateY(-3px);
+    border-color:#bfdbfe;
+    box-shadow:0 18px 42px rgba(15,23,42,.10);
+  }
+
+  .com-module__top{
+    padding:22px 22px 16px;
+  }
+
+  .com-module__icon{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    width:46px;
+    height:46px;
+    margin-bottom:18px;
+    border-radius:14px;
+    background:#eff6ff;
+    color:#1d4ed8;
+    font-size:21px;
+    font-weight:800;
+  }
+
+  .com-module h3{
+    margin:0;
+    color:#0f172a;
+    font-size:20px;
+  }
+
+  .com-module__desc{
+    min-height:44px;
+    margin:8px 0 0;
+    color:#64748b;
+    font-size:13px;
+    line-height:1.55;
+  }
+
+  .com-module__stats{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:10px;
+    padding:0 22px 18px;
+  }
+
+  .com-stat{
+    border-radius:14px;
+    padding:13px;
+    background:#f8fafc;
+  }
+
+  .com-stat strong{
+    display:block;
+    color:#0f172a;
+    font-size:21px;
+  }
+
+  .com-stat span{
+    color:#64748b;
+    font-size:11px;
+  }
+
+  .com-module__footer{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:10px;
+    margin-top:auto;
+    padding:16px 22px;
+    border-top:1px solid #f1f5f9;
+    background:#fcfdff;
+  }
+
+  .com-module__footer small{
+    color:#94a3b8;
+  }
+
+  .com-link{
+    display:inline-flex;
+    align-items:center;
+    justify-content:center;
+    min-height:38px;
+    padding:0 15px;
+    border-radius:10px;
+    background:#1d4ed8;
+    color:#fff !important;
+    font-size:13px;
+    font-weight:700;
+    text-decoration:none;
+  }
+
+  .com-link:hover{
+    background:#1e40af;
+  }
+
+  .com-bottom{
+    display:grid;
+    grid-template-columns:1.25fr .75fr;
+    gap:18px;
+  }
+
+  .com-panel{
+    border:1px solid #e2e8f0;
+    border-radius:20px;
+    padding:22px;
+    background:#fff;
+    box-shadow:0 10px 28px rgba(15,23,42,.05);
+  }
+
+  .com-panel h3{
+    margin:0;
+    color:#0f172a;
+    font-size:18px;
+  }
+
+  .com-panel > p{
+    margin:7px 0 0;
+    color:#64748b;
+    font-size:13px;
+    line-height:1.55;
+  }
+
+  .com-security-list{
+    display:grid;
+    gap:10px;
+    margin-top:18px;
+  }
+
+  .com-security-item{
+    display:flex;
+    align-items:flex-start;
+    gap:11px;
+    padding:12px;
+    border-radius:14px;
+    background:#f8fafc;
+  }
+
+  .com-security-icon{
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex:0 0 30px;
+    width:30px;
+    height:30px;
+    border-radius:9px;
+    background:#dcfce7;
+    color:#166534;
+    font-size:14px;
+    font-weight:900;
+  }
+
+  .com-security-item strong{
+    display:block;
+    color:#0f172a;
+    font-size:13px;
+  }
+
+  .com-security-item span{
+    display:block;
+    margin-top:2px;
+    color:#64748b;
+    font-size:12px;
+    line-height:1.4;
+  }
+
+  .com-disabled{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    margin-top:18px;
+    padding:14px;
+    border:1px solid #fed7aa;
+    border-radius:14px;
+    background:#fff7ed;
+  }
+
+  .com-disabled strong{
+    display:block;
+    color:#9a3412;
+    font-size:13px;
+  }
+
+  .com-disabled span{
+    color:#c2410c;
+    font-size:12px;
+  }
+
+  .com-badge-disabled{
+    flex:0 0 auto;
+    padding:6px 9px;
+    border-radius:999px;
+    background:#ffedd5;
+    color:#9a3412;
+    font-size:10px;
+    font-weight:800;
+    text-transform:uppercase;
+  }
+
+  .com-summary{
+    display:grid;
+    gap:12px;
+    margin-top:18px;
+  }
+
+  .com-summary-row{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:14px;
+    padding-bottom:11px;
+    border-bottom:1px solid #f1f5f9;
+  }
+
+  .com-summary-row:last-child{
+    padding-bottom:0;
+    border-bottom:0;
+  }
+
+  .com-summary-row span{
+    color:#64748b;
+    font-size:13px;
+  }
+
+  .com-summary-row strong{
+    color:#0f172a;
+    font-size:14px;
+  }
+
+  @media(max-width:1200px){
+    .com-kpis{
+      grid-template-columns:repeat(3,minmax(0,1fr));
+    }
+  }
+
+  @media(max-width:980px){
+    .com-modules,
+    .com-bottom{
+      grid-template-columns:1fr;
+    }
+  }
+
+  @media(max-width:680px){
+    .com-hero{
+      padding:22px;
+      border-radius:18px;
+    }
+
+    .com-kpis{
+      grid-template-columns:repeat(2,minmax(0,1fr));
+    }
+
+    .com-module__stats{
+      grid-template-columns:1fr 1fr;
+    }
+  }
+
+  @media(max-width:460px){
+    .com-kpis{
+      grid-template-columns:1fr;
+    }
+  }
+</style>
+
+<div class="com-page">
+
+  <section class="com-hero">
+    <div class="com-hero__content">
+      <div class="com-eyebrow">
+        BOTUKA · Gestão
+      </div>
+
+      <h1>Central de Comunicação</h1>
+
+      <p>
+        Uma visão integrada para prospecção comercial, distribuição de
+        comunicações e campanhas de e-mail marketing do BOTUKA.
+      </p>
+
+      <div class="com-status">
+        <span>
+          <span class="com-status__dot"></span>
+          Módulo ativo
+        </span>
+
+        <span>
+          Acesso restrito à Gestão
+        </span>
+
+        <span>
+          Disparo real desabilitado
+        </span>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="com-section-head">
+      <div>
+        <h2>Visão geral</h2>
+        <p>Indicadores atuais do módulo de comunicação.</p>
+      </div>
+    </div>
+
+    <div class="com-kpis" style="margin-top:14px">
+
+      <article class="com-kpi">
+        <div class="com-kpi__label">Prospectos</div>
+        <div class="com-kpi__value">{{ prospectos }}</div>
+        <div class="com-kpi__hint">Empresas em prospecção</div>
+      </article>
+
+      <article class="com-kpi">
+        <div class="com-kpi__label">Contatos</div>
+        <div class="com-kpi__value">{{ contatos }}</div>
+        <div class="com-kpi__hint">Contatos comerciais</div>
+      </article>
+
+      <article class="com-kpi">
+        <div class="com-kpi__label">Distribuições</div>
+        <div class="com-kpi__value">{{ distribuicoes }}</div>
+        <div class="com-kpi__hint">Comunicações internas</div>
+      </article>
+
+      <article class="com-kpi">
+        <div class="com-kpi__label">Campanhas</div>
+        <div class="com-kpi__value">{{ campanhas }}</div>
+        <div class="com-kpi__hint">E-mail marketing</div>
+      </article>
+
+      <article class="com-kpi">
+        <div class="com-kpi__label">Supressões</div>
+        <div class="com-kpi__value">{{ supressoes }}</div>
+        <div class="com-kpi__hint">Bloqueios ativos</div>
+      </article>
+
+    </div>
+  </section>
+
+  <section>
+    <div class="com-section-head">
+      <div>
+        <h2>Áreas de Comunicação</h2>
+        <p>Escolha o fluxo que deseja administrar.</p>
+      </div>
+    </div>
+
+    <div class="com-modules" style="margin-top:14px">
+
+      <article class="com-module">
+        <div class="com-module__top">
+          <div class="com-module__icon">P</div>
+
+          <h3>Prospecção Comercial</h3>
+
+          <p class="com-module__desc">
+            Organize empresas externas, contatos, listas e o relacionamento
+            comercial antes da conversão em empresa BOTUKA.
+          </p>
+        </div>
+
+        <div class="com-module__stats">
+          <div class="com-stat">
+            <strong>{{ prospectos }}</strong>
+            <span>Empresas</span>
+          </div>
+
+          <div class="com-stat">
+            <strong>{{ contatos }}</strong>
+            <span>Contatos</span>
+          </div>
+
+          <div class="com-stat">
+            <strong>{{ listas_prospeccao }}</strong>
+            <span>Listas</span>
+          </div>
+
+          <div class="com-stat">
+            <strong>{{ interacoes }}</strong>
+            <span>Interações</span>
+          </div>
+        </div>
+
+        <div class="com-module__footer">
+          <small>CRM de prospecção</small>
+
+          <a
+            class="com-link"
+            href="{% url 'gestao:comunicacao:prospeccao' %}">
+            Acessar
+          </a>
+        </div>
+      </article>
+
+      <article class="com-module">
+        <div class="com-module__top">
+          <div class="com-module__icon">D</div>
+
+          <h3>Distribuição de E-mails</h3>
+
+          <p class="com-module__desc">
+            Estruture comunicações direcionadas para usuários, empresas,
+            públicos internos e segmentos da plataforma.
+          </p>
+        </div>
+
+        <div class="com-module__stats">
+          <div class="com-stat">
+            <strong>{{ distribuicoes }}</strong>
+            <span>Distribuições</span>
+          </div>
+
+          <div class="com-stat">
+            <strong>{{ destinatarios_distribuicao }}</strong>
+            <span>Destinatários</span>
+          </div>
+        </div>
+
+        <div class="com-module__footer">
+          <small>Comunicação segmentada</small>
+
+          <a
+            class="com-link"
+            href="{% url 'gestao:comunicacao:distribuicao' %}">
+            Acessar
+          </a>
+        </div>
+      </article>
+
+      <article class="com-module">
+        <div class="com-module__top">
+          <div class="com-module__icon">M</div>
+
+          <h3>E-mail Marketing</h3>
+
+          <p class="com-module__desc">
+            Estruture campanhas, templates, públicos, eventos e
+            acompanhamento da comunicação comercial.
+          </p>
+        </div>
+
+        <div class="com-module__stats">
+          <div class="com-stat">
+            <strong>{{ campanhas }}</strong>
+            <span>Campanhas</span>
+          </div>
+
+          <div class="com-stat">
+            <strong>{{ templates_email }}</strong>
+            <span>Templates</span>
+          </div>
+
+          <div class="com-stat">
+            <strong>{{ destinatarios_campanha }}</strong>
+            <span>Destinatários</span>
+          </div>
+
+          <div class="com-stat">
+            <strong>{{ supressoes }}</strong>
+            <span>Supressões</span>
+          </div>
+        </div>
+
+        <div class="com-module__footer">
+          <small>Marketing e relacionamento</small>
+
+          <a
+            class="com-link"
+            href="{% url 'gestao:comunicacao:marketing' %}">
+            Acessar
+          </a>
+        </div>
+      </article>
+
+    </div>
+  </section>
+
+  <section class="com-bottom">
+
+    <article class="com-panel">
+      <h3>Segurança e controle</h3>
+
+      <p>
+        A estrutura está preparada para evoluir sem expor o BOTUKA
+        a disparos indevidos ou perda de rastreabilidade.
+      </p>
+
+      <div class="com-security-list">
+
+        <div class="com-security-item">
+          <div class="com-security-icon">✓</div>
+          <div>
+            <strong>Controle de supressão</strong>
+            <span>
+              Endereços bloqueados permanecem registrados antes
+              de qualquer envio futuro.
+            </span>
+          </div>
+        </div>
+
+        <div class="com-security-item">
+          <div class="com-security-icon">✓</div>
+          <div>
+            <strong>Histórico de comunicação</strong>
+            <span>
+              A arquitetura permite registrar interações, campanhas
+              e eventos de comunicação.
+            </span>
+          </div>
+        </div>
+
+        <div class="com-security-item">
+          <div class="com-security-icon">✓</div>
+          <div>
+            <strong>Estrutura isolada</strong>
+            <span>
+              Dados do módulo estão organizados no schema
+              PostgreSQL comunicacao.
+            </span>
+          </div>
+        </div>
+
+      </div>
+
+      <div class="com-disabled">
+        <div>
+          <strong>Disparo de e-mail ainda bloqueado</strong>
+          <span>
+            Nenhum SMTP ou provedor de envio foi habilitado.
+          </span>
+        </div>
+
+        <div class="com-badge-disabled">
+          Desabilitado
+        </div>
+      </div>
+    </article>
+
+    <article class="com-panel">
+      <h3>Resumo operacional</h3>
+
+      <p>
+        Estado atual da base de comunicação.
+      </p>
+
+      <div class="com-summary">
+
+        <div class="com-summary-row">
+          <span>Prospectos</span>
+          <strong>{{ prospectos }}</strong>
+        </div>
+
+        <div class="com-summary-row">
+          <span>Listas de prospecção</span>
+          <strong>{{ listas_prospeccao }}</strong>
+        </div>
+
+        <div class="com-summary-row">
+          <span>Interações comerciais</span>
+          <strong>{{ interacoes }}</strong>
+        </div>
+
+        <div class="com-summary-row">
+          <span>Distribuições</span>
+          <strong>{{ distribuicoes }}</strong>
+        </div>
+
+        <div class="com-summary-row">
+          <span>Campanhas</span>
+          <strong>{{ campanhas }}</strong>
+        </div>
+
+        <div class="com-summary-row">
+          <span>Templates</span>
+          <strong>{{ templates_email }}</strong>
+        </div>
+
+        <div class="com-summary-row">
+          <span>Supressões</span>
+          <strong>{{ supressoes }}</strong>
+        </div>
+
+      </div>
+    </article>
+
+  </section>
+
+</div>
+
+{% endblock %}

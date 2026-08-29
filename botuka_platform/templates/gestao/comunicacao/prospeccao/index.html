@@ -1,0 +1,39 @@
+{% extends "gestao/base.html" %}
+
+{% block title %}Prospecção Comercial | Gestão BOTUKA{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <p>
+      <a href="{% url 'gestao:comunicacao:dashboard' %}">Comunicação</a>
+      › Prospecção
+    </p>
+    <h1>Prospecção Comercial</h1>
+    <p>
+      Base de empresas externas para captação comercial do BOTUKA.
+    </p>
+  </div>
+</div>
+
+<div class="cards">
+  <div class="card"><h2>{{ total }}</h2><p>Total de prospectos</p></div>
+  <div class="card"><h2>{{ novos }}</h2><p>Novos</p></div>
+  <div class="card"><h2>{{ contatados }}</h2><p>Contatados</p></div>
+  <div class="card"><h2>{{ interessados }}</h2><p>Interessados</p></div>
+  <div class="card"><h2>{{ negociacao }}</h2><p>Em negociação</p></div>
+  <div class="card"><h2>{{ convertidos }}</h2><p>Convertidos</p></div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h2>Estrutura preparada</h2>
+  <p>{{ contatos }} contatos cadastrados.</p>
+  <p>{{ listas }} listas de prospecção.</p>
+  <p>{{ interacoes }} interações comerciais.</p>
+  <p>{{ nao_contatar }} empresas marcadas como não contatar.</p>
+  <p>
+    A próxima etapa habilitará cadastro, importação da base de empresas
+    de Botucatu, filtros e ficha comercial. O disparo permanece bloqueado.
+  </p>
+</div>
+{% endblock %}

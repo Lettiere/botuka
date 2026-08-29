@@ -1,6 +1,6 @@
 """URLs do painel de gestão."""
 
-from django.urls import path
+from django.urls import include, path
 
 from apps.gestao import views
 from apps.products import taxonomy_views
@@ -9,6 +9,7 @@ app_name = 'gestao'
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
+    path('comunicacao/', include('apps.comunicacao.urls')),
     path('taxonomias/produtos/', taxonomy_views.dashboard, name='taxonomia_produtos_dashboard'),
     path('taxonomias/produtos/api/setores/', taxonomy_views.api_setores, name='api_produtos_setores'),
     path('taxonomias/produtos/api/categorias/', taxonomy_views.api_categorias, name='api_produtos_categorias'),

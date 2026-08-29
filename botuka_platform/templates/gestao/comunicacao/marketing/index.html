@@ -1,0 +1,30 @@
+{% extends "gestao/base.html" %}
+
+{% block title %}E-mail Marketing | Gestão BOTUKA{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <p>
+      <a href="{% url 'gestao:comunicacao:dashboard' %}">Comunicação</a>
+      › E-mail Marketing
+    </p>
+    <h1>E-mail Marketing</h1>
+    <p>Campanhas, templates, segmentação e métricas.</p>
+  </div>
+</div>
+
+<div class="cards">
+  <div class="card"><h2>{{ campanhas }}</h2><p>Campanhas</p></div>
+  <div class="card"><h2>{{ templates }}</h2><p>Templates</p></div>
+  <div class="card"><h2>{{ destinatarios }}</h2><p>Destinatários</p></div>
+  <div class="card"><h2>{{ supressoes }}</h2><p>Supressões</p></div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h2>Envio desabilitado</h2>
+  <p>
+    Ainda não existe integração ativa com SMTP ou provedor externo.
+  </p>
+</div>
+{% endblock %}

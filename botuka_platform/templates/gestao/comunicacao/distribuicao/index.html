@@ -1,0 +1,32 @@
+{% extends "gestao/base.html" %}
+
+{% block title %}Distribuição de E-mails | Gestão BOTUKA{% endblock %}
+
+{% block content %}
+<div class="page-head">
+  <div>
+    <p>
+      <a href="{% url 'gestao:comunicacao:dashboard' %}">Comunicação</a>
+      › Distribuição
+    </p>
+    <h1>Distribuição de E-mails</h1>
+    <p>
+      Comunicação segmentada para usuários, empresas e públicos internos.
+    </p>
+  </div>
+</div>
+
+<div class="cards">
+  <div class="card"><h2>{{ distribuicoes }}</h2><p>Distribuições</p></div>
+  <div class="card"><h2>{{ destinatarios }}</h2><p>Destinatários</p></div>
+  <div class="card"><h2>{{ supressoes }}</h2><p>Supressões</p></div>
+</div>
+
+<div class="card" style="margin-top:16px">
+  <h2>Envio desabilitado</h2>
+  <p>
+    Esta área está somente em modo de estrutura e visualização.
+    Nenhum e-mail pode ser disparado neste momento.
+  </p>
+</div>
+{% endblock %}
