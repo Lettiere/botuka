@@ -71,6 +71,50 @@ h1,h2,h3,h4,.brand,.font-title{font-family:var(--font-title)}
   background:rgba(17,24,32,.84);
   border-bottom-color:var(--border);
 }
+
+.botuka-desktop-modules{
+  border-top:1px solid rgba(232,222,202,.62);
+  background:rgba(255,255,255,.72);
+}
+
+[data-theme="dark"] .botuka-desktop-modules{
+  background:rgba(17,24,32,.76);
+  border-top-color:var(--border);
+}
+
+.botuka-desktop-modules__inner{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:0;
+  min-height:40px;
+  overflow:hidden;
+}
+
+.botuka-desktop-modules a{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  min-height:40px;
+  padding:0 14px;
+  color:var(--text);
+  font-size:.86rem;
+  font-weight:700;
+  white-space:nowrap;
+  transition:background .2s ease,color .2s ease;
+}
+
+.botuka-desktop-modules a:hover,
+.botuka-desktop-modules a:focus-visible{
+  color:var(--botuka-earth);
+  background:rgba(255,183,3,.12);
+}
+
+@media (max-width: 992px){
+  .botuka-desktop-modules{
+    display:none!important;
+  }
+}
 .header-inner{
   height:72px;
   display:flex;

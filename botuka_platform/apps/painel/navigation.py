@@ -3,6 +3,7 @@
 from django.conf import settings
 from django.urls import NoReverseMatch, reverse
 from apps.accounts.authorization import criar_verificador_permissoes
+from apps.organizations.permissions import empresas_disponiveis_para_usuario
 
 
 def painel_navigation(request, permission_checker=None):
@@ -131,6 +132,22 @@ def painel_navigation(request, permission_checker=None):
             {"label": "Esportes", "icon": "bi-trophy-fill", "url": reverse(route)},
         ]})
 
-    result = {"painel_module_groups": groups, "painel_capabilities": capabilities}
+    empresas_nav = list(
+        empresas_disponiveis_para_usuario(user).order_by('nome_fantasia')[:8]
+    )
+    uuid_atual = (
+        request.GET.get('empresa_menu')
+        or getattr(getattr(request, 'resolver_match', None), 'kwargs', {}).get('uuid')
+    )
+    empresa_nav_ativa = next(
+        (empresa for empresa in empresas_nav if str(empresa.uuid) == str(uuid_atual)),
+        empresas_nav[0] if len(empresas_nav) == 1 else None,
+    )
+    result = {
+        "painel_module_groups": groups,
+        "painel_capabilities": capabilities,
+        "empresas_nav": empresas_nav,
+        "empresa_nav_ativa": empresa_nav_ativa,
+    }
     request._painel_navigation_cache = result
     return result

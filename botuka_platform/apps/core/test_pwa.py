@@ -2,7 +2,7 @@ from pathlib import Path
 from unittest.mock import patch
 
 from django.conf import settings
-from django.test import SimpleTestCase
+from django.test import SimpleTestCase, override_settings
 from django.urls import reverse
 
 
@@ -45,7 +45,27 @@ class PwaIntegrationTests(SimpleTestCase):
         self.assertContains(response, '/qrcode/')
         self.assertContains(response, '/compartilhar/')
         self.assertContains(response, 'SKIP_WAITING')
-        self.assertContains(response, 'botuka-pwa-v2')
+        self.assertContains(response, 'botuka-pwa-')
+        self.assertContains(response, 'BOTUKA_RUNTIME_CACHE')
+        self.assertContains(response, 'clients.claim()')
+        self.assertContains(response, '/meus-agendamentos/')
+        self.assertNotContains(response, '.then(() => self.skipWaiting())')
+
+    @override_settings(PWA_VERSION='release-test-42')
+    def test_service_worker_uses_release_version_and_removes_old_caches(self):
+        response = self.client.get(reverse('service_worker'))
+        self.assertContains(response, r'release\u002Dtest\u002D42')
+        self.assertContains(response, 'cacheName.startsWith(BOTUKA_CACHE_PREFIX)')
+        self.assertEqual(
+            response['Cache-Control'], 'no-cache, no-store, must-revalidate'
+        )
+
+    @override_settings(PWA_VERSION='')
+    def test_service_worker_calculates_stable_version_from_app_shell(self):
+        first = self.client.get(reverse('service_worker')).content
+        second = self.client.get(reverse('service_worker')).content
+        self.assertEqual(first, second)
+        self.assertNotIn(b'BOTUKA_CACHE_VERSION = ""', first)
 
     def test_pwa_script_limits_prompt_to_android_and_persists_choices(self):
         script = (
@@ -57,6 +77,18 @@ class PwaIntegrationTests(SimpleTestCase):
         self.assertIn("status: 'installed'", script)
         self.assertIn('display-mode: standalone', script)
         self.assertIn('window.navigator.standalone', script)
+        self.assertIn("registration.addEventListener('updatefound'", script)
+        self.assertIn("navigator.serviceWorker.addEventListener('controllerchange'", script)
+        self.assertIn("postMessage({type: 'SKIP_WAITING'})", script)
+        self.assertIn('UPDATE_RELOAD_KEY', script)
+
+    def test_update_notice_has_expected_copy_and_action(self):
+        template = (
+            Path(settings.BASE_DIR) / 'templates' / 'pwa' / 'register.html'
+        ).read_text(encoding='utf-8')
+        self.assertIn('Nova versão disponível', template)
+        self.assertIn('Atualizar agora', template)
+        self.assertIn('data-pwa-update', template)
 
 
 class ConsentUiTests(SimpleTestCase):

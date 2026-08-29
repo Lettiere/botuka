@@ -1,225 +1,30 @@
 {% extends "painel/base.html" %}
-
 {% block title %}{{ empresa.nome_exibicao }} | Painel BOTUKA{% endblock %}
-
 {% block painel_content %}
 <style>
-  .empresa-detail{background:#f4f7fb;margin:-26px -18px;padding:28px 18px 46px;min-height:72vh}
-  .empresa-wrap{width:min(1180px,100%);margin:0 auto}
-  .empresa-head{overflow:hidden;background:#fff;border:1px solid #e6eaf0;border-radius:24px;box-shadow:0 18px 50px rgba(15,23,42,.08);margin-bottom:18px}
-  .empresa-cover{height:190px;background:linear-gradient(135deg,#111827,#303b4f)}
-  .empresa-cover img{width:100%;height:100%;object-fit:cover}
-  .empresa-head-body{display:flex;justify-content:space-between;gap:18px;align-items:flex-start;padding:0 26px 24px}
-  .empresa-ident{display:flex;gap:18px;align-items:flex-end;margin-top:-42px;min-width:0}
-  .empresa-logo{width:96px;height:96px;display:grid;place-items:center;overflow:hidden;border:5px solid #fff;border-radius:22px;background:#ffd230;color:#111827;font-size:34px;font-weight:900;box-shadow:0 12px 28px rgba(15,23,42,.18)}
-  .empresa-logo img{width:100%;height:100%;object-fit:cover}
-  .empresa-title h1{margin:0;color:#172033;font-size:clamp(26px,4vw,40px);font-weight:900;word-break:break-word}
-  .empresa-title p{margin:6px 0 0;color:#667085}
-  .empresa-actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:22px}
-  .empresa-btn{min-height:44px;display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;border-radius:11px;border:0;text-decoration:none;font-weight:850}
-  .empresa-btn-primary{background:#ffd230;color:#111827}
-  .empresa-btn-light{background:#fff;color:#111827;border:1px solid #e6eaf0}
-  .empresa-btn-danger{background:#fef2f2;color:#b42318;border:1px solid #fecaca}
-  .empresa-badges{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-  .empresa-badge{display:inline-flex;align-items:center;gap:6px;padding:6px 10px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:12px;font-weight:800}
-  .empresa-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:16px}
-  .empresa-card{background:#fff;border:1px solid #e6eaf0;border-radius:18px;padding:20px;box-shadow:0 8px 24px rgba(15,23,42,.06)}
-  .empresa-card h2{margin:0 0 14px;color:#172033;font-size:17px;font-weight:900}
-  .empresa-list{display:grid;gap:10px;margin:0;padding:0;list-style:none}
-  .empresa-list li{display:flex;justify-content:space-between;gap:12px;color:#475467;font-size:14px}
-  .empresa-list strong{color:#172033;text-align:right}
-  .empresa-status-form{display:flex;gap:10px}
-  .empresa-status-form select{min-height:44px;border:1px solid #d9dee7;border-radius:11px;padding:8px 10px;flex:1}
-  @media(max-width:920px){.empresa-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.empresa-head-body{display:block}.empresa-actions{margin-top:16px}}
-  @media(max-width:640px){.empresa-detail{padding:16px 12px 34px}.empresa-grid{grid-template-columns:1fr}.empresa-ident{display:block}.empresa-title{margin-top:10px}.empresa-actions,.empresa-status-form{flex-direction:column}.empresa-btn{width:100%}.empresa-list li{display:block}.empresa-list strong{display:block;text-align:left;margin-top:3px}}
+  .company-hub{--ink:#172033;--muted:#667085;--line:#e4e7ec;--yellow:#ffd230;background:#f3f6fa;margin:-26px -18px;padding:26px 18px 50px;min-height:80vh}.company-wrap{width:min(1220px,100%);margin:auto}.company-hero{overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:25px;box-shadow:0 18px 55px rgba(15,23,42,.08)}.company-cover{height:170px;background:linear-gradient(125deg,#111827,#354158)}.company-cover img{width:100%;height:100%;object-fit:cover}.company-hero-body{display:flex;justify-content:space-between;gap:22px;padding:0 26px 24px}.company-identity{display:flex;align-items:flex-end;gap:17px;margin-top:-42px;min-width:0}.company-logo{display:grid;width:94px;height:94px;flex:0 0 auto;place-items:center;overflow:hidden;border:5px solid #fff;border-radius:22px;background:var(--yellow);color:var(--ink);font-size:34px;font-weight:950;box-shadow:0 12px 26px rgba(15,23,42,.18)}.company-logo img{width:100%;height:100%;object-fit:cover}.company-title{min-width:0}.company-title h1{margin:0;color:var(--ink);font-size:clamp(26px,4vw,40px);font-weight:950;overflow-wrap:anywhere}.company-title p{margin:5px 0;color:var(--muted)}.company-badges,.company-actions,.card-actions{display:flex;flex-wrap:wrap;gap:8px}.company-badge{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:12px;font-weight:850}.company-badge.status{background:#fff5c2;color:#594a00}.company-actions{align-content:flex-start;margin-top:20px}.company-btn{display:inline-flex;min-height:43px;align-items:center;justify-content:center;gap:7px;padding:9px 14px;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:11px;text-decoration:none;font-weight:850}.company-btn:hover{color:var(--ink);border-color:#d5ad10;background:#fffbeb}.company-btn.primary{background:var(--yellow);border-color:var(--yellow)}.company-btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}.company-nav{display:flex;gap:5px;margin:16px 0;padding:7px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:14px}.company-nav a{padding:9px 12px;border-radius:9px;color:#475467;text-decoration:none;white-space:nowrap;font-size:13px;font-weight:850}.company-nav a:hover,.company-nav a.active{background:var(--ink);color:#fff}.hub-section{margin-top:20px}.hub-heading{display:flex;justify-content:space-between;align-items:end;gap:15px;margin-bottom:11px}.hub-heading span{color:#8a6d00;font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.hub-heading h2{margin:3px 0 0;color:var(--ink);font-size:21px;font-weight:950}.hub-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.hub-card{display:flex;min-width:0;min-height:190px;flex-direction:column;padding:18px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 7px 22px rgba(15,23,42,.05)}.hub-card.wide{grid-column:span 2}.hub-card.featured{color:#fff;background:linear-gradient(135deg,#111827,#2c394e);border-color:#111827}.hub-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.hub-icon{display:grid;width:43px;height:43px;place-items:center;border-radius:12px;background:#fff3b5;color:#594a00;font-size:20px}.hub-card.featured .hub-icon{background:var(--yellow);color:var(--ink)}.hub-state{padding:5px 8px;border-radius:99px;background:#f2f4f7;color:#475467;font-size:10px;font-weight:900;text-transform:uppercase}.hub-card.featured .hub-state{background:rgba(255,255,255,.14);color:#fff}.hub-card h3{margin:14px 0 4px;color:var(--ink);font-size:17px;font-weight:950}.hub-card.featured h3{color:#fff}.hub-card p{margin:0 0 13px;color:var(--muted);font-size:13px}.hub-card.featured p{color:#cbd5e1}.hub-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0 15px}.hub-stat{padding:9px 7px;border-radius:10px;background:#f7f8fa;text-align:center}.hub-card.featured .hub-stat{background:rgba(255,255,255,.1)}.hub-stat strong,.hub-stat small{display:block}.hub-stat strong{color:var(--ink);font-size:20px;font-weight:950}.hub-card.featured .hub-stat strong{color:#fff}.hub-stat small{color:var(--muted);font-size:10px}.hub-card.featured .hub-stat small{color:#cbd5e1}.card-actions{margin-top:auto}.hub-card.featured .company-btn:not(.primary){color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.24)}.progress-shell{height:9px;margin:12px 0 7px;overflow:hidden;background:#e4e7ec;border-radius:99px}.progress-shell span{display:block;height:100%;background:var(--yellow)}.pending-list,.activity-list{display:grid;gap:8px;margin:10px 0 0;padding:0;list-style:none}.pending-list a,.activity-list a,.activity-list li{display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px solid var(--line);border-radius:10px;color:var(--ink);text-decoration:none}.pending-list small,.activity-list small{display:block;color:var(--muted)}.management-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}.capability-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.capability-stats div{padding:10px;border-radius:10px;background:#f7f8fa;text-align:center}.capability-stats strong,.capability-stats small{display:block}.capability-stats strong{font-size:22px;color:var(--ink)}.capability-stats small{font-size:10px;color:var(--muted)}.activity-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.empty-note{padding:13px;border:1px dashed #cfd4dc;border-radius:11px;color:var(--muted);font-size:13px}.company-dropdown .dropdown-menu{padding:7px;border-radius:12px;border-color:var(--line);box-shadow:0 18px 44px rgba(15,23,42,.15)}.company-dropdown .dropdown-item{padding:9px 11px;border-radius:8px;font-weight:700}
+  @media(max-width:1020px){.hub-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.management-grid,.activity-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.management-grid .hub-card:first-child,.activity-grid .hub-card:last-child{grid-column:1/-1}.company-hero-body{display:block}.company-actions{margin-top:15px}}
+  @media(max-width:640px){.company-hub{margin:-20px -12px;padding:12px 10px 34px}.company-cover{height:120px}.company-hero{border-radius:18px}.company-hero-body{padding:0 15px 18px}.company-identity{display:block;margin-top:-35px}.company-logo{width:78px;height:78px}.company-title{margin-top:9px}.company-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.company-actions>.company-btn,.company-actions>.dropdown{width:100%}.company-actions .dropdown>.company-btn{width:100%}.hub-grid,.management-grid,.activity-grid{grid-template-columns:1fr}.hub-card.wide,.management-grid .hub-card:first-child,.activity-grid .hub-card:last-child{grid-column:auto}.hub-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.capability-stats{grid-template-columns:repeat(2,1fr)}.hub-heading{align-items:flex-start}.company-nav{position:sticky;top:64px;z-index:5}.card-actions{display:grid;grid-template-columns:1fr}.company-btn{width:100%}}
 </style>
+<div class="company-hub"><div class="company-wrap">
+  <header class="company-hero"><div class="company-cover">{% if empresa.imagem_capa %}<img src="{{ empresa.imagem_capa.url }}" alt="Capa de {{ empresa.nome_exibicao }}">{% endif %}</div><div class="company-hero-body"><div class="company-identity"><div class="company-logo">{% if empresa.logo %}<img src="{{ empresa.logo.url }}" alt="Logo de {{ empresa.nome_exibicao }}">{% else %}{{ empresa.nome_exibicao|first|upper }}{% endif %}</div><div class="company-title"><h1>{{ empresa.nome_exibicao }}</h1><p>{{ empresa.get_atuacao_display|default:"Atuação ainda não definida" }}{% if empresa.categoria_empresa %} · {{ empresa.categoria_empresa }}{% endif %}{% if empresa.subcategoria_empresa %} / {{ empresa.subcategoria_empresa }}{% endif %}</p><p><i class="bi bi-geo-alt"></i> {{ empresa.endereco_resumido|default:"Localização ainda não informada" }}</p><div class="company-badges"><span class="company-badge status">{{ empresa.get_status_display }}</span>{% if empresa.perfil_publico %}<span class="company-badge"><i class="bi bi-globe"></i> Perfil público</span>{% else %}<span class="company-badge"><i class="bi bi-eye-slash"></i> Perfil privado</span>{% endif %}</div></div></div><div class="company-actions">{% if painel_empresa.url_publica %}<a class="company-btn" href="{{ painel_empresa.url_publica }}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Página pública</a>{% endif %}{% if pode_editar %}<a class="company-btn primary" href="{% url 'painel:empresa_editar' empresa.uuid %}"><i class="bi bi-pencil"></i> Editar</a>{% endif %}{% if painel_empresa.url_publica %}<button class="company-btn" type="button" data-company-share="{{ painel_empresa.url_publica }}"><i class="bi bi-share"></i> Compartilhar</button>{% endif %}<div class="dropdown company-dropdown"><button class="company-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">Mais</button><div class="dropdown-menu dropdown-menu-end"><a class="dropdown-item" href="{% url 'painel:empresa_qrcode' empresa.uuid %}">QR Code</a><a class="dropdown-item" href="{% url 'painel:empresa_links' empresa.uuid %}">Links</a><a class="dropdown-item" href="{% url 'analytics:company_dashboard' empresa.uuid %}">Analytics</a></div></div></div></div></header>
 
-<div class="empresa-detail">
-  <div class="empresa-wrap">
-    <section class="empresa-head">
-      <div class="empresa-cover">
-        {% if empresa.imagem_capa %}
-          <img src="{{ empresa.imagem_capa.url }}" alt="Capa de {{ empresa.nome_exibicao }}">
-        {% endif %}
-      </div>
-      <div class="empresa-head-body">
-        <div class="empresa-ident">
-          <div class="empresa-logo">
-            {% if empresa.logo %}
-              <img src="{{ empresa.logo.url }}" alt="Logo de {{ empresa.nome_exibicao }}">
-            {% else %}
-              {{ empresa.nome_exibicao|first|upper }}
-            {% endif %}
-          </div>
-          <div class="empresa-title">
-            <h1>{{ empresa.nome_exibicao }}</h1>
-            <p>{{ empresa.razao_social|default:"Razão social não informada" }}</p>
-            <div class="empresa-badges">
-              <span class="empresa-badge">{{ empresa.get_tipo_cadastro_display }}</span>
-              <span class="empresa-badge">{{ empresa.get_status_display }}</span>
-              {% if empresa.verificada %}<span class="empresa-badge"><i class="bi bi-patch-check-fill"></i> Verificada</span>{% endif %}
-              {% if empresa.perfil_publico %}<span class="empresa-badge"><i class="bi bi-globe"></i> Perfil público</span>{% endif %}
-            </div>
-          </div>
-        </div>
+  <nav class="company-nav" aria-label="Seções do painel empresarial"><a class="active" href="#overview">Visão geral</a><a href="#operation">Operação</a>{% if painel_empresa.produtos.elegivel %}<a href="#products">Produtos</a>{% endif %}{% if painel_empresa.servicos.elegivel %}<a href="#services">Serviços</a><a href="#agenda">Agenda</a><a href="#team">Equipe</a>{% endif %}<a href="#jobs">Vagas</a><a href="#management">Gestão</a><a href="#activity">Atividade</a></nav>
 
-        <div class="empresa-actions">
-          <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresas_lista' %}"><i class="bi bi-arrow-left"></i> Lista</a>
-          <a class="empresa-btn empresa-btn-light" href="{% url 'analytics:company_dashboard' empresa.uuid %}"><i class="bi bi-graph-up-arrow"></i> Analytics</a>
-          {% if pode_editar %}
-            <a class="empresa-btn empresa-btn-primary" href="{% url 'painel:empresa_editar' empresa.uuid %}"><i class="bi bi-pencil"></i> Editar</a>
-            <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_links' empresa.uuid %}"><i class="bi bi-link-45deg"></i> Links</a>
-            <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_qrcode' empresa.uuid %}"><i class="bi bi-qr-code"></i> QR Code</a>
-          {% endif %}
-          {% if pode_gerenciar_equipe %}
-            <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_equipe' empresa.uuid %}"><i class="bi bi-people"></i> Equipe</a>
-          {% endif %}
+  <section class="hub-section" id="overview"><header class="hub-heading"><div><span>Bloco 1</span><h2>Visão geral</h2></div></header><div class="hub-grid"><article class="hub-card wide"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-check2-circle"></i></span><span class="hub-state">{{ painel_empresa.cadastro.percentual }}% completo</span></div><h3>Progresso do cadastro</h3><p>A empresa pode ser administrada mesmo enquanto os dados estão sendo concluídos.</p><div class="progress-shell"><span style="width:{{ painel_empresa.cadastro.percentual }}%"></span></div>{% if empresa.status == 'RASCUNHO' and pode_editar %}<div class="card-actions"><a class="company-btn primary" href="{% url 'painel:empresa_configurar' empresa.uuid painel_empresa.cadastro.proxima_etapa %}">Continuar cadastro</a></div>{% endif %}</article><article class="hub-card wide"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-signpost-split"></i></span><span class="hub-state">Próximos passos</span></div><h3>Pendências e recomendações</h3>{% if painel_empresa.cadastro.pendencias %}<ul class="pending-list">{% for item in painel_empresa.cadastro.pendencias %}<li><a href="{{ item.url }}"><span><strong>{{ item.titulo }}</strong><small>{{ item.descricao }}</small></span><i class="bi bi-chevron-right"></i></a></li>{% endfor %}</ul>{% else %}<div class="empty-note">Nenhuma pendência essencial identificada.</div>{% endif %}</article></div></section>
 
-          {# BOTUKA_EMPRESA_SERVICOS_30C #}
-          {% if pode_servicos_empresa %}
-            <a
-              class="empresa-btn empresa-btn-light"
-              href="{% url 'painel:servicos_lista' %}?empresa={{ empresa.id }}"
-            >
-              <i class="bi bi-tools"></i> Serviços
-            </a>
-          {% endif %}
+  <section class="hub-section" id="operation"><header class="hub-heading"><div><span>Bloco 2</span><h2>Operação</h2></div></header><div class="hub-grid">
+    <article class="hub-card" id="products"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-box-seam"></i></span><span class="hub-state">{% if painel_empresa.produtos.operacao_ativa %}Ativa{% elif painel_empresa.produtos.elegivel %}Pendente{% else %}Não aplicável{% endif %}</span></div><h3>Produtos</h3><div class="hub-stats"><div class="hub-stat"><strong>{{ painel_empresa.produtos.total }}</strong><small>Total</small></div><div class="hub-stat"><strong>{{ painel_empresa.produtos.publicados }}</strong><small>Publicados</small></div><div class="hub-stat"><strong>{{ painel_empresa.produtos.pendentes }}</strong><small>Pendentes</small></div></div>{% if not painel_empresa.produtos.elegivel %}<p>A atuação atual não habilita comércio de produtos.</p>{% elif not painel_empresa.produtos.operacao_ativa %}<p>Ative a empresa e a capacidade Vender produtos para operar.</p>{% endif %}<div class="card-actions"><a class="company-btn" href="{% url 'painel:empresa_produtos' empresa.uuid %}">Gerenciar produtos</a>{% if painel_empresa.produtos.pode_criar %}<a class="company-btn primary" href="{% url 'painel:empresa_produto_criar' empresa.uuid %}">Novo produto</a>{% endif %}</div></article>
+    <article class="hub-card" id="services"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-tools"></i></span><span class="hub-state">{% if painel_empresa.servicos.operacao_ativa %}Ativa{% elif painel_empresa.servicos.elegivel %}Pendente{% else %}Não aplicável{% endif %}</span></div><h3>Serviços</h3><div class="hub-stats"><div class="hub-stat"><strong>{{ painel_empresa.servicos.total }}</strong><small>Total</small></div><div class="hub-stat"><strong>{{ painel_empresa.servicos.publicados }}</strong><small>Publicados</small></div><div class="hub-stat"><strong>{{ painel_empresa.servicos.pendentes }}</strong><small>Pendentes</small></div></div>{% if not painel_empresa.servicos.elegivel %}<p>A atuação atual não contempla prestação de serviços.</p>{% elif not painel_empresa.servicos.operacao_ativa %}<p>Conclua o cadastro e ative a capacidade Prestar serviços.</p>{% endif %}<div class="card-actions"><a class="company-btn" href="{% url 'painel:servicos_lista' %}?empresa={{ empresa.id }}">Gerenciar serviços</a>{% if painel_empresa.servicos.pode_criar %}<a class="company-btn primary" href="{% url 'painel:servico_criar' %}?empresa={{ empresa.id }}">Novo serviço</a>{% endif %}</div></article>
+    <article class="hub-card featured" id="agenda"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-calendar2-check"></i></span><span class="hub-state">{{ painel_empresa.agenda.estado }}</span></div><h3>Agenda</h3><p>{{ painel_empresa.agenda.mensagem }}</p><div class="hub-stats"><div class="hub-stat"><strong>{{ painel_empresa.agenda.profissionais }}</strong><small>Profissionais</small></div><div class="hub-stat"><strong>{{ painel_empresa.agenda.servicos }}</strong><small>Serviços</small></div><div class="hub-stat"><strong>{{ painel_empresa.agenda.proximos_total }}</strong><small>Próximos</small></div></div><div class="card-actions">{% if painel_empresa.agenda.estado == 'PENDENTE' %}<a class="company-btn primary" href="{% url 'painel:empresa_capacidades' empresa.uuid %}">Ver capacidades</a>{% elif painel_empresa.agenda.elegivel %}<a class="company-btn primary" href="{% url 'painel:empresa_agenda' empresa.uuid %}">Abrir Agenda</a>{% endif %}</div></article>
+    <article class="hub-card" id="team"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-people"></i></span><span class="hub-state">Equipe</span></div><h3>Membros e profissionais</h3><div class="hub-stats"><div class="hub-stat"><strong>{{ painel_empresa.equipe.total }}</strong><small>Membros</small></div><div class="hub-stat"><strong>{{ painel_empresa.equipe.ativos }}</strong><small>Ativos</small></div><div class="hub-stat"><strong>{{ painel_empresa.equipe.profissionais }}</strong><small>Agenda</small></div></div><p>{{ painel_empresa.equipe.gestores }} proprietário(s) ou administrador(es).</p>{% if pode_gerenciar_equipe %}<div class="card-actions"><a class="company-btn" href="{% url 'painel:empresa_equipe' empresa.uuid %}">Gerenciar equipe</a></div>{% endif %}</article>
+  </div></section>
 
-          {% if empresa.pode_aceitar_agendamentos %}
-            <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_agenda' empresa.uuid %}">
-              <i class="bi bi-calendar2-week"></i> Agenda
-            </a>
-          {% endif %}
-          {% if pode_institucional %}
-            <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_institucional' empresa.uuid %}"><i class="bi bi-shield-check"></i> Institucional</a>
-          {% endif %}
-          {% if pode_produtos %}
-            <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_produtos' empresa.uuid %}"><i class="bi bi-box-seam"></i> Produtos</a>
-            <a class="empresa-btn empresa-btn-light" href="{{ vendas_loja_url }}" target="_blank" rel="noopener"><i class="bi bi-shop"></i> Loja</a>
-          {% endif %}
-          {% if pode_gerenciar %}
-            <a class="empresa-btn empresa-btn-danger" href="{% url 'painel:empresa_excluir' empresa.uuid %}"><i class="bi bi-power"></i> Desativar</a>
-          {% endif %}
-        </div>
-      </div>
-    </section>
+  <section class="hub-section" id="jobs"><header class="hub-heading"><div><span>Oportunidades</span><h2>Vagas</h2></div></header><div class="hub-grid"><article class="hub-card wide"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-briefcase"></i></span><span class="hub-state">{{ painel_empresa.vagas.total }} vaga{{ painel_empresa.vagas.total|pluralize }}</span></div><h3>Recrutamento da empresa</h3><p>Publique oportunidades e acompanhe as candidaturas recebidas pela empresa.</p><div class="hub-stats"><div class="hub-stat"><strong>{{ painel_empresa.vagas.total }}</strong><small>Total</small></div><div class="hub-stat"><strong>{{ painel_empresa.vagas.publicadas }}</strong><small>Publicadas</small></div><div class="hub-stat"><strong>{{ painel_empresa.vagas.encerradas }}</strong><small>Encerradas</small></div><div class="hub-stat"><strong>{{ painel_empresa.vagas.candidaturas }}</strong><small>Candidaturas</small></div></div><div class="card-actions"><a class="company-btn" href="{{ painel_empresa.vagas.url_gerenciar }}"><i class="bi bi-list-task"></i> Gerenciar vagas</a>{% if pode_gerenciar %}<a class="company-btn primary" href="{{ painel_empresa.vagas.url_criar }}"><i class="bi bi-plus-lg"></i> Nova vaga</a>{% endif %}</div></article></div></section>
 
-    <section class="empresa-grid">
-      <article class="empresa-card">
-        <h2>Dados gerais</h2>
-        <ul class="empresa-list">
-          <li>Documento <strong>{{ empresa.documento_formatado|default:"Não informado" }}</strong></li>
-          <li>Categoria <strong>{{ empresa.categoria_empresa|default:"Não informada" }}</strong></li>
-          <li>Serviços <strong>{{ empresa.total_servicos|default:"0" }}</strong></li>
-          <li>Criada em <strong>{{ empresa.criado_em|date:"d/m/Y" }}</strong></li>
-        </ul>
-      </article>
+  <section class="hub-section" id="management"><header class="hub-heading"><div><span>Bloco 3</span><h2>Gestão</h2></div></header><div class="management-grid"><article class="hub-card"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-sliders"></i></span><span class="hub-state">Capacidades</span></div><h3>Recursos da empresa</h3><div class="capability-stats"><div><strong>{{ painel_empresa.capacidades.aprovadas }}</strong><small>Aprovadas</small></div><div><strong>{{ painel_empresa.capacidades.pendentes }}</strong><small>Pendentes</small></div><div><strong>{{ painel_empresa.capacidades.disponiveis }}</strong><small>Disponíveis</small></div><div><strong>{{ painel_empresa.capacidades.incompativeis }}</strong><small>Incompatíveis</small></div></div><div class="card-actions"><a class="company-btn" href="{% url 'painel:empresa_capacidades' empresa.uuid %}">Gerenciar capacidades</a></div></article><article class="hub-card"><span class="hub-icon"><i class="bi bi-qr-code"></i></span><h3>QR Code e página</h3><p>Compartilhe o acesso público da empresa quando o perfil estiver ativo.</p><div class="card-actions"><a class="company-btn" href="{% url 'painel:empresa_qrcode' empresa.uuid %}">Visualizar QR Code</a>{% if painel_empresa.url_publica %}<a class="company-btn" href="{{ painel_empresa.url_publica }}" target="_blank" rel="noopener">Abrir página</a>{% endif %}</div></article><article class="hub-card"><span class="hub-icon"><i class="bi bi-link-45deg"></i></span><h3>Links e configurações</h3><p>{{ painel_empresa.links_total }} link{{ painel_empresa.links_total|pluralize }} cadastrado{{ painel_empresa.links_total|pluralize }}.</p><div class="card-actions"><a class="company-btn" href="{% url 'painel:empresa_links' empresa.uuid %}">Gerenciar links</a>{% if pode_editar %}<a class="company-btn" href="{% url 'painel:empresa_editar' empresa.uuid %}">Configurações</a>{% endif %}</div></article></div></section>
 
-      <article class="empresa-card">
-        <h2>Contato</h2>
-        <ul class="empresa-list">
-          <li>Telefone <strong>{{ empresa.telefone|default:"Não informado" }}</strong></li>
-          <li>WhatsApp <strong>{{ empresa.whatsapp|default:"Não informado" }}</strong></li>
-          <li>E-mail <strong>{{ empresa.email|default:"Não informado" }}</strong></li>
-          <li>Site <strong>{{ empresa.site|default:"Não informado" }}</strong></li>
-        </ul>
-      </article>
-
-      <article class="empresa-card">
-        <h2>Localização</h2>
-        <ul class="empresa-list">
-          <li>Cidade <strong>{{ empresa.endereco_resumido|default:"Não informada" }}</strong></li>
-          <li>Endereço <strong>{{ empresa.endereco|default:"Não informado" }}</strong></li>
-          <li>Bairro <strong>{{ empresa.bairro|default:"Não informado" }}</strong></li>
-          <li>CEP <strong>{{ empresa.cep|default:"Não informado" }}</strong></li>
-        </ul>
-      </article>
-
-      <article class="empresa-card">
-        <h2>Atendimento</h2>
-        <ul class="empresa-list">
-          <li>Local <strong>{{ empresa.atende_local|yesno:"Sim,Não" }}</strong></li>
-          <li>Online <strong>{{ empresa.atende_online|yesno:"Sim,Não" }}</strong></li>
-          <li>Horário <strong>{{ empresa.horario_atendimento|default:"Não informado" }}</strong></li>
-        </ul>
-      </article>
-
-      <article class="empresa-card">
-        <h2>Equipe</h2>
-        <ul class="empresa-list">
-          {% for vinculo in usuarios %}
-            <li>{{ vinculo.get_funcao_display }} <strong>{{ vinculo.usuario }}</strong></li>
-          {% empty %}
-            <li>Nenhum vínculo <strong>-</strong></li>
-          {% endfor %}
-        </ul>
-      </article>
-
-      <article class="empresa-card">
-        <h2>Configurações</h2>
-        {% if pode_gerenciar %}
-          <form class="empresa-status-form" method="post" action="{% url 'painel:empresa_alterar_status' empresa.uuid %}">
-            {% csrf_token %}
-            <select name="status" aria-label="Status da empresa">
-              <option value="RASCUNHO" {% if empresa.status == "RASCUNHO" %}selected{% endif %}>Rascunho</option>
-              <option value="PENDENTE" {% if empresa.status == "PENDENTE" %}selected{% endif %}>Pendente</option>
-              <option value="ATIVA" {% if empresa.status == "ATIVA" %}selected{% endif %}>Ativa</option>
-              <option value="SUSPENSA" {% if empresa.status == "SUSPENSA" %}selected{% endif %}>Suspensa</option>
-              <option value="BLOQUEADA" {% if empresa.status == "BLOQUEADA" %}selected{% endif %}>Bloqueada</option>
-            </select>
-            <button class="empresa-btn empresa-btn-primary" type="submit">Atualizar</button>
-          </form>
-        {% else %}
-          <p class="text-muted mb-0">Você pode visualizar esta empresa, mas não alterar configurações.</p>
-        {% endif %}
-      </article>
-      {# BOTUKA_EMPRESA_SERVICOS_CARD_30C #}
-      {% if pode_servicos_empresa %}
-      <article class="empresa-card">
-        <h2>Serviços</h2>
-
-        <ul class="empresa-list">
-          <li>
-            Total
-            <strong>{{ servicos_empresa_total }}</strong>
-          </li>
-        </ul>
-
-        <div class="empresa-actions">
-          <a
-            class="empresa-btn empresa-btn-light"
-            href="{% url 'painel:servicos_lista' %}?empresa={{ empresa.id }}"
-          >
-            Ver serviços
-          </a>
-
-          <a
-            class="empresa-btn empresa-btn-primary"
-            href="{% url 'painel:servico_criar' %}?empresa={{ empresa.id }}"
-          >
-            Novo serviço
-          </a>
-        </div>
-      </article>
-      {% endif %}
-
-      {% if pode_produtos %}
-      <article class="empresa-card">
-        <h2>Produtos</h2>
-        <ul class="empresa-list">
-          <li>Total <strong>{{ produtos_total }}</strong></li>
-          <li>Publicados <strong>{{ produtos_publicados }}</strong></li>
-          <li>Em análise <strong>{{ produtos_em_analise }}</strong></li>
-          <li>Limite <strong>{{ limite_produtos.utilizado }} de {% if limite_produtos.efetivo == None %}∞{% else %}{{ limite_produtos.efetivo }}{% endif %}</strong></li>
-          <li>Conversas comerciais <strong>{{ conversas_comerciais }}</strong></li>
-        </ul>
-        <div class="empresa-actions">
-          <a class="empresa-btn empresa-btn-light" href="{% url 'painel:empresa_produtos' empresa.uuid %}">Ver produtos</a>
-          {% if pode_criar_produto_empresa %}<a class="empresa-btn empresa-btn-primary" href="{% url 'painel:empresa_produto_criar' empresa.uuid %}">Novo produto</a>{% endif %}
-        </div>
-      </article>
-      {% endif %}
-    </section>
-  </div>
-</div>
+  <section class="hub-section" id="activity"><header class="hub-heading"><div><span>Bloco 4</span><h2>Atividade recente</h2></div></header><div class="activity-grid"><article class="hub-card"><h3>Últimos produtos</h3><ul class="activity-list">{% for item in painel_empresa.produtos.ultimos %}<li><span><strong>{{ item.nome }}</strong><small>{{ item.get_status_display }}</small></span><time>{{ item.atualizado_em|date:"d/m" }}</time></li>{% empty %}<li class="empty-note">Nenhum produto vinculado.</li>{% endfor %}</ul></article><article class="hub-card"><h3>Últimos serviços</h3><ul class="activity-list">{% for item in painel_empresa.servicos.ultimos %}<li><span><strong>{{ item.titulo }}</strong><small>{{ item.get_status_display }}</small></span><time>{{ item.atualizado_em|date:"d/m" }}</time></li>{% empty %}<li class="empty-note">Nenhum serviço vinculado.</li>{% endfor %}</ul></article><article class="hub-card"><h3>Próximos agendamentos</h3><ul class="activity-list">{% for item in painel_empresa.agenda.proximos %}<li><span><strong>{{ item.profissional_servico.servico.titulo }}</strong><small>{{ item.inicio|date:"d/m/Y H:i" }}</small></span></li>{% empty %}<li class="empty-note">Nenhum próximo atendimento.</li>{% endfor %}</ul>{% if painel_empresa.agenda.elegivel %}<div class="card-actions"><a class="company-btn" href="{% url 'painel:agenda_agendamento_lista' empresa.uuid %}">Ver agendamentos</a><a class="company-btn" href="{% url 'painel:agenda_disponibilidade_lista' empresa.uuid %}">{{ painel_empresa.agenda.disponibilidades }} horários</a><a class="company-btn" href="{% url 'painel:agenda_bloqueio_lista' empresa.uuid %}">{{ painel_empresa.agenda.bloqueios }} bloqueios</a></div>{% endif %}</article></div></section>
+</div></div>
+<script>document.querySelectorAll('[data-company-share]').forEach(function(button){button.addEventListener('click',function(){var url=new URL(button.dataset.companyShare,window.location.origin).href;if(navigator.share){navigator.share({title:'{{ empresa.nome_exibicao|escapejs }}',url:url}).catch(function(){});}else if(navigator.clipboard){navigator.clipboard.writeText(url);button.innerHTML='<i class="bi bi-check2"></i> Link copiado';}});});</script>
 {% endblock %}

@@ -1,2 +1,22 @@
 {% load static %}
+<aside class="pwa-update-notice" data-pwa-update-notice hidden role="status" aria-live="polite">
+  <span>Nova versão disponível</span>
+  <button type="button" data-pwa-update>Atualizar agora</button>
+</aside>
+<style>
+  .pwa-update-notice {
+    position: fixed; right: 1rem; bottom: 1rem; z-index: 10000;
+    display: flex; align-items: center; gap: .75rem; max-width: calc(100vw - 2rem);
+    padding: .8rem 1rem; border-radius: .75rem; color: #fff; background: #111827;
+    box-shadow: 0 .5rem 1.5rem rgb(0 0 0 / 25%);
+  }
+  .pwa-update-notice[hidden] { display: none; }
+  .pwa-update-notice button {
+    border: 0; border-radius: .5rem; padding: .55rem .75rem;
+    color: #111827; background: #fff; font: inherit; font-weight: 700; cursor: pointer;
+  }
+  @media (max-width: 480px) {
+    .pwa-update-notice { right: .75rem; bottom: .75rem; left: .75rem; justify-content: space-between; }
+  }
+</style>
 <script src="{% static 'js/platform/pwa.js' %}" defer></script>

@@ -1,6 +1,8 @@
 {% load static %}
-const BOTUKA_CACHE_VERSION = "botuka-pwa-v2";
-const BOTUKA_STATIC_CACHE = `${BOTUKA_CACHE_VERSION}-static`;
+const BOTUKA_CACHE_PREFIX = "botuka-pwa-";
+const BOTUKA_CACHE_VERSION = "{{ pwa_cache_version|escapejs }}";
+const BOTUKA_STATIC_CACHE = `${BOTUKA_CACHE_PREFIX}${BOTUKA_CACHE_VERSION}-static`;
+const BOTUKA_RUNTIME_CACHE = `${BOTUKA_CACHE_PREFIX}${BOTUKA_CACHE_VERSION}-runtime`;
 
 const APP_SHELL = [
   "{% url 'offline' %}",
@@ -17,7 +19,6 @@ self.addEventListener("install", (event) => {
     caches
       .open(BOTUKA_STATIC_CACHE)
       .then((cache) => cache.addAll(APP_SHELL))
-      .then(() => self.skipWaiting())
   );
 });
 
@@ -28,7 +29,11 @@ self.addEventListener("activate", (event) => {
       .then((cacheNames) =>
         Promise.all(
           cacheNames
-            .filter((cacheName) => !cacheName.startsWith(BOTUKA_CACHE_VERSION))
+            .filter(
+              (cacheName) =>
+                cacheName.startsWith(BOTUKA_CACHE_PREFIX) &&
+                ![BOTUKA_STATIC_CACHE, BOTUKA_RUNTIME_CACHE].includes(cacheName)
+            )
             .map((cacheName) => caches.delete(cacheName))
         )
       )
@@ -55,6 +60,9 @@ function shouldIgnore(request) {
     url.pathname.startsWith("/painel/") ||
     url.pathname.startsWith("/gestao/") ||
     url.pathname.startsWith("/conta/") ||
+    url.pathname.startsWith("/meus-agendamentos/") ||
+    url.pathname.startsWith("/agenda/confirmar/") ||
+    url.pathname.startsWith("/api/") ||
     url.pathname.startsWith("/media/") ||
     url.pathname.startsWith("/qrcode/") ||
     url.pathname.startsWith("/compartilhar/") ||
@@ -64,25 +72,25 @@ function shouldIgnore(request) {
 
 async function networkFirst(request) {
   try {
-    return await fetch(request);
+    return await fetch(request, { cache: "no-store" });
   } catch (error) {
     return await caches.match("{% url 'offline' %}");
   }
 }
 
-async function staleWhileRevalidate(request) {
-  const cache = await caches.open(BOTUKA_STATIC_CACHE);
-  const cached = await cache.match(request);
-  const fetched = fetch(request)
-    .then((response) => {
-      if (response.ok) {
-        cache.put(request, response.clone());
-      }
-      return response;
-    })
-    .catch(() => cached);
-
-  return cached || fetched;
+async function networkFirstAsset(request) {
+  const cache = await caches.open(BOTUKA_RUNTIME_CACHE);
+  try {
+    const response = await fetch(request, { cache: "no-cache" });
+    if (response.ok && response.type === "basic") {
+      await cache.put(request, response.clone());
+    }
+    return response;
+  } catch (error) {
+    const cached = await cache.match(request);
+    if (cached) return cached;
+    throw error;
+  }
 }
 
 self.addEventListener("fetch", (event) => {
@@ -98,6 +106,6 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (["style", "script", "image", "font"].includes(request.destination)) {
-    event.respondWith(staleWhileRevalidate(request));
+    event.respondWith(networkFirstAsset(request));
   }
 });

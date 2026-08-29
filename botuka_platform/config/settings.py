@@ -308,6 +308,10 @@ STATICFILES_DIRS = [
 
 STATIC_ROOT = BASE_DIR / 'staticfiles'
 
+# Opcional: tag, SHA ou build imutável do deploy. Sem configuração explícita,
+# a versão é calculada automaticamente a partir do conteúdo do app shell.
+PWA_VERSION = config('PWA_VERSION', default='')
+
 # =============================================================================
 # Media
 # =============================================================================

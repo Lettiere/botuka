@@ -2,9 +2,15 @@
   'use strict';
 
   const INSTALL_STATE_KEY = 'botuka_pwa_install_state';
+  const UPDATE_RELOAD_KEY = 'botuka_pwa_update_reload';
   const DISMISS_DAYS = 7;
   const promptElement = document.querySelector('[data-pwa-install-prompt]');
+  const updateElement = document.querySelector('[data-pwa-update-notice]');
+  const updateButton = document.querySelector('[data-pwa-update]');
   let deferredInstallPrompt = null;
+  let waitingWorker = null;
+  let updateAccepted = false;
+  let reloadStarted = false;
   let previousFocus = null;
 
   function isStandalone() {
@@ -124,8 +130,46 @@
 
   if (!('serviceWorker' in navigator)) return;
 
+  function showUpdate(worker) {
+    waitingWorker = worker;
+    if (updateElement) updateElement.hidden = false;
+  }
+
+  if (updateButton) {
+    updateButton.addEventListener('click', function () {
+      if (!waitingWorker) return;
+      updateAccepted = true;
+      updateButton.disabled = true;
+      waitingWorker.postMessage({type: 'SKIP_WAITING'});
+    });
+  }
+
+  navigator.serviceWorker.addEventListener('controllerchange', function () {
+    if (!updateAccepted || reloadStarted) return;
+    if (window.sessionStorage.getItem(UPDATE_RELOAD_KEY)) return;
+    reloadStarted = true;
+    window.sessionStorage.setItem(UPDATE_RELOAD_KEY, String(Date.now()));
+    window.location.reload();
+  });
+
+  window.setTimeout(function () {
+    window.sessionStorage.removeItem(UPDATE_RELOAD_KEY);
+  }, 10000);
+
   window.addEventListener('load', function () {
     navigator.serviceWorker.register('/service-worker.js', {scope: '/'}).then(function (registration) {
+      if (registration.waiting && navigator.serviceWorker.controller) {
+        showUpdate(registration.waiting);
+      }
+      registration.addEventListener('updatefound', function () {
+        const worker = registration.installing;
+        if (!worker) return;
+        worker.addEventListener('statechange', function () {
+          if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+            showUpdate(worker);
+          }
+        });
+      });
       registration.update().catch(function () {
         return null;
       });
