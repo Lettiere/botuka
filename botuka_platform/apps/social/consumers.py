@@ -3,6 +3,7 @@ from channels.generic.websocket import AsyncJsonWebsocketConsumer
 from channels.db import database_sync_to_async
 
 from .models import SocialConversation
+from apps.core.rls_context import rls_user_context
 
 logger = logging.getLogger(__name__)
 
@@ -76,8 +77,9 @@ class SocialConversationConsumer(AsyncJsonWebsocketConsumer):
         user_id,
         conversation_uuid,
     ):
-        return SocialConversation.objects.filter(
-            uuid=conversation_uuid,
-            ativo=True,
-            participantes__pk=user_id,
-        ).exists()
+        with rls_user_context(user_id):
+            return SocialConversation.objects.filter(
+                uuid=conversation_uuid,
+                ativo=True,
+                participantes__pk=user_id,
+            ).exists()
