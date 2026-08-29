@@ -581,6 +581,8 @@ class Empresa(UUIDModel):
     cidade = models.ForeignKey(
         Cidade,
         on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         db_column='platform_empresa_cidade_fk',
         related_name='empresas',
         verbose_name='cidade',
@@ -588,6 +590,8 @@ class Empresa(UUIDModel):
     estado = models.ForeignKey(
         Estado,
         on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         db_column='platform_empresa_estado_fk',
         related_name='empresas',
         verbose_name='estado',
@@ -648,6 +652,11 @@ class Empresa(UUIDModel):
         default=Status.RASCUNHO,
         db_column='platform_empresa_status',
         verbose_name='status',
+    )
+    cadastro_etapa = models.PositiveSmallIntegerField(
+        default=1,
+        db_column='platform_empresa_cadastro_etapa',
+        verbose_name='etapa do cadastro',
     )
     verificada = models.BooleanField(
         default=False,
@@ -722,15 +731,12 @@ class Empresa(UUIDModel):
     def clean(self) -> None:
         super().clean()
 
-        if self.atuacao == self.Atuacao.SERVICOS and self.modalidade_comercial:
-            raise ValidationError({
-                'modalidade_comercial': (
-                    'Empresa exclusivamente de serviços não possui modalidade comercial.'
-                ),
-            })
+        if self.atuacao == self.Atuacao.SERVICOS:
+            self.modalidade_comercial = ''
 
         if (
-            self.atuacao in {
+            self.status != self.Status.RASCUNHO
+            and self.atuacao in {
                 self.Atuacao.COMERCIO,
                 self.Atuacao.COMERCIO_E_SERVICOS,
             }
@@ -767,6 +773,10 @@ class Empresa(UUIDModel):
             )
 
     def save(self, *args: object, **kwargs: object) -> None:
+        if self.atuacao == self.Atuacao.SERVICOS:
+            self.modalidade_comercial = ''
+            if kwargs.get('update_fields') is not None:
+                kwargs['update_fields'] = set(kwargs['update_fields']) | {'modalidade_comercial'}
         self.cpf_cnpj = normalizar_digitos(self.cpf_cnpj)
         self.cep = normalizar_digitos(self.cep)
         self.telefone = normalizar_digitos(self.telefone)

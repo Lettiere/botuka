@@ -8,6 +8,7 @@ from datetime import timedelta
 from uuid import UUID
 
 from PIL import Image, UnidentifiedImageError
+from apps.core.services.images import optimize_uploaded_image
 
 from django.contrib import messages
 from django.conf import settings
@@ -34,6 +35,7 @@ from apps.painel.forms import (
     EmpresaDocumentoForm,
     EmpresaEnderecoForm,
     EmpresaForm,
+    EmpresaEtapaForm,
     EmpresaInstitucionalForm,
     EmpresaLinkForm,
     EmpresaSolicitacaoAnaliseForm,
@@ -57,6 +59,7 @@ from apps.agenda.models import (
     AgendaBloqueio,
     Agendamento,
 )
+from apps.agenda.public_services import resumo_operacional_empresa
 from apps.taxonomy.models import Subcategoria
 from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade, EmpresaEndereco, EmpresaLink, EmpresaSolicitacao, EmpresaUsuario, UsuarioLimitePersonalizado
 from apps.organizations.plans import (
@@ -69,6 +72,7 @@ from apps.organizations.services.commercial_limits import (
 from apps.organizations.services.institutional import (
     atualizar_identidade_institucional, conceder_capacidade, revogar_capacidade,
 )
+from apps.organizations.services.company_dashboard import construir_painel_empresa
 from apps.organizations.permissions import (
     empresas_disponiveis_para_usuario,
     usuario_pode_editar_empresa,
@@ -253,49 +257,82 @@ def empresa_criar(request: HttpRequest) -> HttpResponse:
     if not limite.permitido:
         messages.error(request, f'Seu plano permite no máximo {limite.limite} empresa ativa. Faça upgrade para cadastrar outra empresa.')
         return redirect('painel:empresas_lista')
-    if request.method == 'POST':
-        form = EmpresaForm(
-            request.POST,
-            request.FILES,
-            usuario=request.user,
-            pode_alterar_status=usuario_e_master(request.user),
-        )
+    return _empresa_wizard(request, etapa=1)
 
-        if form.is_valid():
-            try:
-                with transaction.atomic():
-                    bloquear_e_validar_criacao_empresa(request.user)
-                    empresa = form.save(commit=False)
-                    empresa.usuario_proprietario = request.user
-                    empresa.save()
-                    EmpresaUsuario.objects.create(
-                        empresa=empresa,
-                        usuario=request.user,
-                        funcao=EmpresaUsuario.Funcao.PROPRIETARIO,
-                        proprietario=True,
-                        administrador=True,
-                        pode_editar=True,
-                        pode_publicar_servico=True,
-                        pode_gerenciar_equipe=True,
-                    )
-            except LimitePlanoExcedido as exc:
-                form.add_error(None, exc)
-            else:
-                messages.success(request, 'Empresa cadastrada com sucesso.')
-                return redirect('painel:empresa_detalhe', uuid=empresa.uuid)
 
-    else:
-        form = EmpresaForm(usuario=request.user)
+@login_required
+def empresa_configurar(request: HttpRequest, uuid, etapa: int) -> HttpResponse:
+    empresa = _empresa_autorizada(request, uuid)
+    if not usuario_pode_editar_empresa(request.user, empresa):
+        raise PermissionDenied
+    if empresa.status != Empresa.Status.RASCUNHO:
+        messages.info(request, 'O cadastro já foi concluído; use a edição da empresa para corrigir os dados.')
+        return redirect('painel:empresa_editar', uuid=empresa.uuid)
+    return _empresa_wizard(request, etapa=etapa, empresa=empresa)
 
-    return render(
-        request,
-        'painel/empresas/form.html',
-        {
-            'titulo': 'Cadastrar empresa',
-            'form': form,
-            'empresa': None,
-        },
+
+def _empresa_wizard(request, *, etapa, empresa=None):
+    etapa = max(1, min(7, int(etapa)))
+    nova = empresa is None
+    if nova and etapa != 1:
+        return redirect('painel:empresa_criar')
+    form = EmpresaEtapaForm(
+        request.POST or None, request.FILES or None, instance=empresa,
+        usuario=request.user, pode_alterar_status=False, etapa=etapa,
     )
+    if request.method == 'POST' and form.is_valid():
+        try:
+            with transaction.atomic():
+                if nova:
+                    bloquear_e_validar_criacao_empresa(request.user)
+                empresa = form.save(commit=False)
+                empresa.usuario_proprietario = request.user
+                empresa.status = Empresa.Status.RASCUNHO
+                empresa.cadastro_etapa = max(empresa.cadastro_etapa or 1, min(etapa + 1, 7))
+                empresa.save()
+                if nova:
+                    EmpresaUsuario.objects.create(
+                        empresa=empresa, usuario=request.user,
+                        funcao=EmpresaUsuario.Funcao.PROPRIETARIO,
+                        proprietario=True, administrador=True, pode_editar=True,
+                        pode_publicar_servico=True, pode_gerenciar_equipe=True,
+                    )
+                acao = request.POST.get('acao', 'continuar')
+                if etapa == 7 and acao == 'continuar':
+                    empresa.status = Empresa.Status.PENDENTE
+                    empresa.cadastro_etapa = 7
+                    empresa.save(update_fields=['status', 'cadastro_etapa', 'atualizado_em'])
+        except LimitePlanoExcedido as exc:
+            form.add_error(None, str(exc))
+        except ValidationError as exc:
+            _adicionar_erros_da_etapa(form, exc)
+        else:
+            if acao == 'sair' or etapa == 7:
+                messages.success(request, 'Progresso da empresa salvo.')
+                return redirect('painel:empresa_detalhe', uuid=empresa.uuid)
+            return redirect(
+                'painel:empresa_configurar', uuid=empresa.uuid, etapa=etapa + 1
+            )
+
+    etapas = ('Identificação', 'Atuação', 'Apresentação', 'Contatos',
+              'Localização', 'Operação', 'Revisão')
+    return render(request, 'painel/empresas/wizard.html', {
+        'titulo': 'Configurar empresa', 'form': form, 'empresa': empresa,
+        'etapa': etapa, 'etapas': tuple(enumerate(etapas, 1)),
+        'progresso': round(etapa / 7 * 100),
+    })
+
+
+def _adicionar_erros_da_etapa(form, exc: ValidationError) -> None:
+    """Anexa erros somente a campos presentes; os demais viram erro da etapa."""
+    if hasattr(exc, 'error_dict'):
+        for campo, erros in exc.error_dict.items():
+            destino = campo if campo in form.fields else None
+            for erro in erros:
+                form.add_error(destino, erro.message)
+        return
+    for erro in exc.error_list:
+        form.add_error(None, erro.message)
 
 
 @login_required
@@ -304,14 +341,14 @@ def empresa_detalhe(request: HttpRequest, uuid) -> HttpResponse:
     if not usuario_pode_visualizar_empresa(request.user, empresa):
         raise PermissionDenied
 
-    usuarios = empresa.usuarios_vinculados.select_related('usuario').order_by(
-        '-proprietario',
-        'usuario__first_name',
-        'usuario__username',
-    )
-    produtos = Produto.objects.filter(empresa_proprietaria=empresa)
-    limite_produtos = calcular_limite(
-        request.user, Produto.TitularTipo.EMPRESA, empresa,
+    permissoes = {
+        'pode_editar': usuario_pode_editar_empresa(request.user, empresa),
+        'pode_gerenciar': usuario_pode_gerenciar_empresa(request.user, empresa),
+        'pode_gerenciar_equipe': usuario_pode_gerenciar_equipe(request.user, empresa),
+        'pode_criar_produto': usuario_tem_permissao(request.user, 'products.criar_empresa'),
+    }
+    painel_empresa = construir_painel_empresa(
+        empresa=empresa, usuario=request.user, permissoes=permissoes,
     )
 
     return render(
@@ -319,24 +356,12 @@ def empresa_detalhe(request: HttpRequest, uuid) -> HttpResponse:
         'painel/empresas/detalhe.html',
         {
             'empresa': empresa,
-            'usuarios': usuarios,
-            'pode_editar': usuario_pode_editar_empresa(request.user, empresa),
-            'pode_gerenciar': usuario_pode_gerenciar_empresa(request.user, empresa),
-            'pode_gerenciar_equipe': usuario_pode_gerenciar_equipe(request.user, empresa),
+            **permissoes,
             'pode_institucional': (
                 usuario_e_master(request.user)
                 or usuario_tem_permissao(request.user, 'institucional.gerenciar')
             ),
-            'produtos_total': produtos.count(),
-            'produtos_publicados': produtos.filter(status=Produto.Status.PUBLICADO).count(),
-            'produtos_em_analise': produtos.filter(status=Produto.Status.EM_ANALISE).count(),
-            'conversas_comerciais': Conversa.objects.filter(empresa=empresa, ativo=True).count(),
-            'limite_produtos': limite_produtos,
-            'pode_produtos': usuario_tem_permissao(request.user, 'products.visualizar'),
-            'pode_servicos_empresa': empresa.pode_publicar_servico,
-            'servicos_empresa_total': Servico.objects.filter(empresa=empresa).count(),
-            'pode_criar_produto_empresa': usuario_tem_permissao(request.user, 'products.criar_empresa'),
-            'vendas_loja_url': f"{settings.VENDAS_URL}/lojas/{empresa.slug}/",
+            'painel_empresa': painel_empresa,
         },
     )
 
@@ -975,13 +1000,44 @@ def servico_criar(request: HttpRequest) -> HttpResponse:
         empresa_contexto=empresa_contexto,
     )
     atributos = atributo_formset('servico', instance=form.instance, data=request.POST or None)
-    area_form = ServicoAreaForm(request.POST or None, prefix='area')
+    area_form = ServicoAreaForm(
+        request.POST or None,
+        prefix='area',
+        empresa_contexto=empresa_contexto,
+    )
     links_forms = _formularios_links_post(request) if request.method == 'POST' else []
     if request.method == 'POST':
+        print('===== DEBUG SERVICO POST =====')
+        print('acao =', request.POST.get('acao'))
+        print('empresa GET =', request.GET.get('empresa'))
+        print('POST keys =', list(request.POST.keys()))
+
         arquivos, erros_upload = _validar_uploads_servico(request)
         area_informada = bool(request.POST.get('area-tipo_area'))
         links_validos = all(link_form.is_valid() for link_form in links_forms)
-        valido = form.is_valid() and atributos.is_valid() and links_validos and not erros_upload and (area_form.is_valid() if area_informada else True)
+        form_valido = form.is_valid()
+        atributos_validos = atributos.is_valid()
+        area_valida = area_form.is_valid() if area_informada else True
+
+        print('form_valido =', form_valido)
+        print('form_errors =', form.errors.as_json())
+        print('atributos_validos =', atributos_validos)
+        print('atributos_errors =', atributos.errors)
+        print('area_informada =', area_informada)
+        print('area_valida =', area_valida)
+        print('area_errors =', area_form.errors.as_json())
+        print('links_validos =', links_validos)
+        print('erros_upload =', erros_upload)
+
+        valido = (
+            form_valido
+            and atributos_validos
+            and links_validos
+            and not erros_upload
+            and area_valida
+        )
+
+
         if valido:
             servico = form.save(commit=False)
             servico.usuario_responsavel = request.user
@@ -1086,6 +1142,8 @@ def _salvar_imagens_servico(request, servico):
 
     capa = request.FILES.get('imagem_capa')
     galeria = request.FILES.getlist('galeria')
+    capa = optimize_uploaded_image(capa, policy='content') if capa else None
+    galeria = [optimize_uploaded_image(arquivo, policy='content') for arquivo in galeria]
     if capa:
         ServicoImagem.objects.filter(servico=servico, ativo=True, principal=True).update(principal=False)
         ServicoImagem.objects.create(

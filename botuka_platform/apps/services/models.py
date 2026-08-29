@@ -120,6 +120,112 @@ class AreaProfissional(UUIDModel):
         return f'{self.nome} ({self.setor})'
 
 
+class CBOGrandeGrupo(UUIDModel):
+    id = models.BigAutoField(primary_key=True, db_column='services_cbo_grande_grupo_id')
+    codigo = models.CharField(max_length=2, unique=True, db_column='services_cbo_grande_grupo_codigo')
+    titulo = models.CharField(max_length=255, db_column='services_cbo_grande_grupo_titulo')
+    ativo = models.BooleanField(default=True, db_column='services_cbo_grande_grupo_ativo')
+    criado_em = models.DateTimeField(auto_now_add=True, db_column='services_cbo_grande_grupo_criado_em')
+    atualizado_em = models.DateTimeField(auto_now=True, db_column='services_cbo_grande_grupo_atualizado_em')
+
+    class Meta:
+        ordering = ['codigo']
+        db_table = '"services"."services_cbo_grande_grupo_tb"'
+
+    def __str__(self):
+        return f'{self.codigo} — {self.titulo}'
+
+
+class CBOSubgrupoPrincipal(UUIDModel):
+    id = models.BigAutoField(primary_key=True, db_column='services_cbo_subgrupo_principal_id')
+    grande_grupo = models.ForeignKey(CBOGrandeGrupo, on_delete=models.PROTECT, db_column='services_cbo_subgrupo_principal_fk_grande_grupo', related_name='subgrupos_principais')
+    codigo = models.CharField(max_length=2, unique=True, db_column='services_cbo_subgrupo_principal_codigo')
+    titulo = models.CharField(max_length=255, db_column='services_cbo_subgrupo_principal_titulo')
+    ativo = models.BooleanField(default=True, db_column='services_cbo_subgrupo_principal_ativo')
+    criado_em = models.DateTimeField(auto_now_add=True, db_column='services_cbo_subgrupo_principal_criado_em')
+    atualizado_em = models.DateTimeField(auto_now=True, db_column='services_cbo_subgrupo_principal_atualizado_em')
+
+    class Meta:
+        ordering = ['codigo']
+        db_table = '"services"."services_cbo_subgrupo_principal_tb"'
+        indexes = [models.Index(fields=['grande_grupo', 'codigo'], name='services_cbo_sgp_gg_cod_idx')]
+
+    def __str__(self):
+        return f'{self.codigo} — {self.titulo}'
+
+
+class CBOSubgrupo(UUIDModel):
+    id = models.BigAutoField(primary_key=True, db_column='services_cbo_subgrupo_id')
+    subgrupo_principal = models.ForeignKey(CBOSubgrupoPrincipal, on_delete=models.PROTECT, db_column='services_cbo_subgrupo_fk_subgrupo_principal', related_name='subgrupos')
+    codigo = models.CharField(max_length=3, unique=True, db_column='services_cbo_subgrupo_codigo')
+    titulo = models.CharField(max_length=255, db_column='services_cbo_subgrupo_titulo')
+    ativo = models.BooleanField(default=True, db_column='services_cbo_subgrupo_ativo')
+    criado_em = models.DateTimeField(auto_now_add=True, db_column='services_cbo_subgrupo_criado_em')
+    atualizado_em = models.DateTimeField(auto_now=True, db_column='services_cbo_subgrupo_atualizado_em')
+
+    class Meta:
+        ordering = ['codigo']
+        db_table = '"services"."services_cbo_subgrupo_tb"'
+        indexes = [models.Index(fields=['subgrupo_principal', 'codigo'], name='services_cbo_sg_sgp_cod_idx')]
+
+    def __str__(self):
+        return f'{self.codigo} — {self.titulo}'
+
+
+class CBOFamilia(UUIDModel):
+    id = models.BigAutoField(primary_key=True, db_column='services_cbo_familia_id')
+    subgrupo = models.ForeignKey(CBOSubgrupo, on_delete=models.PROTECT, db_column='services_cbo_familia_fk_subgrupo', related_name='familias')
+    codigo = models.CharField(max_length=4, unique=True, db_column='services_cbo_familia_codigo')
+    titulo = models.CharField(max_length=255, db_column='services_cbo_familia_titulo')
+    ativo = models.BooleanField(default=True, db_column='services_cbo_familia_ativo')
+    criado_em = models.DateTimeField(auto_now_add=True, db_column='services_cbo_familia_criado_em')
+    atualizado_em = models.DateTimeField(auto_now=True, db_column='services_cbo_familia_atualizado_em')
+
+    class Meta:
+        ordering = ['codigo']
+        db_table = '"services"."services_cbo_familia_tb"'
+        indexes = [models.Index(fields=['subgrupo', 'codigo'], name='services_cbo_fam_sg_cod_idx')]
+
+    def __str__(self):
+        return f'{self.codigo} — {self.titulo}'
+
+
+class CBOOcupacao(UUIDModel):
+    id = models.BigAutoField(primary_key=True, db_column='services_cbo_ocupacao_id')
+    familia = models.ForeignKey(CBOFamilia, on_delete=models.PROTECT, db_column='services_cbo_ocupacao_fk_familia', related_name='ocupacoes')
+    codigo = models.CharField(max_length=6, unique=True, db_column='services_cbo_ocupacao_codigo')
+    titulo = models.CharField(max_length=255, db_column='services_cbo_ocupacao_titulo')
+    ativo = models.BooleanField(default=True, db_column='services_cbo_ocupacao_ativo')
+    criado_em = models.DateTimeField(auto_now_add=True, db_column='services_cbo_ocupacao_criado_em')
+    atualizado_em = models.DateTimeField(auto_now=True, db_column='services_cbo_ocupacao_atualizado_em')
+
+    class Meta:
+        ordering = ['codigo']
+        db_table = '"services"."services_cbo_ocupacao_tb"'
+        indexes = [models.Index(fields=['familia', 'codigo'], name='services_cbo_oc_fam_cod_idx')]
+
+    def __str__(self):
+        return f'{self.codigo} — {self.titulo}'
+
+
+class CBOSinonimo(UUIDModel):
+    id = models.BigAutoField(primary_key=True, db_column='services_cbo_sinonimo_id')
+    ocupacao = models.ForeignKey(CBOOcupacao, on_delete=models.CASCADE, db_column='services_cbo_sinonimo_fk_ocupacao', related_name='sinonimos')
+    titulo = models.CharField(max_length=255, db_column='services_cbo_sinonimo_titulo')
+    ativo = models.BooleanField(default=True, db_column='services_cbo_sinonimo_ativo')
+    criado_em = models.DateTimeField(auto_now_add=True, db_column='services_cbo_sinonimo_criado_em')
+    atualizado_em = models.DateTimeField(auto_now=True, db_column='services_cbo_sinonimo_atualizado_em')
+
+    class Meta:
+        ordering = ['titulo']
+        db_table = '"services"."services_cbo_sinonimo_tb"'
+        constraints = [models.UniqueConstraint(fields=['ocupacao', 'titulo'], name='services_cbo_sinonimo_ocup_titulo_uk')]
+        indexes = [models.Index(fields=['ocupacao', 'ativo'], name='services_cbo_sin_oc_ativo_idx')]
+
+    def __str__(self):
+        return self.titulo
+
+
 class Profissao(UUIDModel):
     id = models.BigAutoField(primary_key=True, db_column='services_profissao_id')
     setor = models.ForeignKey(Setor, on_delete=models.PROTECT, db_column='services_profissao_fk_setor', related_name='profissoes')
@@ -139,6 +245,12 @@ class Profissao(UUIDModel):
     ativo = models.BooleanField(default=True, db_column='services_profissao_ativo')
     criado_em = models.DateTimeField(auto_now_add=True, db_column='services_profissao_criado_em')
     atualizado_em = models.DateTimeField(auto_now=True, db_column='services_profissao_atualizado_em')
+    ocupacoes_cbo = models.ManyToManyField(
+        'CBOOcupacao',
+        through='ProfissaoCBO',
+        related_name='profissoes',
+        blank=True,
+    )
 
     class Meta:
         ordering = ['setor__nome', 'nome']
@@ -159,6 +271,35 @@ class Profissao(UUIDModel):
 
     def __str__(self):
         return f'{self.nome} ({self.setor})'
+
+
+class ProfissaoCBO(UUIDModel):
+    CONFIANCA_CHOICES = (('ALTA', 'Alta'), ('MEDIA', 'Média'), ('BAIXA', 'Baixa'))
+    id = models.BigAutoField(primary_key=True, db_column='services_profissao_cbo_id')
+    profissao = models.ForeignKey(Profissao, on_delete=models.PROTECT, db_column='services_profissao_cbo_fk_profissao', related_name='vinculos_cbo')
+    ocupacao = models.ForeignKey(CBOOcupacao, on_delete=models.PROTECT, db_column='services_profissao_cbo_fk_ocupacao', related_name='vinculos_profissoes')
+    principal = models.BooleanField(default=False, db_column='services_profissao_cbo_principal')
+    confianca = models.CharField(max_length=8, choices=CONFIANCA_CHOICES, blank=True, db_column='services_profissao_cbo_confianca')
+    origem = models.CharField(max_length=80, blank=True, db_column='services_profissao_cbo_origem')
+    observacao = models.TextField(blank=True, db_column='services_profissao_cbo_observacao')
+    ativo = models.BooleanField(default=True, db_column='services_profissao_cbo_ativo')
+    criado_em = models.DateTimeField(auto_now_add=True, db_column='services_profissao_cbo_criado_em')
+    atualizado_em = models.DateTimeField(auto_now=True, db_column='services_profissao_cbo_atualizado_em')
+
+    class Meta:
+        ordering = ['profissao__nome', '-principal', 'ocupacao__codigo']
+        db_table = '"services"."services_profissao_cbo_tb"'
+        constraints = [
+            models.UniqueConstraint(fields=['profissao', 'ocupacao'], name='services_profissao_cbo_prof_ocup_uk'),
+            models.UniqueConstraint(fields=['profissao'], condition=models.Q(principal=True), name='services_profissao_cbo_principal_uk'),
+        ]
+        indexes = [
+            models.Index(fields=['profissao', 'ativo'], name='services_prof_cbo_ativo_idx'),
+            models.Index(fields=['ocupacao', 'ativo'], name='services_cbo_prof_ativo_idx'),
+        ]
+
+    def __str__(self):
+        return f'{self.profissao} — {self.ocupacao}'
 
 
 class TipoServico(UUIDModel):
@@ -256,7 +397,14 @@ class Servico(UUIDModel):
     usuario_responsavel = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.PROTECT, db_column='services_servico_fk_usuario_responsavel', related_name='servicos_responsavel')
     empresa = models.ForeignKey(Empresa, on_delete=models.PROTECT, null=True, blank=True, db_column='services_servico_fk_empresa', related_name='servicos')
     prestador_tipo = models.CharField(max_length=20, choices=PrestadorTipo.choices, db_column='services_servico_prestador_tipo')
-    setor = models.ForeignKey(Setor, on_delete=models.PROTECT, db_column='services_servico_fk_setor', related_name='servicos')
+    setor = models.ForeignKey(
+        Setor,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        db_column='services_servico_fk_setor',
+        related_name='servicos',
+    )
     area = models.ForeignKey(
         AreaProfissional,
         on_delete=models.PROTECT,
@@ -265,7 +413,14 @@ class Servico(UUIDModel):
         null=True,
         blank=True,
     )
-    profissao = models.ForeignKey(Profissao, on_delete=models.PROTECT, db_column='services_servico_fk_profissao', related_name='servicos')
+    profissao = models.ForeignKey(
+        Profissao,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        db_column='services_servico_fk_profissao',
+        related_name='servicos',
+    )
     tipo_servico = models.ForeignKey(
         TipoServico,
         on_delete=models.PROTECT,
@@ -274,8 +429,15 @@ class Servico(UUIDModel):
         null=True,
         blank=True,
     )
-    forma_cobranca = models.ForeignKey(FormaCobranca, on_delete=models.PROTECT, db_column='services_servico_fk_forma_cobranca', related_name='servicos')
-    titulo = models.CharField(max_length=160, db_column='services_servico_titulo')
+    forma_cobranca = models.ForeignKey(
+        FormaCobranca,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        db_column='services_servico_fk_forma_cobranca',
+        related_name='servicos',
+    )
+    titulo = models.CharField(max_length=160, blank=True, db_column='services_servico_titulo')
     slug = models.SlugField(max_length=220, unique=True, blank=True, db_column='services_servico_slug')
     descricao_curta = models.CharField(max_length=220, blank=True, db_column='services_servico_descricao_curta')
     descricao_completa = models.TextField(blank=True, db_column='services_servico_descricao_completa')
@@ -337,6 +499,22 @@ class Servico(UUIDModel):
             raise ValidationError({'empresa': 'Informe a empresa prestadora.'})
         if self.prestador_tipo == self.PrestadorTipo.PESSOA_FISICA and self.empresa_id:
             raise ValidationError({'empresa': 'Pessoa física não deve ter empresa vinculada.'})
+
+        if self.status != self.Status.RASCUNHO:
+            obrigatorios = {}
+            if not self.setor_id:
+                obrigatorios['setor'] = 'Informe o setor antes de enviar para publicação.'
+            if not self.area_id:
+                obrigatorios['area'] = 'Informe a área profissional antes de enviar para publicação.'
+            if not self.profissao_id:
+                obrigatorios['profissao'] = 'Informe a profissão antes de enviar para publicação.'
+            if not self.forma_cobranca_id:
+                obrigatorios['forma_cobranca'] = 'Informe a forma de cobrança antes de enviar para publicação.'
+            if not (self.titulo or '').strip():
+                obrigatorios['titulo'] = 'Informe o título antes de enviar para publicação.'
+            if obrigatorios:
+                raise ValidationError(obrigatorios)
+
         if self.area_id and self.setor_id and self.area.setor_id != self.setor_id:
             raise ValidationError({'area': 'A área profissional deve pertencer ao setor selecionado.'})
         if self.profissao_id and self.setor_id and self.profissao.setor_id != self.setor_id:
@@ -363,14 +541,19 @@ class Servico(UUIDModel):
             raise ValidationError({'tipo_servico': 'O tipo de serviço não pertence à profissão selecionada.'})
         if self.preco_inicial and self.preco_final and self.preco_inicial > self.preco_final:
             raise ValidationError({'preco_final': 'O preço final não pode ser menor que o inicial.'})
-        if not self.atendimento_remoto and not self.atendimento_presencial:
+        if (
+            self.status != self.Status.RASCUNHO
+            and not self.atendimento_remoto
+            and not self.atendimento_presencial
+        ):
             raise ValidationError('Informe ao menos atendimento remoto ou presencial.')
         if self.status == self.Status.PUBLICADO and self.empresa_id and not self.empresa.pode_publicar_servico:
             raise ValidationError('Empresa não está apta a publicar serviços.')
 
     def save(self, *args, **kwargs):
         if not self.slug:
-            self.slug = gerar_slug_unico(self, self.titulo)
+            base_slug = (self.titulo or '').strip() or f'rascunho-{self.uuid}'
+            self.slug = gerar_slug_unico(self, base_slug)
         if self.status == self.Status.PUBLICADO and not self.publicado_em:
             self.publicado_em = timezone.now()
         self.full_clean()

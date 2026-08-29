@@ -190,13 +190,51 @@ class LinksQrCodeTests(TestCase):
         self.assertEqual(resposta.status_code, 200)
         self.assertFalse(Servico.objects.filter(titulo='Novo serviço persistente').exists())
 
-    def test_sem_atendimento_rejeitado(self):
+    def test_sem_atendimento_rejeitado_na_publicacao(self):
         self.client.force_login(self.usuario)
-        dados = self.dados_cadastro()
+        dados = self.dados_cadastro(acao='publicar')
         dados.pop('atendimento_presencial')
         resposta = self.client.post(reverse('painel:servico_criar'), dados)
         self.assertEqual(resposta.status_code, 200)
         self.assertFalse(Servico.objects.filter(titulo='Novo serviço persistente').exists())
+
+    def test_rascunho_incompleto_pode_ser_salvo(self):
+        self.client.force_login(self.usuario)
+        dados = self.dados_cadastro(
+            setor='',
+            area='',
+            profissao='',
+            tipo_servico='',
+            forma_cobranca='',
+            titulo='',
+            acao='rascunho',
+        )
+        dados.pop('atendimento_presencial', None)
+
+        resposta = self.client.post(
+            reverse('painel:servico_criar'),
+            dados,
+        )
+
+        self.assertEqual(resposta.status_code, 302)
+
+        criado = (
+            Servico.objects
+            .filter(
+                usuario_responsavel=self.usuario,
+                status=Servico.Status.RASCUNHO,
+                titulo='',
+            )
+            .order_by('-id')
+            .first()
+        )
+
+        self.assertIsNotNone(criado)
+        self.assertIsNone(criado.setor_id)
+        self.assertIsNone(criado.area_id)
+        self.assertIsNone(criado.profissao_id)
+        self.assertIsNone(criado.forma_cobranca_id)
+        self.assertTrue(criado.slug)
 
     def test_criacao_link_valido_servico(self):
         link = ServicoLink.objects.create(servico=self.servico, tipo_link=TipoLink.SITE, url='https://example.com/servico')

@@ -1,8 +1,15 @@
 from django.contrib import admin
 
 from apps.services.models import (
+    CBOFamilia,
+    CBOGrandeGrupo,
+    CBOOcupacao,
+    CBOSinonimo,
+    CBOSubgrupo,
+    CBOSubgrupoPrincipal,
     FormaCobranca,
     Profissao,
+    ProfissaoCBO,
     Servico,
     ServicoArea,
     ServicoAvaliacao,
@@ -15,6 +22,38 @@ from apps.services.models import (
 )
 
 admin.site.register(ServicoLink)
+
+
+class CBOAdmin(admin.ModelAdmin):
+    list_display = ('codigo', 'titulo', 'ativo')
+    list_filter = ('ativo',)
+    search_fields = ('codigo', 'titulo')
+    readonly_fields = ('uuid', 'criado_em', 'atualizado_em')
+
+
+admin.site.register(CBOGrandeGrupo, CBOAdmin)
+admin.site.register(CBOSubgrupoPrincipal, CBOAdmin)
+admin.site.register(CBOSubgrupo, CBOAdmin)
+admin.site.register(CBOFamilia, CBOAdmin)
+admin.site.register(CBOOcupacao, CBOAdmin)
+
+
+@admin.register(CBOSinonimo)
+class CBOSinonimoAdmin(admin.ModelAdmin):
+    list_display = ('titulo', 'ocupacao', 'ativo')
+    list_filter = ('ativo',)
+    search_fields = ('titulo', 'ocupacao__codigo', 'ocupacao__titulo')
+    autocomplete_fields = ('ocupacao',)
+    readonly_fields = ('uuid', 'criado_em', 'atualizado_em')
+
+
+@admin.register(ProfissaoCBO)
+class ProfissaoCBOAdmin(admin.ModelAdmin):
+    list_display = ('profissao', 'ocupacao', 'principal', 'confianca', 'ativo')
+    list_filter = ('principal', 'confianca', 'ativo')
+    search_fields = ('profissao__nome', 'ocupacao__codigo', 'ocupacao__titulo')
+    autocomplete_fields = ('profissao', 'ocupacao')
+    readonly_fields = ('uuid', 'criado_em', 'atualizado_em')
 
 
 @admin.register(Setor)

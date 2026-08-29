@@ -27,6 +27,7 @@ from apps.services.models import (
     TipoServico,
 )
 from apps.core.services.rich_text import sanitizar_html_rico
+from apps.core.services.images import optimize_uploaded_image
 
 Usuario = get_user_model()
 
@@ -359,13 +360,15 @@ class EmpresaForm(forms.ModelForm):
         return documento
 
     def clean_logo(self):
-        return self._validar_imagem('logo', 2)
+        imagem = self._validar_imagem('logo', 8)
+        return optimize_uploaded_image(imagem, policy='avatar') if imagem else imagem
 
     def clean_descricao_completa(self) -> str:
         return sanitizar_html_rico(self.cleaned_data.get('descricao_completa', ''))
 
     def clean_imagem_capa(self):
-        return self._validar_imagem('imagem_capa', 5)
+        imagem = self._validar_imagem('imagem_capa', 8)
+        return optimize_uploaded_image(imagem, policy='hero') if imagem else imagem
 
     def _validar_imagem(self, field_name: str, limite_mb: int):
         imagem = self.cleaned_data.get(field_name)
@@ -380,7 +383,6 @@ class EmpresaForm(forms.ModelForm):
             raise forms.ValidationError('Use imagem JPG, PNG ou WEBP.')
 
         return imagem
-
 
     def clean_subcategoria_empresa(self):
         subcategoria = self.cleaned_data.get(
@@ -414,6 +416,50 @@ class EmpresaForm(forms.ModelForm):
         if cidade and estado and cidade.estado_id != estado.id:
             self.add_error('cidade', 'A cidade selecionada não pertence ao estado informado.')
 
+        return cleaned_data
+
+
+class EmpresaEtapaForm(EmpresaForm):
+    """Recorte persistente do formulário principal para uma etapa do cadastro."""
+
+    CAMPOS_ETAPA = {
+        1: ('tipo_cadastro', 'razao_social', 'nome_fantasia', 'cpf_cnpj',
+            'inscricao_estadual', 'inscricao_municipal'),
+        2: ('atuacao', 'categoria_empresa', 'subcategoria_empresa'),
+        3: ('descricao_curta', 'descricao_completa', 'logo', 'imagem_capa'),
+        4: ('telefone', 'whatsapp', 'email', 'site'),
+        5: ('cep', 'endereco', 'numero', 'complemento', 'bairro', 'estado', 'cidade'),
+        6: ('modalidade_comercial', 'atende_online', 'atende_local',
+            'horario_atendimento'),
+        7: ('perfil_publico',),
+    }
+
+    def __init__(self, *args, etapa=1, **kwargs):
+        self.etapa = etapa
+        super().__init__(*args, **kwargs)
+        permitidos = set(self.CAMPOS_ETAPA[etapa])
+        for nome in list(self.fields):
+            if nome not in permitidos:
+                self.fields.pop(nome)
+
+        if etapa < 7:
+            for nome in self.fields:
+                self.fields[nome].required = nome in {
+                    'nome_fantasia', 'atuacao', 'estado', 'cidade'
+                }
+
+        atuacao = self.instance.atuacao if self.instance else None
+        if etapa == 6 and atuacao == Empresa.Atuacao.SERVICOS:
+            self.fields.pop('modalidade_comercial', None)
+        elif etapa == 6 and 'modalidade_comercial' in self.fields:
+            self.fields['modalidade_comercial'].required = True
+
+    def clean(self):
+        cleaned_data = super().clean()
+        atuacao = self.instance.atuacao if self.instance else None
+        if atuacao == Empresa.Atuacao.SERVICOS:
+            cleaned_data['modalidade_comercial'] = ''
+            self.instance.modalidade_comercial = ''
         return cleaned_data
 
 
@@ -696,17 +742,35 @@ class ServicoForm(BaseServicoForm):
         *args,
         usuario=None,
         empresa_contexto=None,
+        acao=None,
         **kwargs,
     ):
         self.usuario = usuario
         self.empresa_contexto = empresa_contexto
+        self.acao = acao
         super().__init__(*args, **kwargs)
 
         self.fields['area'].queryset = AreaProfissional.objects.none()
         self.fields['profissao'].queryset = Profissao.objects.none()
         self.fields['tipo_servico'].queryset = TipoServico.objects.none()
         self.fields['setor'].queryset = Setor.objects.filter(ativo=True).order_by('nome')
-        self.fields['area'].required = True
+
+        acao_efetiva = self.acao
+        if acao_efetiva is None and self.is_bound:
+            acao_efetiva = self.data.get('acao')
+
+        exige_campos_completos = bool(
+            acao_efetiva == 'publicar'
+            or (
+                self.instance
+                and self.instance.pk
+                and self.instance.status != Servico.Status.RASCUNHO
+            )
+        )
+
+        for nome in ('setor', 'area', 'profissao', 'forma_cobranca', 'titulo'):
+            self.fields[nome].required = exige_campos_completos
+
         self.fields['tipo_servico'].required = False
         self.fields['tipo_servico'].label = 'Tipo de serviço (opcional)'
         self.fields['area'].empty_label = 'Selecione primeiro o setor'
@@ -925,6 +989,34 @@ class ServicoImagemForm(BaseServicoForm):
 
 
 class ServicoAreaForm(BaseServicoForm):
+    def __init__(self, *args, empresa_contexto=None, **kwargs):
+        self.empresa_contexto = empresa_contexto
+        super().__init__(*args, **kwargs)
+
+        if not self.is_bound and empresa_contexto is not None:
+            from apps.core.models import EstadoBrasil, CidadeBrasil
+
+            estado = getattr(empresa_contexto, 'estado', None)
+            cidade = getattr(empresa_contexto, 'cidade', None)
+
+            if estado:
+                estado_core = EstadoBrasil.objects.filter(
+                    sigla__iexact=estado.sigla,
+                    ativo=True,
+                ).first()
+
+                if estado_core:
+                    self.fields['estado'].initial = estado_core
+
+            if cidade:
+                cidade_core = CidadeBrasil.objects.filter(
+                    codigo_ibge=cidade.codigo_ibge,
+                    ativo=True,
+                ).first()
+
+                if cidade_core:
+                    self.fields['cidade'].initial = cidade_core
+
     class Meta:
         model = ServicoArea
         fields = ['tipo_area', 'cidade', 'regiao', 'bairro', 'estado', 'raio_km', 'remoto', 'nacional']

@@ -29,6 +29,7 @@ urlpatterns = [
     # --- Empresas ---
     path('empresas/', views.empresas_lista, name='empresas_lista'),
     path('empresas/nova/', views.empresa_criar, name='empresa_criar'),
+    path('empresas/<uuid:uuid>/configuracao/<int:etapa>/', views.empresa_configurar, name='empresa_configurar'),
     path('empresas/adicionar/', views.empresa_adicionar, name='empresa_adicionar'),
     path('empresas/ajax/consultar-cnpj/', views.empresa_ajax_consultar_cnpj, name='empresa_ajax_consultar_cnpj'),
     path('empresas/solicitacoes/', views.empresa_solicitacoes_lista, name='empresa_solicitacoes_lista'),
