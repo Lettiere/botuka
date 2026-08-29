@@ -22,6 +22,9 @@
     </form>
 
     <div class="header-actions d-flex align-items-center gap-2 ms-auto flex-shrink-0">
+      <button class="btn-botuka btn-soft botuka-explore-trigger" type="button" {% if request.user.is_authenticated %}data-navigation-open aria-controls="userNavigationModal" aria-haspopup="dialog" aria-expanded="false"{% else %}data-bs-toggle="modal" data-bs-target="#botukaExploreModal"{% endif %} aria-label="Explorar recursos do BOTUKA">
+        <i class="bi bi-grid-3x3-gap-fill"></i><span class="d-none d-lg-inline">Explorar</span>
+      </button>
       <button class="btn-botuka btn-soft btn-icon" id="themeToggle" type="button" aria-label="Alternar tema">
         <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
       </button>
@@ -36,4 +39,47 @@
       {% endif %}
     </div>
   </nav>
+
+  <nav class="botuka-desktop-modules" aria-label="Atalhos principais do BOTUKA">
+    <div class="container-botuka botuka-desktop-modules__inner">
+      <a href="{% url 'home' %}">Início</a>
+      <a href="{% url 'news_public:home' %}">Notícias</a>
+      <a href="{% url 'publico:empresas' %}">Empresas</a>
+      <a href="{% url 'publico:servicos' %}">Serviços</a>
+      <a href="{% url 'agenda_public:home' %}">Agenda</a>
+      <a href="{% url 'recruitment_public:vagas' %}">Vagas</a>
+      <a href="{% url 'events:lista' %}">Eventos</a>
+      <a href="{% url 'tourism_public:home' %}">Turismo</a>
+    </div>
+  </nav>
 </header>
+
+{% if not request.user.is_authenticated %}<div class="modal fade" id="botukaExploreModal" tabindex="-1" aria-labelledby="botukaExploreTitle" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-xl modal-dialog-scrollable">
+    <div class="modal-content botuka-explore-modal">
+      <div class="modal-header"><div><span class="section-kicker">BOTUKA em um só lugar</span><h2 class="modal-title" id="botukaExploreTitle">Explorar recursos</h2></div><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button></div>
+      <div class="modal-body"><nav class="botuka-explore-grid" aria-label="Recursos do BOTUKA">
+        {% if request.user.is_authenticated %}
+          <div class="botuka-explore-section" style="grid-column:1/-1"><strong>Minha Empresa</strong><small class="d-block text-muted">Ambiente empresarial e atalhos de gestão</small></div>
+          {% if empresas_nav|length > 1 %}<div style="grid-column:1/-1"><label class="form-label small fw-bold" for="exploreCompanySelect">Selecionar empresa</label><select id="exploreCompanySelect" class="form-select" onchange="if(this.value){window.location.href=this.value}"><option value="">Escolha uma empresa</option>{% for empresa_nav in empresas_nav %}<option value="{% url 'painel:empresa_detalhe' empresa_nav.uuid %}" {% if empresa_nav_ativa.pk == empresa_nav.pk %}selected{% endif %}>{{ empresa_nav.nome_exibicao }}</option>{% endfor %}</select></div>{% endif %}
+          {% for empresa_nav in empresas_nav %}{% if empresas_nav|length == 1 or empresa_nav_ativa.pk == empresa_nav.pk %}<a class="is-featured" href="{% url 'painel:empresa_detalhe' empresa_nav.uuid %}"><i class="bi bi-building-gear"></i><span><strong>Visão geral</strong><small>{{ empresa_nav.nome_exibicao }}</small></span></a>{% endif %}{% empty %}<a href="{% url 'painel:empresa_criar' %}"><i class="bi bi-building-add"></i><span><strong>Cadastrar empresa</strong><small>Crie seu ambiente empresarial</small></span></a>{% endfor %}
+          {% if empresa_nav_ativa %}{% if empresa_nav_ativa.atuacao == 'COMERCIO' or empresa_nav_ativa.atuacao == 'COMERCIO_E_SERVICOS' %}<a href="{% url 'painel:empresa_produtos' empresa_nav_ativa.uuid %}"><i class="bi bi-box-seam"></i><span><strong>Produtos</strong><small>{{ empresa_nav_ativa.nome_exibicao }}</small></span></a>{% endif %}{% if empresa_nav_ativa.atuacao == 'SERVICOS' or empresa_nav_ativa.atuacao == 'COMERCIO_E_SERVICOS' %}<a href="{% url 'painel:servicos_lista' %}?empresa={{ empresa_nav_ativa.id }}"><i class="bi bi-tools"></i><span><strong>Serviços</strong><small>{{ empresa_nav_ativa.nome_exibicao }}</small></span></a><a href="{% url 'painel:empresa_agenda' empresa_nav_ativa.uuid %}"><i class="bi bi-calendar2-check"></i><span><strong>Agenda</strong><small>Configuração e atendimentos</small></span></a><a href="{% url 'painel:empresa_equipe' empresa_nav_ativa.uuid %}"><i class="bi bi-people"></i><span><strong>Equipe</strong><small>Usuários e profissionais</small></span></a>{% endif %}<a href="{% url 'painel:empresa_capacidades' empresa_nav_ativa.uuid %}"><i class="bi bi-sliders"></i><span><strong>Capacidades</strong><small>Recursos da empresa</small></span></a><a href="{% url 'painel:empresa_qrcode' empresa_nav_ativa.uuid %}"><i class="bi bi-qr-code"></i><span><strong>QR Code</strong><small>Compartilhamento público</small></span></a><a href="{% url 'painel:empresa_links' empresa_nav_ativa.uuid %}"><i class="bi bi-link-45deg"></i><span><strong>Links</strong><small>Canais da empresa</small></span></a>{% endif %}
+          <div class="botuka-explore-section" style="grid-column:1/-1;margin-top:8px"><strong>Descobrir</strong><small class="d-block text-muted">Conteúdos, negócios e oportunidades da cidade</small></div>
+        {% endif %}
+        <a href="{% url 'publico:empresas' %}"><i class="bi bi-buildings"></i><span><strong>Empresas</strong><small>Negócios e organizações locais</small></span></a>
+        <a href="{% url 'publico:servicos' %}"><i class="bi bi-tools"></i><span><strong>Serviços</strong><small>Profissionais e soluções</small></span></a>
+        <a href="{% url 'products:loja' %}"><i class="bi bi-bag"></i><span><strong>Produtos</strong><small>Comércio e ofertas locais</small></span></a>
+        <a class="is-featured" href="{% url 'agenda_public:home' %}"><i class="bi bi-calendar2-check"></i><span><strong>Agenda</strong><small>Serviços com horário disponível</small></span></a>
+        <a href="{% url 'events:lista' %}"><i class="bi bi-calendar-event"></i><span><strong>Eventos</strong><small>Programação da cidade</small></span></a>
+        <a href="{% url 'news_public:home' %}"><i class="bi bi-newspaper"></i><span><strong>Notícias</strong><small>Informação local atualizada</small></span></a>
+        <a href="{% url 'recruitment_public:vagas' %}"><i class="bi bi-briefcase"></i><span><strong>Vagas</strong><small>Empregos e oportunidades</small></span></a>
+        <a href="{% url 'tourism_public:home' %}"><i class="bi bi-compass"></i><span><strong>Turismo</strong><small>Lugares e roteiros</small></span></a>
+        <a href="{% url 'sports_public:home' %}"><i class="bi bi-trophy"></i><span><strong>Esportes</strong><small>Campeonatos, equipes e jogos</small></span></a>
+        <a href="{% url 'media_public:yubotuka_home' %}"><i class="bi bi-play-btn"></i><span><strong>Vídeos / YTV</strong><small>Conteúdo e transmissões</small></span></a>
+        <a href="{% url 'social_legacy:home' %}"><i class="bi bi-people"></i><span><strong>Rede Social</strong><small>Conexões e publicações</small></span></a>
+        <a href="{% url 'government_public:home' %}"><i class="bi bi-bank"></i><span><strong>Prefeitura</strong><small>Serviços e informações oficiais</small></span></a>
+      </nav></div>
+    </div>
+  </div>
+</div>
+{% endif %}

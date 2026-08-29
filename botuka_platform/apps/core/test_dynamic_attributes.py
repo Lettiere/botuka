@@ -10,7 +10,7 @@ from apps.core.search import GlobalSearchService
 from apps.locations.models import Cidade, Estado, Pais
 from apps.organizations.models import Empresa
 from apps.recruitment.models import Vaga
-from apps.services.models import FormaCobranca, Profissao, Servico, Setor
+from apps.services.models import AreaProfissional, FormaCobranca, Profissao, Servico, Setor
 
 
 class DynamicAttributesTests(TestCase):
@@ -28,12 +28,15 @@ class DynamicAttributesTests(TestCase):
             ativo=True, perfil_publico=True,
         )
         setor = Setor.objects.create(nome='Transportes Atributos')
-        profissao = Profissao.objects.create(setor=setor, nome='Motorista Atributos')
+        area = AreaProfissional.objects.create(setor=setor, nome='Transporte executivo')
+        profissao = Profissao.objects.create(
+            setor=setor, area=area, nome='Motorista Atributos'
+        )
         cobranca = FormaCobranca.objects.create(nome='Por viagem atributos')
         cls.service = Servico.objects.create(
             usuario_responsavel=cls.owner,
             prestador_tipo=Servico.PrestadorTipo.PESSOA_FISICA,
-            setor=setor, profissao=profissao, forma_cobranca=cobranca,
+            setor=setor, area=area, profissao=profissao, forma_cobranca=cobranca,
             titulo='Motorista executivo', descricao_curta='Transporte profissional',
             status=Servico.Status.PUBLICADO, ativo=True, publicado_em=timezone.now(),
         )

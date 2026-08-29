@@ -53,7 +53,7 @@ def demo_user(code="gestor"):
 def seed_services_demo():
     from apps.locations.models import Cidade, Estado, Pais
     from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade, StatusCapacidadeMixin
-    from apps.services.models import FormaCobranca, Profissao, Servico, Setor, TipoServico
+    from apps.services.models import AreaProfissional, FormaCobranca, Profissao, Servico, Setor, TipoServico
     from apps.taxonomy.models import Categoria
 
     user = demo_user("servicos")
@@ -62,7 +62,14 @@ def seed_services_demo():
     cidade, _ = Cidade.objects.get_or_create(estado=estado, nome="Botucatu", defaults={"codigo_ibge": "3507506"})
     capacidade, _ = Capacidade.objects.update_or_create(codigo="PRESTAR_SERVICOS", defaults={"nome": "Prestar serviços", "ativo": True})
     setor, _ = Setor.objects.update_or_create(slug="servicos-demo", defaults={"nome": "Serviços Demo", "ativo": True})
-    profissao, _ = Profissao.objects.update_or_create(slug="profissional-demo", defaults={"setor": setor, "nome": "Profissional Demo", "ativo": True})
+    area, _ = AreaProfissional.objects.update_or_create(
+        setor=setor, slug="atendimento-demo",
+        defaults={"nome": "Atendimento Demo", "ativo": True},
+    )
+    profissao, _ = Profissao.objects.update_or_create(
+        slug="profissional-demo",
+        defaults={"setor": setor, "area": area, "nome": "Profissional Demo", "ativo": True},
+    )
     tipo, _ = TipoServico.objects.update_or_create(slug="atendimento-demo", defaults={"nome": "Atendimento Demo", "ativo": True})
     forma, _ = FormaCobranca.objects.update_or_create(slug="por-servico-demo", defaults={"nome": "Por serviço Demo", "ativo": True})
     gastronomia, _ = Categoria.objects.update_or_create(
@@ -97,7 +104,7 @@ def seed_services_demo():
             defaults={
                 "usuario_responsavel": user, "empresa": empresas[(i - 1) % len(empresas)] if pj else None,
                 "prestador_tipo": Servico.PrestadorTipo.EMPRESA if pj else Servico.PrestadorTipo.PESSOA_FISICA,
-                "setor": setor, "profissao": profissao, "tipo_servico": tipo, "forma_cobranca": forma,
+                "setor": setor, "area": area, "profissao": profissao, "tipo_servico": tipo, "forma_cobranca": forma,
                 "titulo": f"Serviço demonstrativo {i:02d}", "descricao_curta": "Atendimento fictício para validar a HOME local.",
                 "descricao_completa": "Conteúdo de demonstração sem dados pessoais reais.",
                 "status": status,

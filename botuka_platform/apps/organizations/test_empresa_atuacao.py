@@ -22,16 +22,15 @@ class EmpresaAtuacaoFoundationTests(SimpleTestCase):
         form = EmpresaForm()
         self.assertTrue(form.fields['atuacao'].required)
 
-    def test_servicos_rejeita_modalidade_comercial(self):
+    def test_servicos_normaliza_modalidade_comercial(self):
         empresa = Empresa(
             atuacao=Empresa.Atuacao.SERVICOS,
             modalidade_comercial=Empresa.ModalidadeComercial.VAREJO,
         )
 
-        with self.assertRaises(ValidationError) as contexto:
-            empresa.clean()
+        empresa.clean()
 
-        self.assertIn('modalidade_comercial', contexto.exception.message_dict)
+        self.assertEqual(empresa.modalidade_comercial, '')
 
     def test_comercio_exige_modalidade_comercial(self):
         for atuacao in (
@@ -39,7 +38,10 @@ class EmpresaAtuacaoFoundationTests(SimpleTestCase):
             Empresa.Atuacao.COMERCIO_E_SERVICOS,
         ):
             with self.subTest(atuacao=atuacao):
-                empresa = Empresa(atuacao=atuacao, modalidade_comercial='')
+                empresa = Empresa(
+                    atuacao=atuacao, modalidade_comercial='',
+                    status=Empresa.Status.PENDENTE,
+                )
 
                 with self.assertRaises(ValidationError) as contexto:
                     empresa.clean()

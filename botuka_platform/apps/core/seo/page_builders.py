@@ -206,13 +206,13 @@ def product_seo(request, produto):
 
 
 def artigo_seo(request, artigo):
-    related_image = None
-    try:
-        item = artigo.imagens.filter(ativo=True, excluido_em__isnull=True).order_by('-capa', 'ordem', 'id').first()
-        related_image = first_value(item.arquivo, item.url_externa) if item else None
-    except (AttributeError, TypeError):
-        pass
-    image = first_value(artigo.imagem_social, artigo.imagem_capa, related_image)
+    image = first_value(artigo.imagem_capa)
+    if not image:
+        relacionada = artigo.imagens.filter(
+            ativo=True, excluido_em__isnull=True,
+        ).order_by("ordem", "id").first()
+        if relacionada:
+            image = first_value(relacionada.arquivo, relacionada.url_externa)
     url = safe_absolute_url(request, request.path)
     author = (
         artigo.autor_editorial.nome

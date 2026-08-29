@@ -1,3 +1,8 @@
+import csv
+import hashlib
+from tempfile import TemporaryDirectory
+from unittest.mock import patch
+
 from django.conf import settings
 from django.core.management import call_command
 from django.core.exceptions import ValidationError
@@ -18,6 +23,66 @@ from apps.services.models import (
 
 
 class ServiceTaxonomyCatalogTests(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls.catalog_tmp = TemporaryDirectory()
+        cls.addClassCleanup(cls.catalog_tmp.cleanup)
+        catalog_dir = Path(cls.catalog_tmp.name)
+
+        sectors = [
+            {
+                'setor_slug': f'setor-{sector:02d}',
+                'setor_nome': f'Setor {sector:02d}',
+                'setor_ordem': str(sector),
+            }
+            for sector in range(1, 41)
+        ]
+        areas = [
+            {
+                'setor_slug': sector['setor_slug'],
+                'area_slug': f"{sector['setor_slug']}-area-{area:02d}",
+                'area_nome': f"Área {sector['setor_nome']} {area:02d}",
+                'area_ordem': str(area),
+            }
+            for sector in sectors
+            for area in range(1, 6)
+        ]
+        professions = [
+            {
+                'setor_slug': area['setor_slug'],
+                'area_slug': area['area_slug'],
+                'profissao_slug': f"{area['area_slug']}-profissao-{profession:02d}",
+                'profissao_nome': f"Profissão {area['area_nome']} {profession:02d}",
+            }
+            for area in areas
+            for profession in range(1, 9)
+        ]
+
+        def write_csv(name, rows):
+            with (catalog_dir / name).open(
+                'w', encoding='utf-8', newline=''
+            ) as handle:
+                writer = csv.DictWriter(handle, fieldnames=rows[0].keys())
+                writer.writeheader()
+                writer.writerows(rows)
+
+        write_csv('01_SETORES.csv', sectors)
+        write_csv('02_AREAS_PROFISSIONAIS.csv', areas)
+        write_csv('03_PROFISSOES.csv', professions)
+        hierarchy = catalog_dir / '04_HIERARQUIA_COMPLETA.csv'
+        hierarchy.write_text('fixture-taxonomia-servicos' + chr(10), encoding='utf-8')
+        digest = hashlib.sha256(hierarchy.read_bytes()).hexdigest()
+        (catalog_dir / '10_HASH_CATALOGO.txt').write_text(
+            f'{digest}  04_HIERARQUIA_COMPLETA.csv' + chr(10), encoding='ascii'
+        )
+
+        cls.catalog_patch = patch(
+            'apps.services.management.commands.importar_taxonomia_servicos.CATALOG_DIR',
+            catalog_dir,
+        )
+        cls.catalog_patch.start()
+        cls.addClassCleanup(cls.catalog_patch.stop)
     def test_catalogo_cumpre_metas_e_relacionamentos(self):
         setores, areas, profissoes, digest = validate_catalog()
         self.assertGreaterEqual(len(setores), 40)

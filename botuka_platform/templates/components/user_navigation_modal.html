@@ -1,110 +1,32 @@
 {% load gestao_extras %}
-
 <dialog class="navigation-modal" id="userNavigationModal" data-navigation-modal data-navigation-overlay aria-hidden="true">
-    <section
-      class="navigation-modal__dialog"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="navigationModalTitle"
-      aria-describedby="navigationModalDescription"
-      tabindex="-1"
-    >
-      <header class="navigation-modal__header">
-        <div class="navigation-modal__identity">
-          <div class="navigation-modal__avatar">
-            {% if request.user.foto %}
-              <img src="{{ request.user.foto.url }}" alt="">
-            {% else %}
-              <span aria-hidden="true">{{ request.user.first_name|default:request.user.username|first|upper }}</span>
-            {% endif %}
-          </div>
-          <div>
-            <p class="navigation-modal__eyebrow">Minha conta BOTUKA</p>
-            <h2 id="navigationModalTitle">{{ request.user.get_full_name|default:request.user.username }}</h2>
-            <p id="navigationModalDescription">{{ request.user.email }} · {{ request.user.perfil|default:"Sem perfil" }}</p>
-          </div>
-        </div>
-        <button class="navigation-modal__close" type="button" data-navigation-close aria-label="Fechar navegação">
-          <i class="bi bi-x-lg" aria-hidden="true"></i>
-        </button>
-        <div class="navigation-modal__search">
-          <i class="bi bi-search" aria-hidden="true"></i>
-          <label class="visually-hidden" for="navigationModalSearch">Buscar no menu</label>
-          <input id="navigationModalSearch" type="search" placeholder="Buscar empresas, vagas, configurações..." autocomplete="off" data-navigation-search>
-          <button type="button" data-navigation-clear aria-label="Limpar busca" hidden><i class="bi bi-x-circle" aria-hidden="true"></i></button>
-        </div>
-      </header>
-
-      <div class="navigation-modal__body">
-<div class="navigation-modal__grid">
-          <section class="navigation-group" data-navigation-group>
-            <button class="navigation-group__heading" type="button" data-navigation-group-toggle aria-expanded="true">
-              <span><i class="bi bi-person-circle" aria-hidden="true"></i> Minha conta</span>
-              <i class="bi bi-chevron-down navigation-group__chevron" aria-hidden="true"></i>
-            </button>
-            <div class="navigation-group__links">
-              <a href="{% url 'painel:perfil' %}" data-navigation-link><i class="bi bi-person"></i><span><strong>Meu perfil</strong><small>Dados e informações pessoais</small></span></a>
-              <a href="{% url 'painel:dashboard' %}" data-navigation-link><i class="bi bi-speedometer2"></i><span><strong>Dashboard</strong><small>Visão geral da sua conta</small></span></a>
-              {% if painel_capabilities.account_configure %}<a href="{% url 'painel:configuracoes' %}" data-navigation-link><i class="bi bi-gear"></i><span><strong>Configurações</strong><small>Preferências da plataforma</small></span></a>{% endif %}
-            </div>
-          </section>
-
-
-<!-- BOTUKA SOCIAL — ATALHO UNICO -->
-<a
-    class="user-nav-social-card"
-    href="{{ botuka_social_home_url }}"
-    aria-label="Abrir BOTUKA Social — Feed, conexões e comunidade"
->
-    <span class="user-nav-social-card__icon" aria-hidden="true">
-        <i class="bi bi-people-fill"></i>
-    </span>
-
-    <span class="user-nav-social-card__content">
-        <strong>BOTUKA Social</strong>
-        <small>Feed, conexões e comunidade</small>
-    </span>
-
-    <span class="user-nav-social-card__action" aria-hidden="true">
-        Abrir <i class="bi bi-arrow-up-right"></i>
-    </span>
-</a>
-<!-- /BOTUKA SOCIAL — ATALHO UNICO -->
-{% for group in painel_module_groups %}
-            <section class="navigation-group" data-navigation-group>
-              <button class="navigation-group__heading" type="button" data-navigation-group-toggle aria-expanded="true">
-                <span><i class="bi bi-grid" aria-hidden="true"></i> {{ group.label }}</span>
-                <i class="bi bi-chevron-down navigation-group__chevron" aria-hidden="true"></i>
-              </button>
-              <div class="navigation-group__links">
-                {% for item in group.items %}
-                  <a href="{{ item.url }}" data-navigation-link><i class="bi {{ item.icon }}"></i><span><strong>{{ item.label }}</strong><small>{{ item.description|default:"Acessar módulo" }}</small></span></a>
-                {% endfor %}
-              </div>
-            </section>
-          {% endfor %}
-
-          {% if request.user.is_staff or request.user.is_superuser or request.user|has_perm_code:"gestao.acessar" %}
-            <section class="navigation-group navigation-group--admin" data-navigation-group>
-              <button class="navigation-group__heading" type="button" data-navigation-group-toggle aria-expanded="true">
-                <span><i class="bi bi-shield-lock" aria-hidden="true"></i> Administração</span>
-                <i class="bi bi-chevron-down navigation-group__chevron" aria-hidden="true"></i>
-              </button>
-              <div class="navigation-group__links">
-                <a href="{% url 'gestao:dashboard' %}" data-navigation-link><i class="bi bi-shield-check"></i><span><strong>Gestão</strong><small>Administração da plataforma</small></span></a>
-              </div>
-            </section>
-          {% endif %}
-        </div>
-        <p class="navigation-modal__empty" data-navigation-empty hidden>Nenhum item encontrado.</p>
+  <section class="navigation-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="navigationModalTitle" aria-describedby="navigationModalDescription" tabindex="-1">
+    <header class="navigation-modal__header">
+      <div class="navigation-modal__identity"><div class="navigation-modal__avatar">{% if request.user.foto %}<img src="{{ request.user.foto.url }}" alt="">{% else %}<span aria-hidden="true">{{ request.user.first_name|default:request.user.username|first|upper }}</span>{% endif %}</div><div><p class="navigation-modal__eyebrow">Explorar BOTUKA</p><h2 id="navigationModalTitle">{{ request.user.get_full_name|default:request.user.username }}</h2><p id="navigationModalDescription">{{ request.user.email }} · {{ request.user.perfil|default:"Usuário" }}</p></div></div>
+      <button class="navigation-modal__close" type="button" data-navigation-close aria-label="Fechar navegação"><i class="bi bi-x-lg"></i></button>
+      <div class="navigation-modal__search"><i class="bi bi-search"></i><label class="visually-hidden" for="navigationModalSearch">Buscar no menu</label><input id="navigationModalSearch" type="search" placeholder="Buscar no Botuka..." autocomplete="off" data-navigation-search><button type="button" data-navigation-clear aria-label="Limpar busca" hidden><i class="bi bi-x-circle"></i></button></div>
+    </header>
+    <div class="navigation-modal__body">
+      <div class="navigation-hub" data-navigation-hub>
+        <button type="button" data-navigation-category="account"><i class="bi bi-person-circle"></i><strong>Minha Conta</strong><small>Perfil e configurações</small></button>
+        <button type="button" data-navigation-category="social"><i class="bi bi-people-fill"></i><strong>BOTUKA Social</strong><small>Comunidade e conexões</small></button>
+        <button type="button" data-navigation-category="city"><i class="bi bi-map"></i><strong>Cidade</strong><small>Conteúdo e informações</small></button>
+        <button type="button" data-navigation-category="business"><i class="bi bi-buildings"></i><strong>Negócios</strong><small>Empresas, produtos e serviços</small></button>
+        <button type="button" data-navigation-category="opportunities"><i class="bi bi-calendar2-check"></i><strong>Oportunidades</strong><small>Agenda, vagas e atividades</small></button>
+        {% if empresas_nav %}<button type="button" data-navigation-category="company"><i class="bi bi-building-gear"></i><strong>MINHA EMPRESA</strong><small>Operação e gestão empresarial</small></button>{% endif %}
+        {% if request.user.is_staff or request.user.is_superuser or request.user|has_perm_code:"gestao.acessar" %}<button type="button" data-navigation-category="administration"><i class="bi bi-shield-lock"></i><strong>Administração</strong><small>Gestão da plataforma</small></button>{% endif %}
       </div>
-
-      <footer class="navigation-modal__footer">
-        {% if painel_capabilities.account_configure %}<a href="{% url 'painel:configuracoes' %}"><i class="bi bi-gear"></i> Configurações</a>{% endif %}
-        <form method="post" action="{% url 'accounts:logout' %}">
-          {% csrf_token %}
-          <button type="submit"><i class="bi bi-box-arrow-right"></i> Encerrar sessão</button>
-        </form>
-      </footer>
-    </section>
+      <div class="navigation-category-panels" data-navigation-panels hidden>
+        <section class="navigation-group" data-navigation-group data-navigation-panel="account" hidden>{% include "components/navigation_panel_header.html" with title="Minha Conta" icon="bi-person-circle" %}<div class="navigation-group__links"><a href="{% url 'painel:perfil' %}" data-navigation-link><i class="bi bi-person"></i><span><strong>Meu perfil</strong><small>Dados pessoais</small></span></a><a href="{% url 'painel:dashboard' %}" data-navigation-link><i class="bi bi-speedometer2"></i><span><strong>Dashboard</strong><small>Visão geral da conta</small></span></a>{% if painel_capabilities.account_configure %}<a href="{% url 'painel:configuracoes' %}" data-navigation-link><i class="bi bi-gear"></i><span><strong>Configurações</strong><small>Preferências</small></span></a>{% endif %}</div></section>
+        <section class="navigation-group" data-navigation-group data-navigation-panel="social" hidden>{% include "components/navigation_panel_header.html" with title="BOTUKA Social" icon="bi-people-fill" %}<div class="navigation-group__links"><a href="{% url 'social_legacy:home' %}" data-navigation-link><i class="bi bi-house-heart"></i><span><strong>Feed</strong><small>Publicações da comunidade</small></span></a><a href="{% url 'social_legacy:following' %}" data-navigation-link><i class="bi bi-person-plus"></i><span><strong>Conexões</strong><small>Pessoas e empresas seguidas</small></span></a><a href="{% url 'social_legacy:path' 'mensagens/' %}" data-navigation-link><i class="bi bi-chat-dots"></i><span><strong>Conversas</strong><small>Mensagens</small></span></a><a href="{% url 'social_legacy:path' 'stories/' %}" data-navigation-link><i class="bi bi-circle-square"></i><span><strong>Stories</strong><small>Atualizações</small></span></a></div></section>
+        <section class="navigation-group" data-navigation-group data-navigation-panel="city" hidden>{% include "components/navigation_panel_header.html" with title="Cidade" icon="bi-map" %}<div class="navigation-group__links"><a href="{% url 'news_public:home' %}" data-navigation-link><i class="bi bi-newspaper"></i><span><strong>BOTUKA News</strong><small>Notícias locais</small></span></a><a href="{% url 'media_public:yubotuka_home' %}" data-navigation-link><i class="bi bi-play-btn"></i><span><strong>YoBotuka</strong><small>Vídeos e transmissões</small></span></a><a href="{% url 'government_public:home' %}" data-navigation-link><i class="bi bi-bank"></i><span><strong>Prefeitura</strong><small>Informações oficiais</small></span></a><a href="{% url 'tourism_public:home' %}" data-navigation-link><i class="bi bi-compass"></i><span><strong>Turismo</strong><small>Lugares e roteiros</small></span></a><a href="{% url 'events:lista' %}" data-navigation-link><i class="bi bi-calendar-event"></i><span><strong>Eventos</strong><small>Programação da cidade</small></span></a></div></section>
+        <section class="navigation-group" data-navigation-group data-navigation-panel="business" hidden>{% include "components/navigation_panel_header.html" with title="Negócios" icon="bi-buildings" %}<div class="navigation-group__links"><a href="{% url 'publico:empresas' %}" data-navigation-link><i class="bi bi-buildings"></i><span><strong>Empresas</strong><small>Guia público</small></span></a><a href="{% url 'products:loja' %}" data-navigation-link><i class="bi bi-bag"></i><span><strong>Produtos</strong><small>Comércio local</small></span></a><a href="{% url 'publico:servicos' %}" data-navigation-link><i class="bi bi-tools"></i><span><strong>Serviços</strong><small>Profissionais e soluções</small></span></a></div></section>
+        <section class="navigation-group" data-navigation-group data-navigation-panel="opportunities" hidden>{% include "components/navigation_panel_header.html" with title="Oportunidades" icon="bi-calendar2-check" %}<div class="navigation-group__links"><a href="{% url 'agenda_public:home' %}" data-navigation-link><i class="bi bi-calendar2-check"></i><span><strong>Agenda</strong><small>Horários disponíveis</small></span></a><a href="{% url 'recruitment_public:vagas' %}" data-navigation-link><i class="bi bi-briefcase"></i><span><strong>Vagas</strong><small>Empregos e oportunidades</small></span></a><a href="{% url 'painel:curriculo' %}" data-navigation-link><i class="bi bi-file-earmark-person"></i><span><strong>Currículo</strong><small>Perfil profissional</small></span></a><a href="{% url 'painel:minhas_candidaturas' %}" data-navigation-link><i class="bi bi-person-check"></i><span><strong>Candidaturas</strong><small>Acompanhe processos</small></span></a></div></section>
+        {% if empresas_nav %}<section class="navigation-group navigation-group--company" data-navigation-group data-navigation-panel="company" hidden>{% include "components/navigation_panel_header.html" with title="MINHA EMPRESA" icon="bi-building-gear" %}<div class="navigation-group__links">{% if empresas_nav|length > 1 %}<label class="navigation-company-select"><span>Empresa selecionada</span><select data-company-menu-select><option value="">Selecione</option>{% for item in empresas_nav %}<option value="{% url 'painel:empresa_detalhe' item.uuid %}" {% if empresa_nav_ativa.pk == item.pk %}selected{% endif %}>{{ item.nome_exibicao }}</option>{% endfor %}</select></label>{% endif %}{% if empresa_nav_ativa %}<a href="{% url 'painel:empresa_detalhe' empresa_nav_ativa.uuid %}" data-navigation-link><i class="bi bi-speedometer2"></i><span><strong>Visão geral</strong><small>{{ empresa_nav_ativa.nome_exibicao }}</small></span></a>{% if empresa_nav_ativa.atuacao == 'COMERCIO' or empresa_nav_ativa.atuacao == 'COMERCIO_E_SERVICOS' %}<a href="{% url 'painel:empresa_produtos' empresa_nav_ativa.uuid %}" data-navigation-link><i class="bi bi-box-seam"></i><span><strong>Produtos</strong><small>Catálogo</small></span></a>{% endif %}{% if empresa_nav_ativa.atuacao == 'SERVICOS' or empresa_nav_ativa.atuacao == 'COMERCIO_E_SERVICOS' %}<a href="{% url 'painel:servicos_lista' %}?empresa={{ empresa_nav_ativa.id }}" data-navigation-link><i class="bi bi-tools"></i><span><strong>Serviços</strong><small>Serviços cadastrados</small></span></a><a href="{% if empresa_nav_ativa.pode_aceitar_agendamentos %}{% url 'painel:empresa_agenda' empresa_nav_ativa.uuid %}{% else %}{% url 'painel:empresa_capacidades' empresa_nav_ativa.uuid %}{% endif %}" data-navigation-link><i class="bi bi-calendar2-check"></i><span><strong>Agenda{% if not empresa_nav_ativa.pode_aceitar_agendamentos %} — configuração pendente{% endif %}</strong><small>Agendamentos</small></span></a><a href="{% url 'painel:empresa_equipe' empresa_nav_ativa.uuid %}" data-navigation-link><i class="bi bi-people"></i><span><strong>Equipe</strong><small>Membros e profissionais</small></span></a>{% endif %}<a href="{% url 'painel:empresa_capacidades' empresa_nav_ativa.uuid %}" data-navigation-link><i class="bi bi-sliders"></i><span><strong>Capacidades</strong><small>Recursos habilitados</small></span></a><a href="{% url 'painel:empresa_qrcode' empresa_nav_ativa.uuid %}" data-navigation-link><i class="bi bi-qr-code"></i><span><strong>QR Code</strong><small>Compartilhar</small></span></a><a href="{% url 'painel:empresa_links' empresa_nav_ativa.uuid %}" data-navigation-link><i class="bi bi-link-45deg"></i><span><strong>Links</strong><small>Canais</small></span></a><a href="{% url 'painel:empresa_editar' empresa_nav_ativa.uuid %}" data-navigation-link><i class="bi bi-gear"></i><span><strong>Configurações</strong><small>Dados da empresa</small></span></a>{% endif %}</div></section>{% endif %}
+        {% if request.user.is_staff or request.user.is_superuser or request.user|has_perm_code:"gestao.acessar" %}<section class="navigation-group navigation-group--admin" data-navigation-group data-navigation-panel="administration" hidden>{% include "components/navigation_panel_header.html" with title="Administração" icon="bi-shield-lock" %}<div class="navigation-group__links"><a href="{% url 'gestao:dashboard' %}" data-navigation-link><i class="bi bi-shield-check"></i><span><strong>Gestão</strong><small>Administração da plataforma</small></span></a></div></section>{% endif %}
+      </div>
+      <p class="navigation-modal__empty" data-navigation-empty hidden>Nenhum item encontrado.</p>
+    </div>
+    <footer class="navigation-modal__footer">{% if painel_capabilities.account_configure %}<a href="{% url 'painel:configuracoes' %}"><i class="bi bi-gear"></i> Configurações</a>{% endif %}<form method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit"><i class="bi bi-box-arrow-right"></i> Encerrar sessão</button></form></footer>
+  </section>
 </dialog>

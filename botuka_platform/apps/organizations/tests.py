@@ -19,7 +19,7 @@ from apps.organizations.plans import (
     usuario_pode_criar_servico,
 )
 from apps.organizations.services.commercial_limits import salvar_limite_personalizado
-from apps.services.models import FormaCobranca, Profissao, Servico, Setor, TipoServico
+from apps.services.models import AreaProfissional, FormaCobranca, Profissao, Servico, Setor, TipoServico
 
 
 class SubscriptionLimitsTests(TestCase):
@@ -36,7 +36,12 @@ class SubscriptionLimitsTests(TestCase):
             cidade=cidade, estado=estado, status=Empresa.Status.ATIVA,
         )
         cls.sector = Setor.objects.create(nome='Setor Cota')
-        cls.profession = Profissao.objects.create(setor=cls.sector, nome='Profissão Cota')
+        cls.area = AreaProfissional.objects.create(
+            setor=cls.sector, nome='Área da Cota'
+        )
+        cls.profession = Profissao.objects.create(
+            setor=cls.sector, area=cls.area, nome='Profissão Cota'
+        )
         cls.service_type = TipoServico.objects.create(nome='Tipo Cota')
         cls.billing = FormaCobranca.objects.create(nome='Cobrança Cota')
 
@@ -47,6 +52,7 @@ class SubscriptionLimitsTests(TestCase):
             empresa=company,
             prestador_tipo=provider,
             setor=self.sector,
+            area=self.area,
             profissao=self.profession,
             tipo_servico=self.service_type,
             forma_cobranca=self.billing,

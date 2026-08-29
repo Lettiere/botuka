@@ -6,7 +6,7 @@ from django.utils import timezone
 from apps.core.search import GlobalSearchService
 from apps.locations.models import Cidade, Estado, Pais
 from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade
-from apps.services.models import FormaCobranca, Profissao, Servico, Setor, TipoServico
+from apps.services.models import AreaProfissional, FormaCobranca, Profissao, Servico, Setor, TipoServico
 from apps.media.models import (
     Canal, CategoriaYuBotuka, Playlist, PlaylistVideo, TagYuBotuka, Video, VideoTag,
 )
@@ -36,7 +36,12 @@ class GlobalSearchTests(TestCase):
             'Segurança Alimentar Privada', perfil_publico=False,
         )
         cls.sector = Setor.objects.create(nome='Jurídico')
-        cls.profession = Profissao.objects.create(setor=cls.sector, nome='Advocacia')
+        cls.area = AreaProfissional.objects.create(
+            setor=cls.sector, nome='Assessoria jurídica'
+        )
+        cls.profession = Profissao.objects.create(
+            setor=cls.sector, area=cls.area, nome='Advocacia'
+        )
         cls.service_type = TipoServico.objects.create(nome='Consultoria trabalhista')
         cls.billing = FormaCobranca.objects.create(nome='Por serviço')
         EmpresaCapacidade.objects.create(
@@ -47,7 +52,7 @@ class GlobalSearchTests(TestCase):
         cls.service = Servico.objects.create(
             usuario_responsavel=cls.user, empresa=cls.category_company,
             prestador_tipo=Servico.PrestadorTipo.EMPRESA, setor=cls.sector,
-            profissao=cls.profession, tipo_servico=cls.service_type,
+            area=cls.area, profissao=cls.profession, tipo_servico=cls.service_type,
             forma_cobranca=cls.billing, titulo='Assessoria jurídica',
             descricao_curta='Apoio especializado', status=Servico.Status.PUBLICADO,
             ativo=True, publicado_em=timezone.now(),
