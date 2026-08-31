@@ -2,11 +2,11 @@ from pathlib import Path
 from unittest.mock import patch
 
 from django.conf import settings
-from django.test import SimpleTestCase, override_settings
+from django.test import SimpleTestCase, TestCase, override_settings
 from django.urls import reverse
 
 
-class PwaIntegrationTests(SimpleTestCase):
+class PwaIntegrationTests(TestCase):
     def test_home_contains_install_prompt_but_public_inner_page_does_not(self):
         with patch('apps.core.views.montar_contexto_home', return_value={}):
             home = self.client.get(reverse('home'))

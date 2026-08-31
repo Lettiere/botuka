@@ -516,12 +516,12 @@ body.navigation-modal-open { overflow: hidden; }
 }
 
 /* ================================================================
-   MOBILE — SIDEBAR / OFFCANVAS PELA ESQUERDA
+   MOBILE — MODAL EM TELA INTEIRA
    ================================================================ */
 
 @media (max-width: 767.98px) {
   .navigation-modal {
-    justify-content: flex-start;
+    justify-content: center;
     align-items: stretch;
     padding: 0;
     background: rgba(15, 23, 42, .68);
@@ -529,26 +529,14 @@ body.navigation-modal-open { overflow: hidden; }
   }
 
   .navigation-modal__dialog {
-    width: min(88vw, 370px);
-    max-width: min(88vw, 370px);
+    width: 100vw;
+    max-width: none;
     height: 100dvh;
     max-height: 100dvh;
     margin: 0;
     border: 0;
-    border-right: 1px solid var(--nav-modal-border);
-    border-radius: 0 20px 20px 0;
-    box-shadow: 18px 0 45px rgba(15, 23, 42, .30);
-    animation: botukaNavigationSlideIn .22s ease-out;
-  }
-
-  @keyframes botukaNavigationSlideIn {
-    from {
-      transform: translateX(-100%);
-    }
-
-    to {
-      transform: translateX(0);
-    }
+    border-radius: 0;
+    box-shadow: none;
   }
 
   .navigation-modal__header {

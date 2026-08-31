@@ -22,6 +22,9 @@
   let previousFocus = null;
   let currentCategory = null;
 
+  const supportsNativeDialog =
+    typeof modal.showModal === "function" && typeof modal.close === "function";
+
   const focusableSelector = [
     'a[href]:not([hidden])',
     'button:not([disabled]):not([hidden])',
@@ -123,8 +126,12 @@
 
     modal.setAttribute("aria-hidden", "false");
 
-    if (!modal.open) {
-      modal.showModal();
+    if (!modal.hasAttribute("open")) {
+      if (supportsNativeDialog) {
+        modal.showModal();
+      } else {
+        modal.setAttribute("open", "");
+      }
     }
 
     openButtons.forEach((button) => {
@@ -143,7 +150,13 @@
   };
 
   const close = () => {
-    if (modal.open) modal.close();
+    if (modal.hasAttribute("open")) {
+      if (supportsNativeDialog) {
+        modal.close();
+      } else {
+        modal.removeAttribute("open");
+      }
+    }
 
     modal.setAttribute("aria-hidden", "true");
 
@@ -195,6 +208,10 @@
   modal.addEventListener("cancel", (event) => {
     event.preventDefault();
     close();
+  });
+
+  window.addEventListener("pagehide", () => {
+    document.body.classList.remove("navigation-modal-open");
   });
 
   search?.addEventListener("input", filterLinks);
