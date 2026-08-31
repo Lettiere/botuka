@@ -67,3 +67,18 @@ desktop.ini
 *.pre_deploy_*
 /media
 /static
+
+# Auditorias, backups e artefatos locais de operação
+/_auditoria_cbo/
+/_auditoria_rls/
+/backups/
+/botuka_platform/.codex_backups/
+/botuka_platform/tmp_*.py
+/botuka_platform/utputFormat
+/stage_*.txt
+/botuka_platform/docs/security/secret_audit_local.csv
+/botuka_platform/botuka_*_tables_*.txt
+
+# Inicializadores exclusivos do ambiente Windows local
+/start_botuka_platform.ps1
+/start_botuka_social.ps1

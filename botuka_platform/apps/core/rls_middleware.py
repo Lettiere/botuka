@@ -1,4 +1,6 @@
-from django.db import connection, transaction
+from django.db import connections, transaction
+
+from .db_routing import current_executor
 
 
 class RLSUserContextMiddleware:
@@ -16,18 +18,20 @@ class RLSUserContextMiddleware:
 
     def process_exception(self, request, exception):
         if (
-            connection.vendor == "postgresql"
-            and connection.in_atomic_block
+            connections[current_executor()].vendor == "postgresql"
+            and connections[current_executor()].in_atomic_block
         ):
-            transaction.set_rollback(True)
+            transaction.set_rollback(True, using=current_executor())
 
         return None
 
     def __call__(self, request):
+        alias = current_executor()
+        connection = connections[alias]
         if connection.vendor != "postgresql":
             return self.get_response(request)
 
-        with transaction.atomic():
+        with transaction.atomic(using=alias):
             user = getattr(request, "user", None)
 
             user_id = (
@@ -45,6 +49,6 @@ class RLSUserContextMiddleware:
             response = self.get_response(request)
 
             if getattr(response, "status_code", 200) >= 400:
-                transaction.set_rollback(True)
+                transaction.set_rollback(True, using=alias)
 
             return response

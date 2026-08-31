@@ -11,7 +11,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 from pathlib import Path
-from decouple import config, Csv
+from decouple import Config, Csv, RepositoryEnv, config
 from django.core.exceptions import ImproperlyConfigured
 
 
@@ -39,6 +39,10 @@ def cast_debug(value: object) -> bool:
 # =============================================================================
 
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+# Credenciais locais dos executores PostgreSQL ficam fora do projeto e do Git.
+RLS_ENV_FILE = BASE_DIR.parent / '.env'
+rls_config = Config(RepositoryEnv(str(RLS_ENV_FILE))) if RLS_ENV_FILE.exists() else config
 
 # =============================================================================
 # Segurança
@@ -185,6 +189,7 @@ AUTH_USER_MODEL = 'accounts.Usuario'
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
+    'apps.core.db_middleware.DatabaseExecutorMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -197,6 +202,8 @@ MIDDLEWARE = [
 # =============================================================================
 # Templates
 # =============================================================================
+
+DATABASE_ROUTERS = ['apps.core.db_routing.ExecutorDatabaseRouter']
 
 ROOT_URLCONF = 'config.urls'
 
@@ -242,15 +249,46 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # =============================================================================
 
 # Por padrão, utiliza SQLite. Preparado para PostgreSQL via python-decouple.
-DATABASES = {
-    'default': {
-        'ENGINE': config('DB_ENGINE', default='django.db.backends.sqlite3'),
-        'NAME': config('DB_NAME', default=BASE_DIR / 'db.sqlite3'),
-        'USER': config('DB_USER', default=''),
-        'PASSWORD': config('DB_PASSWORD', default=''),
-        'HOST': config('DB_HOST', default=''),
-        'PORT': config('DB_PORT', default=''),
+def required_rls_setting(name):
+    value = rls_config(name, default='').strip()
+    if not value:
+        raise ImproperlyConfigured(
+            f'{name} deve ser configurado explicitamente para a conexão PostgreSQL.'
+        )
+    return value
+
+
+POSTGRESQL_DATABASE = {
+    'ENGINE': 'django.db.backends.postgresql',
+    'NAME': rls_config('DB_NAME', default='botuka1'),
+    'HOST': required_rls_setting('DB_HOST'),
+    'PORT': rls_config('DB_PORT', default='5432'),
+}
+
+
+def postgres_executor(
+    user_variable, password_variable, *, default_user='', default_password='',
+):
+    return {
+        **POSTGRESQL_DATABASE,
+        'USER': rls_config(user_variable, default=default_user),
+        'PASSWORD': rls_config(password_variable, default=default_password),
     }
+
+
+DATABASES = {
+    'default': postgres_executor(
+        'BOTUKA_DB_USER', 'BOTUKA_DB_PASSWORD',
+        default_user=config('DB_USER', default=''),
+        default_password=config('DB_PASSWORD', default=''),
+    ),
+    'worker': postgres_executor('WORKER_DB_USER', 'WORKER_DB_PASSWORD'),
+    'internal': postgres_executor('INTERNAL_DB_USER', 'INTERNAL_DB_PASSWORD'),
+    'maintenance': postgres_executor(
+        'MAINTENANCE_DB_USER', 'MAINTENANCE_DB_PASSWORD',
+        default_user=config('DB_USER', default='sawaya'),
+        default_password=config('DB_PASSWORD', default=''),
+    ),
 }
 
 # =============================================================================
