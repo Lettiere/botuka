@@ -1692,3 +1692,20 @@ h1,h2,h3,h4,.brand,.font-title{font-family:var(--font-title)}
 @media(max-width:991px){.home-hero{padding:34px 0}.home-hero__grid{grid-template-columns:1fr;gap:24px}.home-hero__visual{min-height:260px;max-width:620px;width:100%;margin:auto}.home-hero__metrics{right:12px}}
 @media(max-width:600px){.home-hero{padding:25px 0 30px}.home-hero__grid{padding-inline:14px}.home-hero__content h1{margin-top:14px;font-size:clamp(33px,10.5vw,45px)}.home-hero__content>p{font-size:15px}.home-hero__search{grid-template-columns:auto 1fr;margin-top:19px}.home-hero__search button{grid-column:1/-1;width:100%}.home-hero__actions{display:grid}.home-hero__actions .btn-botuka{width:100%;justify-content:center}.home-hero__visual{min-height:235px;padding:14px 0 0}.home-hero__orb{inset:0 20px 15px}.home-hero__orb:after{font-size:140px}.home-hero__feature{padding:17px}.home-hero__feature strong{font-size:19px}.home-hero__metrics{display:none}}
 @media(prefers-reduced-motion:reduce){.home-hero *{scroll-behavior:auto}}
+
+/* ============================================================
+   SAFARI / IOS — GUARDA CRITICA DO MENU DESKTOP
+   ============================================================ */
+@media screen and (max-width: 992px) {
+  .botuka-desktop-modules {
+    display: none !important;
+    visibility: hidden !important;
+    width: 0 !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    overflow: hidden !important;
+    pointer-events: none !important;
+  }
+}
