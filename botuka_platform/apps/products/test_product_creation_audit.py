@@ -66,7 +66,7 @@ class ProductCreationAuditTests(TestCase):
         data.update(changes)
         return data
 
-    def test_route_auth_assets_and_responsive_wizard_contract(self):
+    def test_route_auth_and_quick_creation_contract(self):
         url = reverse('painel:produto_criar')
         response = self.client.get(url)
         self.assertEqual(response.status_code, 302)
@@ -74,40 +74,32 @@ class ProductCreationAuditTests(TestCase):
         self.client.force_login(self.user)
         response = self.client.get(url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'painel/css/produtos_form.css')
-        self.assertContains(response, 'painel/js/produtos_form.js')
-        self.assertContains(response, 'data-attributes-url')
-        self.assertContains(response, 'data-dynamic-attributes')
-        self.assertContains(response, 'defer')
-
-    def test_valid_creation_persists_attribute_and_sanitizes_atomically(self):
+        self.assertContains(response, 'Salvar rascunho')
+        self.assertContains(response, 'Continuar configuração')
+        self.assertNotContains(response, 'Características e atributos')
+        self.assertNotContains(response, 'Vídeos do YouTube')
+    def test_valid_quick_creation_uses_only_minimum_fields(self):
         self.client.force_login(self.user)
         response = self.client.post(reverse('painel:produto_criar'), self.payload())
         self.assertEqual(response.status_code, 302)
         product = Produto.objects.get(nome='Produto criado integralmente')
         self.assertEqual(product.preco, Decimal('19.90'))
-        self.assertNotIn('<script', product.descricao_completa)
-        self.assertEqual(
-            ValorAtributoProduto.objects.get(produto=product, atributo=self.attribute).valor,
-            '220V',
-        )
+        self.assertEqual(product.descricao_completa, product.descricao_curta)
+        self.assertFalse(ValorAtributoProduto.objects.filter(produto=product).exists())
         self.assertEqual(product.status, Produto.Status.RASCUNHO)
         self.assertTrue(product.codigo_interno)
-
-    def test_foreign_attribute_and_fake_image_leave_no_partial_product(self):
+    def test_invalid_taxonomy_and_fake_image_leave_no_partial_product(self):
         self.client.force_login(self.user)
-        data = self.payload(**{f'atributo_{self.foreign_attribute.pk}': 'ataque'})
+        data = self.payload(categoria_taxonomia='999999999')
         response = self.client.post(reverse('painel:produto_criar'), data)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'atributos incompatíveis')
         self.assertFalse(Produto.objects.filter(nome=data['nome']).exists())
 
         fake = SimpleUploadedFile('falsa.png', b'not an image', content_type='image/png')
-        data = self.payload(nome='Produto com imagem falsa', galeria_upload=fake)
+        data = self.payload(nome='Produto com imagem falsa', imagem_principal_upload=fake)
         response = self.client.post(reverse('painel:produto_criar'), data)
         self.assertEqual(response.status_code, 200)
         self.assertFalse(Produto.objects.filter(nome='Produto com imagem falsa').exists())
-
     def test_price_and_stock_coherence_are_backend_validated(self):
         form = ProdutoForm(data=self.payload(preco='-1'), user=self.user)
         self.assertFalse(form.is_valid())

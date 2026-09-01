@@ -31,20 +31,21 @@ class ProductFormWorkflowTests(TestCase):
         values.update(overrides)
         return Produto.objects.create(**values)
 
-    def test_form_has_exactly_seven_steps_and_dynamic_video_formset(self):
+    def test_creation_is_quick_and_complete_edit_keeps_seven_steps(self):
         self.client.force_login(self.user)
         response = self.client.get(reverse('painel:produto_criar'))
         self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Salvar rascunho')
+        self.assertNotContains(response, 'Características e atributos')
+        product = self.product()
+        response = self.client.get(reverse('painel:produto_editar', args=[product.uuid]))
         for title in (
             'Identificação', 'Taxonomia', 'Características e atributos',
             'Preços e estoque', 'Publicação e revisão',
             'Imagens e vídeos', 'Conferência do produto',
         ):
             self.assertContains(response, title)
-        self.assertContains(response, 'Conferência do produto')
         self.assertContains(response, 'id_videos-TOTAL_FORMS')
-        self.assertNotContains(response, 'name="videos_youtube"')
-
     def test_internal_code_is_unique_and_does_not_change_on_edit(self):
         first = self.product()
         first.codigo_interno = gerar_codigo_interno(first)

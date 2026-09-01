@@ -82,7 +82,9 @@ class ServicePanelRefactorTests(TestCase):
     def test_listagem_e_editor_compartilhado(self):
         self.client.force_login(self.owner)
         self.assertContains(self.client.get(reverse('painel:servicos_lista')), 'Manutenção residencial')
-        self.assertContains(self.client.get(reverse('painel:servico_criar')), 'data-richtext-editor')
+        cadastro = self.client.get(reverse('painel:servico_criar'))
+        self.assertNotContains(cadastro, 'data-richtext-editor')
+        self.assertContains(cadastro, 'Continuar configuração')
         self.assertContains(
             self.client.get(reverse('painel:servico_editar', args=[self.servico.uuid])),
             'data-richtext-editor',

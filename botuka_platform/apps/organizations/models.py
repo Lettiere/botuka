@@ -863,8 +863,22 @@ class Empresa(UUIDModel):
         return self._tem_capacidade_aprovada('VENDER_PRODUTOS')
 
     @property
+    def pode_criar_rascunho_produto(self) -> bool:
+        return self.ativo and self.atuacao in {
+            self.Atuacao.COMERCIO,
+            self.Atuacao.COMERCIO_E_SERVICOS,
+        }
+
+    @property
     def pode_publicar_servico(self) -> bool:
         return self._tem_capacidade_aprovada('PRESTAR_SERVICOS')
+
+    @property
+    def pode_criar_rascunho_servico(self) -> bool:
+        return self.ativo and self.atuacao in {
+            self.Atuacao.SERVICOS,
+            self.Atuacao.COMERCIO_E_SERVICOS,
+        }
 
     @property
     def pode_aceitar_agendamentos(self) -> bool:

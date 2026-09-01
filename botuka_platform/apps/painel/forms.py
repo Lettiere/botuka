@@ -736,6 +736,101 @@ class ServicoContatoForm(BaseServicoForm):
         fields = ['telefone_publico', 'whatsapp_publico', 'email_publico']
 
 
+class ServicoRapidoForm(BaseServicoForm):
+    class Meta:
+        model = Servico
+        fields = [
+            'prestador_tipo', 'empresa', 'titulo', 'setor', 'descricao_curta',
+            'preco_inicial', 'preco_sob_consulta', 'atendimento_presencial',
+            'atendimento_remoto',
+        ]
+        labels = {
+            'prestador_tipo': 'Tipo de prestador',
+            'empresa': 'Empresa responsável',
+            'titulo': 'Nome do serviço',
+            'setor': 'Categoria do serviço',
+            'descricao_curta': 'Descrição curta',
+            'preco_inicial': 'Preço inicial',
+            'preco_sob_consulta': 'Preço sob consulta',
+            'atendimento_presencial': 'Presencial',
+            'atendimento_remoto': 'Online',
+        }
+        widgets = {'descricao_curta': forms.Textarea(attrs={'rows': 3})}
+
+    def __init__(self, *args, usuario=None, empresa_contexto=None, **kwargs):
+        self.usuario = usuario
+        self.empresa_contexto = empresa_contexto
+        super().__init__(*args, **kwargs)
+        self.fields['setor'].queryset = Setor.objects.filter(ativo=True).order_by('nome')
+        self.fields['empresa'].queryset = empresas_gerenciaveis_para_usuario(usuario).filter(
+            ativo=True,
+            atuacao__in=(
+                Empresa.Atuacao.SERVICOS,
+                Empresa.Atuacao.COMERCIO_E_SERVICOS,
+            ),
+        ).order_by('nome_fantasia') if usuario is not None else Empresa.objects.none()
+        for nome in ('titulo', 'setor', 'descricao_curta'):
+            self.fields[nome].required = True
+        if empresa_contexto is not None:
+            self.fields['empresa'].queryset = self.fields['empresa'].queryset.filter(
+                pk=empresa_contexto.pk,
+            )
+            self.fields['empresa'].initial = empresa_contexto
+            self.fields['empresa'].disabled = True
+            self.fields['prestador_tipo'].initial = Servico.PrestadorTipo.EMPRESA
+            self.fields['prestador_tipo'].disabled = True
+
+    def clean(self):
+        cleaned = super().clean()
+        prestador_tipo = cleaned.get('prestador_tipo')
+        empresa = cleaned.get('empresa')
+        preco = cleaned.get('preco_inicial')
+        sob_consulta = cleaned.get('preco_sob_consulta')
+
+        if preco is not None and preco < 0:
+            self.add_error('preco_inicial', 'O preço não pode ser negativo.')
+        if sob_consulta and preco is not None:
+            self.add_error(
+                'preco_inicial',
+                'Remova o preço informado ou desmarque “Preço sob consulta”.',
+            )
+        if not sob_consulta and preco is None:
+            self.add_error(
+                'preco_inicial',
+                'Informe um preço inicial ou marque “Preço sob consulta”.',
+            )
+        if not cleaned.get('atendimento_presencial') and not cleaned.get('atendimento_remoto'):
+            raise forms.ValidationError('Selecione atendimento presencial, online ou ambos.')
+
+        if prestador_tipo == Servico.PrestadorTipo.PESSOA_FISICA:
+            if empresa is not None:
+                self.add_error('empresa', 'O prestador autônomo não pode usar uma empresa.')
+            cleaned['empresa'] = None
+        elif prestador_tipo == Servico.PrestadorTipo.EMPRESA:
+            if empresa is None:
+                self.add_error('empresa', 'Informe a empresa prestadora.')
+            elif not empresa.pode_criar_rascunho_servico:
+                self.add_error(
+                    'empresa',
+                    'A atuação desta empresa não permite cadastrar serviços.',
+                )
+        if self.usuario is not None and prestador_tipo:
+            from apps.organizations.plans import validar_contexto_servico
+            try:
+                validar_contexto_servico(self.usuario, prestador_tipo, cleaned.get('empresa'))
+            except (ValidationError, PermissionDenied) as exc:
+                self.add_error('empresa', str(exc))
+        return cleaned
+
+    def save(self, commit=True):
+        servico = super().save(commit=False)
+        servico.usuario_responsavel = self.usuario
+        if servico.prestador_tipo == Servico.PrestadorTipo.PESSOA_FISICA:
+            servico.empresa = None
+        if commit:
+            servico.save()
+        return servico
+
 class ServicoForm(BaseServicoForm):
     def __init__(
         self,
@@ -818,9 +913,23 @@ class ServicoForm(BaseServicoForm):
             )
 
         if usuario is not None:
+            empresa_atual_id = (
+                self.instance.empresa_id
+                if self.instance and self.instance.pk
+                else None
+            )
+            filtro_empresas = Q(
+                ativo=True,
+                atuacao__in=(
+                    Empresa.Atuacao.SERVICOS,
+                    Empresa.Atuacao.COMERCIO_E_SERVICOS,
+                ),
+            )
+            if empresa_atual_id:
+                filtro_empresas |= Q(pk=empresa_atual_id)
             empresas_permitidas = (
                 empresas_gerenciaveis_para_usuario(usuario)
-                .filter(ativo=True)
+                .filter(filtro_empresas)
                 .order_by('nome_fantasia')
             )
 
@@ -863,6 +972,20 @@ class ServicoForm(BaseServicoForm):
             if empresa is not None:
                 self.add_error('empresa', 'O prestador autônomo é sempre o usuário autenticado; não envie uma empresa.')
             cleaned['empresa'] = None
+        elif (
+            prestador_tipo == Servico.PrestadorTipo.EMPRESA
+            and empresa is not None
+            and not empresa.pode_criar_rascunho_servico
+            and not (
+                self.instance
+                and self.instance.pk
+                and self.instance.empresa_id == empresa.pk
+            )
+        ):
+            self.add_error(
+                'empresa',
+                'A atuação desta empresa não permite cadastrar serviços.',
+            )
 
         if area and setor and area.setor_id != setor.pk:
             self.add_error('area', 'A área profissional não pertence ao setor selecionado.')

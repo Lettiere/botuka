@@ -8,6 +8,7 @@ ENV/
 
 # Projetos e backups auxiliares fora deste repositório
 /.codex-backups/
+/.codex_backups/
 /botuka_finance/
 /botuka_news/
 /botuka_vendas/

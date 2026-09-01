@@ -1,0 +1,41 @@
+{% extends "painel/base.html" %}
+{% block title %}{{ titulo }} | Painel BOTUKA{% endblock %}
+{% block painel_content %}
+<div class="container py-4" style="max-width: 860px;">
+  <header class="mb-4">
+    <a href="{% if fixed_company %}{% url 'painel:empresa_produtos' fixed_company.uuid %}{% else %}{% url 'painel:produtos_lista' %}{% endif %}" class="text-decoration-none">← Voltar</a>
+    <p class="text-uppercase text-muted small mb-1 mt-3">Produtos</p>
+    <h1 class="h3 mb-2">Cadastrar produto</h1>
+    <p class="text-muted mb-0">Comece com as informações essenciais. As configurações completas ficam disponíveis depois.</p>
+  </header>
+
+  <form method="post" enctype="multipart/form-data" novalidate>
+    {% csrf_token %}
+    {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+    {% if fixed_company %}
+      <div class="alert alert-light border"><strong>Empresa:</strong> {{ fixed_company.nome_fantasia|default:fixed_company.razao_social }}</div>
+      {{ form.titular_tipo.as_hidden }}
+      {{ form.empresa_proprietaria.as_hidden }}
+    {% else %}
+      <div class="mb-3"><label for="{{ form.titular_tipo.id_for_label }}" class="form-label">{{ form.titular_tipo.label }}</label>{{ form.titular_tipo }}{{ form.titular_tipo.errors }}</div>
+      <div class="mb-3"><label for="{{ form.empresa_proprietaria.id_for_label }}" class="form-label">{{ form.empresa_proprietaria.label }}</label>{{ form.empresa_proprietaria }}{{ form.empresa_proprietaria.errors }}</div>
+    {% endif %}
+
+    <div class="mb-3"><label for="{{ form.nome.id_for_label }}" class="form-label">{{ form.nome.label }}</label>{{ form.nome }}{{ form.nome.errors }}</div>
+    <div class="mb-3"><label for="{{ form.categoria_taxonomia.id_for_label }}" class="form-label">{{ form.categoria_taxonomia.label }}</label>{{ form.categoria_taxonomia }}{{ form.categoria_taxonomia.errors }}</div>
+    <div class="mb-3"><label for="{{ form.descricao_curta.id_for_label }}" class="form-label">{{ form.descricao_curta.label }}</label>{{ form.descricao_curta }}{{ form.descricao_curta.errors }}</div>
+    <div class="row g-3 mb-3">
+      <div class="col-md-6"><label for="{{ form.preco.id_for_label }}" class="form-label">{{ form.preco.label }}</label>{{ form.preco }}{{ form.preco.errors }}</div>
+      <div class="col-md-6 d-flex align-items-end"><div class="form-check mb-2">{{ form.preco_sob_consulta }}<label for="{{ form.preco_sob_consulta.id_for_label }}" class="form-check-label">{{ form.preco_sob_consulta.label }}</label>{{ form.preco_sob_consulta.errors }}</div></div>
+    </div>
+    <div class="mb-3"><label for="{{ form.imagem_principal_upload.id_for_label }}" class="form-label">{{ form.imagem_principal_upload.label }}</label>{{ form.imagem_principal_upload }}{% if form.imagem_principal_upload.help_text %}<div class="form-text">{{ form.imagem_principal_upload.help_text }}</div>{% endif %}{{ form.imagem_principal_upload.errors }}</div>
+    <div class="mb-4"><label for="{{ form.estoque_informativo.id_for_label }}" class="form-label">{{ form.estoque_informativo.label }}</label>{{ form.estoque_informativo }}{{ form.estoque_informativo.errors }}</div>
+
+    <div class="d-flex flex-wrap gap-2">
+      <button type="submit" name="acao" value="rascunho" class="btn btn-outline-primary">Salvar rascunho</button>
+      <button type="submit" name="acao" value="continuar" class="btn btn-primary">Continuar configuração</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

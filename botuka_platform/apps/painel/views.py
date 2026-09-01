@@ -45,6 +45,7 @@ from apps.painel.forms import (
     ServicoAreaForm,
     ServicoCaracteristicaForm,
     ServicoForm,
+    ServicoRapidoForm,
     ServicoImagemForm,
     ServicoLinkForm,
 )
@@ -972,130 +973,65 @@ def servico_criar(request: HttpRequest) -> HttpResponse:
     if empresa_id:
         if not empresa_id.isdigit():
             raise PermissionDenied
-
         empresa_contexto = get_object_or_404(
-            empresas_disponiveis_para_usuario(request.user),
-            pk=empresa_id,
+            empresas_disponiveis_para_usuario(request.user), pk=empresa_id,
         )
-
-        if not usuario_pode_gerenciar_empresa(
-            request.user,
-            empresa_contexto,
+        if not usuario_pode_gerenciar_empresa(request.user, empresa_contexto):
+            raise PermissionDenied
+        if not empresa_contexto.pode_criar_rascunho_servico:
+            messages.warning(
+                request,
+                'A atuação desta empresa não permite cadastrar serviços.',
+            )
+            return redirect('painel:empresa_detalhe', uuid=empresa_contexto.uuid)
+        empresa_post = request.POST.get('empresa', '').strip()
+        if (
+            request.method == 'POST'
+            and empresa_post
+            and empresa_post != str(empresa_contexto.pk)
         ):
             raise PermissionDenied
 
-        if not empresa_contexto.pode_publicar_servico:
-            messages.warning(
-                request,
-                'Esta empresa não possui autorização para publicar serviços.',
-            )
-            return redirect(
-                'painel:empresa_detalhe',
-                uuid=empresa_contexto.uuid,
-            )
-
-    form = ServicoForm(
+    form = ServicoRapidoForm(
         request.POST or None,
         usuario=request.user,
         empresa_contexto=empresa_contexto,
     )
-    atributos = atributo_formset('servico', instance=form.instance, data=request.POST or None)
-    area_form = ServicoAreaForm(
-        request.POST or None,
-        prefix='area',
-        empresa_contexto=empresa_contexto,
-    )
-    links_forms = _formularios_links_post(request) if request.method == 'POST' else []
     if request.method == 'POST':
-        print('===== DEBUG SERVICO POST =====')
-        print('acao =', request.POST.get('acao'))
-        print('empresa GET =', request.GET.get('empresa'))
-        print('POST keys =', list(request.POST.keys()))
-
+        acao = request.POST.get('acao', 'rascunho')
+        if acao not in {'rascunho', 'continuar'}:
+            form.add_error(None, 'Ação inválida para o cadastro inicial.')
         arquivos, erros_upload = _validar_uploads_servico(request)
-        area_informada = bool(request.POST.get('area-tipo_area'))
-        links_validos = all(link_form.is_valid() for link_form in links_forms)
-        form_valido = form.is_valid()
-        atributos_validos = atributos.is_valid()
-        area_valida = area_form.is_valid() if area_informada else True
-
-        print('form_valido =', form_valido)
-        print('form_errors =', form.errors.as_json())
-        print('atributos_validos =', atributos_validos)
-        print('atributos_errors =', atributos.errors)
-        print('area_informada =', area_informada)
-        print('area_valida =', area_valida)
-        print('area_errors =', area_form.errors.as_json())
-        print('links_validos =', links_validos)
-        print('erros_upload =', erros_upload)
-
-        valido = (
-            form_valido
-            and atributos_validos
-            and links_validos
-            and not erros_upload
-            and area_valida
-        )
-
-
-        if valido:
+        for erro in erros_upload:
+            form.add_error(None, erro)
+        if form.is_valid() and acao in {'rascunho', 'continuar'} and not erros_upload:
             servico = form.save(commit=False)
-            servico.usuario_responsavel = request.user
-
-            if empresa_contexto is not None:
-                servico.prestador_tipo = Servico.PrestadorTipo.EMPRESA
-                servico.empresa = empresa_contexto
-            try:
-                validar_contexto_servico(
-                    request.user, servico.prestador_tipo, servico.empresa,
-                )
-            except (ValidationError, PermissionDenied) as exc:
-                form.add_error('empresa', str(exc))
-                valido = False
-            acao = request.POST.get('acao', 'rascunho')
-            if acao not in {'rascunho', 'publicar'}:
-                form.add_error(None, 'Ação inválida.')
-                valido = False
-            servico.status = Servico.Status.PENDENTE if acao == 'publicar' else Servico.Status.RASCUNHO
-        if valido:
+            servico.status = Servico.Status.RASCUNHO
             try:
                 with transaction.atomic():
                     bloquear_e_validar_criacao_servico(
                         request.user, servico.prestador_tipo, servico.empresa,
                     )
                     servico.save()
-                    atributos.instance = servico
-                    atributos.save()
-                    if area_informada:
-                        area = area_form.save(commit=False)
-                        area.servico = servico
-                        area.save()
                     _salvar_imagens_servico(request, servico)
-                    for link_form in links_forms:
-                        if not link_form.cleaned_data.get('url'):
-                            continue
-                        link = link_form.save(commit=False)
-                        link.servico = servico
-                        link.save()
-                messages.success(request, 'Serviço enviado para moderação.' if acao == 'publicar' else 'Serviço salvo como rascunho.')
+                if acao == 'continuar':
+                    messages.success(
+                        request,
+                        'Rascunho criado. Continue a configuração completa do serviço.',
+                    )
+                    return redirect('painel:servico_editar', uuid=servico.uuid)
+                messages.success(request, 'Serviço salvo como rascunho.')
                 return redirect('painel:servico_detalhe', uuid=servico.uuid)
             except (ValidationError, LimitePlanoExcedido) as exc:
                 form.add_error(None, exc)
-        for erro in erros_upload:
-            form.add_error(None, erro)
         messages.error(request, 'Revise os campos destacados.')
+
     return render(request, 'painel/servicos/novo.html', {
-        'titulo': 'Novo cadastro de serviço',
+        'titulo': 'Cadastrar serviço',
         'form': form,
-        'area_form': area_form,
-        'links_forms': links_forms,
-        'atributos': atributos,
-        'atributo_contexto': 'servico',
         'profissional_responsavel': request.user,
         'empresa_contexto': empresa_contexto,
     })
-
-
 def _formularios_links_post(request):
     indices = sorted({int(match.group(1)) for chave in request.POST for match in [re.match(r'links-(\d+)-url$', chave)] if match})
     return [ServicoLinkForm(request.POST, prefix=f'links-{indice}') for indice in indices if request.POST.get(f'links-{indice}-url', '').strip()]
@@ -1259,7 +1195,16 @@ def servico_alterar_status(request: HttpRequest, uuid) -> HttpResponse:
     novo_status = request.POST.get('status')
     if novo_status not in Servico.Status.values:
         messages.error(request, 'Status inválido.')
-    elif novo_status == Servico.Status.PUBLICADO and not usuario_pode_publicar_servico(request.user, servico):
+    elif (
+        novo_status == Servico.Status.PUBLICADO
+        and (
+            not usuario_pode_publicar_servico(request.user, servico)
+            or (
+                servico.empresa_id
+                and not servico.empresa.pode_publicar_servico
+            )
+        )
+    ):
         raise PermissionDenied
     else:
         servico.status = novo_status

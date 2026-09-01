@@ -1,3 +1,4 @@
+from decimal import Decimal
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
 from django.db import IntegrityError, transaction
@@ -28,6 +29,7 @@ class LinksQrCodeTests(TestCase):
             estado=estado,
             status=Empresa.Status.ATIVA,
             perfil_publico=True,
+            atuacao=Empresa.Atuacao.SERVICOS,
         )
         capacidade, _ = Capacidade.objects.get_or_create(
             codigo='PRESTAR_SERVICOS', defaults={'nome': 'Prestar serviços'},
@@ -98,11 +100,22 @@ class LinksQrCodeTests(TestCase):
 
     def test_cadastro_persistente_pj(self):
         self.client.force_login(self.usuario)
-        resposta = self.client.post(reverse('painel:servico_criar'), self.dados_cadastro(prestador_tipo=Servico.PrestadorTipo.EMPRESA, empresa=self.empresa.pk, acao='publicar'))
+        resposta = self.client.post(
+            reverse('painel:servico_criar'),
+            self.dados_cadastro(
+                prestador_tipo=Servico.PrestadorTipo.EMPRESA,
+                empresa=self.empresa.pk,
+                acao='continuar',
+            ),
+        )
         self.assertEqual(resposta.status_code, 302)
         criado = Servico.objects.get(titulo='Novo serviço persistente')
         self.assertEqual(criado.empresa, self.empresa)
-        self.assertEqual(criado.status, Servico.Status.PENDENTE)
+        self.assertEqual(criado.status, Servico.Status.RASCUNHO)
+        self.assertEqual(
+            resposta.url,
+            reverse('painel:servico_editar', kwargs={'uuid': criado.uuid}),
+        )
 
     def test_empresa_de_terceiro_bloqueada_no_cadastro(self):
         self.client.force_login(self.terceiro)
@@ -118,6 +131,7 @@ class LinksQrCodeTests(TestCase):
             estado=self.empresa.estado,
             status=Empresa.Status.ATIVA,
             perfil_publico=True,
+            atuacao=Empresa.Atuacao.SERVICOS,
         )
         self.client.force_login(self.usuario)
         resposta = self.client.get(reverse('painel:servico_criar'))
@@ -144,8 +158,13 @@ class LinksQrCodeTests(TestCase):
         outra_area = AreaProfissional.objects.create(setor=outro_setor, nome='Clínica')
         self.client.force_login(self.usuario)
         resposta = self.client.post(
-            reverse('painel:servico_criar'),
-            self.dados_cadastro(area=outra_area.pk),
+            reverse('painel:servico_editar', kwargs={'uuid': self.servico.uuid}),
+            self.dados_cadastro(
+                titulo=self.servico.titulo,
+                setor=self.servico.setor_id,
+                area=outra_area.pk,
+                acao='salvar',
+            ),
         )
         self.assertEqual(resposta.status_code, 200)
         self.assertContains(resposta, 'A área profissional não pertence ao setor selecionado.')
@@ -201,39 +220,25 @@ class LinksQrCodeTests(TestCase):
     def test_rascunho_incompleto_pode_ser_salvo(self):
         self.client.force_login(self.usuario)
         dados = self.dados_cadastro(
-            setor='',
             area='',
             profissao='',
             tipo_servico='',
             forma_cobranca='',
-            titulo='',
+            descricao_completa='',
+            experiencia='',
+            preco_inicial='',
+            preco_sob_consulta='on',
             acao='rascunho',
         )
-        dados.pop('atendimento_presencial', None)
-
-        resposta = self.client.post(
-            reverse('painel:servico_criar'),
-            dados,
-        )
-
+        resposta = self.client.post(reverse('painel:servico_criar'), dados)
         self.assertEqual(resposta.status_code, 302)
-
-        criado = (
-            Servico.objects
-            .filter(
-                usuario_responsavel=self.usuario,
-                status=Servico.Status.RASCUNHO,
-                titulo='',
-            )
-            .order_by('-id')
-            .first()
-        )
-
-        self.assertIsNotNone(criado)
-        self.assertIsNone(criado.setor_id)
+        criado = Servico.objects.get(titulo='Novo serviço persistente')
+        self.assertEqual(criado.status, Servico.Status.RASCUNHO)
+        self.assertIsNotNone(criado.setor_id)
         self.assertIsNone(criado.area_id)
         self.assertIsNone(criado.profissao_id)
         self.assertIsNone(criado.forma_cobranca_id)
+        self.assertTrue(criado.preco_sob_consulta)
         self.assertTrue(criado.slug)
 
     def test_criacao_link_valido_servico(self):
@@ -365,3 +370,314 @@ class LinksQrCodeTests(TestCase):
             ServicoLink.objects.create(servico=self.servico, tipo_link=TipoLink.YOUTUBE, url=f'https://youtu.be/{identificador}')
         with self.assertRaises(ValidationError):
             ServicoLink.objects.create(servico=self.servico, tipo_link=TipoLink.YOUTUBE, url='https://youtu.be/fffffffffff')
+
+    def criar_empresa_sem_capacidade(self, atuacao, *, proprietario=None, nome='Empresa sem capacidade'):
+        modalidade = (
+            Empresa.ModalidadeComercial.VAREJO
+            if atuacao in {
+                Empresa.Atuacao.COMERCIO,
+                Empresa.Atuacao.COMERCIO_E_SERVICOS,
+            }
+            else ''
+        )
+        return Empresa.objects.create(
+            usuario_proprietario=proprietario or self.usuario,
+            nome_fantasia=nome,
+            cidade=self.empresa.cidade,
+            estado=self.empresa.estado,
+            status=Empresa.Status.ATIVA,
+            atuacao=atuacao,
+            modalidade_comercial=modalidade,
+        )
+
+    def test_servicos_sem_capacidade_cria_rascunho_contextual_e_generico(self):
+        empresa = self.criar_empresa_sem_capacidade(
+            Empresa.Atuacao.SERVICOS, nome='Serviços sem capacidade',
+        )
+        self.client.force_login(self.usuario)
+
+        contextual = self.client.post(
+            f"{reverse('painel:servico_criar')}?empresa={empresa.pk}",
+            self.dados_cadastro(
+                titulo='Rascunho contextual',
+                prestador_tipo=Servico.PrestadorTipo.EMPRESA,
+                empresa=empresa.pk,
+            ),
+        )
+        generico = self.client.post(
+            reverse('painel:servico_criar'),
+            self.dados_cadastro(
+                titulo='Rascunho genérico',
+                prestador_tipo=Servico.PrestadorTipo.EMPRESA,
+                empresa=empresa.pk,
+            ),
+        )
+
+        self.assertEqual(contextual.status_code, 302)
+        self.assertEqual(generico.status_code, 302)
+        self.assertEqual(
+            set(Servico.objects.filter(empresa=empresa).values_list('status', flat=True)),
+            {Servico.Status.RASCUNHO},
+        )
+
+    def test_comercio_e_servicos_sem_capacidade_cria_rascunho(self):
+        empresa = self.criar_empresa_sem_capacidade(
+            Empresa.Atuacao.COMERCIO_E_SERVICOS,
+            nome='Comércio e serviços sem capacidade',
+        )
+        self.client.force_login(self.usuario)
+        response = self.client.post(
+            reverse('painel:servico_criar'),
+            self.dados_cadastro(
+                titulo='Rascunho comércio e serviços',
+                prestador_tipo=Servico.PrestadorTipo.EMPRESA,
+                empresa=empresa.pk,
+            ),
+        )
+        self.assertEqual(response.status_code, 302)
+        self.assertTrue(Servico.objects.filter(
+            empresa=empresa, status=Servico.Status.RASCUNHO,
+        ).exists())
+
+    def test_comercio_nao_cria_servico_contextual_nem_generico(self):
+        empresa = self.criar_empresa_sem_capacidade(
+            Empresa.Atuacao.COMERCIO, nome='Comércio incompatível',
+        )
+        self.client.force_login(self.usuario)
+        contextual = self.client.get(
+            reverse('painel:servico_criar'), {'empresa': empresa.pk},
+        )
+        generico = self.client.post(
+            reverse('painel:servico_criar'),
+            self.dados_cadastro(
+                titulo='Serviço comercial indevido',
+                prestador_tipo=Servico.PrestadorTipo.EMPRESA,
+                empresa=empresa.pk,
+            ),
+        )
+        self.assertEqual(contextual.status_code, 302)
+        self.assertEqual(generico.status_code, 200)
+        self.assertFalse(Servico.objects.filter(
+            titulo='Serviço comercial indevido',
+        ).exists())
+
+    def test_capacidade_pendente_permite_rascunho_mas_bloqueia_publicacao(self):
+        vinculo = self.empresa.capacidades_empresa.get(
+            capacidade__codigo='PRESTAR_SERVICOS',
+        )
+        vinculo.status = EmpresaCapacidade.Status.PENDENTE
+        vinculo.save(update_fields=['status', 'atualizado_em'])
+        self.client.force_login(self.usuario)
+        rascunho = self.client.post(
+            reverse('painel:servico_criar'),
+            self.dados_cadastro(
+                titulo='Rascunho com capacidade pendente',
+                prestador_tipo=Servico.PrestadorTipo.EMPRESA,
+                empresa=self.empresa.pk,
+            ),
+        )
+        criado = Servico.objects.get(titulo='Rascunho com capacidade pendente')
+        publicacao = self.client.post(
+            reverse('painel:servico_alterar_status', kwargs={'uuid': criado.uuid}),
+            {'status': Servico.Status.PUBLICADO},
+        )
+        self.assertEqual(rascunho.status_code, 302)
+        self.assertEqual(publicacao.status_code, 403)
+        criado.refresh_from_db()
+        self.assertEqual(criado.status, Servico.Status.RASCUNHO)
+
+    def test_post_contextual_adulterando_empresa_e_bloqueado(self):
+        outra = self.criar_empresa_sem_capacidade(
+            Empresa.Atuacao.SERVICOS,
+            proprietario=self.terceiro,
+            nome='Empresa adulterada',
+        )
+        self.client.force_login(self.usuario)
+        response = self.client.post(
+            f"{reverse('painel:servico_criar')}?empresa={self.empresa.pk}",
+            self.dados_cadastro(
+                titulo='Serviço adulterado',
+                prestador_tipo=Servico.PrestadorTipo.EMPRESA,
+                empresa=outra.pk,
+            ),
+        )
+        self.assertEqual(response.status_code, 403)
+        self.assertFalse(Servico.objects.filter(titulo='Serviço adulterado').exists())
+
+    def test_empresa_sem_atuacao_nao_cria_servico_empresarial(self):
+        empresa = self.criar_empresa_sem_capacidade(None, nome='Empresa sem atuação')
+        self.client.force_login(self.usuario)
+        response = self.client.post(
+            reverse('painel:servico_criar'),
+            self.dados_cadastro(
+                titulo='Serviço sem atuação',
+                prestador_tipo=Servico.PrestadorTipo.EMPRESA,
+                empresa=empresa.pk,
+            ),
+        )
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Servico.objects.filter(titulo='Serviço sem atuação').exists())
+    def test_servico_legado_de_empresa_incompativel_continua_editavel(self):
+        empresa_legada = self.criar_empresa_sem_capacidade(
+            Empresa.Atuacao.COMERCIO, nome='Empresa comercial legada',
+        )
+        servico_legado = Servico.objects.create(
+            usuario_responsavel=self.usuario,
+            prestador_tipo=Servico.PrestadorTipo.EMPRESA,
+            empresa=empresa_legada,
+            setor=self.servico.setor,
+            area=self.servico.area,
+            profissao=self.servico.profissao,
+            tipo_servico=self.servico.tipo_servico,
+            forma_cobranca=self.servico.forma_cobranca,
+            titulo='Serviço empresarial legado',
+            descricao_curta='Descrição legada',
+            descricao_completa='Descrição completa legada',
+            preco_inicial=Decimal('100.00'),
+            atendimento_presencial=True,
+            status=Servico.Status.RASCUNHO,
+        )
+        self.client.force_login(self.usuario)
+        url = reverse('painel:servico_editar', kwargs={'uuid': servico_legado.uuid})
+        edicao = self.client.get(url)
+        self.assertEqual(edicao.status_code, 200)
+        self.assertContains(edicao, empresa_legada.nome_fantasia)
+
+        response = self.client.post(
+            url,
+            self.dados_cadastro(
+                titulo='Serviço empresarial legado editado',
+                prestador_tipo=Servico.PrestadorTipo.EMPRESA,
+                empresa=empresa_legada.pk,
+                acao='salvar',
+            ),
+        )
+        self.assertEqual(response.status_code, 302)
+        servico_legado.refresh_from_db()
+        self.assertEqual(servico_legado.titulo, 'Serviço empresarial legado editado')
+        self.assertEqual(servico_legado.empresa, empresa_legada)
+    def test_cadastro_rapido_exibe_somente_campos_essenciais(self):
+        self.client.force_login(self.usuario)
+        response = self.client.get(reverse('painel:servico_criar'))
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(
+            list(response.context['form'].fields),
+            [
+                'prestador_tipo', 'empresa', 'titulo', 'setor',
+                'descricao_curta', 'preco_inicial', 'preco_sob_consulta',
+                'atendimento_presencial', 'atendimento_remoto',
+            ],
+        )
+        self.assertNotContains(response, 'Descrição completa')
+        self.assertNotContains(response, 'Experiência e qualificações')
+        self.assertContains(response, 'Continuar configuração')
+
+    def test_preco_informado_e_sob_consulta_funcionam_separadamente(self):
+        self.client.force_login(self.usuario)
+        informado = self.client.post(
+            reverse('painel:servico_criar'),
+            self.dados_cadastro(titulo='Serviço com preço', preco_inicial='75.50'),
+        )
+        consulta = self.client.post(
+            reverse('painel:servico_criar'),
+            self.dados_cadastro(
+                titulo='Serviço sob consulta', preco_inicial='',
+                preco_sob_consulta='on',
+            ),
+        )
+        self.assertEqual(informado.status_code, 302)
+        self.assertEqual(consulta.status_code, 302)
+        self.assertEqual(
+            Servico.objects.get(titulo='Serviço com preço').preco_inicial,
+            Decimal('75.50'),
+        )
+        self.assertTrue(
+            Servico.objects.get(titulo='Serviço sob consulta').preco_sob_consulta,
+        )
+
+    def test_preco_negativo_e_preco_contraditorio_sao_rejeitados(self):
+        self.client.force_login(self.usuario)
+        negativo = self.client.post(
+            reverse('painel:servico_criar'),
+            self.dados_cadastro(titulo='Preço negativo', preco_inicial='-1'),
+        )
+        contraditorio = self.client.post(
+            reverse('painel:servico_criar'),
+            self.dados_cadastro(
+                titulo='Preço contraditório', preco_inicial='10',
+                preco_sob_consulta='on',
+            ),
+        )
+        self.assertEqual(negativo.status_code, 200)
+        self.assertEqual(contraditorio.status_code, 200)
+        self.assertFalse(Servico.objects.filter(
+            titulo__in=('Preço negativo', 'Preço contraditório'),
+        ).exists())
+
+    def test_modalidades_presencial_remoto_e_ambos_funcionam(self):
+        self.client.force_login(self.usuario)
+        casos = (
+            ('Presencial rápido', {'atendimento_presencial': 'on'}),
+            ('Remoto rápido', {'atendimento_remoto': 'on'}),
+            ('Atendimento híbrido', {
+                'atendimento_presencial': 'on', 'atendimento_remoto': 'on',
+            }),
+        )
+        for titulo, modalidade in casos:
+            dados = self.dados_cadastro(titulo=titulo)
+            dados.pop('atendimento_presencial', None)
+            dados.update(modalidade)
+            with self.subTest(titulo=titulo):
+                self.assertEqual(
+                    self.client.post(reverse('painel:servico_criar'), dados).status_code,
+                    302,
+                )
+                criado = Servico.objects.get(titulo=titulo)
+                self.assertEqual(
+                    (criado.atendimento_presencial, criado.atendimento_remoto),
+                    (
+                        'atendimento_presencial' in modalidade,
+                        'atendimento_remoto' in modalidade,
+                    ),
+                )
+                criado.delete()
+    def test_sem_modalidade_e_rejeitado_no_cadastro_rapido(self):
+        self.client.force_login(self.usuario)
+        dados = self.dados_cadastro(titulo='Sem atendimento')
+        dados.pop('atendimento_presencial', None)
+        response = self.client.post(reverse('painel:servico_criar'), dados)
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Selecione atendimento presencial, online ou ambos.')
+        self.assertFalse(Servico.objects.filter(titulo='Sem atendimento').exists())
+
+    def test_continuar_configuracao_mantem_rascunho_e_abre_edicao_completa(self):
+        self.client.force_login(self.usuario)
+        response = self.client.post(
+            reverse('painel:servico_criar'),
+            self.dados_cadastro(titulo='Continuar serviço', acao='continuar'),
+        )
+        criado = Servico.objects.get(titulo='Continuar serviço')
+        self.assertEqual(criado.status, Servico.Status.RASCUNHO)
+        self.assertEqual(
+            response.url,
+            reverse('painel:servico_editar', kwargs={'uuid': criado.uuid}),
+        )
+        edicao = self.client.get(response.url)
+        self.assertContains(edicao, 'Descrição completa')
+        self.assertContains(edicao, 'Experiência e qualificações')
+
+    def test_rascunho_minimo_nao_e_publico_nem_agendavel(self):
+        from apps.agenda.public_services import servicos_agendaveis
+        self.client.force_login(self.usuario)
+        self.client.post(
+            reverse('painel:servico_criar'),
+            self.dados_cadastro(
+                titulo='Rascunho mínimo privado', preco_inicial='',
+                preco_sob_consulta='on',
+                prestador_tipo=Servico.PrestadorTipo.EMPRESA,
+                empresa=self.empresa.pk,
+            ),
+        )
+        criado = Servico.objects.get(titulo='Rascunho mínimo privado')
+        self.assertEqual(criado.status, Servico.Status.RASCUNHO)
+        self.assertFalse(servicos_agendaveis(self.empresa).filter(pk=criado.pk).exists())

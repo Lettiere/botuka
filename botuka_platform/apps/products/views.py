@@ -17,7 +17,7 @@ from apps.organizations.permissions import empresas_gerenciaveis_para_usuario
 from apps.organizations.models import Empresa
 from apps.core.seo.page_builders import product_seo
 
-from .forms import ProdutoForm, ProdutoImagemForm, ProdutoVideoFormSet
+from .forms import ProdutoForm, ProdutoImagemForm, ProdutoRapidoForm, ProdutoVideoFormSet
 from .models import AuditoriaProduto, Conversa, DenunciaNegociacao, Produto, ProdutoImagem
 from .permissions import pode_editar, produtos_do_usuario
 from .public_catalog import produtos_publicos
@@ -104,46 +104,42 @@ def painel_criar(request, empresa_uuid=None):
     fixed_company = None
     if empresa_uuid:
         fixed_company = get_object_or_404(
-            empresas_gerenciaveis_para_usuario(request.user).filter(ativo=True, status=Empresa.Status.ATIVA),
+            empresas_gerenciaveis_para_usuario(request.user).filter(
+                ativo=True, status=Empresa.Status.ATIVA,
+            ),
             uuid=empresa_uuid,
         )
-    form = ProdutoForm(
+        if not fixed_company.pode_criar_rascunho_produto:
+            raise PermissionDenied('A atuação da empresa não permite cadastrar produtos.')
+    form = ProdutoRapidoForm(
         request.POST or None, request.FILES or None, user=request.user,
         fixed_company=fixed_company,
     )
-    video_formset = ProdutoVideoFormSet(request.POST or None, instance=form.instance, prefix='videos')
-    form_valid = form.is_valid() if request.method == 'POST' else False
-    if form_valid:
-        form_valid = form.validate_image_limit()
-    if request.method == 'POST' and form_valid and video_formset.is_valid():
+    if request.method == 'POST' and form.is_valid():
         company = form.cleaned_data.get('empresa_proprietaria')
         needed = 'products.criar_empresa' if company else 'products.criar_proprio'
         if not _allowed(request.user, needed):
             raise PermissionDenied
         validar_nova_criacao(request.user, form.cleaned_data['titular_tipo'], company)
         with transaction.atomic():
-            item = form.save(commit=False)
+            item = form.prepare_instance()
             item.criador_registro = item.proprietario = item.responsavel = request.user
             item.save()
             item.codigo_interno = gerar_codigo_interno(item)
             item.save(update_fields=['codigo_interno', 'atualizado_em'])
-            form.save_attributes(item)
-            form.save_media(item)
-            for image in item.imagens.filter(uuid__in=request.POST.getlist('remove_images')):
-                image.delete()
-            video_formset.instance = item
-            video_formset.save()
+            form.save_main_image(item)
             AuditoriaProduto.objects.create(
                 produto=item, usuario=request.user,
                 acao='CRIADO_EMPRESA' if company else 'CRIADO_PESSOAL',
                 dados={'empresa_id': company.pk if company else None, 'origem_empresa': bool(fixed_company)},
             )
         messages.success(request, 'Produto criado como rascunho.')
+        if request.POST.get('acao') == 'continuar':
+            return redirect('painel:produto_editar', uuid=item.uuid)
         return redirect('painel:produto_detalhe', uuid=item.uuid)
-    return render(request, 'painel/produtos/form.html', {
-        'form': form, 'video_formset': video_formset, 'titulo': 'Novo produto',
+    return render(request, 'painel/produtos/novo.html', {
+        'form': form, 'titulo': 'Cadastrar produto', 'fixed_company': fixed_company,
     })
-
 
 @login_required
 def painel_detalhe(request, uuid):

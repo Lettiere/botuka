@@ -251,22 +251,28 @@ class ServiceTaxonomyEndpointTests(TestCase):
         self.assertEqual(edit_form['tipo_servico'].value(), self.tipo.pk)
         self.assertIn(self.tipo, edit_form.fields['tipo_servico'].queryset)
 
-    def test_formulario_carrega_select2(self):
-        response = self.client.get(reverse('painel:servico_criar'))
-        self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'select2.min.js')
-        self.assertContains(response, 'name="area"', html=False)
-        self.assertContains(response, 'id="id_setor"', html=False)
-        self.assertContains(response, 'id="id_area"', html=False)
-        self.assertContains(response, 'id="id_profissao"', html=False)
-        self.assertContains(response, 'id="id_tipo_servico"', html=False)
-        self.assertContains(response, 'data-areas-url="/painel/servicos/ajax/areas/"', html=False)
-        self.assertContains(response, 'data-profissoes-url="/painel/servicos/ajax/profissoes/"', html=False)
-        self.assertContains(response, 'data-tipos-url="/painel/servicos/ajax/tipos/"', html=False)
-        for field_id in ('id_setor', 'id_area', 'id_profissao', 'id_tipo_servico'):
-            self.assertEqual(response.content.count(f'id="{field_id}"'.encode()), 1)
-        self.assertEqual(response.content.count(b'data-dependency-status="area"'), 1)
+    def test_formulario_rapido_e_edicao_completa_preservam_taxonomia(self):
+        cadastro = self.client.get(reverse('painel:servico_criar'))
+        self.assertEqual(cadastro.status_code, 200)
+        self.assertContains(cadastro, 'id="id_setor"', html=False)
+        self.assertNotContains(cadastro, 'id="id_area"', html=False)
+        self.assertNotContains(cadastro, 'select2.min.js')
 
+        form = ServicoForm(self._form_data(), usuario=self.user)
+        self.assertTrue(form.is_valid(), form.errors)
+        servico = form.save()
+        edicao = self.client.get(
+            reverse('painel:servico_editar', kwargs={'uuid': servico.uuid}),
+        )
+        self.assertContains(edicao, 'select2.min.js')
+        self.assertContains(edicao, 'id="id_area"', html=False)
+        self.assertContains(edicao, 'id="id_profissao"', html=False)
+        self.assertContains(edicao, 'id="id_tipo_servico"', html=False)
+        self.assertContains(
+            edicao,
+            'data-areas-url="/painel/servicos/ajax/areas/"',
+            html=False,
+        )
     def test_javascript_registra_eventos_diretos_e_sincroniza_select2(self):
         script = (
             Path(settings.BASE_DIR) / 'static' / 'painel' / 'js' / 'servicos.js'

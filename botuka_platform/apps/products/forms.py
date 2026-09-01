@@ -93,6 +93,91 @@ def youtube_id(url):
         raise ValidationError('Informe um link válido do YouTube.')
     return value
 
+class ProdutoRapidoForm(forms.ModelForm):
+    preco = ProductDecimalField(required=False, min_value=0, max_digits=12, decimal_places=2)
+    imagem_principal_upload = forms.ImageField(required=False, label='Imagem principal', help_text='Opcional. JPG, PNG ou WebP.')
+
+    class Meta:
+        model = Produto
+        fields = ('titular_tipo', 'empresa_proprietaria', 'nome', 'categoria_taxonomia', 'descricao_curta', 'preco', 'preco_sob_consulta', 'estoque_informativo')
+        labels = {'titular_tipo': 'Quem está vendendo?', 'empresa_proprietaria': 'Empresa vendedora', 'categoria_taxonomia': 'Categoria', 'descricao_curta': 'Descrição curta', 'estoque_informativo': 'Estoque (opcional)'}
+
+    def __init__(self, *args, user, fixed_company=None, **kwargs):
+        self.user = user
+        self.fixed_company = fixed_company
+        super().__init__(*args, **kwargs)
+        companies = empresas_gerenciaveis_para_usuario(user).filter(ativo=True, status='ATIVA', atuacao__in=('COMERCIO', 'COMERCIO_E_SERVICOS'))
+        self.fields['empresa_proprietaria'].queryset = companies
+        self.fields['empresa_proprietaria'].empty_label = 'Produto próprio (pessoa física)'
+        self.fields['categoria_taxonomia'].queryset = CategoriaProduto.objects.filter(ativo=True, removido_em__isnull=True).select_related('setor').order_by('nome')
+        self.fields['categoria_taxonomia'].required = True
+        for field in self.fields.values():
+            if isinstance(field.widget, forms.CheckboxInput):
+                field.widget.attrs['class'] = 'form-check-input'
+            elif isinstance(field.widget, forms.Select):
+                field.widget.attrs['class'] = 'form-select'
+            else:
+                field.widget.attrs['class'] = 'form-control'
+        self.fields['imagem_principal_upload'].widget.attrs.update({'class': 'form-control', 'accept': 'image/jpeg,image/png,image/webp'})
+        if fixed_company:
+            self.fields['empresa_proprietaria'].queryset = companies.filter(pk=fixed_company.pk)
+            self.fields['empresa_proprietaria'].initial = fixed_company
+            self.fields['empresa_proprietaria'].disabled = True
+            self.fields['titular_tipo'].initial = Produto.TitularTipo.EMPRESA
+            self.fields['titular_tipo'].disabled = True
+
+    def clean_imagem_principal_upload(self):
+        image = self.cleaned_data.get('imagem_principal_upload')
+        if not image:
+            return image
+        try:
+            width, height = get_image_dimensions(image)
+            if not width or not height:
+                raise ValueError('assinatura de imagem inválida')
+            image.seek(0)
+        except (OSError, TypeError, ValueError) as exc:
+            raise forms.ValidationError('A imagem principal enviada é inválida.') from exc
+        return optimize_uploaded_image(image, policy='card')
+
+    def clean(self):
+        data = super().clean()
+        company = data.get('empresa_proprietaria')
+        holder = data.get('titular_tipo')
+        if holder == Produto.TitularTipo.EMPRESA:
+            if not company:
+                self.add_error('empresa_proprietaria', 'Selecione a empresa proprietária.')
+            elif not company.pode_criar_rascunho_produto:
+                self.add_error('empresa_proprietaria', 'A atuação da empresa não permite cadastrar produtos.')
+        elif holder == Produto.TitularTipo.PESSOA_FISICA:
+            if company:
+                self.add_error('empresa_proprietaria', 'Um produto pessoal não pode pertencer a empresa.')
+        else:
+            self.add_error('titular_tipo', 'Selecione o titular do produto.')
+        if company and not empresas_gerenciaveis_para_usuario(self.user).filter(pk=company.pk).exists():
+            self.add_error('empresa_proprietaria', 'Empresa fora do seu escopo autorizado.')
+        if self.fixed_company and company != self.fixed_company:
+            self.add_error('empresa_proprietaria', 'A empresa do contexto não pode ser alterada.')
+        price = data.get('preco')
+        under_consultation = data.get('preco_sob_consulta')
+        if price is None and not under_consultation:
+            self.add_error('preco', 'Informe o preço ou marque preço sob consulta.')
+        if price is not None and under_consultation:
+            self.add_error('preco_sob_consulta', 'Escolha entre informar o preço ou preço sob consulta.')
+        return data
+
+    def prepare_instance(self):
+        item = self.save(commit=False)
+        category = self.cleaned_data['categoria_taxonomia']
+        item.status = Produto.Status.RASCUNHO
+        item.categoria = category.nome
+        item.setor = category.setor
+        item.descricao_completa = self.cleaned_data['descricao_curta']
+        return item
+
+    def save_main_image(self, product):
+        image = self.cleaned_data.get('imagem_principal_upload')
+        if image:
+            ProdutoImagem.objects.create(produto=product, imagem=image, principal=True, texto_alternativo=f'Imagem principal de {product.nome}')
 
 class ProdutoForm(forms.ModelForm):
     preco = ProductDecimalField(required=False, min_value=0, max_digits=12, decimal_places=2)
