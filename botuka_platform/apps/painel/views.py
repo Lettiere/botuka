@@ -1201,17 +1201,20 @@ def servico_alterar_status(request: HttpRequest, uuid) -> HttpResponse:
     novo_status = request.POST.get('status')
     if novo_status not in Servico.Status.values:
         messages.error(request, 'Status inválido.')
-    elif (
-        novo_status == Servico.Status.PUBLICADO
-        and (
-            not usuario_pode_publicar_servico(request.user, servico)
-            or (
-                servico.empresa_id
-                and not servico.empresa.pode_publicar_servico
-            )
-        )
+    elif novo_status == Servico.Status.PUBLICADO and not usuario_pode_publicar_servico(
+        request.user, servico,
     ):
         raise PermissionDenied
+    elif (
+        novo_status == Servico.Status.PUBLICADO
+        and servico.empresa_id
+        and not servico.empresa.pode_publicar_servico
+    ):
+        messages.error(
+            request,
+            'Sua empresa ainda não está autorizada a publicar serviços. '
+            'A capacidade de prestar serviços está aguardando aprovação.',
+        )
     else:
         status_anterior = servico.status
         publicado_em_anterior = servico.publicado_em

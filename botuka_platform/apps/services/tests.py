@@ -1,17 +1,22 @@
 from decimal import Decimal
 from importlib import import_module
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from django.apps import apps as django_apps
 from django.contrib.auth import get_user_model
+from django.contrib.messages.storage.fallback import FallbackStorage
 from django.core.exceptions import ValidationError
+from django.core.exceptions import PermissionDenied
 from django.db import IntegrityError, connection, transaction
-from django.test import TestCase
+from django.test import RequestFactory, TestCase
 from django.urls import reverse
 
 from apps.core.public_links import TipoLink, normalizar_link_publico
 from apps.locations.models import Cidade, Estado, Pais
-from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade, EmpresaLink
+from apps.organizations.models import (
+    Capacidade, Empresa, EmpresaCapacidade, EmpresaLink, EmpresaUsuario,
+)
 from apps.services.models import AreaProfissional, FormaCobranca, Profissao, ProfissaoTipoServico, Servico, ServicoLink, Setor, TipoServico
 from apps.accounts.master_services import garantir_usuario_master
 from apps.services.permissions import servicos_disponiveis_para_usuario
@@ -484,11 +489,86 @@ class LinksQrCodeTests(TestCase):
         publicacao = self.client.post(
             reverse('painel:servico_alterar_status', kwargs={'uuid': criado.uuid}),
             {'status': Servico.Status.PUBLICADO},
+            follow=True,
         )
         self.assertEqual(rascunho.status_code, 302)
-        self.assertEqual(publicacao.status_code, 403)
+        self.assertEqual(publicacao.status_code, 200)
+        self.assertContains(
+            publicacao,
+            'Sua empresa ainda não está autorizada a publicar serviços. '
+            'A capacidade de prestar serviços está aguardando aprovação.',
+        )
         criado.refresh_from_db()
         self.assertEqual(criado.status, Servico.Status.RASCUNHO)
+        self.assertIsNone(criado.publicado_em)
+        self.assertFalse(Servico.objects.publicamente_visiveis().filter(pk=criado.pk).exists())
+
+    def test_capacidade_aprovada_permite_publicacao_empresarial(self):
+        servico = Servico.objects.create(
+            usuario_responsavel=self.usuario,
+            prestador_tipo=Servico.PrestadorTipo.EMPRESA,
+            empresa=self.empresa,
+            setor=self.servico.setor,
+            area=self.servico.area,
+            profissao=self.servico.profissao,
+            tipo_servico=self.servico.tipo_servico,
+            forma_cobranca=self.servico.forma_cobranca,
+            titulo='Serviço empresarial apto para publicação',
+            atendimento_presencial=True,
+            status=Servico.Status.RASCUNHO,
+        )
+        self.client.force_login(self.usuario)
+
+        response = self.client.post(
+            reverse('painel:servico_alterar_status', kwargs={'uuid': servico.uuid}),
+            {'status': Servico.Status.PUBLICADO},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        servico.refresh_from_db()
+        self.assertEqual(servico.status, Servico.Status.PUBLICADO)
+        self.assertIsNotNone(servico.publicado_em)
+        self.assertTrue(Servico.objects.publicamente_visiveis().filter(pk=servico.pk).exists())
+
+    def test_usuario_nao_autorizado_continua_bloqueado_na_publicacao(self):
+        servico = Servico.objects.create(
+            usuario_responsavel=self.usuario,
+            prestador_tipo=Servico.PrestadorTipo.EMPRESA,
+            empresa=self.empresa,
+            setor=self.servico.setor,
+            area=self.servico.area,
+            profissao=self.servico.profissao,
+            tipo_servico=self.servico.tipo_servico,
+            forma_cobranca=self.servico.forma_cobranca,
+            titulo='Serviço empresarial protegido',
+            atendimento_presencial=True,
+            status=Servico.Status.RASCUNHO,
+        )
+        EmpresaUsuario.objects.create(
+            empresa=self.empresa,
+            usuario=self.terceiro,
+            pode_editar=True,
+            pode_publicar_servico=False,
+            ativo=True,
+        )
+        self.client.force_login(self.terceiro)
+        request = RequestFactory().post(
+            reverse('painel:servico_alterar_status', kwargs={'uuid': servico.uuid}),
+            {'status': Servico.Status.PUBLICADO},
+        )
+        request.user = self.terceiro
+        request.session = {}
+        request._messages = FallbackStorage(request)
+
+        from apps.painel.views import servico_alterar_status
+        with (
+            patch('apps.painel.views._servico_autorizado', return_value=servico),
+            self.assertRaises(PermissionDenied),
+        ):
+            servico_alterar_status.__wrapped__(request, servico.uuid)
+        servico.refresh_from_db()
+        self.assertEqual(servico.status, Servico.Status.RASCUNHO)
+        self.assertIsNone(servico.publicado_em)
 
     def test_post_contextual_adulterando_empresa_e_bloqueado(self):
         outra = self.criar_empresa_sem_capacidade(
