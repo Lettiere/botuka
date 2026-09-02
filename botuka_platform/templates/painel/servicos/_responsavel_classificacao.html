@@ -31,23 +31,27 @@
     <div class="col-md-6">
       <label class="form-label" for="{{ form.setor.id_for_label }}">{{ form.setor.label }}</label>
       {{ form.setor }}
+      <button type="button" class="taxonomy-suggest-trigger" data-suggest-taxonomy="setor">+ Não encontrou? Sugerir novo...</button>
       {% for error in form.setor.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
     </div>
     <div class="col-md-6">
       <label class="form-label" for="{{ form.area.id_for_label }}">{{ form.area.label }}</label>
       {{ form.area }}
+      <button type="button" class="taxonomy-suggest-trigger" data-suggest-taxonomy="area">+ Não encontrou? Sugerir novo...</button>
       <div class="form-text" data-dependency-status="area">{{ form.area.help_text }}</div>
       {% for error in form.area.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
     </div>
     <div class="col-md-6">
       <label class="form-label" for="{{ form.profissao.id_for_label }}">{{ form.profissao.label }}</label>
       {{ form.profissao }}
+      <button type="button" class="taxonomy-suggest-trigger" data-suggest-taxonomy="profissao">+ Não encontrou? Sugerir novo...</button>
       <div class="form-text" data-dependency-status="profissao">{{ form.profissao.help_text }}</div>
       {% for error in form.profissao.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
     </div>
     <div class="col-md-6">
       <label class="form-label" for="{{ form.tipo_servico.id_for_label }}">{{ form.tipo_servico.label }}</label>
       {{ form.tipo_servico }}
+      <button type="button" class="taxonomy-suggest-trigger" data-suggest-taxonomy="tipo_servico">+ Não encontrou? Sugerir novo...</button>
       <div class="form-text" data-dependency-status="tipo_servico">{{ form.tipo_servico.help_text }}</div>
       {% for error in form.tipo_servico.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
     </div>

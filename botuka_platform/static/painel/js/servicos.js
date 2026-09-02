@@ -78,6 +78,7 @@ async function loadOptions(select, url, statusElement, emptyLabel, emptyMessage)
 
 function initDependentServiceSelects() {
   const form = document.querySelector('.service-form[data-areas-url]');
+  if (!form) return;
   const setorSelect = document.getElementById('id_setor');
   const areaSelect = document.getElementById('id_area');
   const profissaoSelect = document.getElementById('id_profissao');
@@ -92,7 +93,7 @@ function initDependentServiceSelects() {
     .filter(([, element]) => !element)
     .map(([label]) => label);
 
-  if (!form || missing.length) {
+  if (missing.length) {
     console.error('[Serviços] Campos da taxonomia não encontrados.', {
       formularioEncontrado: Boolean(form),
       camposAusentes: missing,
@@ -297,6 +298,108 @@ function initDependentServiceSelects() {
   }
 }
 
+function initTaxonomySuggestions() {
+  const config = document.querySelector('[data-suggest-setor-url]');
+  const modal = document.querySelector('[data-taxonomy-modal]');
+  if (!config || !modal) return;
+  const suggestionForm = modal.querySelector('[data-taxonomy-suggestion-form]');
+  const nameInput = suggestionForm.elements.nome;
+  const title = modal.querySelector('[data-taxonomy-title]');
+  const context = modal.querySelector('[data-taxonomy-context]');
+  const error = modal.querySelector('[data-taxonomy-error]');
+  const submit = suggestionForm.querySelector('[type="submit"]');
+  const fields = {
+    setor: document.getElementById('id_setor'),
+    area: document.getElementById('id_area'),
+    profissao: document.getElementById('id_profissao'),
+    tipo_servico: document.getElementById('id_tipo_servico'),
+  };
+  const labels = {
+    setor: 'Setor', area: 'Área profissional',
+    profissao: 'Profissão', tipo_servico: 'Tipo de serviço',
+  };
+  let kind = '';
+
+  function dependencyError(nextKind) {
+    if (nextKind === 'area' && !fields.setor?.value) return 'Selecione primeiro o setor.';
+    if (nextKind === 'profissao' && (!fields.setor?.value || !fields.area?.value)) {
+      return 'Selecione primeiro o setor e a área profissional.';
+    }
+    if (nextKind === 'tipo_servico' && !fields.profissao?.value) {
+      return 'Selecione primeiro a profissão.';
+    }
+    return '';
+  }
+
+  document.querySelectorAll('[data-suggest-taxonomy]').forEach((button) => {
+    button.addEventListener('click', () => {
+      const nextKind = button.dataset.suggestTaxonomy;
+      const blocked = dependencyError(nextKind);
+      if (blocked) {
+        button.setCustomValidity(blocked);
+        button.reportValidity();
+        button.setCustomValidity('');
+        return;
+      }
+      kind = nextKind;
+      title.textContent = `Sugerir ${labels[kind].toLowerCase()}`;
+      context.textContent = kind === 'setor'
+        ? 'A sugestão ficará pendente de moderação e poderá ser usada por você.'
+        : `A sugestão será vinculada à classificação selecionada e ficará pendente de moderação.`;
+      nameInput.value = '';
+      error.hidden = true;
+      modal.showModal();
+      nameInput.focus();
+    });
+  });
+
+  modal.querySelectorAll('[data-taxonomy-close]').forEach((button) => {
+    button.addEventListener('click', () => modal.close());
+  });
+
+  suggestionForm.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    if (!nameInput.reportValidity()) return;
+    const urlKey = `suggest${kind.replace(/_([a-z])/g, (_, char) => char.toUpperCase())}Url`;
+    const body = new URLSearchParams({ nome: nameInput.value });
+    if (fields.setor?.value) body.set('setor_id', fields.setor.value);
+    if (fields.area?.value) body.set('area_id', fields.area.value);
+    if (fields.profissao?.value) body.set('profissao_id', fields.profissao.value);
+    submit.disabled = true;
+    error.hidden = true;
+    try {
+      const csrf = document.querySelector('[name="csrfmiddlewaretoken"]')?.value || '';
+      const response = await fetch(config.dataset[urlKey], {
+        method: 'POST', credentials: 'same-origin',
+        headers: {
+          Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest',
+          'X-CSRFToken': csrf,
+          'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8',
+        },
+        body,
+      });
+      const data = await response.json();
+      if (!response.ok || !data.success) throw new Error(data.error || 'Não foi possível enviar a sugestão.');
+      const select = fields[kind];
+      let option = Array.from(select.options).find((item) => String(item.value) === String(data.item.id));
+      if (!option) {
+        option = new Option(data.item.text, data.item.id, true, true);
+        select.add(option);
+      }
+      option.selected = true;
+      select.disabled = false;
+      if (window.jQuery?.fn?.select2) window.jQuery(select).trigger('change');
+      else select.dispatchEvent(new Event('change', { bubbles: true }));
+      modal.close();
+    } catch (requestError) {
+      error.textContent = requestError.message;
+      error.hidden = false;
+    } finally {
+      submit.disabled = false;
+    }
+  });
+}
+
 document.addEventListener('change', (event) => {
   const provider = event.target.closest('[name="prestador_tipo"]');
   if (provider) updateProvider(provider);
@@ -315,6 +418,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
   initDependentServiceSelects();
+  initTaxonomySuggestions();
   document.querySelectorAll('[data-image-input]').forEach((input) => {
     input.addEventListener('change', () => {
       const preview = input.parentElement.querySelector('[data-image-preview]');

@@ -14,6 +14,7 @@
   </header>
 
   <form method="post" enctype="multipart/form-data" class="service-form" novalidate>
+    <span hidden data-suggest-setor-url="{% url 'painel:servicos_sugerir_setor' %}"></span>
     {% csrf_token %}
     {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
 
@@ -57,6 +58,7 @@
         </div>
         <div class="col-12 col-md-6">
           <label class="form-label" for="{{ form.setor.id_for_label }}">{{ form.setor.label }}</label>{{ form.setor }}
+          <button type="button" class="taxonomy-suggest-trigger" data-suggest-taxonomy="setor">+ Não encontrou? Sugerir novo...</button>
           <div class="form-text">Área e profissão serão definidas na configuração completa.</div>
           {% for error in form.setor.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
         </div>
@@ -99,6 +101,8 @@
       <button class="btn btn-outline-primary" type="submit" name="acao" value="rascunho">Salvar rascunho</button>
       <button class="btn btn-primary" type="submit" name="acao" value="continuar">Continuar configuração</button>
     </div>
+    {% include "painel/servicos/_taxonomy_suggestion_modal.html" %}
   </form>
 </section>
+<script src="{% static 'painel/js/servicos.js' %}?v=20260902-1" defer></script>
 {% endblock %}

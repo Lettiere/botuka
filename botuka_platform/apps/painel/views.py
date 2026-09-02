@@ -15,7 +15,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.core.paginator import Paginator
 from django.http import HttpRequest, HttpResponse, JsonResponse
@@ -88,6 +88,12 @@ from apps.organizations.plans import (
     validar_contexto_servico,
 )
 from apps.services.models import AreaProfissional, Profissao, ProfissaoTipoServico, Servico, ServicoArea, ServicoCaracteristica, ServicoImagem, ServicoLink, Setor, TipoServico
+from apps.services.taxonomy_moderation import (
+    sugerir_area,
+    sugerir_profissao,
+    sugerir_setor,
+    sugerir_tipo_servico,
+)
 from apps.services.permissions import (
     servicos_disponiveis_para_usuario,
     usuario_pode_editar_servico,
@@ -1485,6 +1491,63 @@ def servicos_ajax_tipos(request: HttpRequest) -> JsonResponse:
         {'id': tipo.id, 'text': tipo.nome}
         for tipo in tipos.distinct().order_by('nome')[:100]
     ]})
+
+
+def _resposta_sugestao(funcao, request, **kwargs):
+    if request.method != 'POST':
+        return JsonResponse({'success': False, 'error': 'Método não permitido.'}, status=405)
+    try:
+        resultado = funcao(request.user, request.POST.get('nome'), **kwargs)
+    except ValidationError as exc:
+        return JsonResponse({'success': False, 'error': ' '.join(exc.messages)}, status=400)
+    except IntegrityError:
+        # Colisões de unicidade não devem revelar sugestões de terceiros.
+        return JsonResponse({
+            'success': False,
+            'error': 'Não foi possível registrar esta sugestão. Tente um nome mais específico.',
+        }, status=409)
+    item = resultado[0]
+    criado = resultado[1]
+    resposta = {
+        'success': True,
+        'item': {'id': item.pk, 'text': item.nome},
+        'created': criado,
+        'status_catalogo': item.status_catalogo,
+    }
+    if len(resultado) == 4:
+        resposta['relationship_created'] = resultado[3]
+    return JsonResponse(resposta, status=201 if criado else 200)
+
+
+@login_required
+def servicos_sugerir_setor(request: HttpRequest) -> JsonResponse:
+    return _resposta_sugestao(sugerir_setor, request)
+
+
+@login_required
+def servicos_sugerir_area(request: HttpRequest) -> JsonResponse:
+    return _resposta_sugestao(
+        sugerir_area, request, setor_id=request.POST.get('setor_id'),
+    )
+
+
+@login_required
+def servicos_sugerir_profissao(request: HttpRequest) -> JsonResponse:
+    return _resposta_sugestao(
+        sugerir_profissao,
+        request,
+        setor_id=request.POST.get('setor_id'),
+        area_id=request.POST.get('area_id'),
+    )
+
+
+@login_required
+def servicos_sugerir_tipo(request: HttpRequest) -> JsonResponse:
+    return _resposta_sugestao(
+        sugerir_tipo_servico,
+        request,
+        profissao_id=request.POST.get('profissao_id'),
+    )
 
 
 @painel_permission_required('produtos.visualizar')

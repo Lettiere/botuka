@@ -1,0 +1,16 @@
+<dialog class="taxonomy-suggestion-modal" data-taxonomy-modal aria-labelledby="taxonomy-suggestion-title">
+  <form method="dialog" data-taxonomy-suggestion-form>
+    <header>
+      <h2 id="taxonomy-suggestion-title" data-taxonomy-title>Sugerir novo item</h2>
+      <button type="button" class="btn-close" data-taxonomy-close aria-label="Fechar"></button>
+    </header>
+    <p class="form-text" data-taxonomy-context></p>
+    <label class="form-label" for="taxonomy-suggestion-name">Nome</label>
+    <input class="form-control" id="taxonomy-suggestion-name" name="nome" maxlength="120" required autocomplete="off">
+    <div class="invalid-feedback d-block" data-taxonomy-error hidden></div>
+    <footer>
+      <button type="button" class="btn btn-outline-secondary" data-taxonomy-close>Cancelar</button>
+      <button type="submit" class="btn btn-primary">Enviar sugestão</button>
+    </footer>
+  </form>
+</dialog>
