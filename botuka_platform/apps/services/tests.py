@@ -43,9 +43,12 @@ class LinksQrCodeTests(TestCase):
         capacidade, _ = Capacidade.objects.get_or_create(
             codigo='PRESTAR_SERVICOS', defaults={'nome': 'Prestar serviços'},
         )
-        EmpresaCapacidade.objects.create(
+        EmpresaCapacidade.objects.update_or_create(
             empresa=cls.empresa, capacidade=capacidade,
-            status=EmpresaCapacidade.Status.APROVADA, ativo=True,
+            defaults={
+                'status': EmpresaCapacidade.Status.APROVADA,
+                'ativo': True,
+            },
         )
         setor = Setor.objects.create(nome='Tecnologia')
         cls.area_profissional = AreaProfissional.objects.create(setor=setor, nome='Desenvolvimento')

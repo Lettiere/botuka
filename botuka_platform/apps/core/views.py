@@ -4,6 +4,7 @@ import logging
 from django.conf import settings
 from django.http import HttpResponse, JsonResponse
 from django.shortcuts import render
+from django.template import loader
 from django.templatetags.static import static
 
 from apps.core.services.home import montar_contexto_home
@@ -60,8 +61,26 @@ def permission_denied(request, exception=None):
 
 
 def server_error(request):
-    seo = build_seo(request, title='Erro interno | BOTUKA', description='Não foi possível carregar esta página.', robots='noindex,nofollow')
-    return render(request, 'errors/500.html', {'seo': seo}, status=500)
+    """Renderiza o erro sem executar context processors dependentes do banco."""
+
+    try:
+        seo = build_seo(request, title='Erro interno | BOTUKA', description='Não foi possível carregar esta página.', robots='noindex,nofollow')
+        content = loader.get_template('errors/500.html').render({
+            'csrf_token': 'NOTPROVIDED',
+            'seo': seo,
+            'seo_default': seo,
+        })
+    except Exception:
+        # O handler nunca deve substituir a exceção original por uma falha de
+        # template enquanto a requisição/transação já está comprometida.
+        content = (
+            '<!doctype html><html lang="pt-BR"><head><meta charset="utf-8">'
+            '<meta name="robots" content="noindex,nofollow">'
+            '<title>Erro interno | BOTUKA</title></head><body>'
+            '<main><h1>Não foi possível carregar esta página</h1>'
+            '<p>Tente novamente em alguns instantes.</p></main></body></html>'
+        )
+    return HttpResponse(content, status=500)
 
 
 def home(request):

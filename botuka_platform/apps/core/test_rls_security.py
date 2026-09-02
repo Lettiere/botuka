@@ -2,7 +2,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from django.http import HttpResponse
+from django.core.exceptions import PermissionDenied
+from django.http import Http404, HttpResponse
 from django.test import SimpleTestCase
 
 from apps.core.db_middleware import request_database_alias
@@ -92,6 +93,21 @@ class RLSUserContextMiddlewareTests(SimpleTestCase):
 
         self.assertIsNone(result)
         transaction.set_rollback.assert_called_once_with(True, using="default")
+
+    @patch("apps.core.rls_middleware.transaction")
+    @patch("apps.core.rls_middleware.connections")
+    def test_expected_http_exceptions_wait_for_response_before_rollback(
+        self, connections, transaction
+    ):
+        middleware = RLSUserContextMiddleware(lambda request: None)
+
+        for exception in (Http404(), PermissionDenied()):
+            with self.subTest(exception=type(exception).__name__):
+                result = middleware.process_exception(SimpleNamespace(), exception)
+                self.assertIsNone(result)
+
+        connections.__getitem__.assert_not_called()
+        transaction.set_rollback.assert_not_called()
 
 
 class ExecutorRoutingTests(SimpleTestCase):

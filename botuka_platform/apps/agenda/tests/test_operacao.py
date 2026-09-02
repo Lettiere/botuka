@@ -69,11 +69,13 @@ class AgendaOperacaoTests(TestCase):
                 capacidade, _ = Capacidade.objects.get_or_create(
                     codigo=codigo, defaults={'nome': codigo}
                 )
-                EmpresaCapacidade.objects.create(
+                EmpresaCapacidade.objects.update_or_create(
                     empresa=empresa,
                     capacidade=capacidade,
-                    status=EmpresaCapacidade.Status.APROVADA,
-                    ativo=True,
+                    defaults={
+                        'status': EmpresaCapacidade.Status.APROVADA,
+                        'ativo': True,
+                    },
                 )
         cls.eu_a = EmpresaUsuario.objects.create(
             empresa=cls.empresa_a, usuario=cls.membro_a, ativo=True

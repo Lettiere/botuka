@@ -789,6 +789,12 @@ class Empresa(UUIDModel):
         self.full_clean()
         super().save(*args, **kwargs)
 
+        from apps.organizations.services.capabilities import (
+            sincronizar_capacidades_do_perfil,
+        )
+
+        sincronizar_capacidades_do_perfil(self)
+
     def delete(
         self,
         using: str | None = None,

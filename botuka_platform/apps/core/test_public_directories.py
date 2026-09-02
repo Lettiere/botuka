@@ -98,3 +98,28 @@ class PublicDirectoryTests(TestCase):
                 content = response.content.decode()
                 self.assertIn("/static/css/public/public-system.css", content)
                 self.assertIn("noindex,nofollow", content)
+
+    def test_erro_500_nao_executa_context_processors_com_transacao_quebrada(self):
+        from unittest.mock import patch
+
+        from django.db import transaction
+
+        from apps.core.views import server_error
+
+        request = RequestFactory().get("/falha-interna/")
+        with transaction.atomic():
+            transaction.set_rollback(True)
+            with (
+                patch(
+                    "apps.gestao.context_processors.public_urls",
+                    side_effect=AssertionError("context processor executado"),
+                ),
+                patch(
+                    "apps.gestao.context_processors.publicar_options",
+                    side_effect=AssertionError("context processor executado"),
+                ),
+            ):
+                response = server_error(request)
+
+        self.assertEqual(response.status_code, 500)
+        self.assertIn("Não foi possível carregar esta página", response.content.decode())

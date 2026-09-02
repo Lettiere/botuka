@@ -1,4 +1,6 @@
+from django.core.exceptions import PermissionDenied
 from django.db import connections, transaction
+from django.http import Http404
 
 from .db_routing import current_executor
 
@@ -17,6 +19,11 @@ class RLSUserContextMiddleware:
         self.get_response = get_response
 
     def process_exception(self, request, exception):
+        # Deixe o Django renderizar respostas esperadas antes de marcar o
+        # rollback. O status >= 400 fará isso ao final de __call__.
+        if isinstance(exception, (Http404, PermissionDenied)):
+            return None
+
         if (
             connections[current_executor()].vendor == "postgresql"
             and connections[current_executor()].in_atomic_block

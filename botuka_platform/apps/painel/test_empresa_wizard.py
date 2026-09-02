@@ -295,9 +295,12 @@ class EmpresaWizardTests(TestCase):
             capacidade, _ = Capacidade.objects.get_or_create(
                 codigo=codigo, defaults={'nome': nome},
             )
-            EmpresaCapacidade.objects.create(
+            EmpresaCapacidade.objects.update_or_create(
                 empresa=empresa, capacidade=capacidade,
-                status=EmpresaCapacidade.Status.APROVADA,
+                defaults={
+                    'status': EmpresaCapacidade.Status.APROVADA,
+                    'ativo': True,
+                },
             )
         setor = Setor.objects.create(nome='Setor Agenda painel')
         area = AreaProfissional.objects.create(setor=setor, nome='Área Agenda painel')
