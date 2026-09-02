@@ -1,7 +1,11 @@
 from decimal import Decimal
+from importlib import import_module
+from types import SimpleNamespace
+
+from django.apps import apps as django_apps
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
-from django.db import IntegrityError, transaction
+from django.db import IntegrityError, connection, transaction
 from django.test import TestCase
 from django.urls import reverse
 
@@ -41,8 +45,8 @@ class LinksQrCodeTests(TestCase):
         setor = Setor.objects.create(nome='Tecnologia')
         cls.area_profissional = AreaProfissional.objects.create(setor=setor, nome='Desenvolvimento')
         profissao = Profissao.objects.create(setor=setor, area=cls.area_profissional, nome='Desenvolvedor')
-        tipo = TipoServico.objects.create(nome='Consultoria')
-        ProfissaoTipoServico.objects.create(profissao=profissao, tipo_servico=tipo)
+        tipo, _ = TipoServico.objects.get_or_create(nome='Consultoria')
+        ProfissaoTipoServico.objects.get_or_create(profissao=profissao, tipo_servico=tipo)
         cobranca = FormaCobranca.objects.create(nome='Por hora')
         cls.servico = Servico.objects.create(
             usuario_responsavel=cls.usuario,
@@ -681,3 +685,102 @@ class LinksQrCodeTests(TestCase):
         criado = Servico.objects.get(titulo='Rascunho mínimo privado')
         self.assertEqual(criado.status, Servico.Status.RASCUNHO)
         self.assertFalse(servicos_agendaveis(self.empresa).filter(pk=criado.pk).exists())
+
+    def test_publicacao_incompleta_retorna_validacao_sem_erro_500(self):
+        incompleto = Servico.objects.create(
+            usuario_responsavel=self.usuario,
+            prestador_tipo=Servico.PrestadorTipo.PESSOA_FISICA,
+            setor=self.servico.setor,
+            titulo='Rascunho incompleto para publicação',
+            status=Servico.Status.RASCUNHO,
+        )
+        self.client.force_login(self.usuario)
+
+        response = self.client.post(
+            reverse('painel:servico_alterar_status', kwargs={'uuid': incompleto.uuid}),
+            {'status': Servico.Status.PUBLICADO},
+            follow=True,
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Não foi possível publicar o serviço.')
+        self.assertContains(response, 'Informe a área profissional')
+        self.assertContains(response, 'Informe a profissão')
+        incompleto.refresh_from_db()
+        self.assertEqual(incompleto.status, Servico.Status.RASCUNHO)
+        self.assertIsNone(incompleto.publicado_em)
+
+    def test_taxonomia_fiscal_e_tributaria_e_idempotente(self):
+        migracao = import_module(
+            'apps.services.migrations.0011_taxonomia_fiscal_tributaria',
+        )
+        schema_editor = SimpleNamespace(connection=connection)
+
+        migracao.criar_taxonomia_fiscal(django_apps, schema_editor)
+        migracao.criar_taxonomia_fiscal(django_apps, schema_editor)
+
+        setor = Setor.objects.get(nome__in=migracao.SETORES_CONTABEIS)
+        area = AreaProfissional.objects.get(
+            setor=setor, nome__iexact='Fiscal e Tributária', ativo=True,
+        )
+        analista = Profissao.objects.get(
+            setor=setor, nome__iexact='Analista fiscal', ativo=True,
+        )
+        consultor = Profissao.objects.get(
+            setor=setor, nome__iexact='Consultor tributário', ativo=True,
+        )
+        tipo = TipoServico.objects.get(nome__iexact='Consultoria', ativo=True)
+
+        self.assertEqual(analista.area, area)
+        self.assertEqual(consultor.setor, setor)
+        self.assertTrue(ProfissaoTipoServico.objects.filter(
+            profissao=analista, tipo_servico=tipo, ativo=True,
+        ).exists())
+        self.assertTrue(ProfissaoTipoServico.objects.filter(
+            profissao=consultor, tipo_servico=tipo, ativo=True,
+        ).exists())
+        self.assertEqual(AreaProfissional.objects.filter(
+            setor=setor, nome__iexact='Fiscal e Tributária',
+        ).count(), 1)
+
+    def test_profissao_rejeita_area_de_outro_setor(self):
+        outro_setor = Setor.objects.create(nome='Setor contábil incompatível')
+        outra_area = AreaProfissional.objects.create(
+            setor=outro_setor, nome='Área incompatível',
+        )
+        profissao = Profissao(
+            setor=self.servico.setor,
+            area=outra_area,
+            nome='Profissão incompatível',
+        )
+
+        with self.assertRaisesMessage(
+            ValidationError,
+            'A área profissional deve pertencer ao setor da profissão.',
+        ):
+            profissao.full_clean()
+
+    def test_publicacao_completa_pela_view_continua_funcionando(self):
+        completo = Servico.objects.create(
+            usuario_responsavel=self.usuario,
+            prestador_tipo=Servico.PrestadorTipo.PESSOA_FISICA,
+            setor=self.servico.setor,
+            area=self.servico.area,
+            profissao=self.servico.profissao,
+            tipo_servico=self.servico.tipo_servico,
+            forma_cobranca=self.servico.forma_cobranca,
+            titulo='Serviço completo para publicação',
+            atendimento_presencial=True,
+            status=Servico.Status.RASCUNHO,
+        )
+        self.client.force_login(self.usuario)
+
+        response = self.client.post(
+            reverse('painel:servico_alterar_status', kwargs={'uuid': completo.uuid}),
+            {'status': Servico.Status.PUBLICADO},
+        )
+
+        self.assertEqual(response.status_code, 302)
+        completo.refresh_from_db()
+        self.assertEqual(completo.status, Servico.Status.PUBLICADO)
+        self.assertIsNotNone(completo.publicado_em)

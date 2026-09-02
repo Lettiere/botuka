@@ -761,7 +761,7 @@ class ServicoRapidoForm(BaseServicoForm):
         self.usuario = usuario
         self.empresa_contexto = empresa_contexto
         super().__init__(*args, **kwargs)
-        self.fields['setor'].queryset = Setor.objects.filter(ativo=True).order_by('nome')
+        self.fields['setor'].queryset = Setor.objects.visiveis_para(usuario).filter(ativo=True).order_by('nome')
         self.fields['empresa'].queryset = empresas_gerenciaveis_para_usuario(usuario).filter(
             ativo=True,
             atuacao__in=(
@@ -848,7 +848,7 @@ class ServicoForm(BaseServicoForm):
         self.fields['area'].queryset = AreaProfissional.objects.none()
         self.fields['profissao'].queryset = Profissao.objects.none()
         self.fields['tipo_servico'].queryset = TipoServico.objects.none()
-        self.fields['setor'].queryset = Setor.objects.filter(ativo=True).order_by('nome')
+        self.fields['setor'].queryset = Setor.objects.visiveis_para(usuario).filter(ativo=True).order_by('nome')
 
         acao_efetiva = self.acao
         if acao_efetiva is None and self.is_bound:
@@ -888,28 +888,31 @@ class ServicoForm(BaseServicoForm):
 
         if setor_id and str(setor_id).isdigit():
             self.fields['area'].queryset = (
-                AreaProfissional.objects
+                AreaProfissional.objects.visiveis_para(usuario)
                 .filter(setor_id=setor_id, ativo=True)
                 .order_by('nome')
             )
 
         if area_id and str(area_id).isdigit() and setor_id and str(setor_id).isdigit():
             self.fields['profissao'].queryset = (
-                Profissao.objects
+                Profissao.objects.visiveis_para(usuario)
                 .filter(area_id=area_id, setor_id=setor_id, ativo=True)
                 .order_by('nome')
             )
 
         if profissao_id and str(profissao_id).isdigit():
-            tipo_filter = Q(
+            vinculo_filter = Q(
                 ativo=True,
                 vinculos_profissoes__profissao_id=profissao_id,
                 vinculos_profissoes__ativo=True,
+                vinculos_profissoes__in=ProfissaoTipoServico.objects.visiveis_para(usuario),
             )
             if self.instance and self.instance.pk and self.instance.tipo_servico_id:
-                tipo_filter |= Q(pk=self.instance.tipo_servico_id)
+                vinculo_filter |= Q(pk=self.instance.tipo_servico_id)
             self.fields['tipo_servico'].queryset = (
-                TipoServico.objects.filter(tipo_filter).distinct().order_by('nome')
+                TipoServico.objects.visiveis_para(usuario).filter(
+                    vinculo_filter,
+                ).distinct().order_by('nome')
             )
 
         if usuario is not None:
@@ -1001,8 +1004,10 @@ class ServicoForm(BaseServicoForm):
                 self.add_error('tipo_servico', 'O tipo de serviço não pertence à profissão selecionada.')
         if (
             profissao and tipo_servico and profissao.area_id
-            and ProfissaoTipoServico.objects.filter(profissao=profissao, ativo=True).exists()
-            and not ProfissaoTipoServico.objects.filter(
+            and ProfissaoTipoServico.objects.visiveis_para(self.usuario).filter(
+                profissao=profissao, ativo=True,
+            ).exists()
+            and not ProfissaoTipoServico.objects.visiveis_para(self.usuario).filter(
                 profissao=profissao,
                 tipo_servico=tipo_servico,
                 ativo=True,

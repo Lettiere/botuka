@@ -29,9 +29,7 @@ def vinculos_publicos_queryset():
         profissional__empresa_usuario__empresa__ativo=True,
         profissional__empresa_usuario__empresa__perfil_publico=True,
         profissional__empresa_usuario__empresa__status='ATIVA',
-        servico__ativo=True,
-        servico__status=Servico.Status.PUBLICADO,
-        servico__excluido_em__isnull=True,
+        servico__in=Servico.objects.publicamente_visiveis(),
         servico__prestador_tipo=Servico.PrestadorTipo.EMPRESA,
         servico__empresa__isnull=False,
     ).filter(

@@ -36,6 +36,9 @@ def _company(obj):
 
 
 def _service(obj):
+    if getattr(obj, 'pk', None):
+        return obj.__class__.objects.publicamente_visiveis().filter(pk=obj.pk).exists()
+    # Objetos ainda não persistidos são usados por geradores/testes puros de URL.
     return _active(obj) and getattr(obj, 'status', '') == 'PUBLICADO' and getattr(obj, 'publicado_em', None) is not None
 
 

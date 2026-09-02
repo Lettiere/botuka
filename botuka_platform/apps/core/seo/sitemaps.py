@@ -42,7 +42,7 @@ class EmpresaSitemap(HttpsSitemap):
 
 class ServicoSitemap(HttpsSitemap):
     def items(self):
-        return Servico.objects.filter(ativo=True, status=Servico.Status.PUBLICADO, publicado_em__isnull=False, excluido_em__isnull=True).filter(Q(empresa__isnull=True) | Q(empresa__ativo=True, empresa__perfil_publico=True, empresa__status=Empresa.Status.ATIVA)).only('slug', 'atualizado_em')
+        return Servico.objects.publicamente_visiveis().filter(Q(empresa__isnull=True) | Q(empresa__ativo=True, empresa__perfil_publico=True, empresa__status=Empresa.Status.ATIVA)).only('slug', 'atualizado_em')
     def location(self, item): return reverse('publico:servico', args=[item.slug])
     def lastmod(self, item): return item.atualizado_em
 

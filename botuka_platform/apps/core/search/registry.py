@@ -41,10 +41,7 @@ def _empresa():
 def _servico():
     from apps.organizations.models import Empresa
     from apps.services.models import Servico
-    return Servico.objects.filter(
-        ativo=True, status=Servico.Status.PUBLICADO, excluido_em__isnull=True,
-        publicado_em__isnull=False,
-    ).filter(
+    return Servico.objects.publicamente_visiveis().filter(
         Q(empresa__isnull=True) | Q(
             empresa__ativo=True, empresa__perfil_publico=True,
             empresa__status=Empresa.Status.ATIVA, empresa__excluido_em__isnull=True,

@@ -24,6 +24,7 @@ from apps.agenda.public_services import (
     gerar_slots,
     nome_publico_profissional,
     pesquisar_agenda_publica,
+    sugestoes_agenda_publica,
     servicos_agendaveis,
     vinculos_agendaveis,
     vinculos_com_disponibilidade,
@@ -62,6 +63,20 @@ class AgendaPublicaTests(test_operacao.AgendaOperacaoTests):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, self.servico_a.titulo)
         self.assertContains(perfil, 'Agendar horário')
+
+    def test_agenda_e_autocomplete_nao_vazam_taxonomia_pendente(self):
+        Setor.objects.filter(pk=self.servico_a.setor_id).update(
+            status_catalogo=Setor.StatusCatalogo.PENDENTE,
+            criado_por=self.servico_a.usuario_responsavel,
+        )
+        self.assertFalse(
+            servicos_agendaveis(self.empresa_a).filter(pk=self.servico_a.pk).exists()
+        )
+        self.assertEqual(sugestoes_agenda_publica(self.servico_a.titulo), [])
+        response = self.http.get(reverse(
+            'agenda_public:empresa', args=[self.empresa_a.slug]
+        ))
+        self.assertNotContains(response, self.servico_a.titulo)
 
     def test_landing_lista_somente_cadeia_com_disponibilidade(self):
         response = self.http.get(reverse('agenda_public:home'))

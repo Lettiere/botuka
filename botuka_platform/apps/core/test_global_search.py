@@ -6,7 +6,7 @@ from django.utils import timezone
 from apps.core.search import GlobalSearchService
 from apps.locations.models import Cidade, Estado, Pais
 from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade
-from apps.services.models import AreaProfissional, FormaCobranca, Profissao, Servico, Setor, TipoServico
+from apps.services.models import AreaProfissional, FormaCobranca, Profissao, ProfissaoTipoServico, Servico, Setor, TipoServico
 from apps.media.models import (
     Canal, CategoriaYuBotuka, Playlist, PlaylistVideo, TagYuBotuka, Video, VideoTag,
 )
@@ -43,6 +43,9 @@ class GlobalSearchTests(TestCase):
             setor=cls.sector, area=cls.area, nome='Advocacia'
         )
         cls.service_type = TipoServico.objects.create(nome='Consultoria trabalhista')
+        ProfissaoTipoServico.objects.create(
+            profissao=cls.profession, tipo_servico=cls.service_type,
+        )
         cls.billing = FormaCobranca.objects.create(nome='Por serviço')
         EmpresaCapacidade.objects.create(
             empresa=cls.category_company,

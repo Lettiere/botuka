@@ -66,12 +66,9 @@ def _empresa_publica(slug):
 
 def _servico_publico(empresa, slug):
     return get_object_or_404(
-        Servico.objects,
+        Servico.objects.publicamente_visiveis(),
         slug=slug,
         empresa=empresa,
-        ativo=True,
-        status=Servico.Status.PUBLICADO,
-        excluido_em__isnull=True,
     )
 
 

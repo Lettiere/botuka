@@ -35,7 +35,7 @@ def empresas_publicas(request):
 
 
 def servicos_publicos(request):
-    queryset = Servico.objects.filter(ativo=True, status=Servico.Status.PUBLICADO, excluido_em__isnull=True, publicado_em__isnull=False).filter(Q(empresa__isnull=True) | Q(empresa__ativo=True, empresa__perfil_publico=True, empresa__status=Empresa.Status.ATIVA, empresa__excluido_em__isnull=True)).select_related('empresa', 'setor', 'profissao', 'tipo_servico').prefetch_related('atributos_adicionais', Prefetch('imagens', queryset=ServicoImagem.objects.filter(ativo=True, excluido_em__isnull=True).order_by('-principal', 'ordem')))
+    queryset = Servico.objects.publicamente_visiveis().filter(Q(empresa__isnull=True) | Q(empresa__ativo=True, empresa__perfil_publico=True, empresa__status=Empresa.Status.ATIVA, empresa__excluido_em__isnull=True)).select_related('empresa', 'setor', 'profissao', 'tipo_servico').prefetch_related('atributos_adicionais', Prefetch('imagens', queryset=ServicoImagem.objects.filter(ativo=True, excluido_em__isnull=True).order_by('-principal', 'ordem')))
     q = request.GET.get('q', '').strip()[:100]
     if q:
         queryset = queryset.filter(Q(titulo__icontains=q) | Q(descricao_curta__icontains=q) | Q(descricao_completa__icontains=q) | Q(setor__nome__icontains=q) | Q(profissao__nome__icontains=q) | Q(empresa__nome_fantasia__icontains=q) | Q(atributos_adicionais__valor__icontains=q) | Q(atributos_adicionais__nome_personalizado__icontains=q)).distinct()
@@ -46,16 +46,13 @@ def servicos_publicos(request):
     queryset = queryset.order_by('titulo' if request.GET.get('ordem') == 'az' else '-publicado_em')
     page = Paginator(queryset, 12).get_page(request.GET.get('page'))
     seo = listing_seo(request, 'Serviços em Botucatu | BOTUKA', 'Encontre serviços, profissionais e empresas prestadoras em Botucatu.')
-    return render(request, 'publico/servicos/lista.html', {'page_obj': page, 'servicos': page.object_list, 'categorias': Setor.objects.filter(ativo=True), 'total': page.paginator.count, 'seo': seo})
+    return render(request, 'publico/servicos/lista.html', {'page_obj': page, 'servicos': page.object_list, 'categorias': Setor.objects.visiveis_para().filter(ativo=True), 'total': page.paginator.count, 'seo': seo})
 
 
 def servico_publico(request, slug):
     servico = get_object_or_404(
-        Servico.objects.select_related('empresa', 'usuario_responsavel', 'tipo_servico').prefetch_related('atributos_adicionais', 'links', Prefetch('imagens', queryset=ServicoImagem.objects.filter(ativo=True, excluido_em__isnull=True).order_by('-principal', 'ordem'))),
+        Servico.objects.publicamente_visiveis().select_related('empresa', 'usuario_responsavel', 'tipo_servico').prefetch_related('atributos_adicionais', 'links', Prefetch('imagens', queryset=ServicoImagem.objects.filter(ativo=True, excluido_em__isnull=True).order_by('-principal', 'ordem'))),
         slug=slug,
-        ativo=True,
-        status=Servico.Status.PUBLICADO,
-        excluido_em__isnull=True,
     )
     if servico.empresa_id and not servico.empresa.pode_publicar_servico:
         raise Http404
@@ -80,10 +77,7 @@ def empresa_publica(request, slug):
         empresa_proprietaria=empresa, status=Produto.Status.PUBLICADO,
         publico=True, ativo=True, removido_em__isnull=True,
     ).prefetch_related('imagens') if empresa.verificada and empresa.pode_publicar_produto else Produto.objects.none()
-    servicos = Servico.objects.filter(
-        empresa=empresa, ativo=True, excluido_em__isnull=True,
-        status=Servico.Status.PUBLICADO,
-    )[:6]
+    servicos = Servico.objects.publicamente_visiveis().filter(empresa=empresa)[:6]
     servicos_agenda = servicos_agendaveis(empresa)
     vagas = Vaga.objects.filter(
         empresa=empresa, ativo=True, excluido_em__isnull=True,
@@ -126,7 +120,9 @@ def empresa_publica(request, slug):
 
 
 def qrcode_servico_redirect(request, token):
-    servico = get_object_or_404(Servico, qr_token=token, qr_ativo=True, ativo=True, status=Servico.Status.PUBLICADO, excluido_em__isnull=True)
+    servico = get_object_or_404(
+        Servico.objects.publicamente_visiveis(), qr_token=token, qr_ativo=True,
+    )
     if servico.empresa_id and not servico.empresa.pode_publicar_servico:
         raise Http404
     return redirect('publico:servico', slug=servico.slug, permanent=False)

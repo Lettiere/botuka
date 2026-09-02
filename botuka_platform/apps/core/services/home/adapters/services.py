@@ -5,11 +5,7 @@ from apps.services.models import Servico
 
 def obter_servicos_destaque():
     return list(
-        Servico.objects.filter(
-            ativo=True,
-            status=Servico.Status.PUBLICADO,
-            excluido_em__isnull=True,
-        )
+        Servico.objects.publicamente_visiveis()
         .filter(
             Q(prestador_tipo=Servico.PrestadorTipo.PESSOA_FISICA, empresa__isnull=True)
             | Q(

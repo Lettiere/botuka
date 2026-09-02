@@ -5,7 +5,7 @@ import uuid
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import models
-from django.db.models import Avg, Count
+from django.db.models import Avg, Count, Exists, OuterRef, Q
 from django.utils import timezone
 
 from apps.core.models import BairroCidade, CidadeBrasil, EstadoBrasil, RegiaoCidade, UUIDModel
@@ -13,6 +13,41 @@ from apps.core.public_links import TipoLink, normalizar_link_publico, url_embed_
 from apps.core.utils import gerar_slug_unico
 from apps.core.services.rich_text import sanitizar_html_rico
 from apps.organizations.models import Empresa
+from apps.services.taxonomy_moderation import (
+    filtro_visibilidade_catalogo,
+    normalizar_nome_catalogo,
+)
+
+
+class CatalogoQuerySet(models.QuerySet):
+    def visiveis_para(self, usuario=None):
+        return self.filter(filtro_visibilidade_catalogo(usuario))
+
+
+class CatalogoModerado(models.Model):
+    class Origem(models.TextChoices):
+        SISTEMA = 'SISTEMA', 'Sistema'
+        USUARIO = 'USUARIO', 'Usuário'
+
+    class StatusCatalogo(models.TextChoices):
+        APROVADO = 'APROVADO', 'Aprovado'
+        PENDENTE = 'PENDENTE', 'Pendente'
+        REJEITADO = 'REJEITADO', 'Rejeitado'
+        MESCLADO = 'MESCLADO', 'Mesclado'
+
+    origem = models.CharField(max_length=10, choices=Origem.choices, default=Origem.SISTEMA)
+    status_catalogo = models.CharField(
+        max_length=10, choices=StatusCatalogo.choices, default=StatusCatalogo.APROVADO,
+    )
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='+',
+    )
+
+    objects = CatalogoQuerySet.as_manager()
+
+    class Meta:
+        abstract = True
 
 
 class ServicoQuerySet(models.QuerySet):
@@ -23,13 +58,47 @@ class ServicoQuerySet(models.QuerySet):
         updated = self.update(ativo=False, excluido_em=timezone.now())
         return updated, {self.model._meta.label: updated}
 
+    def publicamente_visiveis(self):
+        vinculo_aprovado = ProfissaoTipoServico.objects.filter(
+            profissao_id=OuterRef('profissao_id'),
+            tipo_servico_id=OuterRef('tipo_servico_id'),
+            ativo=True,
+            status_catalogo=CatalogoModerado.StatusCatalogo.APROVADO,
+        )
+        return self.alias(
+            _vinculo_taxonomia_aprovado=Exists(vinculo_aprovado),
+        ).filter(
+            ativo=True,
+            excluido_em__isnull=True,
+            status='PUBLICADO',
+            publicado_em__isnull=False,
+            setor__ativo=True,
+            setor__status_catalogo=CatalogoModerado.StatusCatalogo.APROVADO,
+            profissao__ativo=True,
+            profissao__status_catalogo=CatalogoModerado.StatusCatalogo.APROVADO,
+        ).filter(
+            Q(area__isnull=True, profissao__area__isnull=True) | Q(
+                area__ativo=True,
+                area__status_catalogo=CatalogoModerado.StatusCatalogo.APROVADO,
+            ),
+        ).filter(
+            Q(tipo_servico__isnull=True) | Q(
+                tipo_servico__ativo=True,
+                tipo_servico__status_catalogo=CatalogoModerado.StatusCatalogo.APROVADO,
+                _vinculo_taxonomia_aprovado=True,
+            ),
+        )
+
 
 class ServicoManager(models.Manager):
     def get_queryset(self):
         return ServicoQuerySet(self.model, using=self._db).ativos()
 
+    def publicamente_visiveis(self):
+        return self.get_queryset().publicamente_visiveis()
 
-class Setor(UUIDModel):
+
+class Setor(CatalogoModerado, UUIDModel):
     id = models.BigAutoField(primary_key=True, db_column='services_setor_id')
     nome = models.CharField(max_length=120, unique=True, db_column='services_setor_nome')
     slug = models.SlugField(max_length=160, unique=True, blank=True, db_column='services_setor_slug')
@@ -37,6 +106,10 @@ class Setor(UUIDModel):
     icone = models.CharField(max_length=80, blank=True, db_column='services_setor_icone')
     ordem = models.PositiveIntegerField(default=0, db_column='services_setor_ordem')
     ativo = models.BooleanField(default=True, db_column='services_setor_ativo')
+    nome_normalizado = models.CharField(max_length=120, blank=True, db_index=True)
+    mesclado_com = models.ForeignKey(
+        'self', on_delete=models.PROTECT, null=True, blank=True, related_name='itens_mesclados',
+    )
     criado_em = models.DateTimeField(auto_now_add=True, db_column='services_setor_criado_em')
     atualizado_em = models.DateTimeField(auto_now=True, db_column='services_setor_atualizado_em')
 
@@ -46,6 +119,9 @@ class Setor(UUIDModel):
         indexes = [models.Index(fields=['slug'], name='services_setor_idx_slug')]
 
     def save(self, *args, **kwargs):
+        self.nome_normalizado = normalizar_nome_catalogo(self.nome)
+        if kwargs.get('update_fields') is not None and 'nome' in kwargs['update_fields']:
+            kwargs['update_fields'] = set(kwargs['update_fields']) | {'nome_normalizado'}
         if not self.slug:
             self.slug = gerar_slug_unico(self, self.nome)
         super().save(*args, **kwargs)
@@ -54,7 +130,7 @@ class Setor(UUIDModel):
         return self.nome
 
 
-class AreaProfissional(UUIDModel):
+class AreaProfissional(CatalogoModerado, UUIDModel):
     id = models.BigAutoField(
         primary_key=True,
         db_column='services_area_profissional_id',
@@ -86,6 +162,10 @@ class AreaProfissional(UUIDModel):
         default=True,
         db_column='services_area_profissional_ativo',
     )
+    nome_normalizado = models.CharField(max_length=120, blank=True, db_index=True)
+    mesclado_com = models.ForeignKey(
+        'self', on_delete=models.PROTECT, null=True, blank=True, related_name='itens_mesclados',
+    )
     criado_em = models.DateTimeField(
         auto_now_add=True,
         db_column='services_area_profissional_criado_em',
@@ -112,6 +192,9 @@ class AreaProfissional(UUIDModel):
         ]
 
     def save(self, *args, **kwargs):
+        self.nome_normalizado = normalizar_nome_catalogo(self.nome)
+        if kwargs.get('update_fields') is not None and 'nome' in kwargs['update_fields']:
+            kwargs['update_fields'] = set(kwargs['update_fields']) | {'nome_normalizado'}
         if not self.slug:
             self.slug = gerar_slug_unico(self, self.nome)
         super().save(*args, **kwargs)
@@ -226,7 +309,7 @@ class CBOSinonimo(UUIDModel):
         return self.titulo
 
 
-class Profissao(UUIDModel):
+class Profissao(CatalogoModerado, UUIDModel):
     id = models.BigAutoField(primary_key=True, db_column='services_profissao_id')
     setor = models.ForeignKey(Setor, on_delete=models.PROTECT, db_column='services_profissao_fk_setor', related_name='profissoes')
     area = models.ForeignKey(
@@ -243,6 +326,10 @@ class Profissao(UUIDModel):
     exige_registro_profissional = models.BooleanField(default=False, db_column='services_profissao_exige_registro_profissional')
     tipo_registro = models.CharField(max_length=60, blank=True, db_column='services_profissao_tipo_registro')
     ativo = models.BooleanField(default=True, db_column='services_profissao_ativo')
+    nome_normalizado = models.CharField(max_length=120, blank=True, db_index=True)
+    mesclado_com = models.ForeignKey(
+        'self', on_delete=models.PROTECT, null=True, blank=True, related_name='itens_mesclados',
+    )
     criado_em = models.DateTimeField(auto_now_add=True, db_column='services_profissao_criado_em')
     atualizado_em = models.DateTimeField(auto_now=True, db_column='services_profissao_atualizado_em')
     ocupacoes_cbo = models.ManyToManyField(
@@ -259,6 +346,9 @@ class Profissao(UUIDModel):
         indexes = [models.Index(fields=['setor', 'slug'], name='services_profissao_idx_slug')]
 
     def save(self, *args, **kwargs):
+        self.nome_normalizado = normalizar_nome_catalogo(self.nome)
+        if kwargs.get('update_fields') is not None and 'nome' in kwargs['update_fields']:
+            kwargs['update_fields'] = set(kwargs['update_fields']) | {'nome_normalizado'}
         if not self.slug:
             self.slug = gerar_slug_unico(self, self.nome)
         self.full_clean()
@@ -302,12 +392,16 @@ class ProfissaoCBO(UUIDModel):
         return f'{self.profissao} — {self.ocupacao}'
 
 
-class TipoServico(UUIDModel):
+class TipoServico(CatalogoModerado, UUIDModel):
     id = models.BigAutoField(primary_key=True, db_column='services_tipo_servico_id')
     nome = models.CharField(max_length=120, unique=True, db_column='services_tipo_servico_nome')
     slug = models.SlugField(max_length=160, unique=True, blank=True, db_column='services_tipo_servico_slug')
     descricao = models.TextField(blank=True, db_column='services_tipo_servico_descricao')
     ativo = models.BooleanField(default=True, db_column='services_tipo_servico_ativo')
+    nome_normalizado = models.CharField(max_length=120, blank=True, db_index=True)
+    mesclado_com = models.ForeignKey(
+        'self', on_delete=models.PROTECT, null=True, blank=True, related_name='itens_mesclados',
+    )
     criado_em = models.DateTimeField(auto_now_add=True, db_column='services_tipo_servico_criado_em')
     atualizado_em = models.DateTimeField(auto_now=True, db_column='services_tipo_servico_atualizado_em')
     profissoes = models.ManyToManyField(
@@ -319,6 +413,9 @@ class TipoServico(UUIDModel):
         db_table = '"services"."services_tipo_servico_tb"'
 
     def save(self, *args, **kwargs):
+        self.nome_normalizado = normalizar_nome_catalogo(self.nome)
+        if kwargs.get('update_fields') is not None and 'nome' in kwargs['update_fields']:
+            kwargs['update_fields'] = set(kwargs['update_fields']) | {'nome_normalizado'}
         if not self.slug:
             self.slug = gerar_slug_unico(self, self.nome)
         super().save(*args, **kwargs)
@@ -327,7 +424,7 @@ class TipoServico(UUIDModel):
         return self.nome
 
 
-class ProfissaoTipoServico(UUIDModel):
+class ProfissaoTipoServico(CatalogoModerado, UUIDModel):
     id = models.BigAutoField(primary_key=True, db_column='services_profissao_tipo_servico_id')
     profissao = models.ForeignKey(
         Profissao, on_delete=models.PROTECT,
@@ -493,6 +590,18 @@ class Servico(UUIDModel):
 
     def clean(self):
         super().clean()
+        usuario_catalogo = self.usuario_responsavel if self.usuario_responsavel_id else None
+        catalogos = (
+            (Setor, self.setor_id, 'setor'),
+            (AreaProfissional, self.area_id, 'area'),
+            (Profissao, self.profissao_id, 'profissao'),
+            (TipoServico, self.tipo_servico_id, 'tipo_servico'),
+        )
+        for modelo, objeto_id, campo in catalogos:
+            if objeto_id and not modelo.objects.visiveis_para(usuario_catalogo).filter(
+                pk=objeto_id,
+            ).exists():
+                raise ValidationError({campo: 'Item de catálogo indisponível para este usuário.'})
         self.descricao_completa = sanitizar_html_rico(self.descricao_completa)
         self.experiencia = sanitizar_html_rico(self.experiencia)
         if self.prestador_tipo == self.PrestadorTipo.EMPRESA and not self.empresa_id:
@@ -527,11 +636,11 @@ class Servico(UUIDModel):
             raise ValidationError({'profissao': 'A profissão deve pertencer à área profissional selecionada.'})
         if (
             self.profissao_id and self.tipo_servico_id and self.profissao.area_id
-            and ProfissaoTipoServico.objects.filter(
+            and ProfissaoTipoServico.objects.visiveis_para(usuario_catalogo).filter(
                 profissao_id=self.profissao_id,
                 ativo=True,
             ).exists()
-            and not ProfissaoTipoServico.objects.filter(
+            and not ProfissaoTipoServico.objects.visiveis_para(usuario_catalogo).filter(
                 profissao_id=self.profissao_id,
                 tipo_servico_id=self.tipo_servico_id,
                 ativo=True,
@@ -549,6 +658,27 @@ class Servico(UUIDModel):
             raise ValidationError('Informe ao menos atendimento remoto ou presencial.')
         if self.status == self.Status.PUBLICADO and self.empresa_id and not self.empresa.pode_publicar_servico:
             raise ValidationError('Empresa não está apta a publicar serviços.')
+        if self.status == self.Status.PUBLICADO:
+            for modelo, objeto_id, campo in catalogos:
+                if objeto_id and not modelo.objects.visiveis_para(usuario_catalogo).filter(
+                    pk=objeto_id, ativo=True,
+                ).exists():
+                    raise ValidationError({campo: 'Item de catálogo indisponível para publicação.'})
+            if (
+                self.profissao_id and self.tipo_servico_id
+                and ProfissaoTipoServico.objects.filter(
+                    profissao_id=self.profissao_id, ativo=True,
+                ).exists()
+                and not ProfissaoTipoServico.objects.visiveis_para(usuario_catalogo).filter(
+                    profissao_id=self.profissao_id,
+                    tipo_servico_id=self.tipo_servico_id,
+                    ativo=True,
+                    tipo_servico__ativo=True,
+                ).exists()
+            ):
+                raise ValidationError({
+                    'tipo_servico': 'O vínculo com a profissão está indisponível para publicação.',
+                })
 
     def save(self, *args, **kwargs):
         if not self.slug:
