@@ -37,9 +37,82 @@ class HomeAggregatorTests(TestCase):
 
     def test_conteudo_publicado_aparece_e_privado_nao(self):
         seed_home_demo(); cache.clear()
+        from decimal import Decimal
+
+        from django.contrib.auth import get_user_model
+        from django.utils import timezone
+
+        from apps.products.models import CategoriaProduto, FamiliaProduto, Produto, TipoProduto
+        from apps.services.models import (
+            AreaProfissional,
+            FormaCobranca,
+            Profissao,
+            ProfissaoTipoServico,
+            Servico,
+            Setor,
+            TipoServico,
+        )
+
+        usuario = get_user_model().objects.get(username="demo_servicos")
+        setor = Setor.objects.create(nome="Setor público da HOME")
+        area = AreaProfissional.objects.create(setor=setor, nome="Área pública da HOME")
+        profissao = Profissao.objects.create(
+            setor=setor, area=area, nome="Profissão pública da HOME",
+        )
+        tipo_servico = TipoServico.objects.create(nome="Tipo público da HOME")
+        ProfissaoTipoServico.objects.create(
+            profissao=profissao, tipo_servico=tipo_servico,
+        )
+        forma_cobranca = FormaCobranca.objects.create(nome="Cobrança pública da HOME")
+        Servico.objects.create(
+            usuario_responsavel=usuario,
+            prestador_tipo=Servico.PrestadorTipo.PESSOA_FISICA,
+            setor=setor,
+            area=area,
+            profissao=profissao,
+            tipo_servico=tipo_servico,
+            forma_cobranca=forma_cobranca,
+            titulo="Serviço público válido da HOME",
+            status=Servico.Status.PUBLICADO,
+            destaque=True,
+        )
+
+        categoria = CategoriaProduto.objects.create(
+            nome="Categoria pública da HOME", slug="categoria-publica-home",
+        )
+        familia = FamiliaProduto.objects.create(
+            categoria=categoria, nome="Família pública da HOME", slug="familia-publica-home",
+        )
+        tipo_produto = TipoProduto.objects.create(
+            familia=familia,
+            nome="Tipo de produto público da HOME",
+            slug="tipo-produto-publico-home",
+        )
+        Produto.objects.create(
+            nome="Produto público destacado da HOME",
+            categoria=categoria.nome,
+            categoria_taxonomia=categoria,
+            familia=familia,
+            tipo_produto=tipo_produto,
+            descricao_curta="Produto válido para a HOME.",
+            descricao_completa="Produto público destacado para teste.",
+            preco=Decimal("20.00"),
+            titular_tipo=Produto.TitularTipo.PESSOA_FISICA,
+            criador_registro=usuario,
+            proprietario=usuario,
+            responsavel=usuario,
+            status=Produto.Status.PUBLICADO,
+            publicado_em=timezone.now(),
+            publico=True,
+            destaque=True,
+        )
+        cache.clear()
+
         response = self.client.get(reverse("home"))
-        self.assertContains(response, "Serviço demonstrativo 01")
+        self.assertNotContains(response, "Serviço demonstrativo 01")
         self.assertNotContains(response, "Serviço demonstrativo 25")
+        self.assertContains(response, "Serviço público válido da HOME")
+        self.assertContains(response, "Produto público destacado da HOME")
         self.assertContains(response, "Oportunidade demonstrativa 12")
         self.assertContains(response, "Conteúdo demonstrativo da cidade 01")
         self.assertContains(response, "Episódio demonstrativo 01")
