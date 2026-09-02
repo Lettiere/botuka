@@ -1,24 +1,39 @@
 import json
 import re
+import tempfile
 import time
 from types import SimpleNamespace
 from unittest.mock import patch
 
 from django.conf import settings
+from django.core.files.base import ContentFile
+from django.core.files.storage import FileSystemStorage
+from django.http import HttpResponse
+from django.template.loader import render_to_string
 from django.test import Client, RequestFactory, SimpleTestCase, override_settings
 from django.urls import reverse
 
 from apps.core.seo.page_builders import artigo_seo, empresa_seo, home_seo, media_seo, servico_seo, tourism_seo, vaga_seo
-from apps.core.seo.utils import clean_text, image_metadata, youtube_thumbnail, youtube_video_id
+from apps.core.seo.utils import clean_text, image_metadata, resolve_social_image, youtube_thumbnail, youtube_video_id
 
 
+@override_settings(ALLOWED_HOSTS=['127.0.0.1', 'localhost', 'botuka.com.br'])
 class SeoMetadataTests(SimpleTestCase):
     def setUp(self):
         self.client = Client()
 
     def _home(self):
-        with patch('apps.core.views.montar_contexto_home', return_value={}):
-            return self.client.get('/', HTTP_HOST='127.0.0.1:7700')
+        request = RequestFactory().get('/', HTTP_HOST='127.0.0.1:7700')
+        seo = home_seo(request)
+        context = {
+            'seo': seo,
+            'seo_default': seo,
+            'seo_config': {},
+        }
+        return HttpResponse(
+            render_to_string('seo/meta.html', context)
+            + render_to_string('seo/json_ld.html', context)
+        )
 
     def test_home_has_unique_core_metadata_and_valid_json_ld(self):
         response = self._home()
@@ -27,6 +42,10 @@ class SeoMetadataTests(SimpleTestCase):
         self.assertContains(response, 'rel="canonical"')
         self.assertContains(response, 'property="og:image"')
         self.assertContains(response, 'name="twitter:card" content="summary_large_image"')
+        self.assertContains(response, 'property="og:image:secure_url"')
+        self.assertContains(response, 'name="twitter:image"')
+        self.assertContains(response, 'property="og:image:width" content="1200"')
+        self.assertContains(response, 'property="og:image:height" content="630"')
         self.assertContains(response, 'botuka-default-1200x630.png')
         scripts = re.findall(r'<script type="application/ld\+json">(.*?)</script>', response.content.decode(), re.S)
         self.assertEqual(len(scripts), 1)
@@ -87,6 +106,37 @@ class SeoMetadataTests(SimpleTestCase):
         self.assertTrue(url.endswith('botuka-default-1200x630.png'))
         self.assertEqual((image_type, width, height), ('image/png', 1200, 630))
 
+    @override_settings(IS_PRODUCTION=True, SITE_URL='https://botuka.com.br')
+    def test_social_image_resolver_accepts_existing_local_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            storage = FileSystemStorage(location=directory, base_url='/media/')
+            storage.save('social/card.png', ContentFile(b'image'))
+            image = SimpleNamespace(
+                name='social/card.png', storage=storage,
+                url='/media/social/card.png', width=1200, height=630,
+            )
+            result = resolve_social_image(
+                RequestFactory().get('/', HTTP_HOST='botuka.com.br'), image,
+            )
+        self.assertEqual(
+            result,
+            ('https://botuka.com.br/media/social/card.png', 'image/png', 1200, 630),
+        )
+
+    @override_settings(IS_PRODUCTION=True, SITE_URL='https://botuka.com.br')
+    def test_social_image_resolver_rejects_missing_storage_file(self):
+        with tempfile.TemporaryDirectory() as directory:
+            storage = FileSystemStorage(location=directory, base_url='/media/')
+            missing = SimpleNamespace(
+                name='social/missing.jpg', storage=storage,
+                url='/media/social/missing.jpg', width=1200, height=630,
+            )
+            result = resolve_social_image(
+                RequestFactory().get('/', HTTP_HOST='botuka.com.br'), missing,
+            )
+        self.assertEqual(result[0], 'https://botuka.com.br/static/img/seo/botuka-default-1200x630.png')
+        self.assertEqual(result[1:], ('image/png', 1200, 630))
+
     def test_video_uses_registered_thumbnail_and_video_metadata(self):
         obj = SimpleNamespace(
             titulo='Vídeo exemplo', descricao_curta='Descrição real.',
@@ -121,6 +171,7 @@ class SeoMetadataTests(SimpleTestCase):
             def order_by(self, *args): return self
             def first(self): return SimpleNamespace(arquivo='', url_externa='https://cdn.example.com/article.jpg')
             def all(self): return []
+            def __iter__(self): return iter([self.first()])
         artigo = SimpleNamespace(
             titulo='Notícia real', titulo_seo='', descricao_seo='', resumo='Resumo real',
             subtitulo='', conteudo='Conteúdo real', imagem_social='', imagem_capa='',
@@ -133,6 +184,25 @@ class SeoMetadataTests(SimpleTestCase):
         seo = artigo_seo(RequestFactory().get('/noticias/noticia-real/'), artigo)
         self.assertEqual(seo['image_url'], 'https://cdn.example.com/article.jpg')
         self.assertIn('NewsArticle', json.dumps(seo['schema']))
+
+    def test_article_prioritizes_social_image(self):
+        class Related:
+            def filter(self, **kwargs): return self
+            def order_by(self, *args): return self
+            def __iter__(self): return iter([])
+            def all(self): return []
+        artigo = SimpleNamespace(
+            titulo='Notícia social', titulo_seo='', descricao_seo='', resumo='Resumo',
+            subtitulo='', conteudo='Conteúdo',
+            imagem_social='https://cdn.example.com/social-1200x630.jpg',
+            imagem_capa='https://cdn.example.com/capa.jpg', texto_alternativo_imagem='',
+            imagens=Related(), autor_editorial_id=None,
+            autor=SimpleNamespace(get_full_name=lambda: 'Redação'),
+            categoria=SimpleNamespace(nome='Cidade', slug='cidade'), tipo_editorial='NOTICIA',
+            publicado_em=None, atualizado_em=None, tags=Related(),
+        )
+        seo = artigo_seo(RequestFactory().get('/noticias/social/'), artigo)
+        self.assertEqual(seo['image_url'], artigo.imagem_social)
 
     def test_service_uses_principal_image(self):
         class Images:
@@ -164,6 +234,8 @@ class SeoMetadataTests(SimpleTestCase):
 
 
 class IntegrationConsentTests(SimpleTestCase):
+    databases = {'default'}
+
     def test_banner_exibe_texto_lgpd_e_controles_de_escolha(self):
         with patch('apps.core.views.montar_contexto_home', return_value={}):
             response = self.client.get('/')

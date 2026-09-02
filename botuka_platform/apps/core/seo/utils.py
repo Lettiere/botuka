@@ -100,32 +100,75 @@ def canonical_url(request):
 
 
 def image_url(request, value=None):
-    candidate = value
-    if candidate is not None and not isinstance(candidate, str):
-        try:
-            candidate = candidate.url
-        except (ValueError, AttributeError):
-            candidate = None
-    return safe_absolute_url(
-        request,
-        candidate or settings.SITE_DEFAULT_IMAGE,
-        fallback_path=settings.SITE_DEFAULT_IMAGE,
-    )
+    return resolve_social_image(request, value)[0]
 
 
 def image_metadata(request, value=None):
-    candidate = value
-    width = height = None
-    is_default = not candidate
-    if candidate is not None and not isinstance(candidate, str):
+    return resolve_social_image(request, value)
+
+
+def _image_candidates(values):
+    for value in values:
+        if isinstance(value, (list, tuple)):
+            yield from _image_candidates(value)
+        else:
+            yield value
+
+
+def _existing_image(value):
+    """Return URL and dimensions without making external HTTP requests."""
+    if value is None:
+        return None
+    if isinstance(value, str):
+        candidate = value.strip()
+        return (candidate, None, None) if candidate else None
+
+    name = getattr(value, 'name', None)
+    storage = getattr(value, 'storage', None)
+    if name is not None and storage is not None:
+        if not name:
+            return None
         try:
-            width, height = candidate.width, candidate.height
-        except (ValueError, AttributeError, OSError, FileNotFoundError):
-            width = height = None
-    url = image_url(request, candidate)
-    default_url = image_url(request)
-    is_default = is_default or url == default_url
-    if is_default:
+            if not storage.exists(name):
+                return None
+        except (OSError, ValueError, AttributeError):
+            return None
+
+    try:
+        candidate = value.url
+    except (ValueError, AttributeError, OSError, FileNotFoundError):
+        return None
+    if not str(candidate or '').strip():
+        return None
+
+    try:
+        width, height = value.width, value.height
+    except (ValueError, AttributeError, OSError, FileNotFoundError):
+        width = height = None
+    return candidate, width, height
+
+
+def resolve_social_image(request, *candidates):
+    """Resolve the first usable social image and always provide a safe fallback."""
+    selected = None
+    for candidate in _image_candidates(candidates):
+        selected = _existing_image(candidate)
+        if selected:
+            break
+
+    is_default = selected is None
+    raw_url, width, height = selected or (settings.SITE_DEFAULT_IMAGE, 1200, 630)
+    url = safe_absolute_url(
+        request,
+        raw_url,
+        fallback_path=settings.SITE_DEFAULT_IMAGE,
+    )
+    default_url = safe_absolute_url(
+        request,
+        settings.SITE_DEFAULT_IMAGE,
+        fallback_path=settings.SITE_DEFAULT_IMAGE,
+    )
+    if is_default or url == default_url:
         width, height = 1200, 630
     path = urlsplit(url).path.lower()
     image_type = (

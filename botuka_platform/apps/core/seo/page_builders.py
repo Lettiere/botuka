@@ -120,7 +120,7 @@ def listing_seo(request, title, description, *, robots=None):
 def empresa_seo(request, empresa):
     title = f'{empresa.nome_fantasia} em {empresa.cidade} | BOTUKA'
     description = empresa.descricao_curta or empresa.descricao_completa
-    image = empresa.imagem_capa or empresa.logo
+    image = [getattr(empresa, 'imagem_social', None), empresa.imagem_capa, empresa.logo]
     url = safe_absolute_url(request, request.path)
     schema = compact({
         '@type': 'LocalBusiness',
@@ -138,9 +138,12 @@ def empresa_seo(request, empresa):
 
 
 def servico_seo(request, servico):
-    image = next((item.imagem for item in servico.imagens.all() if item.principal), None)
-    if not image:
-        image = next((item.imagem for item in servico.imagens.all()), None)
+    service_images = list(servico.imagens.all())
+    image = [
+        getattr(servico, 'imagem_social', None),
+        next((item.imagem for item in service_images if item.principal), None),
+        *(item.imagem for item in service_images),
+    ]
     url = safe_absolute_url(request, request.path)
     provider = servico.empresa.nome_fantasia if servico.empresa_id else 'Prestador autônomo'
     schema = compact({'@type': 'Service', '@id': f'{url}#service', 'name': servico.titulo,
@@ -156,7 +159,7 @@ def servico_seo(request, servico):
 
 def product_seo(request, produto):
     image_item = produto.imagem_principal
-    image = produto.imagem_social or (image_item.imagem if image_item else None)
+    image = [produto.imagem_social, image_item.imagem if image_item else None]
     url = safe_absolute_url(request, request.path)
     seller = (
         produto.empresa_proprietaria.nome_fantasia or produto.empresa_proprietaria.razao_social
@@ -206,13 +209,17 @@ def product_seo(request, produto):
 
 
 def artigo_seo(request, artigo):
-    image = first_value(artigo.imagem_capa)
-    if not image:
-        relacionada = artigo.imagens.filter(
-            ativo=True, excluido_em__isnull=True,
-        ).order_by("ordem", "id").first()
-        if relacionada:
-            image = first_value(relacionada.arquivo, relacionada.url_externa)
+    relacionadas = artigo.imagens.filter(
+        ativo=True, excluido_em__isnull=True,
+    ).order_by('-capa', 'ordem', 'id')
+    image = [
+        artigo.imagem_social,
+        artigo.imagem_capa,
+        *(
+            first_value(relacionada.arquivo, relacionada.url_externa)
+            for relacionada in relacionadas
+        ),
+    ]
     url = safe_absolute_url(request, request.path)
     author = (
         artigo.autor_editorial.nome
@@ -243,8 +250,8 @@ def vaga_seo(request, vaga):
         if vaga.empresa_id else None
     )
     imagem = (
-        vaga.empresa.logo or vaga.empresa.imagem_capa
-        if vaga.empresa_id else None
+        [getattr(vaga, 'imagem_social', None), vaga.empresa.imagem_capa, vaga.empresa.logo]
+        if vaga.empresa_id else [getattr(vaga, 'imagem_social', None)]
     )
     schema = compact({'@type': 'JobPosting', '@id': f'{url}#job', 'title': vaga.titulo,
                       'description': text(vaga.descricao, 5000),
@@ -264,15 +271,16 @@ def media_seo(request, obj, *, kind='programa'):
     title = getattr(obj, 'titulo_seo', None) or getattr(obj, 'titulo', None) or getattr(obj, 'nome', 'YoBotuka')
     description = getattr(obj, 'descricao_seo', None) or getattr(obj, 'descricao_curta', None) or getattr(obj, 'descricao', '')
     youtube_source = getattr(obj, 'video_id', '') or getattr(obj, 'youtube_url', '') or getattr(obj, 'url_ao_vivo', '')
-    image = first_value(
+    image = [
         getattr(obj, 'imagem_compartilhamento', None),
+        getattr(obj, 'imagem_social', None),
         getattr(obj, 'thumbnail', None),
         getattr(obj, 'imagem', None),
         youtube_thumbnail(youtube_source),
         getattr(getattr(obj, 'programa', None), 'imagem', None),
         getattr(getattr(obj, 'canal', None), 'capa', None),
         getattr(getattr(obj, 'canal', None), 'logotipo', None),
-    )
+    ]
     schemas = []
     if kind in {'episodio', 'video'} and getattr(obj, 'embed_url', ''):
         published_at = (
@@ -309,11 +317,12 @@ def tourism_seo(request, obj, *, kind='local'):
         gallery_image = photo.imagem if photo else None
     except (AttributeError, TypeError):
         pass
-    image = first_value(
+    image = [
+        getattr(obj, 'imagem_social', None),
         getattr(obj, 'imagem_principal', None), getattr(obj, 'capa', None),
         gallery_image, getattr(getattr(obj, 'categoria', None), 'imagem', None),
         getattr(obj, 'foto', None),
-    )
+    ]
     url = safe_absolute_url(request, request.path)
     schema_type = 'TouristAttraction' if kind == 'local' else 'WebPage'
     localizacao_publica = (
@@ -336,7 +345,7 @@ def tourism_seo(request, obj, *, kind='local'):
 
 def event_seo(request, evento):
     url = safe_absolute_url(request, request.path)
-    image = getattr(evento, 'imagem_principal', None)
+    image = [getattr(evento, 'imagem_social', None), getattr(evento, 'imagem_principal', None)]
     location = compact({
         '@type': 'Place', 'name': evento.local,
         'address': evento.endereco or None,
@@ -362,7 +371,10 @@ def event_seo(request, evento):
 def government_seo(request, obj, *, kind='acao'):
     title = obj.titulo if kind == 'acao' else obj.nome
     description = (obj.resumo or obj.descricao) if kind == 'acao' else obj.descricao
-    image = obj.imagem if kind == 'acao' else obj.logotipo
+    image = [
+        getattr(obj, 'imagem_social', None),
+        obj.imagem if kind == 'acao' else obj.logotipo,
+    ]
     schema_type = 'Event' if kind == 'acao' and obj.tipo == obj.Tipo.EVENTO else ('GovernmentOffice' if kind == 'orgao' else 'GovernmentOrganization')
     schema = compact({'@type': schema_type, 'name': title, 'description': text(description), 'url': safe_absolute_url(request, request.path), 'image': image_url(request, image),
                       'startDate': obj.inicio_previsto.isoformat() if kind == 'acao' and obj.inicio_previsto else None,
@@ -376,7 +388,11 @@ def government_seo(request, obj, *, kind='acao'):
 def sports_seo(request, obj, *, kind):
     title = getattr(obj, 'nome', None) or getattr(obj, 'nome_publico', None) or str(obj)
     description = getattr(obj, 'descricao', None) or getattr(obj, 'biografia', None) or f'Informações sobre {title} no esporte local.'
-    image = getattr(obj, 'imagem', None) or getattr(obj, 'foto', None)
+    image = [
+        getattr(obj, 'imagem_social', None),
+        getattr(obj, 'imagem', None),
+        getattr(obj, 'foto', None),
+    ]
     schemas = []
     if kind == 'campeonato':
         schemas.append(compact({'@type': 'SportsEvent', 'name': title, 'description': text(description),

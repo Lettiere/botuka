@@ -1,6 +1,10 @@
+import json
+import re
+import tempfile
 from unittest.mock import patch
 
 from django.conf import settings
+from django.core.files.base import ContentFile
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.test import SimpleTestCase, TestCase, override_settings
@@ -39,6 +43,7 @@ class RichTextSanitizerTests(SimpleTestCase):
 @override_settings(
     PUBLIC_BASE_URL="https://botuka.com.br",
     SITE_URL="https://botuka.com.br",
+    MEDIA_ROOT=tempfile.mkdtemp(prefix='botuka-news-seo-tests-'),
 )
 class NewsExperienceTests(TestCase):
     @classmethod
@@ -89,17 +94,48 @@ class NewsExperienceTests(TestCase):
             'name="twitter:image" content="https://botuka.com.br/'
         )
 
-    def test_seo_prioriza_capa_e_aplica_fallback_institucional(self):
-        Artigo.objects.filter(pk=self.artigo.pk).update(
-            imagem_capa='news/artigos/capa-principal.jpg',
-            imagem_social='news/social/imagem-antiga.jpg',
-        )
+    def test_seo_prioriza_imagem_social_e_aplica_fallback_institucional(self):
+        image_bytes = (settings.BASE_DIR / 'static/img/seo/botuka-default-1200x630.png').read_bytes()
+        self.artigo.imagem_capa.save('capa-principal.png', ContentFile(image_bytes), save=False)
+        self.artigo.imagem_social.save('social-1200x630.png', ContentFile(image_bytes), save=False)
+        self.artigo.save()
         resposta = self.client.get(self.artigo.get_absolute_url())
-        self.assertContains(
-            resposta,
-            'property="og:image" content="https://botuka.com.br/media/news/artigos/capa-principal.jpg"',
+        html = resposta.content.decode()
+        social_url = 'https://botuka.com.br/media/news/social/social-1200x630.png'
+        cover_url = 'https://botuka.com.br/media/news/artigos/capa-principal.png'
+        for attribute, name in (
+            ('property', 'og:image'),
+            ('property', 'og:image:secure_url'),
+            ('name', 'twitter:image'),
+        ):
+            match = re.search(
+                rf'<meta {attribute}="{re.escape(name)}" content="([^"]+)"',
+                html,
+            )
+            self.assertIsNotNone(match)
+            self.assertEqual(match.group(1), social_url)
+            self.assertNotEqual(match.group(1), cover_url)
+
+        scripts = re.findall(
+            r'<script type="application/ld\+json">(.*?)</script>', html, re.S,
         )
-        self.assertNotContains(resposta, '/news/social/imagem-antiga.jpg')
+        schemas = []
+        for script in scripts:
+            payload = json.loads(script)
+            schemas.extend(payload.get('@graph', [payload]))
+        article_schemas = [
+            schema for schema in schemas
+            if schema.get('@type') in {'NewsArticle', 'WebPage'}
+            and schema.get('image')
+        ]
+        self.assertTrue(article_schemas)
+        for schema in article_schemas:
+            images = schema.get('image', [])
+            if isinstance(images, str):
+                images = [images]
+            self.assertIn(social_url, images)
+            self.assertNotIn(cover_url, images)
+
         Artigo.objects.filter(pk=self.artigo.pk).update(
             imagem_capa='', imagem_social=''
         )
