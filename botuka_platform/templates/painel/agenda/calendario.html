@@ -267,7 +267,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   <div class="agcal-head">
     <div>
-      <h1>Calendário operacional</h1>
+      <h1>Calendário</h1>
       <div class="text-muted">
         {{ inicio_semana|date:"d/m/Y" }}
         até
@@ -298,7 +298,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <i class="bi bi-chevron-right"></i>
       </a>
 
-      <form method="get">
+      <details><summary class="btn btn-outline-secondary">Filtros</summary><form method="get" class="mt-2">
         <input type="hidden"
                name="data"
                value="{{ inicio_semana|date:'Y-m-d' }}">
@@ -308,7 +308,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 class="form-select"
                 onchange="this.form.submit()">
 
-          <option value="">Todos os profissionais</option>
+          <option value="">Todas as pessoas</option>
 
           {% for profissional in profissionais %}
             <option value="{{ profissional.pk }}"
@@ -323,7 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
           <option value="">Todos os serviços</option>
           {% for servico in servicos %}<option value="{{ servico.pk }}"{% if servico_selecionado.pk == servico.pk %} selected{% endif %}>{{ servico }}</option>{% endfor %}
         </select>
-      </form>
+      </form></details>
 
     </div>
   </div>
@@ -332,17 +332,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   {% if not funcionamento_configurado %}
     <div class="alert alert-warning">
-      Funcionamento da empresa ainda não configurado.
-      O motor mantém temporariamente a disponibilidade profissional como referência.
+      Os horários gerais da empresa ainda não foram definidos. Enquanto isso, serão usados os horários de cada pessoa.
     </div>
   {% endif %}
 
   <div class="agcal-legend">
-    <span><i class="agcal-dot open"></i> Empresa aberta</span>
-    <span><i class="agcal-dot available"></i> Profissional disponível</span>
+    <span><i class="agcal-dot open"></i> Horário da empresa</span>
+    <span><i class="agcal-dot available"></i> Horário de atendimento</span>
     <span><i class="agcal-dot booked"></i> Agendamento</span>
     <span><i class="agcal-dot blocked"></i> Bloqueio</span>
-    <span><i class="agcal-dot buffer"></i> Buffer</span>
+    <span><i class="agcal-dot buffer"></i> Intervalo de preparação</span>
   </div>
 
   <div class="agcal-mobile-days" aria-label="Selecionar dia"></div><div class="agcal-week mode-{{ modo }}" data-agcal-week>

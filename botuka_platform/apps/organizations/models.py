@@ -904,6 +904,7 @@ class Empresa(UUIDModel):
             and self.capacidades_empresa.filter(
                 ativo=True,
                 status=EmpresaCapacidade.Status.APROVADA,
+                capacidade__ativo=True,
                 capacidade__codigo=codigo,
             ).exists()
         )

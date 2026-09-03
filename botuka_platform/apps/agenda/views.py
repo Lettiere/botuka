@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
 from django.core.paginator import Paginator
+from django.db import transaction
 from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
@@ -35,7 +36,9 @@ from .models import (
     AgendaEmpresa,
 )
 from .dashboard import construir_central_agenda
-from .operations import abrir_agenda_empresa, fechar_agenda_empresa
+from .operations import (
+    abrir_agenda_empresa, fechar_agenda_empresa, solicitar_liberacao_agenda,
+)
 from .permissions import (
     agenda_empresa_configuracao_required,
     agenda_empresa_required,
@@ -111,11 +114,18 @@ def agenda_estado(request, empresa):
     acao = request.POST.get('acao')
     try:
         if acao == 'abrir':
-            abrir_agenda_empresa(empresa=empresa, usuario=request.user)
-            messages.success(request, 'Agenda aberta para novos agendamentos.')
+            if not empresa.pode_aceitar_agendamentos:
+                solicitar_liberacao_agenda(empresa)
+                messages.info(
+                    request,
+                    'Estamos liberando sua agenda online. Você poderá ativá-la assim que a liberação for concluída.',
+                )
+            else:
+                abrir_agenda_empresa(empresa=empresa, usuario=request.user)
+                messages.success(request, 'Sua agenda está ativa para novos agendamentos.')
         elif acao == 'fechar':
             fechar_agenda_empresa(empresa=empresa, usuario=request.user)
-            messages.success(request, 'Agenda fechada; as reservas existentes foram preservadas.')
+            messages.success(request, 'Agenda desativada. Seus agendamentos existentes foram preservados.')
         else:
             raise ValidationError('Ação inválida para a Agenda.')
     except ValidationError as exc:
@@ -140,7 +150,7 @@ def agenda_configuracoes(request, empresa):
 
 
 @login_required
-@agenda_empresa_required
+@agenda_empresa_configuracao_required
 def vinculo_lista(request, empresa):
     return render(request, 'painel/agenda/vinculo_lista.html', {
         'empresa': empresa, 'itens': _vinculos(empresa)
@@ -148,7 +158,7 @@ def vinculo_lista(request, empresa):
 
 
 @login_required
-@agenda_empresa_required
+@agenda_empresa_configuracao_required
 def vinculo_form(request, empresa, pk=None):
     instance = None
     if pk is not None:
@@ -186,7 +196,7 @@ def _alterar_ativo(request, *, objeto, ativo, redirect_name):
 
 @require_POST
 @login_required
-@agenda_empresa_required
+@agenda_empresa_configuracao_required
 def vinculo_status(request, empresa, pk):
     objeto = get_object_or_404(_vinculos(empresa), pk=pk)
     ativo = request.POST.get('ativo') == '1'
@@ -206,7 +216,7 @@ def vinculo_status(request, empresa, pk):
 
 
 @login_required
-@agenda_empresa_required
+@agenda_empresa_configuracao_required
 def funcionamento_lista(request, empresa):
     itens = _funcionamentos(empresa).order_by(
         'dia_semana', 'hora_inicio'
@@ -220,7 +230,7 @@ def funcionamento_lista(request, empresa):
 
 
 @login_required
-@agenda_empresa_required
+@agenda_empresa_configuracao_required
 def funcionamento_form(request, empresa, pk=None):
     instance = (
         get_object_or_404(_funcionamentos(empresa), pk=pk)
@@ -263,7 +273,7 @@ def funcionamento_form(request, empresa, pk=None):
 
 @require_POST
 @login_required
-@agenda_empresa_required
+@agenda_empresa_configuracao_required
 def funcionamento_status(request, empresa, pk):
     item = get_object_or_404(
         _funcionamentos(empresa),
@@ -656,14 +666,50 @@ def calendario_operacional(request, empresa):
 
 
 @login_required
-@agenda_empresa_required
+@agenda_empresa_configuracao_required
 def horarios_lista(request, empresa):
+    if request.method == 'POST' and request.POST.get('acao') == 'copiar_segunda':
+        profissional = get_object_or_404(
+            _profissionais(empresa).filter(ativo=True, empresa_usuario__ativo=True),
+            pk=request.POST.get('profissional'),
+        )
+        destinos = {
+            int(valor) for valor in request.POST.getlist('dias')
+            if valor.isdigit() and 0 < int(valor) <= 6
+        }
+        origem = list(_disponibilidades_semanais(empresa).filter(
+            profissional=profissional, dia_semana=0, ativo=True,
+        ))
+        if not origem:
+            messages.error(request, 'Defina os horários de segunda-feira antes de copiar.')
+        elif not destinos:
+            messages.error(request, 'Escolha pelo menos um dia para receber os horários.')
+        else:
+            with transaction.atomic():
+                _disponibilidades_semanais(empresa).filter(
+                    profissional=profissional, dia_semana__in=destinos,
+                ).delete()
+                for dia in destinos:
+                    for item in origem:
+                        AgendaDisponibilidade.objects.create(
+                            profissional=profissional,
+                            dia_semana=dia,
+                            hora_inicio=item.hora_inicio,
+                            hora_fim=item.hora_fim,
+                            ativo=True,
+                        )
+            messages.success(request, 'Horários de segunda-feira copiados.')
+        return redirect('painel:agenda_horarios', uuid=empresa.uuid)
     return render(request, 'painel/agenda/horarios.html', {
         'empresa': empresa,
         'semanais': _disponibilidades_semanais(empresa).order_by(
             'profissional_id', 'dia_semana', 'hora_inicio',
         ),
         'excecoes': _disponibilidades(empresa).order_by('data', 'hora_inicio'),
+        'profissionais': _profissionais(empresa).filter(
+            ativo=True, empresa_usuario__ativo=True,
+        ),
+        'dias_copia': AgendaDisponibilidade.DiaSemana.choices[1:],
     })
 
 
@@ -671,7 +717,7 @@ disponibilidade_lista = horarios_lista
 
 
 @login_required
-@agenda_empresa_required
+@agenda_empresa_configuracao_required
 def disponibilidade_semanal_form(request, empresa, pk=None):
     instance = (
         get_object_or_404(_disponibilidades_semanais(empresa), pk=pk)
@@ -694,7 +740,7 @@ def disponibilidade_semanal_form(request, empresa, pk=None):
 
 @require_POST
 @login_required
-@agenda_empresa_required
+@agenda_empresa_configuracao_required
 def disponibilidade_semanal_status(request, empresa, pk):
     objeto = get_object_or_404(_disponibilidades_semanais(empresa), pk=pk)
     return _alterar_ativo(
@@ -705,7 +751,7 @@ def disponibilidade_semanal_status(request, empresa, pk):
 
 
 @login_required
-@agenda_empresa_required
+@agenda_empresa_configuracao_required
 def disponibilidade_form(request, empresa, pk=None):
     instance = get_object_or_404(_disponibilidades(empresa), pk=pk) if pk else None
     form = DisponibilidadeForm(
@@ -724,7 +770,7 @@ def disponibilidade_form(request, empresa, pk=None):
 
 @require_POST
 @login_required
-@agenda_empresa_required
+@agenda_empresa_configuracao_required
 def disponibilidade_status(request, empresa, pk):
     objeto = get_object_or_404(_disponibilidades(empresa), pk=pk)
     return _alterar_ativo(
@@ -734,7 +780,7 @@ def disponibilidade_status(request, empresa, pk):
 
 
 @login_required
-@agenda_empresa_required
+@agenda_empresa_configuracao_required
 def bloqueio_lista(request, empresa):
     return render(request, 'painel/agenda/bloqueio_lista.html', {
         'empresa': empresa, 'itens': _bloqueios(empresa).order_by('-inicio')
@@ -742,7 +788,7 @@ def bloqueio_lista(request, empresa):
 
 
 @login_required
-@agenda_empresa_required
+@agenda_empresa_configuracao_required
 def bloqueio_form(request, empresa, pk=None):
     instance = get_object_or_404(_bloqueios(empresa), pk=pk) if pk else None
     form = BloqueioForm(request.POST or None, instance=instance, empresa=empresa)
@@ -759,7 +805,7 @@ def bloqueio_form(request, empresa, pk=None):
 
 @require_POST
 @login_required
-@agenda_empresa_required
+@agenda_empresa_configuracao_required
 def bloqueio_status(request, empresa, pk):
     objeto = get_object_or_404(_bloqueios(empresa), pk=pk)
     return _alterar_ativo(

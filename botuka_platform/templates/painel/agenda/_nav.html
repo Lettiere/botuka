@@ -12,11 +12,11 @@
   </a>
 
   <a href="{% url 'painel:empresa_equipe' empresa.uuid %}">
-    <i class="bi bi-people"></i> Profissionais
+    <i class="bi bi-people"></i> Quem atende
   </a>
 
   <a href="{% url 'painel:agenda_vinculo_lista' empresa.uuid %}">
-    <i class="bi bi-scissors"></i> Serviços e duração
+    <i class="bi bi-scissors"></i> Serviços de cada pessoa
   </a>
 
   <a href="{% url 'painel:agenda_horarios' empresa.uuid %}">
@@ -24,7 +24,7 @@
   </a>
 
   <a href="{% url 'painel:agenda_bloqueio_lista' empresa.uuid %}">
-    <i class="bi bi-calendar-x"></i> Bloqueios
+    <i class="bi bi-calendar-x"></i> Bloquear horário
   </a>
 
   <a href="{% url 'painel:agenda_agendamento_lista' empresa.uuid %}">
@@ -32,7 +32,7 @@
   </a>
 
   <a href="{% url 'painel:agenda_configuracoes' empresa.uuid %}">
-    <i class="bi bi-gear"></i> Configurações
+    <i class="bi bi-gear"></i> Configurações avançadas
   </a>
 </nav>
 

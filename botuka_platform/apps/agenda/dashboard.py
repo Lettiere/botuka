@@ -23,6 +23,7 @@ from .public_services import STATUS_OCUPANTES, vinculos_agendaveis
 def _capacidade_aprovada(empresa, codigo):
     return empresa.capacidades_empresa.filter(
         capacidade__codigo=codigo,
+        capacidade__ativo=True,
         ativo=True,
         status=EmpresaCapacidade.Status.APROVADA,
     ).exists()
@@ -132,6 +133,9 @@ def construir_central_agenda(empresa, *, considerar_estado=True):
     perfil_publico = empresa.perfil_publico
     prestar_servicos = _capacidade_aprovada(empresa, 'PRESTAR_SERVICOS')
     aceitar_agendamentos = _capacidade_aprovada(empresa, 'ACEITAR_AGENDAMENTOS')
+    registro_aceitar_agendamentos = empresa.capacidades_empresa.filter(
+        capacidade__codigo='ACEITAR_AGENDAMENTOS',
+    ).first()
     tem_profissional = bool(profissionais_ativos)
     tem_servico_publicado = servicos_publicados.exists()
     tem_vinculo = vinculos_ativos.exists()
@@ -187,6 +191,102 @@ def construir_central_agenda(empresa, *, considerar_estado=True):
         estado = 'PRONTA PARA ABRIR'
         mensagem = 'A configuração está completa e a Agenda pode ser aberta.'
 
+    servicos_ok = tem_servico_publicado
+    atendentes_ok = tem_profissional and tem_vinculo
+    horarios_ok = tem_horario and funcionamento_compativel
+    online_ok = bool(
+        agenda_empresa and agenda_empresa.status == AgendaEmpresa.Status.ABERTA
+        and autorizado
+    )
+    passos = [
+        {
+            'numero': 1,
+            'titulo': 'Serviços',
+            'descricao': (
+                'Seus serviços já estão cadastrados.'
+                if servicos_ok else
+                'Escolha os serviços que poderão ser agendados.'
+            ),
+            'ok': servicos_ok,
+            'url': reverse('painel:servicos_lista') + f'?empresa={empresa.uuid}',
+        },
+        {
+            'numero': 2,
+            'titulo': 'Quem atende',
+            'descricao': (
+                'Quem atende e seus serviços já foram definidos.'
+                if atendentes_ok else
+                'Informe quem realiza cada serviço.'
+            ),
+            'ok': atendentes_ok,
+            'url': urls['profissionais'] if not tem_profissional else urls['servicos'],
+        },
+        {
+            'numero': 3,
+            'titulo': 'Horários',
+            'descricao': (
+                'Os horários de atendimento já estão definidos.'
+                if horarios_ok else
+                'Defina os dias e horários de atendimento.'
+            ),
+            'ok': horarios_ok,
+            'url': urls['horarios'],
+        },
+        {
+            'numero': 4,
+            'titulo': 'Agenda online',
+            'descricao': (
+                'Clientes já podem escolher horários.' if online_ok else
+                'Ative quando terminar a configuração.'
+            ),
+            'ok': online_ok,
+            'url': '',
+        },
+    ]
+    if not servicos_ok:
+        proximo_passo = {
+            'mensagem': 'Comece escolhendo os serviços que poderão ser agendados.',
+            'rotulo': 'Configurar serviços',
+            'url': passos[0]['url'],
+        }
+    elif not tem_profissional:
+        proximo_passo = {
+            'mensagem': 'Agora informe quem realiza os atendimentos.',
+            'rotulo': 'Definir quem atende',
+            'url': urls['profissionais'],
+        }
+    elif not tem_vinculo:
+        proximo_passo = {
+            'mensagem': 'Falta definir qual serviço cada pessoa atende.',
+            'rotulo': 'Definir serviços de cada atendente',
+            'url': urls['servicos'],
+        }
+    elif not horarios_ok:
+        proximo_passo = {
+            'mensagem': 'Falta apenas definir seus horários.',
+            'rotulo': 'Definir horários',
+            'url': urls['horarios'],
+        }
+    elif not empresa_apta or not perfil_publico:
+        proximo_passo = {
+            'mensagem': 'Antes de ativar, confirme os dados públicos da sua empresa.',
+            'rotulo': 'Revisar dados da empresa',
+            'url': urls['empresa_editar'],
+        }
+    else:
+        proximo_passo = None
+
+    aguardando_liberacao = bool(
+        prestar_servicos
+        and registro_aceitar_agendamentos
+        and not aceitar_agendamentos
+    )
+    pronto_para_ativar = (
+        empresa_apta and perfil_publico and prestar_servicos
+        and servicos_ok and atendentes_ok and horarios_ok
+        and not aguardando_liberacao
+    )
+
     return {
         'estado': estado,
         'mensagem': mensagem,
@@ -197,6 +297,7 @@ def construir_central_agenda(empresa, *, considerar_estado=True):
         'esta_aberta': bool(
             agenda_empresa and agenda_empresa.status == AgendaEmpresa.Status.ABERTA
         ),
+        'esta_online': online_ok,
         'checklist': checklist,
         'checklist_ok': sum(item['ok'] for item in checklist),
         'checklist_total': len(checklist),
@@ -217,4 +318,9 @@ def construir_central_agenda(empresa, *, considerar_estado=True):
         'proximos_bloqueios': bloqueios[:3],
         'proximos_total': proximos.count(),
         'proximos': proximos[:5],
+        'passos': passos,
+        'passos_concluidos': sum(item['ok'] for item in passos),
+        'proximo_passo': proximo_passo,
+        'aguardando_liberacao': aguardando_liberacao,
+        'pronto_para_ativar': pronto_para_ativar,
     }

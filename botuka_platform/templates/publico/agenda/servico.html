@@ -20,14 +20,14 @@
           <h2>Quem vai atender?</h2>
           <label class="agenda-professional-option"><input type="radio" name="profissional" value="" {% if profissional_selecionado == 'qualquer' %}checked{% endif %}><span><i class="bi bi-people"></i><strong>Qualquer profissional disponível</strong><small>Mostra a primeira opção real para cada horário.</small></span></label>
           {% for profissional in profissionais %}<label class="agenda-professional-option"><input type="radio" name="profissional" value="{{ profissional.uuid }}" {% if profissional_selecionado == profissional.uuid|stringformat:'s' %}checked{% endif %}><span>{% if profissional.item.usuario.foto %}<img src="{{ profissional.item.usuario.foto.url }}" alt="">{% else %}<i class="bi bi-person"></i>{% endif %}<strong>{{ profissional.nome }}</strong><small>{{ servico.profissao.nome }} · {{ profissional.duracao }} min</small></span></label>{% endfor %}
-          <button class="btn-botuka btn-soft" type="submit">Aplicar profissional</button>
+          <button class="btn-botuka btn-soft" type="submit">Ver horários desta pessoa</button>
         </form>
         <div class="agenda-week-nav"><a href="?inicio={{ semana_anterior|date:'Y-m-d' }}{% if profissional_selecionado != 'qualquer' %}&profissional={{ profissional_selecionado }}{% endif %}"><i class="bi bi-chevron-left"></i> Semana anterior</a><a href="?{% if profissional_selecionado != 'qualquer' %}profissional={{ profissional_selecionado }}{% endif %}">Hoje</a><a href="?inicio={{ proxima_semana|date:'Y-m-d' }}{% if profissional_selecionado != 'qualquer' %}&profissional={{ profissional_selecionado }}{% endif %}">Próxima semana <i class="bi bi-chevron-right"></i></a></div>
         {% if calendario.proximo %}<div class="agenda-next-real"><span>Próximo horário disponível</span><strong>{{ calendario.proximo.inicio|date:"d/m/Y H:i" }}</strong><small>{{ calendario.proximo.profissional_nome }}</small></div>{% endif %}
         <div class="agenda-week-grid">
           {% for dia in calendario.dias %}<article class="agenda-week-day"><h3><span>{{ dia.data|date:"D" }}</span>{{ dia.data|date:"d/m" }}</h3>{% if dia.opcoes %}<div class="agenda-week-slots">{% for opcao in dia.opcoes %}<a href="{% url 'agenda_public:confirmar' opcao.vinculo.uuid %}?inicio={{ opcao.inicio.isoformat|urlencode }}" title="{{ opcao.profissional_nome }}">{{ opcao.inicio|time:"H:i" }}</a>{% endfor %}</div>{% else %}<p>Sem horários</p>{% endif %}</article>{% endfor %}
         </div>
-      {% else %}<div class="agenda-empty-state"><i class="bi bi-person-x"></i><h2>Serviço sem agenda disponível</h2><p>Não há profissional com vínculo operacional ativo para agendamento online.</p></div>{% endif %}
+      {% else %}<div class="agenda-empty-state"><i class="bi bi-person-x"></i><h2>Sem horários disponíveis</h2><p>Ninguém está atendendo este serviço online no momento.</p></div>{% endif %}
     </section>
   </section>
 </main>

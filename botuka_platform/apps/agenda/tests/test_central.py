@@ -124,7 +124,10 @@ class CentralAgendaTests(TestCase):
     def test_gestor_autorizado_acessa_central(self):
         response = self.client.get(self.url)
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Gerencie profissionais, serviços, horários')
+        self.assertContains(response, 'Configure sua agenda')
+        self.assertContains(response, 'Quem atende')
+        self.assertNotContains(response, 'ACEITAR_AGENDAMENTOS')
+        self.assertNotContains(response, 'PRESTAR_SERVICOS')
 
     def test_usuario_de_outra_empresa_nao_acessa(self):
         self.client.force_login(self.outro)
@@ -219,10 +222,32 @@ class CentralAgendaTests(TestCase):
             'painel:agenda_horarios', kwargs={'uuid': self.empresa.uuid},
         ))
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Horários semanais')
-        self.assertContains(response, 'Exceções por data')
+        self.assertContains(response, 'Horários de cada semana')
+        self.assertContains(response, 'Horário diferente neste dia')
         self.assertEqual(response.context['semanais'].count(), 1)
         self.assertEqual(response.context['excecoes'].count(), 1)
+
+    def test_copia_horarios_de_segunda_para_dias_escolhidos(self):
+        AgendaDisponibilidade.objects.filter(profissional=self.profissional).delete()
+        AgendaDisponibilidade.objects.create(
+            profissional=self.profissional,
+            dia_semana=AgendaDisponibilidade.DiaSemana.SEGUNDA,
+            hora_inicio=time(8), hora_fim=time(12),
+        )
+        response = self.client.post(reverse(
+            'painel:agenda_horarios', kwargs={'uuid': self.empresa.uuid},
+        ), {
+            'acao': 'copiar_segunda',
+            'profissional': self.profissional.pk,
+            'dias': [AgendaDisponibilidade.DiaSemana.TERCA,
+                     AgendaDisponibilidade.DiaSemana.QUARTA],
+        })
+        self.assertEqual(response.status_code, 302)
+        copiados = AgendaDisponibilidade.objects.filter(
+            profissional=self.profissional,
+            dia_semana__in=(1, 2), hora_inicio=time(8), hora_fim=time(12),
+        )
+        self.assertEqual(copiados.count(), 2)
 
     def test_cria_edita_e_desativa_horario_semanal(self):
         criar = reverse('painel:agenda_horario_semanal_criar', kwargs={
@@ -332,7 +357,7 @@ class CentralAgendaTests(TestCase):
         self.assertFalse(AgendaEmpresa.objects.filter(
             empresa=self.empresa, status=AgendaEmpresa.Status.ABERTA,
         ).exists())
-        self.assertContains(response, 'Horário ou disponibilidade configurado')
+        self.assertContains(response, 'Falta apenas definir seus horários.')
 
     def test_estado_exige_post_e_impede_idor(self):
         url = reverse('painel:agenda_estado', kwargs={'uuid': self.empresa.uuid})
@@ -409,7 +434,7 @@ class CentralAgendaTests(TestCase):
             'painel:agenda_calendario', kwargs={'uuid': self.empresa.uuid},
         ), {'modo': 'dia'})
         self.assertEqual(response.status_code, 200)
-        self.assertContains(response, 'Calendário operacional')
+        self.assertContains(response, '<h1>Calendário</h1>', html=True)
         self.assertContains(response, 'agcal-mobile-days')
 
     def test_lista_agendamentos_filtra_e_pagina(self):
@@ -539,3 +564,107 @@ class CentralAgendaTests(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'Há agendamentos ativos neste período')
         self.assertFalse(AgendaBloqueio.objects.exists())
+
+    def test_central_expoe_fluxo_simples_de_quatro_passos(self):
+        response = self.client.get(self.url)
+        central = response.context['central']
+        self.assertEqual(
+            [item['titulo'] for item in central['passos']],
+            ['Serviços', 'Quem atende', 'Horários', 'Agenda online'],
+        )
+        self.assertEqual(central['passos_concluidos'], 3)
+        self.assertTrue(central['pronto_para_ativar'])
+        self.assertContains(response, 'Ativar minha agenda')
+
+    def test_proximo_passo_quando_servicos_estao_ausentes(self):
+        Agendamento.objects.filter(pk=self.agendamento.pk).delete()
+        AgendaProfissionalServico.objects.filter(pk=self.vinculo.pk).delete()
+        Servico.all_objects.filter(pk=self.servico.pk).delete()
+        central = self.client.get(self.url).context['central']
+        self.assertEqual(central['proximo_passo']['rotulo'], 'Configurar serviços')
+
+    def test_proximo_passo_quando_atendente_esta_ausente(self):
+        Agendamento.objects.filter(pk=self.agendamento.pk).delete()
+        AgendaProfissional.objects.filter(pk=self.profissional.pk).delete()
+        central = self.client.get(self.url).context['central']
+        self.assertEqual(central['proximo_passo']['rotulo'], 'Definir quem atende')
+
+    def test_proximo_passo_quando_servico_nao_esta_ligado_ao_atendente(self):
+        Agendamento.objects.filter(pk=self.agendamento.pk).delete()
+        AgendaProfissionalServico.objects.filter(pk=self.vinculo.pk).delete()
+        central = self.client.get(self.url).context['central']
+        self.assertEqual(
+            central['proximo_passo']['rotulo'],
+            'Definir serviços de cada atendente',
+        )
+
+    def test_proximo_passo_quando_horarios_estao_ausentes(self):
+        AgendaDisponibilidade.objects.filter(profissional=self.profissional).update(
+            ativo=False,
+        )
+        central = self.client.get(self.url).context['central']
+        self.assertEqual(central['proximo_passo']['rotulo'], 'Definir horários')
+        self.assertEqual(
+            central['proximo_passo']['mensagem'],
+            'Falta apenas definir seus horários.',
+        )
+
+    def test_proximo_passo_quando_perfil_publico_esta_desativado(self):
+        Empresa.all_objects.filter(pk=self.empresa.pk).update(perfil_publico=False)
+        central = self.client.get(self.url).context['central']
+        self.assertEqual(central['proximo_passo']['rotulo'], 'Revisar dados da empresa')
+        self.assertFalse(central['pronto_para_ativar'])
+
+    def test_ativar_sem_capacidade_cria_solicitacao_pendente(self):
+        self.empresa.capacidades_empresa.filter(
+            capacidade__codigo='ACEITAR_AGENDAMENTOS',
+        ).delete()
+        response = self.client.post(reverse(
+            'painel:agenda_estado', kwargs={'uuid': self.empresa.uuid},
+        ), {'acao': 'abrir'}, follow=True)
+        solicitacao = self.empresa.capacidades_empresa.get(
+            capacidade__codigo='ACEITAR_AGENDAMENTOS',
+        )
+        self.assertEqual(solicitacao.status, EmpresaCapacidade.Status.PENDENTE)
+        self.assertFalse(AgendaEmpresa.objects.filter(
+            empresa=self.empresa, status=AgendaEmpresa.Status.ABERTA,
+        ).exists())
+        self.assertContains(response, 'Estamos liberando sua agenda online')
+        self.assertNotContains(response, 'ACEITAR_AGENDAMENTOS')
+
+    def test_capacidade_pendente_nao_impede_configuracao(self):
+        self.empresa.capacidades_empresa.filter(
+            capacidade__codigo='ACEITAR_AGENDAMENTOS',
+        ).update(status=EmpresaCapacidade.Status.PENDENTE)
+        response = self.client.get(self.url)
+        self.assertContains(response, 'Agenda aguardando liberação')
+        self.assertNotContains(response, 'Ativar minha agenda')
+        for nome in ('agenda_vinculo_lista', 'agenda_horarios', 'agenda_bloqueio_lista'):
+            url = reverse(f'painel:{nome}', kwargs={'uuid': self.empresa.uuid})
+            self.assertEqual(self.client.get(url).status_code, 200, nome)
+
+    def test_capacidade_inativa_nao_libera_agenda(self):
+        AgendaEmpresa.objects.create(
+            empresa=self.empresa, status=AgendaEmpresa.Status.ABERTA,
+        )
+        Capacidade.objects.filter(codigo='ACEITAR_AGENDAMENTOS').update(ativo=False)
+        self.assertFalse(self.empresa.pode_aceitar_agendamentos)
+        response = self.client.get(self.url)
+        central = response.context['central']
+        self.assertFalse(central['autorizado'])
+        self.assertTrue(central['aguardando_liberacao'])
+        self.assertFalse(central['esta_online'])
+        self.assertContains(response, 'Desativada')
+
+    def test_desativacao_usa_linguagem_simples_e_preserva_seguranca(self):
+        AgendaEmpresa.objects.create(
+            empresa=self.empresa, status=AgendaEmpresa.Status.ABERTA,
+        )
+        response = self.client.post(reverse(
+            'painel:agenda_estado', kwargs={'uuid': self.empresa.uuid},
+        ), {'acao': 'fechar'}, follow=True)
+        self.assertContains(response, 'Desativada')
+        self.assertTrue(Agendamento.objects.filter(pk=self.agendamento.pk).exists())
+        self.assertFalse(AgendaEmpresa.objects.filter(
+            empresa=self.empresa, status=AgendaEmpresa.Status.ABERTA,
+        ).exists())

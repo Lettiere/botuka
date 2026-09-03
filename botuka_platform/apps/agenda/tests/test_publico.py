@@ -311,7 +311,7 @@ class AgendaPublicaTests(test_operacao.AgendaOperacaoTests):
         response = self.http.get(reverse(
             'agenda_public:servico', args=[self.empresa_a.slug, outro.slug]
         ))
-        self.assertContains(response, 'sem agenda disponível')
+        self.assertContains(response, 'Sem horários disponíveis')
         AgendaProfissionalServico.objects.filter(pk=self.vinculo_a.pk).update(ativo=False)
         self.assertEqual(vinculos_agendaveis(servico=self.servico_a), [])
 

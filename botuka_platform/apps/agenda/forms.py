@@ -59,6 +59,11 @@ class ProfissionalServicoForm(EmpresaScopedModelForm):
         super().__init__(*args, **kwargs)
         self.fields['profissional'].queryset = profissionais_ativos(self.empresa)
         self.fields['servico'].queryset = servicos_operacionais(self.empresa)
+        self.fields['profissional'].label = 'Quem atende'
+        self.fields['servico'].label = 'Serviço que realiza'
+        self.fields['duracao_minutos'].label = 'Duração do atendimento (minutos)'
+        self.fields['buffer_antes_minutos'].label = 'Tempo de preparação antes (minutos)'
+        self.fields['buffer_depois_minutos'].label = 'Tempo de preparação depois (minutos)'
 
     def clean_servico(self):
         servico = self.cleaned_data['servico']
@@ -107,6 +112,10 @@ class DisponibilidadeSemanalForm(EmpresaScopedModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['profissional'].queryset = profissionais_ativos(self.empresa)
+        self.fields['profissional'].label = 'Quem atende'
+        self.fields['dia_semana'].label = 'Dia da semana'
+        self.fields['hora_inicio'].label = 'Início'
+        self.fields['hora_fim'].label = 'Fim'
 
     def clean(self):
         cleaned = super().clean()
@@ -141,6 +150,10 @@ class DisponibilidadeForm(EmpresaScopedModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['profissional'].queryset = profissionais_ativos(self.empresa)
+        self.fields['profissional'].label = 'Quem atende'
+        self.fields['data'].label = 'Dia diferente'
+        self.fields['hora_inicio'].label = 'Início'
+        self.fields['hora_fim'].label = 'Fim'
 
     def clean(self):
         cleaned = super().clean()
@@ -191,6 +204,11 @@ class BloqueioForm(EmpresaScopedModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields['profissional'].queryset = profissionais_ativos(self.empresa)
+        self.fields['profissional'].label = 'Quem'
+        self.fields['tipo'].label = 'Motivo do bloqueio'
+        self.fields['inicio'].label = 'Data e hora de início'
+        self.fields['fim'].label = 'Data e hora de término'
+        self.fields['motivo'].label = 'Observação (opcional)'
         self.fields['inicio'].input_formats = ('%Y-%m-%dT%H:%M',)
         self.fields['fim'].input_formats = ('%Y-%m-%dT%H:%M',)
 
@@ -243,7 +261,7 @@ class BloqueioForm(EmpresaScopedModelForm):
 
 class AgendamentoOperacionalForm(forms.Form):
     vinculo = forms.ModelChoiceField(
-        queryset=AgendaProfissionalServico.objects.none(), label='Profissional e serviço',
+        queryset=AgendaProfissionalServico.objects.none(), label='Serviço e quem atende',
     )
     inicio = forms.DateTimeField(
         label='Data e horário', input_formats=('%Y-%m-%dT%H:%M',),
@@ -278,10 +296,13 @@ class AgendaConfiguracaoForm(forms.ModelForm):
             'intervalo_grade_minutos', 'cancelamento_antecedencia_minutos',
         )
         labels = {
-            'antecedencia_minima_minutos': 'Antecedência mínima (minutos)',
-            'horizonte_maximo_dias': 'Reservas disponíveis pelos próximos (dias)',
-            'intervalo_grade_minutos': 'Intervalo entre opções de horário (0 = duração do serviço)',
-            'cancelamento_antecedencia_minutos': 'Prazo mínimo para cancelamento (minutos)',
+            'antecedencia_minima_minutos': 'Com quanto tempo de antecedência o cliente pode marcar? (minutos)',
+            'horizonte_maximo_dias': 'Quantos dias futuros podem aparecer para o cliente?',
+            'intervalo_grade_minutos': 'De quanto em quanto tempo mostrar um horário? (minutos)',
+            'cancelamento_antecedencia_minutos': 'Até quanto tempo antes o cliente pode cancelar? (minutos)',
+        }
+        help_texts = {
+            'intervalo_grade_minutos': 'Use 0 para seguir a duração de cada serviço.',
         }
 
     def clean_intervalo_grade_minutos(self):
