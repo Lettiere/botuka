@@ -1,0 +1,3 @@
+{% extends "painel/base.html" %}
+{% block title %}Configurações da Agenda | BOTUKA{% endblock %}
+{% block content %}<div class="container py-4"><h1 class="h3">Configurações da Agenda</h1><p class="text-muted">Defina com quanto tempo de antecedência seus clientes podem reservar e cancelar.</p>{% include "painel/agenda/_nav.html" %}<div class="card card-body"><form method="post" novalidate>{% csrf_token %}{{ form.as_p }}<button class="btn btn-primary" type="submit">Salvar configurações</button></form><hr><p class="text-muted mb-0">A duração de cada serviço e os intervalos de preparação continuam sendo configurados em Serviços.</p></div></div>{% endblock %}

@@ -1,16 +1,26 @@
+from calendar import monthrange
 from datetime import date, datetime, timedelta
 
 from django.contrib import messages
+from django.contrib.auth import get_user_model
 from django.contrib.auth.decorators import login_required
 from django.core.exceptions import ValidationError
+from django.core.paginator import Paginator
+from django.db.models import Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 from django.utils import timezone
 
+from apps.services.models import Servico
+
 from .forms import (
+    AgendamentoInternoForm,
+    AgendamentoOperacionalForm,
+    AgendaConfiguracaoForm,
     BloqueioForm,
     DisponibilidadeForm,
+    DisponibilidadeSemanalForm,
     FuncionamentoEmpresaForm,
     ProfissionalServicoForm,
 )
@@ -22,10 +32,19 @@ from .models import (
     AgendaFuncionamentoEmpresa,
     AgendaProfissional,
     AgendaProfissionalServico,
+    AgendaEmpresa,
 )
-from .permissions import agenda_empresa_required
+from .dashboard import construir_central_agenda
+from .operations import abrir_agenda_empresa, fechar_agenda_empresa
+from .permissions import (
+    agenda_empresa_configuracao_required,
+    agenda_empresa_required,
+)
 from .public_services import resumo_operacional_empresa
-from .services import TRANSICOES_STATUS, alterar_status_agendamento
+from .services import (
+    TRANSICOES_STATUS, alterar_status_agendamento, criar_agendamento_interno,
+    reagendar_agendamento,
+)
 
 
 def _profissionais(empresa):
@@ -42,6 +61,12 @@ def _vinculos(empresa):
 
 def _disponibilidades(empresa):
     return AgendaDisponibilidadeData.objects.filter(
+        profissional__empresa_usuario__empresa=empresa,
+    ).select_related('profissional__empresa_usuario__usuario')
+
+
+def _disponibilidades_semanais(empresa):
+    return AgendaDisponibilidade.objects.filter(
         profissional__empresa_usuario__empresa=empresa,
     ).select_related('profissional__empresa_usuario__usuario')
 
@@ -70,21 +95,48 @@ def _agendamentos(empresa):
 
 
 @login_required
-@agenda_empresa_required
+@agenda_empresa_configuracao_required
 def dashboard(request, empresa):
-    resumo = resumo_operacional_empresa(empresa)
-    context = {
+    return render(request, 'painel/agenda/dashboard.html', {
         'empresa': empresa,
-        'profissionais': _profissionais(empresa).filter(
-            ativo=True, empresa_usuario__ativo=True
-        ),
-        'servicos_agenda': _vinculos(empresa).filter(ativo=True),
-        'disponibilidades': _disponibilidades(empresa).filter(ativo=True),
-        'bloqueios': _bloqueios(empresa).filter(ativo=True),
-        'agendamentos': resumo['proximos'],
-        'agenda_resumo': resumo,
-    }
-    return render(request, 'painel/agenda/dashboard.html', context)
+        'central': construir_central_agenda(empresa),
+        'agenda_resumo': resumo_operacional_empresa(empresa),
+    })
+
+
+@require_POST
+@login_required
+@agenda_empresa_configuracao_required
+def agenda_estado(request, empresa):
+    acao = request.POST.get('acao')
+    try:
+        if acao == 'abrir':
+            abrir_agenda_empresa(empresa=empresa, usuario=request.user)
+            messages.success(request, 'Agenda aberta para novos agendamentos.')
+        elif acao == 'fechar':
+            fechar_agenda_empresa(empresa=empresa, usuario=request.user)
+            messages.success(request, 'Agenda fechada; as reservas existentes foram preservadas.')
+        else:
+            raise ValidationError('Ação inválida para a Agenda.')
+    except ValidationError as exc:
+        messages.error(request, '; '.join(exc.messages))
+    return redirect('painel:empresa_agenda', uuid=empresa.uuid)
+
+
+@login_required
+@agenda_empresa_configuracao_required
+def agenda_configuracoes(request, empresa):
+    configuracao, _ = AgendaEmpresa.objects.get_or_create(empresa=empresa)
+    form = AgendaConfiguracaoForm(request.POST or None, instance=configuracao)
+    if request.method == 'POST' and form.is_valid():
+        item = form.save(commit=False)
+        item.atualizado_por = request.user
+        item.save()
+        messages.success(request, 'Configurações da Agenda atualizadas.')
+        return redirect('painel:agenda_configuracoes', uuid=empresa.uuid)
+    return render(request, 'painel/agenda/configuracoes.html', {
+        'empresa': empresa, 'form': form, 'configuracao': configuracao,
+    })
 
 
 @login_required
@@ -298,10 +350,26 @@ def calendario_operacional(request, empresa):
     except ValueError:
         referencia = hoje
 
-    inicio_semana = referencia - timedelta(days=referencia.weekday())
-    fim_semana = inicio_semana + timedelta(days=7)
+    modo = request.GET.get('modo', 'semana')
+    if modo not in {'dia', 'semana', 'mes'}:
+        modo = 'semana'
+    if modo == 'dia':
+        inicio_periodo, fim_periodo = referencia, referencia + timedelta(days=1)
+        anterior, proxima = referencia - timedelta(days=1), referencia + timedelta(days=1)
+    elif modo == 'mes':
+        inicio_periodo = referencia.replace(day=1)
+        fim_periodo = inicio_periodo + timedelta(
+            days=monthrange(referencia.year, referencia.month)[1]
+        )
+        anterior = (inicio_periodo - timedelta(days=1)).replace(day=1)
+        proxima = fim_periodo
+    else:
+        inicio_periodo = referencia - timedelta(days=referencia.weekday())
+        fim_periodo = inicio_periodo + timedelta(days=7)
+        anterior, proxima = inicio_periodo - timedelta(days=7), inicio_periodo + timedelta(days=7)
 
     profissional_id = request.GET.get('profissional', '').strip()
+    servico_id = request.GET.get('servico', '').strip()
 
     profissionais = _profissionais(empresa).filter(
         ativo=True,
@@ -325,19 +393,32 @@ def calendario_operacional(request, empresa):
         profissionais_calendario.values_list('pk', flat=True)
     )
 
+    servicos = Servico.objects.filter(
+        profissionais_agenda__profissional__empresa_usuario__empresa=empresa,
+    ).distinct().order_by('titulo')
+    servico_selecionado = None
+    if servico_id:
+        servico_selecionado = get_object_or_404(servicos, pk=servico_id)
+
     inicio_dt = timezone.make_aware(
-        datetime.combine(inicio_semana, datetime.min.time())
+        datetime.combine(inicio_periodo, datetime.min.time())
     )
     fim_dt = timezone.make_aware(
-        datetime.combine(fim_semana, datetime.min.time())
+        datetime.combine(fim_periodo, datetime.min.time())
     )
 
-    disponibilidades = list(
-        _disponibilidades(empresa).filter(
+    disponibilidades_semanais = list(
+        _disponibilidades_semanais(empresa).filter(
             profissional_id__in=ids_profissionais,
             ativo=True,
         )
     )
+    disponibilidades_data = list(_disponibilidades(empresa).filter(
+        profissional_id__in=ids_profissionais,
+        ativo=True,
+        data__gte=inicio_periodo,
+        data__lt=fim_periodo,
+    ))
 
     bloqueios = list(
         _bloqueios(empresa).filter(
@@ -348,13 +429,16 @@ def calendario_operacional(request, empresa):
         )
     )
 
-    agendamentos = list(
-        _agendamentos(empresa).filter(
+    agendamentos_qs = _agendamentos(empresa).filter(
             profissional_servico__profissional_id__in=ids_profissionais,
             inicio__lt=fim_dt,
             fim__gt=inicio_dt,
         )
-    )
+    if servico_selecionado:
+        agendamentos_qs = agendamentos_qs.filter(
+            profissional_servico__servico=servico_selecionado,
+        )
+    agendamentos = list(agendamentos_qs)
 
     funcionamentos = list(
         _funcionamentos(empresa).filter(
@@ -364,8 +448,8 @@ def calendario_operacional(request, empresa):
 
     dias = []
 
-    for offset in range(7):
-        data_item = inicio_semana + timedelta(days=offset)
+    for offset in range((fim_periodo - inicio_periodo).days):
+        data_item = inicio_periodo + timedelta(days=offset)
 
         dia = {
             'data': data_item,
@@ -406,9 +490,18 @@ def calendario_operacional(request, empresa):
             if bloco:
                 dia['funcionamentos'].append(bloco)
 
-        for disponibilidade in disponibilidades:
-            if disponibilidade.dia_semana != data_item.weekday():
-                continue
+        profissionais_com_excecao = {
+            item.profissional_id for item in disponibilidades_data
+            if item.data == data_item
+        }
+        disponibilidades_dia = [
+            item for item in disponibilidades_data if item.data == data_item
+        ] + [
+            item for item in disponibilidades_semanais
+            if item.dia_semana == data_item.weekday()
+            and item.profissional_id not in profissionais_com_excecao
+        ]
+        for disponibilidade in disponibilidades_dia:
 
             ini = timezone.make_aware(
                 datetime.combine(
@@ -546,13 +639,16 @@ def calendario_operacional(request, empresa):
         {
             'empresa': empresa,
             'dias': dias,
-            'inicio_semana': inicio_semana,
-            'fim_semana': fim_semana - timedelta(days=1),
-            'anterior': inicio_semana - timedelta(days=7),
-            'proxima': inicio_semana + timedelta(days=7),
+            'inicio_semana': inicio_periodo,
+            'fim_semana': fim_periodo - timedelta(days=1),
+            'anterior': anterior,
+            'proxima': proxima,
             'hoje': hoje,
+            'modo': modo,
             'profissionais': profissionais,
             'profissional_selecionado': profissional_selecionado,
+            'servicos': servicos,
+            'servico_selecionado': servico_selecionado,
             'funcionamento_configurado': bool(funcionamentos),
         },
     )
@@ -561,10 +657,51 @@ def calendario_operacional(request, empresa):
 
 @login_required
 @agenda_empresa_required
-def disponibilidade_lista(request, empresa):
-    return render(request, 'painel/agenda/disponibilidade_lista.html', {
-        'empresa': empresa, 'itens': _disponibilidades(empresa)
+def horarios_lista(request, empresa):
+    return render(request, 'painel/agenda/horarios.html', {
+        'empresa': empresa,
+        'semanais': _disponibilidades_semanais(empresa).order_by(
+            'profissional_id', 'dia_semana', 'hora_inicio',
+        ),
+        'excecoes': _disponibilidades(empresa).order_by('data', 'hora_inicio'),
     })
+
+
+disponibilidade_lista = horarios_lista
+
+
+@login_required
+@agenda_empresa_required
+def disponibilidade_semanal_form(request, empresa, pk=None):
+    instance = (
+        get_object_or_404(_disponibilidades_semanais(empresa), pk=pk)
+        if pk else None
+    )
+    form = DisponibilidadeSemanalForm(
+        request.POST or None, instance=instance, empresa=empresa,
+    )
+    if request.method == 'POST' and form.is_valid():
+        form.save()
+        messages.success(request, 'Horário semanal salvo com sucesso.')
+        return redirect('painel:agenda_horarios', uuid=empresa.uuid)
+    return render(request, 'painel/agenda/form.html', {
+        'empresa': empresa,
+        'form': form,
+        'titulo': 'Editar horário semanal' if instance else 'Novo horário semanal',
+        'voltar_url': 'painel:agenda_horarios',
+    })
+
+
+@require_POST
+@login_required
+@agenda_empresa_required
+def disponibilidade_semanal_status(request, empresa, pk):
+    objeto = get_object_or_404(_disponibilidades_semanais(empresa), pk=pk)
+    return _alterar_ativo(
+        request, objeto=objeto,
+        ativo=request.POST.get('ativo') == '1',
+        redirect_name='painel:agenda_horarios',
+    )
 
 
 @login_required
@@ -634,9 +771,68 @@ def bloqueio_status(request, empresa, pk):
 @login_required
 @agenda_empresa_required
 def agendamento_lista(request, empresa):
+    itens = _agendamentos(empresa).order_by('-inicio')
+    termo = request.GET.get('q', '').strip()
+    status = request.GET.get('status', '').strip()
+    if termo:
+        itens = itens.filter(
+            Q(cliente__first_name__icontains=termo)
+            | Q(cliente__last_name__icontains=termo)
+            | Q(cliente__email__icontains=termo)
+            | Q(profissional_servico__servico__titulo__icontains=termo)
+        )
+    if status in Agendamento.Status.values:
+        itens = itens.filter(status=status)
+    if request.GET.get('profissional'):
+        profissional = get_object_or_404(
+            _profissionais(empresa), pk=request.GET['profissional'],
+        )
+        itens = itens.filter(profissional_servico__profissional=profissional)
+    if request.GET.get('servico'):
+        servico = get_object_or_404(
+            Servico.objects.filter(empresa=empresa), pk=request.GET['servico'],
+        )
+        itens = itens.filter(profissional_servico__servico=servico)
+    if request.GET.get('data_inicio'):
+        itens = itens.filter(inicio__date__gte=request.GET['data_inicio'])
+    if request.GET.get('data_fim'):
+        itens = itens.filter(inicio__date__lte=request.GET['data_fim'])
+    pagina = Paginator(itens, 25).get_page(request.GET.get('page'))
+    filtros = request.GET.copy()
+    filtros.pop('page', None)
     return render(request, 'painel/agenda/agendamento_lista.html', {
-        'empresa': empresa,
-        'itens': _agendamentos(empresa).order_by('-inicio'),
+        'empresa': empresa, 'itens': pagina, 'pagina': pagina,
+        'profissionais': _profissionais(empresa).filter(ativo=True),
+        'servicos': Servico.objects.filter(empresa=empresa).order_by('titulo'),
+        'status_choices': Agendamento.Status,
+        'filtros_query': filtros.urlencode(),
+    })
+
+
+@login_required
+@agenda_empresa_required
+def agendamento_criar(request, empresa):
+    form = AgendamentoInternoForm(request.POST or None, empresa=empresa)
+    if request.method == 'POST' and form.is_valid():
+        cliente = get_user_model().objects.filter(
+            email__iexact=form.cleaned_data['cliente_email'], is_active=True,
+        ).first()
+        if cliente is None:
+            form.add_error('cliente_email', 'Cliente ativo não encontrado com este e-mail.')
+    if request.method == 'POST' and form.is_valid():
+        try:
+            item = criar_agendamento_interno(
+                empresa=empresa, vinculo_id=form.cleaned_data['vinculo'].pk,
+                cliente=cliente, inicio=form.cleaned_data['inicio'],
+                usuario=request.user,
+            )
+        except ValidationError as exc:
+            form.add_error(None, '; '.join(exc.messages))
+        else:
+            messages.success(request, 'Agendamento criado com sucesso.')
+            return redirect('painel:agenda_agendamento_detalhe', uuid=empresa.uuid, pk=item.pk)
+    return render(request, 'painel/agenda/agendamento_form.html', {
+        'empresa': empresa, 'form': form, 'titulo': 'Novo agendamento',
     })
 
 
@@ -649,6 +845,33 @@ def agendamento_detalhe(request, empresa, pk):
         'item': item,
         'transicoes': TRANSICOES_STATUS.get(item.status, set()),
         'status_choices': Agendamento.Status,
+        'historico': item.historico.select_related('realizado_por'),
+    })
+
+
+@login_required
+@agenda_empresa_required
+def agendamento_reagendar(request, empresa, pk):
+    item = get_object_or_404(_agendamentos(empresa), pk=pk)
+    form = AgendamentoOperacionalForm(
+        request.POST or None, empresa=empresa,
+        initial={'vinculo': item.profissional_servico_id,
+                 'inicio': timezone.localtime(item.inicio).strftime('%Y-%m-%dT%H:%M')},
+    )
+    if request.method == 'POST' and form.is_valid():
+        try:
+            reagendar_agendamento(
+                empresa=empresa, agendamento_id=item.pk,
+                vinculo_id=form.cleaned_data['vinculo'].pk,
+                inicio=form.cleaned_data['inicio'], usuario=request.user,
+            )
+        except ValidationError as exc:
+            form.add_error(None, '; '.join(exc.messages))
+        else:
+            messages.success(request, 'Agendamento reagendado com sucesso.')
+            return redirect('painel:agenda_agendamento_detalhe', uuid=empresa.uuid, pk=item.pk)
+    return render(request, 'painel/agenda/agendamento_form.html', {
+        'empresa': empresa, 'form': form, 'titulo': 'Reagendar', 'item': item,
     })
 
 
@@ -659,7 +882,8 @@ def agendamento_status(request, empresa, pk):
     novo_status = request.POST.get('status', '')
     try:
         alterar_status_agendamento(
-            empresa=empresa, agendamento_id=pk, novo_status=novo_status
+            empresa=empresa, agendamento_id=pk, novo_status=novo_status,
+            usuario=request.user,
         )
     except Agendamento.DoesNotExist as exc:
         raise Http404 from exc

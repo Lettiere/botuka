@@ -1,0 +1,3 @@
+{% extends "painel/base.html" %}
+{% block title %}{{ titulo }} | BOTUKA{% endblock %}
+{% block content %}<div class="container py-4"><h1 class="h3">{{ titulo }}</h1><p class="text-muted">{{ empresa.nome_exibicao }}</p>{% include "painel/agenda/_nav.html" %}<div class="card card-body"><form method="post" novalidate>{% csrf_token %}{{ form.as_p }}<div class="d-flex gap-2"><button class="btn btn-primary" type="submit">Salvar</button><a class="btn btn-outline-secondary" href="{% if item %}{% url 'painel:agenda_agendamento_detalhe' empresa.uuid item.pk %}{% else %}{% url 'painel:agenda_agendamento_lista' empresa.uuid %}{% endif %}">Cancelar</a></div></form></div></div>{% endblock %}

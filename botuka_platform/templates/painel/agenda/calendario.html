@@ -117,6 +117,10 @@ document.addEventListener('DOMContentLoaded', () => {
   overflow-x:auto;
   padding-bottom:10px;
 }
+.agcal-week.mode-dia{grid-template-columns:minmax(280px,1fr)}
+.agcal-week.mode-mes{grid-template-columns:repeat(7,minmax(140px,1fr))}
+.agcal-week.mode-mes .agcal-timeline{height:420px}
+.agcal-modes{display:flex;gap:5px}.agcal-modes a{padding:8px 11px;border:1px solid #dce2e9;border-radius:9px;text-decoration:none;color:#344054;font-weight:800}.agcal-modes a.active{background:#172033;color:#fff}
 .agcal-day{
   min-width:150px;
   border:1px solid #e3e7ee;
@@ -273,18 +277,24 @@ document.addEventListener('DOMContentLoaded', () => {
 
     <div class="agcal-tools">
 
+      <div class="agcal-modes" aria-label="Visualização">
+        <a class="{% if modo == 'dia' %}active{% endif %}" href="?modo=dia&data={{ hoje|date:'Y-m-d' }}">Dia</a>
+        <a class="{% if modo == 'semana' %}active{% endif %}" href="?modo=semana&data={{ hoje|date:'Y-m-d' }}">Semana</a>
+        <a class="{% if modo == 'mes' %}active{% endif %}" href="?modo=mes&data={{ hoje|date:'Y-m-d' }}">Mês</a>
+      </div>
+
       <a class="btn btn-outline-secondary"
-         href="?data={{ anterior|date:'Y-m-d' }}{% if profissional_selecionado %}&profissional={{ profissional_selecionado.pk }}{% endif %}">
+         href="?modo={{ modo }}&data={{ anterior|date:'Y-m-d' }}{% if profissional_selecionado %}&profissional={{ profissional_selecionado.pk }}{% endif %}{% if servico_selecionado %}&servico={{ servico_selecionado.pk }}{% endif %}">
         <i class="bi bi-chevron-left"></i>
       </a>
 
       <a class="btn btn-outline-secondary"
-         href="?data={{ hoje|date:'Y-m-d' }}{% if profissional_selecionado %}&profissional={{ profissional_selecionado.pk }}{% endif %}">
+         href="?modo={{ modo }}&data={{ hoje|date:'Y-m-d' }}{% if profissional_selecionado %}&profissional={{ profissional_selecionado.pk }}{% endif %}{% if servico_selecionado %}&servico={{ servico_selecionado.pk }}{% endif %}">
         Hoje
       </a>
 
       <a class="btn btn-outline-secondary"
-         href="?data={{ proxima|date:'Y-m-d' }}{% if profissional_selecionado %}&profissional={{ profissional_selecionado.pk }}{% endif %}">
+         href="?modo={{ modo }}&data={{ proxima|date:'Y-m-d' }}{% if profissional_selecionado %}&profissional={{ profissional_selecionado.pk }}{% endif %}{% if servico_selecionado %}&servico={{ servico_selecionado.pk }}{% endif %}">
         <i class="bi bi-chevron-right"></i>
       </a>
 
@@ -292,6 +302,7 @@ document.addEventListener('DOMContentLoaded', () => {
         <input type="hidden"
                name="data"
                value="{{ inicio_semana|date:'Y-m-d' }}">
+        <input type="hidden" name="modo" value="{{ modo }}">
 
         <select name="profissional"
                 class="form-select"
@@ -306,6 +317,11 @@ document.addEventListener('DOMContentLoaded', () => {
             </option>
           {% endfor %}
 
+        </select>
+
+        <select name="servico" class="form-select" onchange="this.form.submit()">
+          <option value="">Todos os serviços</option>
+          {% for servico in servicos %}<option value="{{ servico.pk }}"{% if servico_selecionado.pk == servico.pk %} selected{% endif %}>{{ servico }}</option>{% endfor %}
         </select>
       </form>
 
@@ -329,7 +345,7 @@ document.addEventListener('DOMContentLoaded', () => {
     <span><i class="agcal-dot buffer"></i> Buffer</span>
   </div>
 
-  <div class="agcal-mobile-days" aria-label="Selecionar dia"></div><div class="agcal-week" data-agcal-week>
+  <div class="agcal-mobile-days" aria-label="Selecionar dia"></div><div class="agcal-week mode-{{ modo }}" data-agcal-week>
 
     {% for dia in dias %}
       <section class="agcal-day {% if dia.hoje %}today{% endif %}" data-agcal-day data-date="{{ dia.data|date:'Y-m-d' }}">

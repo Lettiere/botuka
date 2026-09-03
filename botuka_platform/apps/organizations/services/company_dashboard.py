@@ -1,13 +1,8 @@
 """Resumo operacional seguro e centralizado do painel de uma empresa."""
 
 from django.urls import reverse
-from django.utils import timezone
-
-from apps.agenda.models import (
-    AgendaBloqueio, AgendaDisponibilidade, AgendaProfissional,
-    AgendaProfissionalServico, Agendamento,
-)
-from apps.agenda.public_services import STATUS_OCUPANTES
+from apps.agenda.dashboard import construir_central_agenda
+from apps.agenda.models import AgendaProfissional
 from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade
 from apps.products.models import Produto
 from apps.recruitment.models import Vaga
@@ -17,6 +12,7 @@ from apps.services.models import Servico
 
 
 def construir_painel_empresa(*, empresa, usuario, permissoes):
+    central_agenda = construir_central_agenda(empresa)
     elegiveis = empresa.capacidades_elegiveis_por_atuacao
     empresa_operacional = empresa.ativo and empresa.status == Empresa.Status.ATIVA
     produtos_elegiveis = 'VENDER_PRODUTOS' in elegiveis
@@ -42,41 +38,6 @@ def construir_painel_empresa(*, empresa, usuario, permissoes):
         )
 
     servicos_operacao_ativa = empresa_operacional and empresa.pode_publicar_servico
-    agenda_habilitada = empresa_operacional and empresa.pode_aceitar_agendamentos
-    agora = timezone.now()
-    agenda_vinculos = AgendaProfissionalServico.objects.filter(
-        profissional__empresa_usuario__empresa=empresa, ativo=True,
-        profissional__ativo=True, profissional__empresa_usuario__ativo=True,
-    ) if agenda_elegivel else AgendaProfissionalServico.objects.none()
-    proximos = Agendamento.objects.filter(
-        profissional_servico__profissional__empresa_usuario__empresa=empresa,
-        status__in=STATUS_OCUPANTES, inicio__gte=agora,
-    ).select_related(
-        'profissional_servico__servico',
-        'profissional_servico__profissional__empresa_usuario__usuario',
-    ).order_by('inicio') if agenda_elegivel else Agendamento.objects.none()
-    profissionais_ativos = profissionais_qs.filter(
-        ativo=True, empresa_usuario__ativo=True,
-    ).count() if agenda_elegivel else 0
-    disponibilidades = AgendaDisponibilidade.objects.filter(
-        profissional__empresa_usuario__empresa=empresa, ativo=True,
-    ).count() if agenda_elegivel else 0
-    bloqueios = AgendaBloqueio.objects.filter(
-        profissional__empresa_usuario__empresa=empresa, ativo=True, fim__gte=agora,
-    ).count() if agenda_elegivel else 0
-    if agenda_habilitada and profissionais_ativos and agenda_vinculos.exists() and disponibilidades:
-        agenda_estado = 'ATIVA'
-        agenda_mensagem = 'Agenda pronta para receber e administrar agendamentos.'
-    elif agenda_habilitada:
-        agenda_estado = 'INCOMPLETA'
-        agenda_mensagem = 'Adicione profissional, serviço agendável e disponibilidade.'
-    elif agenda_elegivel:
-        agenda_estado = 'PENDENTE'
-        agenda_mensagem = 'Ative as capacidades Prestar serviços e Aceitar agendamentos.'
-    else:
-        agenda_estado = 'INCOMPATIVEL'
-        agenda_mensagem = 'Agenda não se aplica à atuação atual da empresa.'
-
     etapas = [
         bool(empresa.nome_fantasia and empresa.tipo_cadastro), bool(empresa.atuacao),
         bool(empresa.descricao_curta or empresa.descricao_completa or empresa.logo),
@@ -154,11 +115,17 @@ def construir_painel_empresa(*, empresa, usuario, permissoes):
             'profissionais': profissionais_qs.filter(ativo=True).count(), 'membros': equipe_qs[:5],
         },
         'agenda': {
-            'elegivel': agenda_elegivel, 'estado': agenda_estado,
-            'mensagem': agenda_mensagem, 'profissionais': profissionais_ativos,
-            'servicos': agenda_vinculos.count(), 'proximos_total': proximos.count(),
-            'proximos': proximos[:5], 'disponibilidades': disponibilidades,
-            'bloqueios': bloqueios,
+            'elegivel': agenda_elegivel, 'estado': central_agenda['estado'],
+            'mensagem': central_agenda['mensagem'],
+            'profissionais': central_agenda['profissionais_ativos'],
+            'servicos': central_agenda['servicos_vinculados'],
+            'proximos_total': central_agenda['proximos_total'],
+            'proximos': central_agenda['proximos'],
+            'disponibilidades': (
+                central_agenda['disponibilidades_semanais']
+                + central_agenda['disponibilidades_especificas_total']
+            ),
+            'bloqueios': central_agenda['bloqueios_ativos'],
         },
         'capacidades': capacidade_resumo,
         'links_total': empresa.links.filter(ativo=True, excluido_em__isnull=True).count(),

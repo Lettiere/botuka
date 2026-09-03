@@ -9,12 +9,14 @@ from apps.services.models import Servico
 
 from .models import (
     Agendamento,
+    AgendaEmpresa,
     AgendaBloqueio,
     AgendaDisponibilidade,
     AgendaDisponibilidadeData,
     AgendaFuncionamentoEmpresa,
     AgendaProfissional,
     AgendaProfissionalServico,
+    AgendamentoHistorico,
 )
 
 
@@ -51,8 +53,13 @@ def vinculos_publicos_queryset():
 
 def vinculo_publicamente_valido(vinculo):
     empresa = vinculo.servico.empresa
+    agenda_aberta = AgendaEmpresa.objects.filter(
+        empresa_id=empresa.pk,
+        status=AgendaEmpresa.Status.ABERTA,
+    ).exists()
     return bool(
         empresa
+        and agenda_aberta
         and empresa.pode_aceitar_agendamentos
         and vinculo.profissional.empresa_usuario.empresa_id == empresa.pk
     )
@@ -380,12 +387,16 @@ def _sobrepoe(inicio, fim, outro_inicio, outro_fim):
     return outro_inicio < fim and outro_fim > inicio
 
 
-def gerar_slots(vinculo, data, *, agora=None):
+def gerar_slots(vinculo, data, *, agora=None, excluir_agendamento_id=None):
     if not isinstance(data, date):
         raise ValidationError('Data inválida.')
     if not vinculo_publicamente_valido(vinculo):
         return []
     agora = timezone.localtime(agora or timezone.now())
+    configuracao = AgendaEmpresa.objects.get(empresa=vinculo.servico.empresa)
+    limite_antecedencia = agora + timedelta(minutes=configuracao.antecedencia_minima_minutos)
+    if data > agora.date() + timedelta(days=configuracao.horizonte_maximo_dias):
+        return []
     duracao = timedelta(minutes=vinculo.duracao_minutos)
     buffer_antes = timedelta(minutes=vinculo.buffer_antes_minutos)
     buffer_depois = timedelta(minutes=vinculo.buffer_depois_minutos)
@@ -417,11 +428,14 @@ def gerar_slots(vinculo, data, *, agora=None):
         profissional=vinculo.profissional, ativo=True,
         inicio__lt=fim_dia + buffer_depois, fim__gt=inicio_dia - buffer_antes,
     ))
-    agendamentos = list(Agendamento.objects.filter(
+    agendamentos_qs = Agendamento.objects.filter(
         profissional_servico__profissional=vinculo.profissional,
         status__in=STATUS_OCUPANTES,
         inicio__lt=fim_dia + timedelta(days=1), fim__gt=inicio_dia - timedelta(days=1),
-    ).select_related('profissional_servico'))
+    ).select_related('profissional_servico')
+    if excluir_agendamento_id:
+        agendamentos_qs = agendamentos_qs.exclude(pk=excluir_agendamento_id)
+    agendamentos = list(agendamentos_qs)
     slots = {}
     for faixa in disponibilidades:
         cursor = timezone.make_aware(
@@ -447,7 +461,7 @@ def gerar_slots(vinculo, data, *, agora=None):
                 and ocupacao_fim.time() <= faixa_empresa.hora_fim
                 for faixa_empresa in funcionamentos
             )
-            if cursor > agora and cabe_profissional and cabe_empresa:
+            if cursor >= limite_antecedencia and cabe_profissional and cabe_empresa:
                 bloqueado = any(_sobrepoe(
                     ocupacao_inicio, ocupacao_fim, item.inicio, item.fim,
                 ) for item in bloqueios)
@@ -458,7 +472,9 @@ def gerar_slots(vinculo, data, *, agora=None):
                 ) for item in agendamentos)
                 if not bloqueado and not ocupado:
                     slots[cursor.isoformat()] = cursor
-            cursor = fim
+            cursor += timedelta(
+                minutes=configuracao.intervalo_grade_minutos or vinculo.duracao_minutos
+            )
     return list(slots.values())
 
 
@@ -493,6 +509,13 @@ def criar_agendamento_publico(*, vinculo_uuid, cliente, inicio):
     )
     agendamento.full_clean()
     agendamento.save()
+    AgendamentoHistorico.objects.create(
+        agendamento=agendamento,
+        acao=AgendamentoHistorico.Acao.CRIADO,
+        status_novo=agendamento.status,
+        inicio_novo=agendamento.inicio,
+        realizado_por=cliente,
+    )
     return agendamento
 
 
@@ -510,8 +533,23 @@ def cancelar_agendamento_cliente(*, agendamento_uuid, cliente):
         Agendamento.Status.CONFIRMADO,
     ):
         raise ValidationError('Este agendamento não pode ser cancelado.')
+    configuracao = AgendaEmpresa.objects.filter(
+        empresa=agendamento.profissional_servico.servico.empresa,
+    ).first()
+    antecedencia = configuracao.cancelamento_antecedencia_minutos if configuracao else 0
+    if timezone.now() > agendamento.inicio - timedelta(minutes=antecedencia):
+        raise ValidationError('O prazo permitido para cancelamento já terminou.')
+    status_anterior = agendamento.status
     Agendamento.objects.filter(pk=agendamento.pk).update(
         status=Agendamento.Status.CANCELADO
     )
     agendamento.status = Agendamento.Status.CANCELADO
+    AgendamentoHistorico.objects.create(
+        agendamento=agendamento,
+        acao=AgendamentoHistorico.Acao.CANCELADO,
+        status_anterior=status_anterior,
+        status_novo=Agendamento.Status.CANCELADO,
+        inicio_novo=agendamento.inicio,
+        realizado_por=cliente,
+    )
     return agendamento

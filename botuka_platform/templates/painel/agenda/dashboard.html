@@ -1,167 +1,22 @@
 {% extends "painel/base.html" %}
-
 {% block title %}Agenda de {{ empresa.nome_exibicao }} | BOTUKA{% endblock %}
-
 {% block content %}
 <style>
-.agenda-page{background:#f4f7fb;margin:-26px -18px;padding:28px 18px 46px;min-height:72vh}
-.agenda-wrap{width:min(1220px,100%);margin:0 auto}
-.agenda-hero{display:flex;justify-content:space-between;gap:18px;align-items:center;background:#111827;color:#fff;border-radius:24px;padding:26px 28px;margin-bottom:20px}
-.agenda-hero h1{margin:0;font-size:clamp(26px,4vw,38px);font-weight:900}
-.agenda-hero p{margin:7px 0 0;color:rgba(255,255,255,.72)}
-.agenda-back{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:11px;background:#fff;color:#111827;text-decoration:none;font-weight:850}
-.agenda-stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:14px;margin-bottom:20px}
-.agenda-stat{background:#fff;border:1px solid #e6eaf0;border-radius:17px;padding:18px}
-.agenda-stat strong{display:block;font-size:28px;color:#111827}
-.agenda-stat span{color:#667085;font-size:13px;font-weight:700}
-.agenda-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
-.agenda-card{background:#fff;border:1px solid #e6eaf0;border-radius:18px;padding:20px}
-.agenda-card h2{margin:0 0 15px;font-size:19px;color:#172033;font-weight:900}
-.agenda-item{padding:12px 0;border-bottom:1px solid #edf0f4}
-.agenda-item:last-child{border-bottom:0}
-.agenda-item strong{display:block;color:#172033}
-.agenda-item small{display:block;color:#667085;margin-top:3px}
-@media(max-width:900px){.agenda-stats{grid-template-columns:repeat(2,1fr)}.agenda-grid{grid-template-columns:1fr}}
-@media(max-width:620px){.agenda-page{padding:16px 12px 34px}.agenda-hero{display:block}.agenda-back{margin-top:15px}.agenda-stats{grid-template-columns:1fr}}
+.agenda-page{background:#f4f7fb;margin:-26px -18px;padding:28px 18px 46px;min-height:72vh}.agenda-wrap{width:min(1240px,100%);margin:auto}.agenda-hero{background:#111827;color:#fff;border-radius:24px;padding:26px 28px;margin-bottom:18px}.agenda-hero-top{display:flex;justify-content:space-between;align-items:flex-start;gap:18px}.agenda-hero h1{margin:0;font-size:clamp(28px,4vw,40px);font-weight:900}.agenda-hero p{margin:7px 0 0;color:#d1d5db}.agenda-status{display:inline-flex;margin-top:18px;padding:8px 12px;border-radius:999px;background:#facc15;color:#172033;font-size:12px;font-weight:900}.agenda-back{display:inline-flex;align-items:center;gap:7px;padding:10px 14px;border-radius:11px;background:#fff;color:#111827;text-decoration:none;font-weight:800}.agenda-nav{display:flex;gap:8px;overflow-x:auto;padding:2px 0 18px}.agenda-nav a{white-space:nowrap;background:#fff;border:1px solid #dfe5ec;border-radius:11px;padding:9px 12px;color:#344054;text-decoration:none;font-weight:750}.agenda-nav a.active{background:#172033;color:#fff}.agenda-summary{display:grid;grid-template-columns:1.1fr .9fr;gap:18px;margin-bottom:18px}.agenda-panel,.agenda-card{background:#fff;border:1px solid #e3e8ef;border-radius:18px;padding:20px}.agenda-panel h2,.agenda-card h2{margin:0 0 7px;color:#172033;font-size:20px;font-weight:900}.agenda-muted{color:#667085}.agenda-progress{height:9px;background:#edf1f5;border-radius:999px;overflow:hidden;margin:15px 0}.agenda-progress span{display:block;height:100%;background:#e5b900}.checklist{display:grid;gap:8px;margin-top:15px}.check-item{display:grid;grid-template-columns:auto 1fr auto;gap:10px;align-items:center;padding:10px;border:1px solid #edf0f4;border-radius:12px}.check-icon{width:25px;height:25px;display:grid;place-items:center;border-radius:50%;font-weight:900}.check-icon.ok{background:#dcfce7;color:#166534}.check-icon.pending{background:#fef3c7;color:#92400e}.check-state{font-size:11px;font-weight:900;color:#667085}.check-action{font-size:12px;font-weight:800;color:#344054}.agenda-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:18px}.agenda-card.wide{grid-column:1/-1}.agenda-metrics{display:flex;flex-wrap:wrap;gap:18px;margin:16px 0}.agenda-metric strong{display:block;font-size:26px;color:#172033}.agenda-metric span{font-size:12px;color:#667085;font-weight:700}.agenda-list{list-style:none;margin:12px 0 0;padding:0}.agenda-list li{display:flex;justify-content:space-between;gap:12px;padding:11px 0;border-top:1px solid #edf0f4}.agenda-list small{display:block;color:#667085}.agenda-actions{display:flex;flex-wrap:wrap;gap:9px;margin-top:16px}.agenda-btn{display:inline-flex;align-items:center;gap:7px;border-radius:10px;padding:9px 12px;text-decoration:none;background:#172033;color:#fff;font-weight:800}.agenda-btn.secondary{background:#eef2f6;color:#263244}.agenda-btn.disabled{background:#eef2f6;color:#98a2b3;cursor:not-allowed}.agenda-note{font-size:13px;color:#667085;margin-top:10px}@media(max-width:900px){.agenda-summary,.agenda-grid{grid-template-columns:1fr}.agenda-card.wide{grid-column:auto}}@media(max-width:620px){.agenda-page{padding:16px 12px 34px}.agenda-hero-top{display:block}.agenda-back{margin-top:16px}.check-item{grid-template-columns:auto 1fr}.check-action{grid-column:2}.agenda-list li{display:block}}
+.agenda-state-actions{display:flex;gap:9px;flex-wrap:wrap;margin-top:16px}.agenda-state-actions form{margin:0}.agenda-state-button{border:0;border-radius:10px;padding:10px 14px;background:#facc15;color:#172033;font-weight:900}.agenda-state-button.close{background:#fff;color:#991b1b}.agenda-state-button:disabled{opacity:.55;cursor:not-allowed}
 </style>
-
-<div class="agenda-page">
-<div class="agenda-wrap">
-
-<header class="agenda-hero">
-    <div>
-        <h1>Agenda</h1>
-        <p>{{ empresa.nome_exibicao }}</p>
-    </div>
-
-    <a class="agenda-back" href="{% url 'painel:empresa_detalhe' empresa.uuid %}">
-        <i class="bi bi-arrow-left"></i>
-        Voltar para empresa
-    </a>
-</header>
-
-{% include "painel/agenda/_nav.html" %}
-
-<section class="agenda-stats">
-
-    <div class="agenda-stat">
-        <strong>{{ profissionais|length }}</strong>
-        <span>Profissionais</span>
-    </div>
-
-    <div class="agenda-stat">
-        <strong>{{ servicos_agenda|length }}</strong>
-        <span>Serviços vinculados</span>
-    </div>
-
-    <div class="agenda-stat">
-        <strong>{{ disponibilidades|length }}</strong>
-        <span>Disponibilidades</span>
-    </div>
-
-    <div class="agenda-stat">
-        <strong>{{ bloqueios|length }}</strong>
-        <span>Bloqueios</span>
-    </div>
-
-    <div class="agenda-stat">
-        <strong>{{ agenda_resumo.proximos_total }}</strong>
-        <span>Próximos atendimentos</span>
-    </div>
-    <div class="agenda-stat"><strong>{{ agenda_resumo.hoje_total }}</strong><span>Atendimentos hoje</span></div>
-    <div class="agenda-stat"><strong>{{ agenda_resumo.pendentes_total }}</strong><span>Pendentes</span></div>
-    <div class="agenda-stat"><strong>{{ agenda_resumo.confirmados_total }}</strong><span>Confirmados</span></div>
-    <div class="agenda-stat"><strong>{{ agenda_resumo.concluidos_total }}</strong><span>Concluídos</span></div>
-    <div class="agenda-stat"><strong>{{ agenda_resumo.cancelados_total }}</strong><span>Cancelados</span></div>
-
-</section>
-
-<div class="agenda-grid">
-
-<section class="agenda-card">
-    <h2>Profissionais</h2>
-
-    {% for profissional in profissionais %}
-        <div class="agenda-item">
-            <strong>{{ profissional.usuario }}</strong>
-            <small>{{ profissional.empresa_usuario.get_funcao_display }}</small>
-        </div>
-    {% empty %}
-        <p class="text-muted">Nenhum profissional configurado.</p>
-    {% endfor %}
-</section>
-
-<section class="agenda-card">
-    <h2>Serviços</h2>
-
-    {% for item in servicos_agenda %}
-        <div class="agenda-item">
-            <strong>{{ item.servico }}</strong>
-            <small>
-                {{ item.profissional.usuario }}
-                · {{ item.duracao_minutos }} minutos
-            </small>
-        </div>
-    {% empty %}
-        <p class="text-muted">Nenhum serviço vinculado.</p>
-    {% endfor %}
-</section>
-
-<section class="agenda-card">
-    <h2>Disponibilidade semanal</h2>
-
-    {% for item in disponibilidades %}
-        <div class="agenda-item">
-            <strong>{{ item.profissional.usuario }}</strong>
-            <small>
-                {{ item.get_dia_semana_display }}
-                · {{ item.hora_inicio|time:"H:i" }}
-                até {{ item.hora_fim|time:"H:i" }}
-            </small>
-        </div>
-    {% empty %}
-        <p class="text-muted">Nenhuma disponibilidade cadastrada.</p>
-    {% endfor %}
-</section>
-
-<section class="agenda-card">
-    <h2>Bloqueios</h2>
-
-    {% for item in bloqueios %}
-        <div class="agenda-item">
-            <strong>{{ item.profissional.usuario }}</strong>
-            <small>
-                {{ item.get_tipo_display }}
-                · {{ item.inicio|date:"d/m/Y H:i" }}
-                até {{ item.fim|date:"d/m/Y H:i" }}
-            </small>
-        </div>
-    {% empty %}
-        <p class="text-muted">Nenhum bloqueio ativo.</p>
-    {% endfor %}
-</section>
-
-<section class="agenda-card" style="grid-column:1/-1">
-    <h2>Próximos atendimentos</h2>
-
-    {% for item in agendamentos %}
-        <div class="agenda-item">
-            <strong>
-                {{ item.inicio|date:"d/m/Y H:i" }}
-                · {{ item.profissional }}
-            </strong>
-            <small>
-                {{ item.servico }}
-                · Cliente: {{ item.cliente }}
-                · {{ item.get_status_display }}
-            </small>
-        </div>
-    {% empty %}
-        <p class="text-muted">Nenhum atendimento futuro. Compartilhe a Agenda pública ou confirme se profissionais, serviços e horários estão ativos.</p>
-    {% endfor %}
-</section>
-
-</div>
-</div>
-</div>
+<div class="agenda-page"><div class="agenda-wrap">
+<header class="agenda-hero"><div class="agenda-hero-top"><div><h1>Agenda</h1><p>Gerencie profissionais, serviços, horários, bloqueios e agendamentos da empresa.</p><span class="agenda-status">{{ central.estado }}</span><div class="agenda-state-actions">{% if central.esta_aberta %}<form method="post" action="{% url 'painel:agenda_estado' empresa.uuid %}">{% csrf_token %}<input type="hidden" name="acao" value="fechar"><button class="agenda-state-button close" type="submit">Fechar Agenda</button></form>{% else %}<form method="post" action="{% url 'painel:agenda_estado' empresa.uuid %}">{% csrf_token %}<input type="hidden" name="acao" value="abrir"><button class="agenda-state-button" type="submit"{% if not central.pode_abrir %} disabled title="Conclua o checklist antes de abrir"{% endif %}>Abrir Agenda</button></form>{% endif %}</div></div><a class="agenda-back" href="{{ central.urls.empresa }}"><i class="bi bi-arrow-left"></i> Voltar à empresa</a></div><p>{{ central.mensagem }}</p></header>
+<nav class="agenda-nav" aria-label="Seções da Agenda"><a class="active" href="#visao-geral">Visão geral</a><a href="#profissionais">Profissionais</a><a href="#servicos">Serviços</a><a href="#horarios">Horários</a><a href="#bloqueios">Bloqueios</a><a href="#calendario">Calendário</a><a href="#agendamentos">Agendamentos</a><a href="{{ central.urls.configuracoes }}">Configurações</a></nav>
+<section class="agenda-summary" id="visao-geral"><article class="agenda-panel"><h2>Visão geral</h2><p class="agenda-muted">{{ central.checklist_ok }} de {{ central.checklist_total }} requisitos atendidos.</p><div class="agenda-progress" aria-label="{{ central.checklist_ok }} de {{ central.checklist_total }} requisitos"><span style="width:{% widthratio central.checklist_ok central.checklist_total 100 %}%"></span></div><div class="agenda-metrics"><div class="agenda-metric"><strong>{{ central.profissionais_ativos }}</strong><span>Profissionais ativos</span></div><div class="agenda-metric"><strong>{{ central.servicos_vinculados }}</strong><span>Serviços vinculados</span></div><div class="agenda-metric"><strong>{{ central.proximos_total }}</strong><span>Próximos</span></div></div></article>
+<article class="agenda-panel"><h2>Checklist de prontidão</h2><div class="checklist">{% for item in central.checklist %}<div class="check-item"><span class="check-icon {% if item.ok %}ok{% else %}pending{% endif %}">{% if item.ok %}<i class="bi bi-check-lg"></i>{% else %}!{% endif %}</span><span><strong>{{ item.rotulo }}</strong><small class="check-state">{% if item.ok %}OK{% else %}PENDENTE{% endif %}</small></span>{% if not item.ok %}<a class="check-action" href="{{ item.url }}">{{ item.acao }}</a>{% endif %}</div>{% endfor %}</div></article></section>
+<section class="agenda-grid">
+<article class="agenda-card" id="profissionais"><h2>Profissionais</h2><p class="agenda-muted">Pessoas da equipe habilitadas para realizar atendimentos.</p><div class="agenda-metrics"><div class="agenda-metric"><strong>{{ central.profissionais_total }}</strong><span>Total na Agenda</span></div><div class="agenda-metric"><strong>{{ central.profissionais_ativos }}</strong><span>Ativos</span></div></div><ul class="agenda-list">{% for item in central.profissionais|slice:":4" %}<li><span><strong>{{ item.usuario }}</strong><small>{% if item.empresa_usuario.ativo %}Membro ativo{% else %}Membro inativo{% endif %}</small></span><span class="check-state">{% if item.ativo and item.empresa_usuario.ativo %}ATIVO{% else %}INATIVO{% endif %}</span></li>{% empty %}<li class="agenda-muted">Nenhum profissional habilitado.</li>{% endfor %}</ul><div class="agenda-actions"><a class="agenda-btn" href="{{ central.urls.profissionais }}"><i class="bi bi-people"></i> Gerenciar profissionais</a></div></article>
+<article class="agenda-card" id="servicos"><h2>Serviços para agendamento</h2><p class="agenda-muted">Publicar um serviço não o torna automaticamente agendável.</p><div class="agenda-metrics"><div class="agenda-metric"><strong>{{ central.servicos_publicados }}</strong><span>Publicados</span></div><div class="agenda-metric"><strong>{{ central.servicos_vinculados }}</strong><span>Vinculados</span></div><div class="agenda-metric"><strong>{{ central.vinculos_ativos }}</strong><span>Vínculos ativos</span></div><div class="agenda-metric"><strong>{{ central.servicos_agendaveis }}</strong><span>Agendáveis agora</span></div></div><div class="agenda-actions">{% if central.autorizado %}<a class="agenda-btn" href="{{ central.urls.servicos }}">Gerenciar serviços da Agenda</a>{% else %}<span class="agenda-btn disabled" aria-disabled="true">Gerenciar serviços da Agenda</span>{% endif %}</div>{% if not central.autorizado %}<p class="agenda-note">A configuração operacional será liberada após a autorização da Agenda.</p>{% endif %}</article>
+<article class="agenda-card" id="horarios"><h2>Horários</h2><p class="agenda-muted">Funcionamento da empresa e disponibilidade dos profissionais.</p><div class="agenda-metrics"><div class="agenda-metric"><strong>{{ central.funcionamentos_ativos }}</strong><span>Faixas de funcionamento</span></div><div class="agenda-metric"><strong>{{ central.disponibilidades_semanais }}</strong><span>Faixas semanais</span></div><div class="agenda-metric"><strong>{{ central.disponibilidades_especificas_total }}</strong><span>Próximas exceções</span></div><div class="agenda-metric"><strong>{{ central.profissionais_com_disponibilidade }}</strong><span>Profissionais com horário</span></div></div><div class="agenda-actions">{% if central.autorizado %}<a class="agenda-btn" href="{{ central.urls.horarios }}">Configurar horários</a><a class="agenda-btn secondary" href="{{ central.urls.funcionamento }}">Funcionamento da empresa</a>{% else %}<span class="agenda-btn disabled" aria-disabled="true">Configurar horários</span>{% endif %}</div><p class="agenda-note">Configuração avançada de horários será disponibilizada nesta central.</p></article>
+<article class="agenda-card" id="bloqueios"><h2>Bloqueios</h2><p class="agenda-muted">Férias, folgas e indisponibilidades dos profissionais.</p><div class="agenda-metrics"><div class="agenda-metric"><strong>{{ central.bloqueios_ativos }}</strong><span>Bloqueios ativos</span></div></div><ul class="agenda-list">{% for item in central.proximos_bloqueios %}<li><span><strong>{{ item.profissional.usuario }}</strong><small>{{ item.get_tipo_display }} · {{ item.inicio|date:"d/m/Y H:i" }}</small></span></li>{% empty %}<li class="agenda-muted">Nenhum bloqueio futuro.</li>{% endfor %}</ul><div class="agenda-actions">{% if central.autorizado %}<a class="agenda-btn" href="{{ central.urls.bloqueios }}">Gerenciar bloqueios</a>{% else %}<span class="agenda-btn disabled" aria-disabled="true">Gerenciar bloqueios</span>{% endif %}</div></article>
+<article class="agenda-card" id="calendario"><h2>Calendário</h2><p class="agenda-muted">Consulte a visão semanal existente com atendimentos, bloqueios e disponibilidade.</p><div class="agenda-actions">{% if central.autorizado %}<a class="agenda-btn" href="{{ central.urls.calendario }}"><i class="bi bi-calendar3"></i> Ver calendário</a>{% else %}<span class="agenda-btn disabled" aria-disabled="true"><i class="bi bi-calendar3"></i> Ver calendário</span>{% endif %}</div></article>
+<article class="agenda-card" id="capacidades"><h2>Autorizações</h2><p class="agenda-muted">Consulte as capacidades somente quando precisar revisar a autorização operacional.</p><div class="agenda-actions"><a class="agenda-btn secondary" href="{{ central.urls.capacidades }}">Ver capacidades</a></div></article>
+<article class="agenda-card wide" id="agendamentos"><h2>Próximos agendamentos</h2><p class="agenda-muted">{{ central.proximos_total }} atendimento{{ central.proximos_total|pluralize }} futuro{{ central.proximos_total|pluralize }}.</p><ul class="agenda-list">{% for item in central.proximos %}<li><span><strong>{{ item.inicio|date:"d/m/Y H:i" }} · {{ item.servico }}</strong><small>Cliente: {{ item.cliente }} · Profissional: {{ item.profissional }}</small></span><span class="check-state">{{ item.get_status_display|upper }}</span></li>{% empty %}<li class="agenda-muted">Nenhum próximo agendamento.</li>{% endfor %}</ul><div class="agenda-actions">{% if central.autorizado %}<a class="agenda-btn" href="{{ central.urls.agendamentos }}">Ver todos os agendamentos</a>{% else %}<span class="agenda-btn disabled" aria-disabled="true">Ver todos os agendamentos</span>{% endif %}</div></article>
+</section></div></div>
 {% endblock %}

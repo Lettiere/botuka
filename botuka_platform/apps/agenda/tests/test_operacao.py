@@ -13,6 +13,7 @@ from apps.agenda.forms import (
 )
 from apps.agenda.models import (
     Agendamento,
+    AgendaEmpresa,
     AgendaBloqueio,
     AgendaDisponibilidade,
     AgendaDisponibilidadeData,
@@ -120,6 +121,10 @@ class AgendaOperacaoTests(TestCase):
             hora_fim=time(18),
         )
         cls.inicio = timezone.make_aware(datetime.combine(proxima_segunda, time(10)))
+        for empresa in (cls.empresa_a, cls.empresa_b):
+            AgendaEmpresa.objects.create(
+                empresa=empresa, status=AgendaEmpresa.Status.ABERTA,
+            )
 
     @classmethod
     def _empresa(cls, owner, nome, cidade, estado):

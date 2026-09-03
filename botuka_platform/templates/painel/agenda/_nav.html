@@ -19,8 +19,8 @@
     <i class="bi bi-scissors"></i> Serviços e duração
   </a>
 
-  <a href="{% url 'painel:agenda_disponibilidade_lista' empresa.uuid %}">
-    <i class="bi bi-calendar-check"></i> Disponibilidades
+  <a href="{% url 'painel:agenda_horarios' empresa.uuid %}">
+    <i class="bi bi-calendar-check"></i> Horários
   </a>
 
   <a href="{% url 'painel:agenda_bloqueio_lista' empresa.uuid %}">
@@ -29,6 +29,10 @@
 
   <a href="{% url 'painel:agenda_agendamento_lista' empresa.uuid %}">
     <i class="bi bi-journal-check"></i> Agendamentos
+  </a>
+
+  <a href="{% url 'painel:agenda_configuracoes' empresa.uuid %}">
+    <i class="bi bi-gear"></i> Configurações
   </a>
 </nav>
 

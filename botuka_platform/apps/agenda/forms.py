@@ -7,7 +7,9 @@ from django.utils import timezone
 from apps.services.models import Servico
 
 from .models import (
+    Agendamento,
     AgendaBloqueio,
+    AgendaEmpresa,
     AgendaDisponibilidade,
     AgendaDisponibilidadeData,
     AgendaFuncionamentoEmpresa,
@@ -91,6 +93,39 @@ class FuncionamentoEmpresaForm(forms.ModelForm):
         self.empresa = empresa
         super().__init__(*args, **kwargs)
         self.instance.empresa = empresa
+
+
+class DisponibilidadeSemanalForm(EmpresaScopedModelForm):
+    class Meta:
+        model = AgendaDisponibilidade
+        fields = ('profissional', 'dia_semana', 'hora_inicio', 'hora_fim')
+        widgets = {
+            'hora_inicio': forms.TimeInput(attrs={'type': 'time'}),
+            'hora_fim': forms.TimeInput(attrs={'type': 'time'}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields['profissional'].queryset = profissionais_ativos(self.empresa)
+
+    def clean(self):
+        cleaned = super().clean()
+        dia = cleaned.get('dia_semana')
+        inicio = cleaned.get('hora_inicio')
+        fim = cleaned.get('hora_fim')
+        if dia is None or not inicio or not fim:
+            return cleaned
+        if AgendaFuncionamentoEmpresa.objects.filter(empresa=self.empresa).exists() and not AgendaFuncionamentoEmpresa.objects.filter(
+            empresa=self.empresa,
+            dia_semana=dia,
+            ativo=True,
+            hora_inicio__lte=inicio,
+            hora_fim__gte=fim,
+        ).exists():
+            raise ValidationError(
+                'O horário precisa caber integralmente no funcionamento da empresa.'
+            )
+        return cleaned
 
 
 class DisponibilidadeForm(EmpresaScopedModelForm):
@@ -177,6 +212,25 @@ class BloqueioForm(EmpresaScopedModelForm):
             else:
                 cleaned['inicio'] = timezone.make_aware(datetime.combine(data_inicio, time.min))
                 cleaned['fim'] = timezone.make_aware(datetime.combine(data_fim + timedelta(days=1), time.min))
+        profissional = cleaned.get('profissional')
+        inicio = cleaned.get('inicio')
+        fim = cleaned.get('fim')
+        reservas = Agendamento.objects.filter(
+            profissional_servico__profissional=profissional,
+            status__in=(Agendamento.Status.PENDENTE, Agendamento.Status.CONFIRMADO),
+        ).select_related('profissional_servico') if profissional else ()
+        if inicio and fim and any(
+            reserva.inicio - timedelta(
+                minutes=reserva.profissional_servico.buffer_antes_minutos
+            ) < fim
+            and reserva.fim + timedelta(
+                minutes=reserva.profissional_servico.buffer_depois_minutos
+            ) > inicio
+            for reserva in reservas
+        ):
+            raise ValidationError(
+                'Há agendamentos ativos neste período. Reagende-os ou cancele-os antes de criar o bloqueio.'
+            )
         return cleaned
 
     def _post_clean(self):
@@ -185,3 +239,53 @@ class BloqueioForm(EmpresaScopedModelForm):
             self.instance.inicio = self.cleaned_data['inicio']
         if self.cleaned_data.get('fim'):
             self.instance.fim = self.cleaned_data['fim']
+
+
+class AgendamentoOperacionalForm(forms.Form):
+    vinculo = forms.ModelChoiceField(
+        queryset=AgendaProfissionalServico.objects.none(), label='Profissional e serviço',
+    )
+    inicio = forms.DateTimeField(
+        label='Data e horário', input_formats=('%Y-%m-%dT%H:%M',),
+        widget=forms.DateTimeInput(format='%Y-%m-%dT%H:%M', attrs={'type': 'datetime-local'}),
+    )
+
+    def __init__(self, *args, empresa, **kwargs):
+        self.empresa = empresa
+        super().__init__(*args, **kwargs)
+        self.fields['vinculo'].queryset = AgendaProfissionalServico.objects.filter(
+            profissional__empresa_usuario__empresa=empresa,
+            profissional__empresa_usuario__ativo=True, profissional__ativo=True,
+            ativo=True, servico__empresa=empresa, servico__ativo=True,
+            servico__status=Servico.Status.PUBLICADO,
+        ).select_related(
+            'profissional__empresa_usuario__usuario', 'servico',
+        ).order_by('profissional_id', 'servico__titulo')
+
+
+class AgendamentoInternoForm(AgendamentoOperacionalForm):
+    cliente_email = forms.EmailField(
+        label='E-mail do cliente existente',
+        help_text='Por segurança, informe o e-mail exato de uma conta BOTUKA ativa.',
+    )
+
+
+class AgendaConfiguracaoForm(forms.ModelForm):
+    class Meta:
+        model = AgendaEmpresa
+        fields = (
+            'antecedencia_minima_minutos', 'horizonte_maximo_dias',
+            'intervalo_grade_minutos', 'cancelamento_antecedencia_minutos',
+        )
+        labels = {
+            'antecedencia_minima_minutos': 'Antecedência mínima (minutos)',
+            'horizonte_maximo_dias': 'Reservas disponíveis pelos próximos (dias)',
+            'intervalo_grade_minutos': 'Intervalo entre opções de horário (0 = duração do serviço)',
+            'cancelamento_antecedencia_minutos': 'Prazo mínimo para cancelamento (minutos)',
+        }
+
+    def clean_intervalo_grade_minutos(self):
+        valor = self.cleaned_data['intervalo_grade_minutos']
+        if valor > 1440:
+            raise ValidationError('O intervalo não pode ultrapassar 24 horas.')
+        return valor

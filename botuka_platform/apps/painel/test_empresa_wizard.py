@@ -341,7 +341,7 @@ class EmpresaWizardTests(TestCase):
         agenda = response.context['painel_empresa']['agenda']
 
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(agenda['estado'], 'ATIVA')
+        self.assertEqual(agenda['estado'], 'PENDENTE DE CONFIGURAÇÃO')
         self.assertEqual(agenda['profissionais'], 1)
         self.assertEqual(agenda['servicos'], 1)
         self.assertEqual(agenda['disponibilidades'], 1)

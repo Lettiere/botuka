@@ -10,6 +10,59 @@ from apps.organizations.models import Empresa, EmpresaUsuario
 from apps.services.models import Servico
 
 
+class AgendaEmpresa(UUIDModel):
+    """Estado operacional explícito da Agenda de uma empresa."""
+
+    class Status(models.TextChoices):
+        PENDENTE_CONFIGURACAO = 'PENDENTE_CONFIGURACAO', 'Pendente de configuração'
+        FECHADA = 'FECHADA', 'Fechada'
+        ABERTA = 'ABERTA', 'Aberta'
+
+    id = models.BigAutoField(primary_key=True, db_column='agenda_empresa_id')
+    empresa = models.OneToOneField(
+        Empresa, on_delete=models.CASCADE, related_name='agenda_configuracao',
+        db_column='agenda_empresa_fk_empresa',
+    )
+    status = models.CharField(
+        max_length=30, choices=Status.choices, default=Status.PENDENTE_CONFIGURACAO,
+        db_column='agenda_empresa_status',
+    )
+    antecedencia_minima_minutos = models.PositiveIntegerField(
+        default=0, db_column='agenda_empresa_antecedencia_minima_minutos',
+    )
+    horizonte_maximo_dias = models.PositiveIntegerField(
+        default=90, db_column='agenda_empresa_horizonte_maximo_dias',
+    )
+    intervalo_grade_minutos = models.PositiveIntegerField(
+        default=0, db_column='agenda_empresa_intervalo_grade_minutos',
+    )
+    cancelamento_antecedencia_minutos = models.PositiveIntegerField(
+        default=0, db_column='agenda_empresa_cancelamento_antecedencia_minutos',
+    )
+    aberto_em = models.DateTimeField(null=True, blank=True, db_column='agenda_empresa_aberto_em')
+    fechado_em = models.DateTimeField(null=True, blank=True, db_column='agenda_empresa_fechado_em')
+    atualizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='agendas_empresa_atualizadas', db_column='agenda_empresa_fk_atualizado_por',
+    )
+    criado_em = models.DateTimeField(auto_now_add=True, db_column='agenda_empresa_criado_em')
+    atualizado_em = models.DateTimeField(auto_now=True, db_column='agenda_empresa_atualizado_em')
+
+    class Meta:
+        db_table = '"agenda"."agenda_empresa_tb"'
+        ordering = ['empresa_id']
+
+    def clean(self):
+        super().clean()
+        if self.intervalo_grade_minutos > 1440:
+            raise ValidationError({'intervalo_grade_minutos': 'O intervalo não pode ultrapassar 24 horas.'})
+        if self.horizonte_maximo_dias < 1:
+            raise ValidationError({'horizonte_maximo_dias': 'O horizonte deve ser de pelo menos um dia.'})
+
+    def __str__(self):
+        return f'{self.empresa} — {self.get_status_display()}'
+
+
 class AgendaProfissional(UUIDModel):
     """
     Identidade de um profissional habilitado para operar na Agenda.
@@ -866,3 +919,32 @@ class Agendamento(UUIDModel):
             f'{self.cliente} — {self.servico} — '
             f'{self.inicio:%d/%m/%Y %H:%M}'
         )
+
+
+class AgendamentoHistorico(UUIDModel):
+    class Acao(models.TextChoices):
+        CRIADO = 'CRIADO', 'Criado'
+        STATUS = 'STATUS', 'Status alterado'
+        REAGENDADO = 'REAGENDADO', 'Reagendado'
+        CANCELADO = 'CANCELADO', 'Cancelado'
+
+    id = models.BigAutoField(primary_key=True, db_column='agenda_historico_id')
+    agendamento = models.ForeignKey(
+        Agendamento, on_delete=models.CASCADE, related_name='historico',
+        db_column='agenda_historico_fk_agendamento',
+    )
+    acao = models.CharField(max_length=20, choices=Acao.choices, db_column='agenda_historico_acao')
+    status_anterior = models.CharField(max_length=20, blank=True, db_column='agenda_historico_status_anterior')
+    status_novo = models.CharField(max_length=20, blank=True, db_column='agenda_historico_status_novo')
+    inicio_anterior = models.DateTimeField(null=True, blank=True, db_column='agenda_historico_inicio_anterior')
+    inicio_novo = models.DateTimeField(null=True, blank=True, db_column='agenda_historico_inicio_novo')
+    realizado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='historicos_agendamento_realizados', db_column='agenda_historico_fk_realizado_por',
+    )
+    criado_em = models.DateTimeField(auto_now_add=True, db_column='agenda_historico_criado_em')
+
+    class Meta:
+        db_table = '"agenda"."agenda_agendamento_historico_tb"'
+        ordering = ['-criado_em', '-id']
+        indexes = [models.Index(fields=['agendamento', 'criado_em'], name='agenda_hist_agend_data_idx')]

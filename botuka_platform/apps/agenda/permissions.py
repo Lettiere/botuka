@@ -21,10 +21,30 @@ def empresa_agenda_autorizada(usuario, empresa_uuid) -> Empresa:
     return empresa
 
 
+def empresa_agenda_configuravel(usuario, empresa_uuid) -> Empresa:
+    """Carrega uma empresa gerenciavel sem antecipar a autorizacao operacional."""
+    empresa = get_object_or_404(
+        empresas_disponiveis_para_usuario(usuario), uuid=empresa_uuid
+    )
+    if not usuario_pode_gerenciar_empresa(usuario, empresa):
+        raise PermissionDenied
+    return empresa
+
+
 def agenda_empresa_required(view_func):
     @wraps(view_func)
     def wrapper(request, uuid, *args, **kwargs):
         empresa = empresa_agenda_autorizada(request.user, uuid)
+        return view_func(request, empresa, *args, **kwargs)
+
+    return wrapper
+
+
+def agenda_empresa_configuracao_required(view_func):
+    """Permite preparar a Agenda; operacoes continuam exigindo capacidade."""
+    @wraps(view_func)
+    def wrapper(request, uuid, *args, **kwargs):
+        empresa = empresa_agenda_configuravel(request.user, uuid)
         return view_func(request, empresa, *args, **kwargs)
 
     return wrapper
