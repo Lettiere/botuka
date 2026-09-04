@@ -200,6 +200,10 @@ body.navigation-modal-open { overflow: hidden; }
 .navigation-group__links a strong { font-size: .9rem; }
 .navigation-group__links a small { margin-top: 2px; color: var(--nav-modal-muted); font-size: .72rem; }
 .navigation-group__links a:hover { color: var(--nav-modal-text); background: var(--nav-modal-bg); }
+.navigation-group__links a.navigation-company-create {
+  border: 1px solid #d8ae14;
+  background: rgba(255, 210, 48, .13);
+}
 .navigation-group__links a:focus-visible, .navigation-modal button:focus-visible, .navigation-modal__footer a:focus-visible {
   outline: 3px solid var(--nav-modal-accent);
   outline-offset: 2px;

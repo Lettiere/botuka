@@ -3,6 +3,7 @@ from django.test import TestCase
 from django.urls import reverse
 
 from apps.core.models import Perfil, PerfilPermissao, Permissao
+from apps.organizations.models import Empresa
 
 
 class PanelNavigationTests(TestCase):
@@ -75,3 +76,60 @@ class PanelNavigationTests(TestCase):
         self.assertNotIn("Prefeitura", labels)
         self.assertNotIn("Turismo", labels)
         self.assertEqual(self.client.get(reverse("painel:news_dashboard")).status_code, 200)
+
+    def test_modal_oferece_cadastro_para_usuario_sem_empresa(self):
+        user = self.make_user("sem_empresa_nav", "CIDADAO_SEM_EMPRESA_NAV")
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("painel:dashboard"))
+
+        self.assertContains(response, 'data-navigation-category="company"')
+        self.assertContains(
+            response,
+            f'class="navigation-company-create" href="{reverse("painel:empresa_criar")}"',
+        )
+        self.assertContains(response, "Cadastrar nova empresa")
+
+        total_antes = Empresa.objects.filter(usuario_proprietario=user).count()
+        wizard = self.client.get(reverse("painel:empresa_criar"))
+        self.assertEqual(wizard.status_code, 200)
+        self.assertTemplateUsed(wizard, "painel/empresas/wizard.html")
+        self.assertEqual(
+            Empresa.objects.filter(usuario_proprietario=user).count(), total_antes,
+        )
+
+    def test_modal_preserva_empresas_e_oferece_cadastro_com_uma_ou_varias(self):
+        user = self.make_user("com_empresas_nav", "CIDADAO_COM_EMPRESAS_NAV")
+        primeira = Empresa.objects.create(
+            usuario_proprietario=user, nome_fantasia="Empresa Alfa",
+        )
+        self.client.force_login(user)
+
+        response = self.client.get(reverse("painel:dashboard"))
+        self.assertContains(response, "Empresa Alfa")
+        self.assertContains(response, "Cadastrar nova empresa")
+        self.assertContains(response, reverse("painel:empresa_detalhe", args=[primeira.uuid]))
+
+        segunda = Empresa.objects.create(
+            usuario_proprietario=user, nome_fantasia="Empresa Beta",
+        )
+        response = self.client.get(reverse("painel:dashboard"))
+        self.assertContains(response, 'data-company-menu-select')
+        self.assertContains(response, "Empresa Alfa")
+        self.assertContains(response, "Empresa Beta")
+        self.assertContains(response, "Cadastrar nova empresa")
+        self.assertContains(response, reverse("painel:empresa_detalhe", args=[primeira.uuid]))
+        self.assertContains(response, reverse("painel:empresa_detalhe", args=[segunda.uuid]))
+
+    def test_cadastro_no_limite_delega_bloqueio_para_view_sem_criar_empresa(self):
+        user = self.make_user("limite_empresa_nav", "CIDADAO_LIMITE_EMPRESA_NAV")
+        Empresa.objects.create(usuario_proprietario=user, nome_fantasia="Empresa Única")
+        self.client.force_login(user)
+        total_antes = Empresa.objects.filter(usuario_proprietario=user).count()
+
+        response = self.client.get(reverse("painel:empresa_criar"))
+
+        self.assertRedirects(response, reverse("painel:empresas_lista"))
+        self.assertEqual(
+            Empresa.objects.filter(usuario_proprietario=user).count(), total_antes,
+        )
