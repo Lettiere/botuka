@@ -3,7 +3,7 @@ from apps.core.services.images import optimize_uploaded_image
 
 from apps.accounts.authorization import pode
 
-from .models import Artigo, Autor, CategoriaNoticia, Coluna, ComentarioArtigo, SerieEditorial, Tag, Tema
+from .models import Artigo, ArtigoBloco, Autor, CategoriaNoticia, Coluna, ComentarioArtigo, SerieEditorial, Tag, Tema
 from .sanitizers import sanitizar_html_editorial
 
 
@@ -66,6 +66,64 @@ class ArtigoForm(forms.ModelForm):
         if not conteudo:
             raise forms.ValidationError("Informe o conteúdo da notícia.")
         return conteudo
+
+
+class ArtigoVideoForm(forms.ModelForm):
+    class Meta:
+        model = ArtigoBloco
+        fields = ["titulo", "url", "ordem"]
+        widgets = {
+            "titulo": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Título opcional do vídeo",
+            }),
+            "url": forms.URLInput(attrs={
+                "class": "form-control",
+                "placeholder": "https://www.youtube.com/watch?v=...",
+            }),
+            "ordem": forms.NumberInput(attrs={
+                "class": "form-control",
+                "min": 0,
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.instance.tipo = ArtigoBloco.Tipo.VIDEO
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.tipo = ArtigoBloco.Tipo.VIDEO
+        if commit:
+            obj.save()
+        return obj
+
+
+class BaseArtigoVideoFormSet(forms.BaseInlineFormSet):
+    def get_queryset(self):
+        return super().get_queryset().filter(
+            tipo=ArtigoBloco.Tipo.VIDEO,
+            ativo=True,
+            excluido_em__isnull=True,
+        )
+
+    def delete_existing(self, obj, commit=True):
+        obj.ativo = False
+        from django.utils import timezone
+        obj.excluido_em = timezone.now()
+        if commit:
+            obj.save(update_fields=["ativo", "excluido_em", "atualizado_em"])
+
+
+ArtigoVideoFormSet = forms.inlineformset_factory(
+    Artigo,
+    ArtigoBloco,
+    form=ArtigoVideoForm,
+    formset=BaseArtigoVideoFormSet,
+    fields=["titulo", "url", "ordem"],
+    extra=1,
+    can_delete=True,
+)
 
 
 class ComentarioForm(forms.ModelForm):
