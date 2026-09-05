@@ -4,6 +4,7 @@ from django.conf import settings
 from django.urls import NoReverseMatch, reverse
 from apps.accounts.authorization import criar_verificador_permissoes
 from apps.organizations.permissions import empresas_disponiveis_para_usuario
+from apps.painel.company_context import SESSION_KEY
 
 
 def painel_navigation(request, permission_checker=None):
@@ -28,10 +29,26 @@ def painel_navigation(request, permission_checker=None):
         return any(checker(code) for code in codes)
 
     capabilities = {
-        "news_create": _can("news.criar"),
+        "news_create": _can("news.criar_artigo", "news.criar"),
         "news_review": _can("news.revisar"),
         "news_publish": _can("news.publicar"),
         "news_restore": _can("news.restaurar"),
+        "yubotuka_access": _can(
+            "yubotuka.dashboard.visualizar",
+            "yubotuka.video.criar",
+            "yubotuka.video.editar_proprio",
+            "yubotuka.video.editar_todos",
+            "yubotuka.video.aprovar",
+            "yubotuka.video.publicar",
+            "media.gerenciar",
+            "media.criar",
+            "media.editar",
+            "media.publicar",
+        ),
+        "yubotuka_create": _can(
+            "yubotuka.video.criar",
+            "media.criar",
+        ),
         "news_configure": _can(
             "news.gerenciar", "news.gerenciar_autores",
             "news.gerenciar_categorias", "news.gerenciar_destaques",
@@ -133,7 +150,7 @@ def painel_navigation(request, permission_checker=None):
         ]})
 
     empresas_nav = list(
-        empresas_disponiveis_para_usuario(user).order_by('nome_fantasia')[:8]
+        empresas_disponiveis_para_usuario(user).order_by('nome_fantasia')
     )
     uuid_atual = (
         request.GET.get('empresa_menu')
@@ -141,7 +158,11 @@ def painel_navigation(request, permission_checker=None):
     )
     empresa_nav_ativa = next(
         (empresa for empresa in empresas_nav if str(empresa.uuid) == str(uuid_atual)),
-        empresas_nav[0] if len(empresas_nav) == 1 else None,
+        next(
+            (empresa for empresa in empresas_nav
+             if empresa.pk == request.session.get(SESSION_KEY)),
+            empresas_nav[0] if len(empresas_nav) == 1 else None,
+        ),
     )
     result = {
         "painel_module_groups": groups,
