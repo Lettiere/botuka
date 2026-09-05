@@ -102,6 +102,9 @@ from apps.services.permissions import (
 )
 from apps.products.models import Conversa, Produto
 from apps.products.services import calcular_limite
+from apps.painel.company_context import (
+    empresa_selecionada, limpar_empresa_selecionada, selecionar_empresa,
+)
 
 
 def painel_permission_required(codigo: str):
@@ -188,7 +191,10 @@ def render_pagina(request: HttpRequest, template_name: str, titulo: str) -> Http
 
 
 def _empresa_autorizada(request: HttpRequest, uuid) -> Empresa:
-    return get_object_or_404(empresas_disponiveis_para_usuario(request.user), uuid=uuid)
+    empresa = get_object_or_404(
+        empresas_disponiveis_para_usuario(request.user), uuid=uuid,
+    )
+    return selecionar_empresa(request, empresa)
 
 
 def _aplicar_filtros_empresas(request: HttpRequest, queryset):
@@ -916,7 +922,11 @@ def publicacoes_lista(request: HttpRequest) -> HttpResponse:
 
 
 def _servico_autorizado(request: HttpRequest, uuid) -> Servico:
-    servico = get_object_or_404(servicos_disponiveis_para_usuario(request.user), uuid=uuid)
+    empresa_contexto = empresa_selecionada(request)
+    queryset = servicos_disponiveis_para_usuario(request.user)
+    if empresa_contexto is not None:
+        queryset = queryset.filter(empresa=empresa_contexto)
+    servico = get_object_or_404(queryset, uuid=uuid)
     if not usuario_pode_visualizar_servico(request.user, servico):
         raise PermissionDenied
     return servico
@@ -945,7 +955,12 @@ def _aplicar_filtros_servicos(request: HttpRequest, queryset):
 
 @login_required
 def servicos_lista(request: HttpRequest) -> HttpResponse:
+    empresa_contexto = empresa_selecionada(request)
     servicos_base = servicos_disponiveis_para_usuario(request.user)
+    if empresa_contexto is None:
+        servicos_base = servicos_base.filter(empresa__isnull=True)
+    else:
+        servicos_base = servicos_base.filter(empresa=empresa_contexto)
     servicos_filtrados = _aplicar_filtros_servicos(request, servicos_base)
     paginator = Paginator(servicos_filtrados, 12)
     page_obj = paginator.get_page(request.GET.get('page'))
@@ -961,6 +976,7 @@ def servicos_lista(request: HttpRequest) -> HttpResponse:
             'page_obj': page_obj,
             'querystring': querystring.urlencode(),
             'status_choices': Servico.Status.choices,
+            'empresa_contexto': empresa_contexto,
             'empresas_filtro': Empresa.objects.filter(servicos__in=servicos_base).distinct().order_by('nome_fantasia'),
             'setores_filtro': Setor.objects.filter(servicos__in=servicos_base).distinct().order_by('nome'),
             'total_servicos': servicos_base.count(),
@@ -973,18 +989,16 @@ def servicos_lista(request: HttpRequest) -> HttpResponse:
 
 @login_required
 def servico_criar(request: HttpRequest) -> HttpResponse:
-    empresa_contexto = None
-    empresa_id = request.GET.get('empresa', '').strip()
+    empresa_contexto = empresa_selecionada(request)
 
-    if empresa_id:
-        if not empresa_id.isdigit():
-            raise PermissionDenied
-        empresa_contexto = get_object_or_404(
-            empresas_disponiveis_para_usuario(request.user), pk=empresa_id,
-        )
+    if empresa_contexto is not None:
         if not usuario_pode_gerenciar_empresa(request.user, empresa_contexto):
             raise PermissionDenied
         if not empresa_contexto.pode_criar_rascunho_servico:
+            # A seleção só pode sobreviver se a rota realmente puder operar
+            # naquele contexto. Assim o redirect não contamina o acesso
+            # genérico/PF subsequente.
+            limpar_empresa_selecionada(request)
             messages.warning(
                 request,
                 'A atuação desta empresa não permite cadastrar serviços.',
@@ -1134,7 +1148,10 @@ def servico_editar(request: HttpRequest, uuid) -> HttpResponse:
         raise PermissionDenied
 
     if request.method == 'POST':
-        form = ServicoForm(request.POST, request.FILES, instance=servico, usuario=request.user)
+        form = ServicoForm(
+            request.POST, request.FILES, instance=servico,
+            usuario=request.user, empresa_contexto=empresa_selecionada(request),
+        )
         atributos = atributo_formset('servico', instance=servico, data=request.POST)
         arquivos, erros_upload = _validar_uploads_servico(request)
         valido = form.is_valid() and atributos.is_valid() and not erros_upload
@@ -1164,7 +1181,10 @@ def servico_editar(request: HttpRequest, uuid) -> HttpResponse:
         for erro in erros_upload:
             form.add_error(None, erro)
     else:
-        form = ServicoForm(instance=servico, usuario=request.user)
+        form = ServicoForm(
+            instance=servico, usuario=request.user,
+            empresa_contexto=empresa_selecionada(request),
+        )
         atributos = atributo_formset('servico', instance=servico)
 
     return render(request, 'painel/servicos/form.html', {
@@ -1363,7 +1383,7 @@ def _auditar_qr(request, entidade, objeto, token_anterior):
 
 @login_required
 def servico_qrcode(request: HttpRequest, uuid) -> HttpResponse:
-    servico = get_object_or_404(servicos_disponiveis_para_usuario(request.user), uuid=uuid)
+    servico = _servico_autorizado(request, uuid)
     if not usuario_pode_editar_servico(request.user, servico):
         raise PermissionDenied
     if request.method == 'POST':
