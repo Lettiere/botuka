@@ -181,21 +181,21 @@ class AcaoSitemap(HttpsSitemap):
 
 class LocalTuristicoSitemap(HttpsSitemap):
     def items(self):
-        return LocalTuristico.objects.filter(status=TurismoStatus.PUBLICADO, ativo=True, excluido_em__isnull=True).only('slug', 'atualizado_em')
+        return LocalTuristico.objects.filter(status=TurismoStatus.PUBLICADO, ativo=True, removido_em__isnull=True).only('slug', 'atualizado_em')
     def location(self, item): return reverse('tourism_public:local', args=[item.slug])
     def lastmod(self, item): return item.atualizado_em
 
 
 class GuiaTuristicoSitemap(HttpsSitemap):
     def items(self):
-        return GuiaTuristico.objects.filter(status=TurismoStatus.PUBLICADO, verificado=True, ativo=True, excluido_em__isnull=True).only('slug', 'atualizado_em')
+        return GuiaTuristico.objects.filter(status=TurismoStatus.PUBLICADO, verificado=True, ativo=True, removido_em__isnull=True).only('slug', 'atualizado_em')
     def location(self, item): return reverse('tourism_public:guia', args=[item.slug])
     def lastmod(self, item): return item.atualizado_em
 
 
 class RoteiroTuristicoSitemap(HttpsSitemap):
     def items(self):
-        return RoteiroTuristico.objects.filter(status=TurismoStatus.PUBLICADO, ativo=True, excluido_em__isnull=True).only('slug', 'atualizado_em')
+        return RoteiroTuristico.objects.filter(status=TurismoStatus.PUBLICADO, ativo=True, removido_em__isnull=True).only('slug', 'atualizado_em')
     def location(self, item): return reverse('tourism_public:roteiro', args=[item.slug])
     def lastmod(self, item): return item.atualizado_em
 
