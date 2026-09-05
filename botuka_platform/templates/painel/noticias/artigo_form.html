@@ -15,10 +15,145 @@
   </section>
   {% if pode_atribuir_autor %}<section class="panel-card news-form-section"><h2>Autoria</h2><label class="form-label" for="{{ form.autor_editorial.id_for_label }}">Autor editorial</label>{{ form.autor_editorial }}{{ form.autor_editorial.errors }}</section>{% endif %}
   <section class="panel-card news-form-section"><h2>Imagem e mídia</h2><div class="row g-3">{% for name in "imagem_capa,legenda_imagem,credito_imagem,fonte_imagem,texto_alternativo_imagem,imagem_social"|split:"," %}{% with field=form|get_item:name %}<div class="col-12 col-md-6"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endwith %}{% endfor %}</div><div class="news-media-preview" data-image-preview></div></section>
+  <section class="panel-card news-form-section">
+    <h2>Vídeos do YouTube</h2>
+    <p class="text-muted mb-3">
+      Cole o link do vídeo do YouTube. Não é necessário inserir código iframe.
+    </p>
+
+    {{ video_formset.management_form }}
+
+    {% if video_formset.non_form_errors %}
+      <div class="alert alert-danger">
+        {{ video_formset.non_form_errors }}
+      </div>
+    {% endif %}
+
+    <div data-video-formset>
+      {% for video_form in video_formset %}
+        <div class="row g-3 align-items-end mb-3" data-video-form>
+          {% for hidden in video_form.hidden_fields %}
+            {{ hidden }}
+          {% endfor %}
+
+          <div class="col-12 col-md-5">
+            <label class="form-label" for="{{ video_form.url.id_for_label }}">
+              Link do YouTube
+            </label>
+            {{ video_form.url }}
+            {{ video_form.url.errors }}
+          </div>
+
+          <div class="col-12 col-md-4">
+            <label class="form-label" for="{{ video_form.titulo.id_for_label }}">
+              Título opcional
+            </label>
+            {{ video_form.titulo }}
+            {{ video_form.titulo.errors }}
+          </div>
+
+          <div class="col-6 col-md-1">
+            <label class="form-label" for="{{ video_form.ordem.id_for_label }}">
+              Ordem
+            </label>
+            {{ video_form.ordem }}
+            {{ video_form.ordem.errors }}
+          </div>
+
+          <div class="col-6 col-md-2">
+            {% if video_form.DELETE %}
+              <div class="form-check">
+                {{ video_form.DELETE }}
+                <label class="form-check-label" for="{{ video_form.DELETE.id_for_label }}">
+                  Remover
+                </label>
+              </div>
+            {% endif %}
+          </div>
+
+          {% if video_form.non_field_errors %}
+            <div class="col-12">
+              <div class="alert alert-danger">
+                {{ video_form.non_field_errors }}
+              </div>
+            </div>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+
+    <button class="panel-btn panel-btn--soft" type="button" data-add-video>
+      Adicionar vídeo
+    </button>
+
+    <template data-video-empty-form>
+      <div class="row g-3 align-items-end mb-3" data-video-form>
+        {% with video_form=video_formset.empty_form %}
+          {% for hidden in video_form.hidden_fields %}
+            {{ hidden }}
+          {% endfor %}
+
+          <div class="col-12 col-md-5">
+            <label class="form-label" for="{{ video_form.url.id_for_label }}">
+              Link do YouTube
+            </label>
+            {{ video_form.url }}
+          </div>
+
+          <div class="col-12 col-md-4">
+            <label class="form-label" for="{{ video_form.titulo.id_for_label }}">
+              Título opcional
+            </label>
+            {{ video_form.titulo }}
+          </div>
+
+          <div class="col-6 col-md-1">
+            <label class="form-label" for="{{ video_form.ordem.id_for_label }}">
+              Ordem
+            </label>
+            {{ video_form.ordem }}
+          </div>
+
+          <div class="col-6 col-md-2">
+            {% if video_form.DELETE %}
+              <div class="form-check">
+                {{ video_form.DELETE }}
+                <label class="form-check-label" for="{{ video_form.DELETE.id_for_label }}">
+                  Remover
+                </label>
+              </div>
+            {% endif %}
+          </div>
+        {% endwith %}
+      </div>
+    </template>
+  </section>
+
   <section class="panel-card news-form-section"><h2>Links e referências</h2><div class="row g-3">{% for name in "fonte,url_fonte,data_fato"|split:"," %}{% with field=form|get_item:name %}<div class="col-12 col-md-4"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endwith %}{% endfor %}</div></section>
   <section class="panel-card news-form-section"><h2>SEO</h2><div class="row g-3">{% for name in "titulo_seo,descricao_seo"|split:"," %}{% with field=form|get_item:name %}<div class="col-12 col-md-6"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}<small data-counter-for="{{ field.id_for_label }}"></small>{{ field.errors }}</div>{% endwith %}{% endfor %}</div></section>
   <section class="panel-card news-form-section"><h2>Publicação e comentários</h2><div class="d-flex flex-wrap gap-4">{{ form.destaque }} <label for="{{ form.destaque.id_for_label }}">Destaque</label>{{ form.urgente }} <label for="{{ form.urgente.id_for_label }}">Urgente</label>{{ form.comentarios_permitidos }} <label for="{{ form.comentarios_permitidos.id_for_label }}">Comentários permitidos</label>{{ form.comentarios_moderados }} <label for="{{ form.comentarios_moderados.id_for_label }}">Moderação prévia</label>{{ form.comentarios_encerrados }} <label for="{{ form.comentarios_encerrados.id_for_label }}">Comentários encerrados</label></div></section>
   <div class="news-editor__actions"><a class="panel-btn panel-btn--soft" href="{% url 'painel:news_artigo_lista' %}">Voltar</a><button class="panel-btn panel-btn--soft" type="submit" name="continuar" value="1">Salvar e continuar</button><button class="panel-btn panel-btn--primary" type="submit">Salvar {% if artigo %}alterações{% else %}rascunho{% endif %}</button></div>
 </form>
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+  const container = document.querySelector("[data-video-formset]");
+  const addButton = document.querySelector("[data-add-video]");
+  const template = document.querySelector("[data-video-empty-form]");
+  const totalForms = document.querySelector("#id_videos-TOTAL_FORMS");
+
+  if (!container || !addButton || !template || !totalForms) {
+    return;
+  }
+
+  addButton.addEventListener("click", function () {
+    const index = Number(totalForms.value);
+    const html = template.innerHTML.replaceAll("__prefix__", String(index));
+
+    container.insertAdjacentHTML("beforeend", html);
+    totalForms.value = index + 1;
+  });
+});
+</script>
+
 {% if artigo and acoes_status %}<section class="panel-card news-form-section"><h2>Fluxo editorial</h2><div class="d-flex flex-wrap gap-2">{% for value,label in acoes_status %}<form method="post" action="{% url 'painel:news_artigo_status' artigo.uuid value %}" {% if value == "PUBLICADO" or value == "ARQUIVADO" %}data-confirm="Confirma esta ação editorial?"{% endif %}>{% csrf_token %}<button class="panel-btn panel-btn--soft">{{ label }}</button></form>{% endfor %}</div></section>{% endif %}
 {% endblock %}

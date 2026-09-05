@@ -35,7 +35,7 @@ from .models import (
 from .services import (
     PERMISSAO_TRANSICAO, TRANSICOES, alterar_status, pode_editar_artigo,
 )
-from .forms import ArtigoForm, ComentarioForm
+from .forms import ArtigoForm, ArtigoVideoFormSet, ComentarioForm
 from .selectors import artigos_publicos, obter_home_noticias
 
 NEWS_AUX_MENU = [
@@ -514,10 +514,22 @@ def artigo_form(request, uuid=None):
     elif not pode(request.user, "news.criar_artigo"):
         raise PermissionDenied
     form = ArtigoForm(request.POST or None, request.FILES or None, instance=obj, usuario=request.user)
+    video_formset = ArtigoVideoFormSet(
+        request.POST or None,
+        instance=obj,
+        prefix="videos",
+    )
     requested_status = request.POST.get("status") if request.method == "POST" else None
     if requested_status and requested_status != (obj.status if obj else EditorialStatus.RASCUNHO):
         form.add_error(None, "O estado editorial deve ser alterado pelas ações do fluxo.")
-    if request.method == "POST" and form.is_valid():
+    if request.method == "POST":
+        form_valido = form.is_valid()
+        videos_validos = video_formset.is_valid()
+    else:
+        form_valido = False
+        videos_validos = False
+
+    if request.method == "POST" and form_valido and videos_validos:
         with transaction.atomic():
             artigo_obj = form.save(commit=False)
             if not artigo_obj.pk:
@@ -530,6 +542,10 @@ def artigo_form(request, uuid=None):
                 artigo_obj.autor_editorial = autor
             artigo_obj.save()
             form.save_m2m()
+
+            video_formset.instance = artigo_obj
+            video_formset.save()
+
             auditar(
                 request, "EDITAR" if obj else "CRIAR", artigo_obj,
                 depois={"titulo": artigo_obj.titulo},
@@ -537,7 +553,9 @@ def artigo_form(request, uuid=None):
         messages.success(request, "Notícia salva.")
         return redirect("painel:news_artigo_editar", uuid=artigo_obj.uuid)
     return render(request, "painel/noticias/artigo_form.html", {
-        "form": form, "artigo": obj,
+        "form": form,
+        "video_formset": video_formset,
+        "artigo": obj,
         "status_choices": EditorialStatus.choices,
         "acoes_status": [
             (status, label) for status, label in EditorialStatus.choices

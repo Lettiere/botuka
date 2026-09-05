@@ -1,9 +1,11 @@
 from django import forms
+from django.forms import inlineformset_factory
+from django.forms.models import BaseInlineFormSet
 from apps.core.services.images import optimize_uploaded_image
 
 from apps.accounts.authorization import pode
 
-from .models import Artigo, Autor, CategoriaNoticia, Coluna, ComentarioArtigo, SerieEditorial, Tag, Tema
+from .models import Artigo, ArtigoBloco, Autor, CategoriaNoticia, Coluna, ComentarioArtigo, SerieEditorial, Tag, Tema
 from .sanitizers import sanitizar_html_editorial
 
 
@@ -66,6 +68,55 @@ class ArtigoForm(forms.ModelForm):
         if not conteudo:
             raise forms.ValidationError("Informe o conteúdo da notícia.")
         return conteudo
+
+
+class ArtigoVideoForm(forms.ModelForm):
+    class Meta:
+        model = ArtigoBloco
+        fields = ["titulo", "url", "ordem"]
+        widgets = {
+            "titulo": forms.TextInput(attrs={
+                "placeholder": "T\u00edtulo opcional do v\u00eddeo",
+            }),
+            "url": forms.URLInput(attrs={
+                "placeholder": "https://www.youtube.com/watch?v=...",
+            }),
+            "ordem": forms.NumberInput(attrs={"min": 0}),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.instance.tipo = ArtigoBloco.Tipo.VIDEO
+
+        for field in self.fields.values():
+            field.widget.attrs["class"] = "form-control"
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.tipo = ArtigoBloco.Tipo.VIDEO
+
+        if commit:
+            obj.save()
+
+        return obj
+
+
+class BaseArtigoVideoFormSet(BaseInlineFormSet):
+    def get_queryset(self):
+        return super().get_queryset().filter(
+            tipo=ArtigoBloco.Tipo.VIDEO
+        )
+
+
+ArtigoVideoFormSet = inlineformset_factory(
+    Artigo,
+    ArtigoBloco,
+    form=ArtigoVideoForm,
+    formset=BaseArtigoVideoFormSet,
+    fields=["titulo", "url", "ordem"],
+    extra=1,
+    can_delete=True,
+)
 
 
 class ComentarioForm(forms.ModelForm):
