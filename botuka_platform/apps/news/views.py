@@ -6,7 +6,9 @@ from django.core.exceptions import PermissionDenied, ValidationError
 from django.core.paginator import Paginator
 from django.db import transaction
 from django.db.models import Count, Prefetch, Q
-from django.forms import modelform_factory
+from django import forms
+from django.forms import inlineformset_factory, modelform_factory
+from django.forms.models import BaseInlineFormSet
 from django.http import HttpResponsePermanentRedirect
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
@@ -286,6 +288,55 @@ ARTIGO_FIELDS = [
 ArtigoForm = modelform_factory(Artigo, fields=ARTIGO_FIELDS)
 
 
+class ArtigoVideoForm(forms.ModelForm):
+    class Meta:
+        model = ArtigoBloco
+        fields = ["titulo", "url", "ordem"]
+        widgets = {
+            "titulo": forms.TextInput(attrs={
+                "class": "form-control",
+                "placeholder": "Título opcional do vídeo",
+            }),
+            "url": forms.URLInput(attrs={
+                "class": "form-control",
+                "placeholder": "https://www.youtube.com/watch?v=...",
+            }),
+            "ordem": forms.NumberInput(attrs={
+                "class": "form-control",
+                "min": 0,
+            }),
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.instance.tipo = ArtigoBloco.Tipo.VIDEO
+
+    def save(self, commit=True):
+        obj = super().save(commit=False)
+        obj.tipo = ArtigoBloco.Tipo.VIDEO
+        if commit:
+            obj.save()
+        return obj
+
+
+class BaseArtigoVideoFormSet(BaseInlineFormSet):
+    def get_queryset(self):
+        return super().get_queryset().filter(
+            tipo=ArtigoBloco.Tipo.VIDEO
+        )
+
+
+ArtigoVideoFormSet = inlineformset_factory(
+    Artigo,
+    ArtigoBloco,
+    form=ArtigoVideoForm,
+    formset=BaseArtigoVideoFormSet,
+    fields=["titulo", "url", "ordem"],
+    extra=1,
+    can_delete=True,
+)
+
+
 @login_required
 def artigo_form(request, uuid=None):
     obj = get_object_or_404(_article_scope(request.user), uuid=uuid) if uuid else None
@@ -295,10 +346,15 @@ def artigo_form(request, uuid=None):
     elif not _can(request.user, "news.criar"):
         raise PermissionDenied
     form = ArtigoForm(request.POST or None, request.FILES or None, instance=obj)
+    video_formset = ArtigoVideoFormSet(
+        request.POST or None,
+        instance=obj or Artigo(),
+        prefix="videos",
+    )
     requested_status = request.POST.get("status") if request.method == "POST" else None
     if requested_status and requested_status != (obj.status if obj else EditorialStatus.RASCUNHO):
         form.add_error(None, "O estado editorial deve ser alterado pelas ações do fluxo.")
-    if request.method == "POST" and form.is_valid():
+    if request.method == "POST" and form.is_valid() and video_formset.is_valid():
         with transaction.atomic():
             artigo_obj = form.save(commit=False)
             if not artigo_obj.pk:
@@ -307,6 +363,8 @@ def artigo_form(request, uuid=None):
                     artigo_obj.autor_editorial = Autor.objects.filter(usuario=request.user).first()
             artigo_obj.save()
             form.save_m2m()
+            video_formset.instance = artigo_obj
+            video_formset.save()
             auditar(
                 request, "EDITAR" if obj else "CRIAR", artigo_obj,
                 depois={"titulo": artigo_obj.titulo},
@@ -315,6 +373,7 @@ def artigo_form(request, uuid=None):
         return redirect("painel:news_artigo_editar", uuid=artigo_obj.uuid)
     return render(request, "painel/noticias/artigo_form.html", {
         "form": form, "artigo": obj,
+        "video_formset": video_formset,
         "status_choices": EditorialStatus.choices,
         "news_aux_menu": NEWS_AUX_MENU,
     })
