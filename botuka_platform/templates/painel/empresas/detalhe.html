@@ -2,29 +2,788 @@
 {% block title %}{{ empresa.nome_exibicao }} | Painel BOTUKA{% endblock %}
 {% block painel_content %}
 <style>
-  .company-hub{--ink:#172033;--muted:#667085;--line:#e4e7ec;--yellow:#ffd230;background:#f3f6fa;margin:-26px -18px;padding:26px 18px 50px;min-height:80vh}.company-wrap{width:min(1220px,100%);margin:auto}.company-hero{overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:25px;box-shadow:0 18px 55px rgba(15,23,42,.08)}.company-cover{height:170px;background:linear-gradient(125deg,#111827,#354158)}.company-cover img{width:100%;height:100%;object-fit:cover}.company-hero-body{display:flex;justify-content:space-between;gap:22px;padding:0 26px 24px}.company-identity{display:flex;align-items:flex-end;gap:17px;margin-top:-42px;min-width:0}.company-logo{display:grid;width:94px;height:94px;flex:0 0 auto;place-items:center;overflow:hidden;border:5px solid #fff;border-radius:22px;background:var(--yellow);color:var(--ink);font-size:34px;font-weight:950;box-shadow:0 12px 26px rgba(15,23,42,.18)}.company-logo img{width:100%;height:100%;object-fit:cover}.company-title{min-width:0}.company-title h1{margin:0;color:var(--ink);font-size:clamp(26px,4vw,40px);font-weight:950;overflow-wrap:anywhere}.company-title p{margin:5px 0;color:var(--muted)}.company-badges,.company-actions,.card-actions{display:flex;flex-wrap:wrap;gap:8px}.company-badge{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:12px;font-weight:850}.company-badge.status{background:#fff5c2;color:#594a00}.company-actions{align-content:flex-start;margin-top:20px}.company-btn{display:inline-flex;min-height:43px;align-items:center;justify-content:center;gap:7px;padding:9px 14px;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:11px;text-decoration:none;font-weight:850}.company-btn:hover{color:var(--ink);border-color:#d5ad10;background:#fffbeb}.company-btn.primary{background:var(--yellow);border-color:var(--yellow)}.company-btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}.company-nav{display:flex;gap:5px;margin:16px 0;padding:7px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:14px}.company-nav a{padding:9px 12px;border-radius:9px;color:#475467;text-decoration:none;white-space:nowrap;font-size:13px;font-weight:850}.company-nav a:hover,.company-nav a.active{background:var(--ink);color:#fff}.hub-section{margin-top:20px}.hub-heading{display:flex;justify-content:space-between;align-items:end;gap:15px;margin-bottom:11px}.hub-heading span{color:#8a6d00;font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.hub-heading h2{margin:3px 0 0;color:var(--ink);font-size:21px;font-weight:950}.hub-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.hub-card{display:flex;min-width:0;min-height:190px;flex-direction:column;padding:18px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 7px 22px rgba(15,23,42,.05)}.hub-card.wide{grid-column:span 2}.hub-card.featured{color:#fff;background:linear-gradient(135deg,#111827,#2c394e);border-color:#111827}.hub-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.hub-icon{display:grid;width:43px;height:43px;place-items:center;border-radius:12px;background:#fff3b5;color:#594a00;font-size:20px}.hub-card.featured .hub-icon{background:var(--yellow);color:var(--ink)}.hub-state{padding:5px 8px;border-radius:99px;background:#f2f4f7;color:#475467;font-size:10px;font-weight:900;text-transform:uppercase}.hub-card.featured .hub-state{background:rgba(255,255,255,.14);color:#fff}.hub-card h3{margin:14px 0 4px;color:var(--ink);font-size:17px;font-weight:950}.hub-card.featured h3{color:#fff}.hub-card p{margin:0 0 13px;color:var(--muted);font-size:13px}.hub-card.featured p{color:#cbd5e1}.hub-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0 15px}.hub-stat{padding:9px 7px;border-radius:10px;background:#f7f8fa;text-align:center}.hub-card.featured .hub-stat{background:rgba(255,255,255,.1)}.hub-stat strong,.hub-stat small{display:block}.hub-stat strong{color:var(--ink);font-size:20px;font-weight:950}.hub-card.featured .hub-stat strong{color:#fff}.hub-stat small{color:var(--muted);font-size:10px}.hub-card.featured .hub-stat small{color:#cbd5e1}.card-actions{margin-top:auto}.hub-card.featured .company-btn:not(.primary){color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.24)}.progress-shell{height:9px;margin:12px 0 7px;overflow:hidden;background:#e4e7ec;border-radius:99px}.progress-shell span{display:block;height:100%;background:var(--yellow)}.pending-list,.activity-list{display:grid;gap:8px;margin:10px 0 0;padding:0;list-style:none}.pending-list a,.activity-list a,.activity-list li{display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px solid var(--line);border-radius:10px;color:var(--ink);text-decoration:none}.pending-list small,.activity-list small{display:block;color:var(--muted)}.management-grid{display:grid;grid-template-columns:2fr 1fr 1fr;gap:14px}.capability-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.capability-stats div{padding:10px;border-radius:10px;background:#f7f8fa;text-align:center}.capability-stats strong,.capability-stats small{display:block}.capability-stats strong{font-size:22px;color:var(--ink)}.capability-stats small{font-size:10px;color:var(--muted)}.activity-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.empty-note{padding:13px;border:1px dashed #cfd4dc;border-radius:11px;color:var(--muted);font-size:13px}.company-dropdown .dropdown-menu{padding:7px;border-radius:12px;border-color:var(--line);box-shadow:0 18px 44px rgba(15,23,42,.15)}.company-dropdown .dropdown-item{padding:9px 11px;border-radius:8px;font-weight:700}
-  @media(max-width:1020px){.hub-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.management-grid,.activity-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.management-grid .hub-card:first-child,.activity-grid .hub-card:last-child{grid-column:1/-1}.company-hero-body{display:block}.company-actions{margin-top:15px}}
-  @media(max-width:640px){.company-hub{margin:-20px -12px;padding:12px 10px 34px}.company-cover{height:120px}.company-hero{border-radius:18px}.company-hero-body{padding:0 15px 18px}.company-identity{display:block;margin-top:-35px}.company-logo{width:78px;height:78px}.company-title{margin-top:9px}.company-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}.company-actions>.company-btn,.company-actions>.dropdown{width:100%}.company-actions .dropdown>.company-btn{width:100%}.hub-grid,.management-grid,.activity-grid{grid-template-columns:1fr}.hub-card.wide,.management-grid .hub-card:first-child,.activity-grid .hub-card:last-child{grid-column:auto}.hub-stats{grid-template-columns:repeat(3,minmax(0,1fr))}.capability-stats{grid-template-columns:repeat(2,1fr)}.hub-heading{align-items:flex-start}.company-nav{position:sticky;top:64px;z-index:5}.card-actions{display:grid;grid-template-columns:1fr}.company-btn{width:100%}}
+  .company-hub{--ink:#172033;--muted:#667085;--line:#e4e7ec;--yellow:#ffd230;background:#f3f6fa;margin:0 -18px;padding:26px 18px 50px;min-height:80vh}.company-wrap{width:min(1220px,100%);margin:auto}.company-hero{overflow:hidden;background:#fff;border:1px solid var(--line);border-radius:25px;box-shadow:0 18px 55px rgba(15,23,42,.08)}.company-cover{height:170px;background:linear-gradient(125deg,#111827,#354158)}.company-cover img{width:100%;height:100%;object-fit:cover}.company-hero-body{display:flex;justify-content:space-between;gap:22px;padding:0 26px 24px}.company-identity{display:flex;align-items:flex-end;gap:17px;margin-top:-42px;min-width:0}.company-logo{display:grid;width:94px;height:94px;flex:0 0 auto;place-items:center;overflow:hidden;border:5px solid #fff;border-radius:22px;background:var(--yellow);color:var(--ink);font-size:34px;font-weight:950;box-shadow:0 12px 26px rgba(15,23,42,.18)}.company-logo img{width:100%;height:100%;object-fit:cover}.company-title{min-width:0}.company-title h1{margin:0;color:var(--ink);font-size:clamp(26px,4vw,40px);font-weight:950;overflow-wrap:anywhere}.company-title p{margin:5px 0;color:var(--muted)}.company-badges,.company-actions,.card-actions{display:flex;flex-wrap:wrap;gap:8px}.company-badge{display:inline-flex;align-items:center;gap:5px;padding:6px 10px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:12px;font-weight:850}.company-badge.status{background:#fff5c2;color:#594a00}.company-actions{align-content:flex-start;margin-top:20px}.company-btn{display:inline-flex;min-height:43px;align-items:center;justify-content:center;gap:7px;padding:9px 14px;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:11px;text-decoration:none;font-weight:850}.company-btn:hover{color:var(--ink);border-color:#d5ad10;background:#fffbeb}.company-btn.primary{background:var(--yellow);border-color:var(--yellow)}.company-btn.dark{background:var(--ink);border-color:var(--ink);color:#fff}.company-nav{display:flex;gap:5px;margin:16px 0;padding:7px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:14px}.company-nav a{padding:9px 12px;border-radius:9px;color:#475467;text-decoration:none;white-space:nowrap;font-size:13px;font-weight:850}.company-nav a:hover,.company-nav a.active{background:var(--ink);color:#fff}.hub-section{margin-top:20px}.hub-heading{display:flex;justify-content:space-between;align-items:end;gap:15px;margin-bottom:11px}.hub-heading span{color:#8a6d00;font-size:11px;font-weight:900;letter-spacing:.09em;text-transform:uppercase}.hub-heading h2{margin:3px 0 0;color:var(--ink);font-size:21px;font-weight:950}.hub-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.hub-card{display:flex;min-width:0;min-height:190px;flex-direction:column;padding:18px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 7px 22px rgba(15,23,42,.05)}.hub-card.wide{grid-column:auto}.hub-card.featured{color:#fff;background:linear-gradient(135deg,#111827,#2c394e);border-color:#111827}.hub-card-head{display:flex;justify-content:space-between;gap:10px;align-items:flex-start}.hub-icon{display:grid;width:43px;height:43px;place-items:center;border-radius:12px;background:#fff3b5;color:#594a00;font-size:20px}.hub-card.featured .hub-icon{background:var(--yellow);color:var(--ink)}.hub-state{padding:5px 8px;border-radius:99px;background:#f2f4f7;color:#475467;font-size:10px;font-weight:900;text-transform:uppercase}.hub-card.featured .hub-state{background:rgba(255,255,255,.14);color:#fff}.hub-card h3{margin:14px 0 4px;color:var(--ink);font-size:17px;font-weight:950}.hub-card.featured h3{color:#fff}.hub-card p{margin:0 0 13px;color:var(--muted);font-size:13px}.hub-card.featured p{color:#cbd5e1}.hub-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;margin:10px 0 15px}.hub-stat{padding:9px 7px;border-radius:10px;background:#f7f8fa;text-align:center}.hub-card.featured .hub-stat{background:rgba(255,255,255,.1)}.hub-stat strong,.hub-stat small{display:block}.hub-stat strong{color:var(--ink);font-size:20px;font-weight:950}.hub-card.featured .hub-stat strong{color:#fff}.hub-stat small{color:var(--muted);font-size:10px}.hub-card.featured .hub-stat small{color:#cbd5e1}.card-actions{margin-top:auto}.hub-card.featured .company-btn:not(.primary){color:#fff;background:rgba(255,255,255,.08);border-color:rgba(255,255,255,.24)}.progress-shell{height:9px;margin:12px 0 7px;overflow:hidden;background:#e4e7ec;border-radius:99px}.progress-shell span{display:block;height:100%;background:var(--yellow)}.pending-list,.activity-list{display:grid;gap:8px;margin:10px 0 0;padding:0;list-style:none}.pending-list a,.activity-list a,.activity-list li{display:flex;justify-content:space-between;gap:12px;padding:10px;border:1px solid var(--line);border-radius:10px;color:var(--ink);text-decoration:none}.pending-list small,.activity-list small{display:block;color:var(--muted)}.management-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.capability-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin:12px 0}.capability-stats div{padding:10px;border-radius:10px;background:#f7f8fa;text-align:center}.capability-stats strong,.capability-stats small{display:block}.capability-stats strong{font-size:22px;color:var(--ink)}.capability-stats small{font-size:10px;color:var(--muted)}.activity-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.empty-note{padding:13px;border:1px dashed #cfd4dc;border-radius:11px;color:var(--muted);font-size:13px}.company-dropdown .dropdown-menu{padding:7px;border-radius:12px;border-color:var(--line);box-shadow:0 18px 44px rgba(15,23,42,.15)}.company-dropdown .dropdown-item{padding:9px 11px;border-radius:8px;font-weight:700}
+
+.company-layout{
+  display:grid;
+  grid-template-columns:260px minmax(0,1fr);
+  gap:22px;
+  align-items:start;
+  margin-top:18px;
+}
+
+.company-main{
+  min-width:0;
+}
+
+.company-sidebar{
+  position:relative;
+  top:auto;
+  overflow:hidden;
+  background:#fff;
+  border:1px solid var(--line);
+  border-radius:18px;
+  box-shadow:0 10px 30px rgba(15,23,42,.06);
+}
+
+.company-sidebar-head{
+  display:grid;
+  gap:3px;
+  padding:18px;
+  background:linear-gradient(135deg,#172033,#2c394e);
+  color:#fff;
+}
+
+.company-sidebar-head span{
+  color:#ffd230;
+  font-size:10px;
+  font-weight:950;
+  letter-spacing:.11em;
+}
+
+.company-sidebar-head strong{
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:15px;
+}
+
+.company-sidebar-menu{
+  padding:10px;
+}
+
+
+.company-sidebar-section{
+  margin-top:18px;
+}
+
+.company-sidebar-label{
+  display:block;
+  padding:0 14px 7px;
+  font-size:.72rem;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:#94a3b8;
+}
+
+.company-sidebar-link{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  padding:10px 14px;
+  margin:2px 0;
+  border-radius:10px;
+  color:#475569;
+  text-decoration:none;
+  font-size:.92rem;
+  font-weight:600;
+  transition:background .15s ease,color .15s ease;
+}
+
+.company-sidebar-link i{
+  width:18px;
+  text-align:center;
+  font-size:1rem;
+}
+
+.company-sidebar-link:hover{
+  background:#f1f5f9;
+  color:#0f172a;
+}
+
+.company-sidebar-link.active{
+  background:#eef2ff;
+  color:#4338ca;
+}
+
+.company-menu-link,
+.company-menu-sub a{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  min-height:42px;
+  padding:10px 12px;
+  border-radius:10px;
+  color:#475467;
+  text-decoration:none;
+  font-size:13px;
+  font-weight:800;
+  transition:background .18s ease,color .18s ease,transform .18s ease;
+}
+
+.company-menu-link:hover,
+.company-menu-sub a:hover{
+  color:#172033;
+  background:#fff8d9;
+}
+
+.company-menu-link.active{
+  color:#172033;
+  background:#ffd230;
+}
+
+.company-menu-group{
+  margin-top:5px;
+  border-top:1px solid #eef1f5;
+}
+
+.company-menu-group summary{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:10px;
+  min-height:44px;
+  padding:11px 12px;
+  cursor:pointer;
+  list-style:none;
+  color:#344054;
+  font-size:13px;
+  font-weight:900;
+  border-radius:10px;
+  user-select:none;
+}
+
+.company-menu-group summary::-webkit-details-marker{
+  display:none;
+}
+
+.company-menu-group summary span{
+  display:flex;
+  align-items:center;
+  gap:10px;
+}
+
+.company-menu-group summary:hover{
+  background:#f7f8fa;
+}
+
+.company-menu-group summary > .bi-chevron-down{
+  font-size:11px;
+  transition:transform .2s ease;
+}
+
+.company-menu-group[open] summary > .bi-chevron-down{
+  transform:rotate(180deg);
+}
+
+.company-menu-sub{
+  display:grid;
+  gap:3px;
+  padding:0 5px 8px 14px;
+}
+
+.company-menu-sub a{
+  min-height:38px;
+  padding:8px 10px;
+  color:#667085;
+  font-weight:750;
+}
+
+.company-menu-sub a i{
+  width:18px;
+  text-align:center;
+}
+
+.company-mobile-menu{
+  display:none;
+  width:100%;
+  min-height:46px;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  margin:16px 0 0;
+  padding:11px 14px;
+  border:0;
+  border-radius:12px;
+  background:#172033;
+  color:#fff;
+  font-weight:900;
+}
+
+.company-mobile-menu span{
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+
+.company-mobile-menu > .bi-chevron-down{
+  transition:transform .2s ease;
+}
+
+.company-mobile-menu[aria-expanded="true"] > .bi-chevron-down{
+  transform:rotate(180deg);
+}
+
+
+  @media(max-width:1020px){
+    .company-layout{grid-template-columns:220px minmax(0,1fr);gap:16px}
+    .hub-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .management-grid,.activity-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    .company-hero-body{display:block}
+    .company-actions{margin-top:15px}
+  }
+  @media(max-width:760px){
+    .company-hub{margin:0 -12px;padding:12px 10px 34px}
+    .company-cover{height:120px}
+    .company-hero{border-radius:18px}
+    .company-hero-body{padding:0 15px 18px}
+    .company-identity{display:block;margin-top:-35px}
+    .company-logo{width:78px;height:78px}
+    .company-title{margin-top:9px}
+    .company-actions{display:grid;grid-template-columns:repeat(2,minmax(0,1fr))}
+    .company-actions>.company-btn,.company-actions>.dropdown{width:100%}
+    .company-actions .dropdown>.company-btn{width:100%}
+
+    .company-mobile-menu{display:flex}
+    .company-layout{display:block;margin-top:10px}
+    .company-sidebar{display:none;position:static;margin-bottom:16px}
+    .company-sidebar.is-open{display:block}
+
+    .hub-grid,.management-grid,.activity-grid{grid-template-columns:1fr}
+    .hub-card.wide,.management-grid .hub-card:first-child,.activity-grid .hub-card:last-child{grid-column:auto}
+    .hub-stats{grid-template-columns:repeat(3,minmax(0,1fr))}
+    .capability-stats{grid-template-columns:repeat(2,1fr)}
+    .hub-heading{align-items:flex-start}
+    .card-actions{display:grid;grid-template-columns:1fr}
+    .company-btn{width:100%}
+  }
+
+.dashboard-number{
+  display:block;
+  margin-top:12px;
+  font-size:2rem;
+  line-height:1;
+  font-weight:800;
+  color:#111827;
+}
+
 </style>
 <div class="company-hub"><div class="company-wrap">
   <header class="company-hero"><div class="company-cover">{% if empresa.imagem_capa %}<img src="{{ empresa.imagem_capa.url }}" alt="Capa de {{ empresa.nome_exibicao }}">{% endif %}</div><div class="company-hero-body"><div class="company-identity"><div class="company-logo">{% if empresa.logo %}<img src="{{ empresa.logo.url }}" alt="Logo de {{ empresa.nome_exibicao }}">{% else %}{{ empresa.nome_exibicao|first|upper }}{% endif %}</div><div class="company-title"><h1>{{ empresa.nome_exibicao }}</h1><p>{{ empresa.get_atuacao_display|default:"Atuação ainda não definida" }}{% if empresa.categoria_empresa %} · {{ empresa.categoria_empresa }}{% endif %}{% if empresa.subcategoria_empresa %} / {{ empresa.subcategoria_empresa }}{% endif %}</p><p><i class="bi bi-geo-alt"></i> {{ empresa.endereco_resumido|default:"Localização ainda não informada" }}</p><div class="company-badges"><span class="company-badge status">{{ empresa.get_status_display }}</span>{% if empresa.perfil_publico %}<span class="company-badge"><i class="bi bi-globe"></i> Perfil público</span>{% else %}<span class="company-badge"><i class="bi bi-eye-slash"></i> Perfil privado</span>{% endif %}</div></div></div><div class="company-actions">{% if painel_empresa.url_publica %}<a class="company-btn" href="{{ painel_empresa.url_publica }}" target="_blank" rel="noopener"><i class="bi bi-box-arrow-up-right"></i> Página pública</a>{% endif %}{% if pode_editar %}<a class="company-btn primary" href="{% url 'painel:empresa_editar' empresa.uuid %}"><i class="bi bi-pencil"></i> Editar</a>{% endif %}{% if painel_empresa.url_publica %}<button class="company-btn" type="button" data-company-share="{{ painel_empresa.url_publica }}"><i class="bi bi-share"></i> Compartilhar</button>{% endif %}<div class="dropdown company-dropdown"><button class="company-btn dropdown-toggle" type="button" data-bs-toggle="dropdown">Mais</button><div class="dropdown-menu dropdown-menu-end"><a class="dropdown-item" href="{% url 'painel:empresa_qrcode' empresa.uuid %}">QR Code</a><a class="dropdown-item" href="{% url 'painel:empresa_links' empresa.uuid %}">Links</a><a class="dropdown-item" href="{% url 'analytics:company_dashboard' empresa.uuid %}">Analytics</a></div></div></div></div></header>
 
-  <nav class="company-nav" aria-label="Seções do painel empresarial"><a class="active" href="#overview">Visão geral</a><a href="#operation">Operação</a>{% if painel_empresa.produtos.elegivel %}<a href="#products">Produtos</a>{% endif %}{% if painel_empresa.servicos.elegivel %}<a href="#services">Serviços</a><a href="#agenda">Agenda</a><a href="#team">Equipe</a>{% endif %}<a href="#jobs">Vagas</a><a href="#management">Gestão</a><a href="#activity">Atividade</a></nav>
+  <button class="company-mobile-menu" type="button" data-company-sidebar-toggle aria-expanded="false">
+    <span><i class="bi bi-list"></i> Menu da empresa</span>
+    <i class="bi bi-chevron-down"></i>
+  </button>
 
-  <section class="hub-section" id="overview"><header class="hub-heading"><div><span>Bloco 1</span><h2>Visão geral</h2></div></header><div class="hub-grid"><article class="hub-card wide"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-check2-circle"></i></span><span class="hub-state">{{ painel_empresa.cadastro.percentual }}% completo</span></div><h3>Progresso do cadastro</h3><p>A empresa pode ser administrada mesmo enquanto os dados estão sendo concluídos.</p><div class="progress-shell"><span style="width:{{ painel_empresa.cadastro.percentual }}%"></span></div>{% if empresa.status == 'RASCUNHO' and pode_editar %}<div class="card-actions"><a class="company-btn primary" href="{% url 'painel:empresa_configurar' empresa.uuid painel_empresa.cadastro.proxima_etapa %}">Continuar cadastro</a></div>{% endif %}</article><article class="hub-card wide"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-signpost-split"></i></span><span class="hub-state">Próximos passos</span></div><h3>Pendências e recomendações</h3>{% if painel_empresa.cadastro.pendencias %}<ul class="pending-list">{% for item in painel_empresa.cadastro.pendencias %}<li><a href="{{ item.url }}"><span><strong>{{ item.titulo }}</strong><small>{{ item.descricao }}</small></span><i class="bi bi-chevron-right"></i></a></li>{% endfor %}</ul>{% else %}<div class="empty-note">Nenhuma pendência essencial identificada.</div>{% endif %}</article></div></section>
+  <div class="company-layout">
 
-  <section class="hub-section" id="operation"><header class="hub-heading"><div><span>Bloco 2</span><h2>Operação</h2></div></header><div class="hub-grid">
-    <article class="hub-card" id="products"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-box-seam"></i></span><span class="hub-state">{% if painel_empresa.produtos.operacao_ativa %}Ativa{% elif painel_empresa.produtos.elegivel %}Pendente{% else %}Não aplicável{% endif %}</span></div><h3>Produtos</h3><div class="hub-stats"><div class="hub-stat"><strong>{{ painel_empresa.produtos.total }}</strong><small>Total</small></div><div class="hub-stat"><strong>{{ painel_empresa.produtos.publicados }}</strong><small>Publicados</small></div><div class="hub-stat"><strong>{{ painel_empresa.produtos.pendentes }}</strong><small>Pendentes</small></div></div>{% if not painel_empresa.produtos.elegivel %}<p>A atuação atual não habilita comércio de produtos.</p>{% elif not painel_empresa.produtos.operacao_ativa %}<p>Ative a empresa e a capacidade Vender produtos para operar.</p>{% endif %}<div class="card-actions"><a class="company-btn" href="{% url 'painel:empresa_produtos' empresa.uuid %}">Gerenciar produtos</a>{% if painel_empresa.produtos.pode_criar %}<a class="company-btn primary" href="{% url 'painel:empresa_produto_criar' empresa.uuid %}">Novo produto</a>{% endif %}</div></article>
-    <article class="hub-card" id="services"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-tools"></i></span><span class="hub-state">{% if painel_empresa.servicos.operacao_ativa %}Ativa{% elif painel_empresa.servicos.elegivel %}Pendente{% else %}Não aplicável{% endif %}</span></div><h3>Serviços</h3><div class="hub-stats"><div class="hub-stat"><strong>{{ painel_empresa.servicos.total }}</strong><small>Total</small></div><div class="hub-stat"><strong>{{ painel_empresa.servicos.publicados }}</strong><small>Publicados</small></div><div class="hub-stat"><strong>{{ painel_empresa.servicos.pendentes }}</strong><small>Pendentes</small></div></div>{% if not painel_empresa.servicos.elegivel %}<p>A atuação atual não contempla prestação de serviços.</p>{% elif not painel_empresa.servicos.operacao_ativa %}<p>Conclua o cadastro e ative a capacidade Prestar serviços.</p>{% endif %}<div class="card-actions"><a class="company-btn" href="{% url 'painel:servicos_lista' %}?empresa={{ empresa.id }}">Gerenciar serviços</a>{% if painel_empresa.servicos.pode_criar %}<a class="company-btn primary" href="{% url 'painel:servico_criar' %}?empresa={{ empresa.id }}">Novo serviço</a>{% endif %}</div></article>
-    <article class="hub-card featured" id="agenda"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-calendar2-check"></i></span><span class="hub-state">{{ painel_empresa.agenda.estado }}</span></div><h3>Agenda</h3><p>{{ painel_empresa.agenda.mensagem }}</p><div class="hub-stats"><div class="hub-stat"><strong>{{ painel_empresa.agenda.profissionais }}</strong><small>Profissionais</small></div><div class="hub-stat"><strong>{{ painel_empresa.agenda.servicos }}</strong><small>Serviços vinculados</small></div><div class="hub-stat"><strong>{{ painel_empresa.agenda.proximos_total }}</strong><small>Próximos</small></div></div>{% if pode_gerenciar %}<div class="card-actions"><a class="company-btn primary" href="{% url 'painel:empresa_agenda' empresa.uuid %}">Gerenciar Agenda</a></div>{% endif %}</article>
-    <article class="hub-card" id="team"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-people"></i></span><span class="hub-state">Equipe</span></div><h3>Membros e profissionais</h3><div class="hub-stats"><div class="hub-stat"><strong>{{ painel_empresa.equipe.total }}</strong><small>Membros</small></div><div class="hub-stat"><strong>{{ painel_empresa.equipe.ativos }}</strong><small>Ativos</small></div><div class="hub-stat"><strong>{{ painel_empresa.equipe.profissionais }}</strong><small>Agenda</small></div></div><p>{{ painel_empresa.equipe.gestores }} proprietário(s) ou administrador(es).</p>{% if pode_gerenciar_equipe %}<div class="card-actions"><a class="company-btn" href="{% url 'painel:empresa_equipe' empresa.uuid %}">Gerenciar equipe</a></div>{% endif %}</article>
-  </div></section>
+    <aside class="company-sidebar" data-company-sidebar>
+      <div class="company-sidebar-head">
+        <span>EMPRESA</span>
+        <strong>{{ empresa.nome_exibicao }}</strong>
+      </div>
 
-  <section class="hub-section" id="jobs"><header class="hub-heading"><div><span>Oportunidades</span><h2>Vagas</h2></div></header><div class="hub-grid"><article class="hub-card wide"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-briefcase"></i></span><span class="hub-state">{{ painel_empresa.vagas.total }} vaga{{ painel_empresa.vagas.total|pluralize }}</span></div><h3>Recrutamento da empresa</h3><p>Publique oportunidades e acompanhe as candidaturas recebidas pela empresa.</p><div class="hub-stats"><div class="hub-stat"><strong>{{ painel_empresa.vagas.total }}</strong><small>Total</small></div><div class="hub-stat"><strong>{{ painel_empresa.vagas.publicadas }}</strong><small>Publicadas</small></div><div class="hub-stat"><strong>{{ painel_empresa.vagas.encerradas }}</strong><small>Encerradas</small></div><div class="hub-stat"><strong>{{ painel_empresa.vagas.candidaturas }}</strong><small>Candidaturas</small></div></div><div class="card-actions"><a class="company-btn" href="{{ painel_empresa.vagas.url_gerenciar }}"><i class="bi bi-list-task"></i> Gerenciar vagas</a>{% if pode_gerenciar %}<a class="company-btn primary" href="{{ painel_empresa.vagas.url_criar }}"><i class="bi bi-plus-lg"></i> Nova vaga</a>{% endif %}</div></article></div></section>
+      <nav class="company-sidebar-menu" aria-label="Navegação da empresa">
 
-  <section class="hub-section" id="management"><header class="hub-heading"><div><span>Bloco 3</span><h2>Gestão</h2></div></header><div class="management-grid"><article class="hub-card"><div class="hub-card-head"><span class="hub-icon"><i class="bi bi-sliders"></i></span><span class="hub-state">Capacidades</span></div><h3>Recursos da empresa</h3><div class="capability-stats"><div><strong>{{ painel_empresa.capacidades.aprovadas }}</strong><small>Aprovadas</small></div><div><strong>{{ painel_empresa.capacidades.pendentes }}</strong><small>Pendentes</small></div><div><strong>{{ painel_empresa.capacidades.disponiveis }}</strong><small>Disponíveis</small></div><div><strong>{{ painel_empresa.capacidades.incompativeis }}</strong><small>Incompatíveis</small></div></div><div class="card-actions"><a class="company-btn" href="{% url 'painel:empresa_capacidades' empresa.uuid %}">Gerenciar capacidades</a></div></article><article class="hub-card"><span class="hub-icon"><i class="bi bi-qr-code"></i></span><h3>QR Code e página</h3><p>Compartilhe o acesso público da empresa quando o perfil estiver ativo.</p><div class="card-actions"><a class="company-btn" href="{% url 'painel:empresa_qrcode' empresa.uuid %}">Visualizar QR Code</a>{% if painel_empresa.url_publica %}<a class="company-btn" href="{{ painel_empresa.url_publica }}" target="_blank" rel="noopener">Abrir página</a>{% endif %}</div></article><article class="hub-card"><span class="hub-icon"><i class="bi bi-link-45deg"></i></span><h3>Links e configurações</h3><p>{{ painel_empresa.links_total }} link{{ painel_empresa.links_total|pluralize }} cadastrado{{ painel_empresa.links_total|pluralize }}.</p><div class="card-actions"><a class="company-btn" href="{% url 'painel:empresa_links' empresa.uuid %}">Gerenciar links</a>{% if pode_editar %}<a class="company-btn" href="{% url 'painel:empresa_editar' empresa.uuid %}">Configurações</a>{% endif %}</div></article></div></section>
+  <a class="company-sidebar-link active"
+     href="{% url 'painel:empresa_detalhe' empresa.uuid %}">
+    <i class="bi bi-grid-1x2"></i>
+    <span>Dashboard</span>
+  </a>
 
-  <section class="hub-section" id="activity"><header class="hub-heading"><div><span>Bloco 4</span><h2>Atividade recente</h2></div></header><div class="activity-grid"><article class="hub-card"><h3>Últimos produtos</h3><ul class="activity-list">{% for item in painel_empresa.produtos.ultimos %}<li><span><strong>{{ item.nome }}</strong><small>{{ item.get_status_display }}</small></span><time>{{ item.atualizado_em|date:"d/m" }}</time></li>{% empty %}<li class="empty-note">Nenhum produto vinculado.</li>{% endfor %}</ul></article><article class="hub-card"><h3>Últimos serviços</h3><ul class="activity-list">{% for item in painel_empresa.servicos.ultimos %}<li><span><strong>{{ item.titulo }}</strong><small>{{ item.get_status_display }}</small></span><time>{{ item.atualizado_em|date:"d/m" }}</time></li>{% empty %}<li class="empty-note">Nenhum serviço vinculado.</li>{% endfor %}</ul></article><article class="hub-card"><h3>Próximos agendamentos</h3><ul class="activity-list">{% for item in painel_empresa.agenda.proximos %}<li><span><strong>{{ item.profissional_servico.servico.titulo }}</strong><small>{{ item.inicio|date:"d/m/Y H:i" }}</small></span></li>{% empty %}<li class="empty-note">Nenhum próximo atendimento.</li>{% endfor %}</ul>{% if painel_empresa.agenda.elegivel %}<div class="card-actions"><a class="company-btn" href="{% url 'painel:agenda_agendamento_lista' empresa.uuid %}">Ver agendamentos</a><a class="company-btn" href="{% url 'painel:agenda_disponibilidade_lista' empresa.uuid %}">{{ painel_empresa.agenda.disponibilidades }} horários</a><a class="company-btn" href="{% url 'painel:agenda_bloqueio_lista' empresa.uuid %}">{{ painel_empresa.agenda.bloqueios }} bloqueios</a></div>{% endif %}</article></div></section>
+  <div class="company-sidebar-section">
+    <span class="company-sidebar-label">Cadastro</span>
+
+    {% if pode_editar %}
+    <a class="company-sidebar-link"
+       href="{% url 'painel:empresa_editar' empresa.uuid %}">
+      <i class="bi bi-building"></i>
+      <span>Dados da empresa</span>
+    </a>
+
+    <a class="company-sidebar-link"
+       href="{% url 'painel:empresa_institucional' empresa.uuid %}">
+      <i class="bi bi-card-text"></i>
+      <span>Institucional</span>
+    </a>
+
+    <a class="company-sidebar-link"
+       href="{% url 'painel:empresa_enderecos' empresa.uuid %}">
+      <i class="bi bi-geo-alt"></i>
+      <span>Localização</span>
+    </a>
+
+    <a class="company-sidebar-link"
+       href="{% url 'painel:empresa_documentos' empresa.uuid %}">
+      <i class="bi bi-file-earmark-text"></i>
+      <span>Documentos</span>
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="company-sidebar-section">
+    <span class="company-sidebar-label">Operação</span>
+
+    {% if painel_empresa.produtos.elegivel %}
+    <a class="company-sidebar-link"
+       href="{% url 'painel:empresa_produtos' empresa_uuid=empresa.uuid %}">
+      <i class="bi bi-box-seam"></i>
+      <span>Produtos</span>
+    </a>
+    {% endif %}
+
+    {% if painel_empresa.servicos.elegivel %}
+    <a class="company-sidebar-link"
+       href="{% url 'painel:servicos_lista' %}?empresa={{ empresa.id }}">
+      <i class="bi bi-tools"></i>
+      <span>Serviços</span>
+    </a>
+    {% endif %}
+
+    <a class="company-sidebar-link"
+       href="{% url 'painel:empresa_agenda' empresa.uuid %}">
+      <i class="bi bi-calendar3"></i>
+      <span>Agenda</span>
+    </a>
+
+    <a class="company-sidebar-link"
+       href="{% url 'painel:empresa_equipe' empresa.uuid %}">
+      <i class="bi bi-people"></i>
+      <span>Equipe</span>
+    </a>
+  </div>
+
+  <div class="company-sidebar-section">
+    <span class="company-sidebar-label">Oportunidades</span>
+
+    <a class="company-sidebar-link"
+       href="{{ painel_empresa.vagas.url_gerenciar }}">
+      <i class="bi bi-briefcase"></i>
+      <span>Vagas</span>
+    </a>
+  </div>
+
+  <div class="company-sidebar-section">
+    <span class="company-sidebar-label">Gestão</span>
+
+    <a class="company-sidebar-link"
+       href="{% url 'painel:empresa_capacidades' empresa.uuid %}">
+      <i class="bi bi-toggles"></i>
+      <span>Recursos da empresa</span>
+    </a>
+
+    <a class="company-sidebar-link"
+       href="{% url 'painel:empresa_links' empresa.uuid %}">
+      <i class="bi bi-link-45deg"></i>
+      <span>Links</span>
+    </a>
+
+    <a class="company-sidebar-link"
+       href="{% url 'painel:empresa_qrcode' empresa.uuid %}">
+      <i class="bi bi-qr-code"></i>
+      <span>QR Code</span>
+    </a>
+
+    <a class="company-sidebar-link"
+       href="{% url 'analytics:company_dashboard' empresa.uuid %}">
+      <i class="bi bi-graph-up-arrow"></i>
+      <span>Analytics</span>
+    </a>
+  </div>
+
+</nav>
+    </aside>
+
+    <main class="company-main">
+
+  <section class="hub-section company-dashboard-overview">
+
+    <header class="hub-heading">
+      <div>
+        <span>Dashboard</span>
+        <h2>Visão geral da empresa</h2>
+      </div>
+
+      <a class="company-btn"
+         href="{% url 'analytics:company_dashboard' empresa.uuid %}">
+        <i class="bi bi-graph-up-arrow"></i>
+        Ver Analytics
+      </a>
+    </header>
+
+    <div class="hub-grid">
+
+      <article class="hub-card">
+        <div class="hub-card-head">
+          <span class="hub-icon">
+            <i class="bi bi-box-seam"></i>
+          </span>
+          <span class="hub-state">Produtos</span>
+        </div>
+
+        <strong class="dashboard-number">
+          {{ painel_empresa.produtos.total }}
+        </strong>
+
+        <p>Produtos vinculados à empresa.</p>
+      </article>
+
+
+      <article class="hub-card">
+        <div class="hub-card-head">
+          <span class="hub-icon">
+            <i class="bi bi-tools"></i>
+          </span>
+          <span class="hub-state">Serviços</span>
+        </div>
+
+        <strong class="dashboard-number">
+          {{ painel_empresa.servicos.total }}
+        </strong>
+
+        <p>Serviços cadastrados.</p>
+      </article>
+
+
+      <article class="hub-card">
+        <div class="hub-card-head">
+          <span class="hub-icon">
+            <i class="bi bi-calendar-check"></i>
+          </span>
+          <span class="hub-state">Agenda</span>
+        </div>
+
+        <strong class="dashboard-number">
+          {{ painel_empresa.agenda.proximos|length }}
+        </strong>
+
+        <p>Próximos atendimentos.</p>
+      </article>
+
+
+      <article class="hub-card">
+        <div class="hub-card-head">
+          <span class="hub-icon">
+            <i class="bi bi-briefcase"></i>
+          </span>
+          <span class="hub-state">Vagas</span>
+        </div>
+
+        <strong class="dashboard-number">
+          {{ painel_empresa.vagas.total }}
+        </strong>
+
+        <p>Oportunidades cadastradas.</p>
+      </article>
+
+    </div>
+
+  </section>
+
+
+  <section class="hub-section">
+
+    <header class="hub-heading">
+      <div>
+        <span>Cadastro</span>
+        <h2>Progresso da empresa</h2>
+      </div>
+    </header>
+
+    <div class="hub-grid">
+
+      <article class="hub-card wide">
+
+        <div class="hub-card-head">
+          <span class="hub-icon">
+            <i class="bi bi-check2-circle"></i>
+          </span>
+
+          <span class="hub-state">
+            {{ painel_empresa.cadastro.percentual }}% completo
+          </span>
+        </div>
+
+        <h3>Progresso do cadastro</h3>
+
+        <p>
+          Complete as informações para melhorar a apresentação
+          e o desempenho público da empresa.
+        </p>
+
+        <div class="progress-shell">
+          <span style="width:{{ painel_empresa.cadastro.percentual }}%"></span>
+        </div>
+
+      </article>
+
+
+      <article class="hub-card wide">
+
+        <div class="hub-card-head">
+          <span class="hub-icon">
+            <i class="bi bi-lightbulb"></i>
+          </span>
+
+          <span class="hub-state">
+            Recomendações
+          </span>
+        </div>
+
+        <h3>Pendências e próximos passos</h3>
+
+        {% if painel_empresa.cadastro.pendencias %}
+
+          <ul class="pending-list">
+            {% for item in painel_empresa.cadastro.pendencias %}
+              <li>
+                <a href="{{ item.url }}">
+                  <span>
+                    <strong>{{ item.titulo }}</strong>
+                    <small>{{ item.descricao }}</small>
+                  </span>
+                  <i class="bi bi-chevron-right"></i>
+                </a>
+              </li>
+            {% endfor %}
+          </ul>
+
+        {% else %}
+
+          <div class="empty-note">
+            Nenhuma pendência essencial identificada.
+          </div>
+
+        {% endif %}
+
+      </article>
+
+    </div>
+
+  </section>
+
+
+  <section class="hub-section">
+
+    <header class="hub-heading">
+      <div>
+        <span>Recursos</span>
+        <h2>Recursos ativos da empresa</h2>
+      </div>
+    </header>
+
+    <div class="management-grid">
+
+      <article class="hub-card">
+        <span class="hub-icon">
+          <i class="bi bi-toggles"></i>
+        </span>
+
+        <h3>Recursos da empresa</h3>
+
+        <div class="capability-stats">
+          <div>
+            <strong>{{ painel_empresa.capacidades.aprovadas }}</strong>
+            <small>Ativos</small>
+          </div>
+
+          <div>
+            <strong>{{ painel_empresa.capacidades.pendentes }}</strong>
+            <small>Pendentes</small>
+          </div>
+
+          <div>
+            <strong>{{ painel_empresa.capacidades.disponiveis }}</strong>
+            <small>Disponíveis</small>
+          </div>
+        </div>
+
+        <div class="card-actions">
+          <a class="company-btn"
+             href="{% url 'painel:empresa_capacidades' empresa.uuid %}">
+            Gerenciar recursos
+          </a>
+        </div>
+      </article>
+
+
+      <article class="hub-card">
+        <span class="hub-icon">
+          <i class="bi bi-qr-code"></i>
+        </span>
+
+        <h3>QR Code e página pública</h3>
+
+        <p>
+          Facilite o acesso dos clientes ao perfil público da empresa.
+        </p>
+
+        <div class="card-actions">
+
+          <a class="company-btn"
+             href="{% url 'painel:empresa_qrcode' empresa.uuid %}">
+            QR Code
+          </a>
+
+          {% if painel_empresa.url_publica %}
+          <a class="company-btn"
+             href="{{ painel_empresa.url_publica }}"
+             target="_blank"
+             rel="noopener">
+            Página pública
+          </a>
+          {% endif %}
+
+        </div>
+      </article>
+
+
+      <article class="hub-card">
+        <span class="hub-icon">
+          <i class="bi bi-link-45deg"></i>
+        </span>
+
+        <h3>Links da empresa</h3>
+
+        <p>
+          {{ painel_empresa.links_total }}
+          link{{ painel_empresa.links_total|pluralize }}
+          cadastrado{{ painel_empresa.links_total|pluralize }}.
+        </p>
+
+        <div class="card-actions">
+          <a class="company-btn"
+             href="{% url 'painel:empresa_links' empresa.uuid %}">
+            Gerenciar links
+          </a>
+        </div>
+      </article>
+
+    </div>
+
+  </section>
+
+
+  <section class="hub-section">
+
+    <header class="hub-heading">
+      <div>
+        <span>Monitoramento</span>
+        <h2>Atividade recente</h2>
+      </div>
+    </header>
+
+    <div class="activity-grid">
+
+      <article class="hub-card">
+
+        <h3>Últimos produtos</h3>
+
+        <ul class="activity-list">
+          {% for item in painel_empresa.produtos.ultimos %}
+          <li>
+            <span>
+              <strong>{{ item.nome }}</strong>
+              <small>{{ item.get_status_display }}</small>
+            </span>
+            <time>{{ item.atualizado_em|date:"d/m" }}</time>
+          </li>
+          {% empty %}
+          <li class="empty-note">
+            Nenhum produto vinculado.
+          </li>
+          {% endfor %}
+        </ul>
+
+      </article>
+
+
+      <article class="hub-card">
+
+        <h3>Últimos serviços</h3>
+
+        <ul class="activity-list">
+          {% for item in painel_empresa.servicos.ultimos %}
+          <li>
+            <span>
+              <strong>{{ item.titulo }}</strong>
+              <small>{{ item.get_status_display }}</small>
+            </span>
+            <time>{{ item.atualizado_em|date:"d/m" }}</time>
+          </li>
+          {% empty %}
+          <li class="empty-note">
+            Nenhum serviço vinculado.
+          </li>
+          {% endfor %}
+        </ul>
+
+      </article>
+
+
+      <article class="hub-card">
+
+        <h3>Próximos agendamentos</h3>
+
+        <ul class="activity-list">
+          {% for item in painel_empresa.agenda.proximos %}
+          <li>
+            <span>
+              <strong>
+                {{ item.profissional_servico.servico.titulo }}
+              </strong>
+              <small>
+                {{ item.inicio|date:"d/m/Y H:i" }}
+              </small>
+            </span>
+          </li>
+          {% empty %}
+          <li class="empty-note">
+            Nenhum próximo atendimento.
+          </li>
+          {% endfor %}
+        </ul>
+
+      </article>
+
+    </div>
+
+  </section>
+
+</main>
+  </div>
+
 </div></div>
-<script>document.querySelectorAll('[data-company-share]').forEach(function(button){button.addEventListener('click',function(){var url=new URL(button.dataset.companyShare,window.location.origin).href;if(navigator.share){navigator.share({title:'{{ empresa.nome_exibicao|escapejs }}',url:url}).catch(function(){});}else if(navigator.clipboard){navigator.clipboard.writeText(url);button.innerHTML='<i class="bi bi-check2"></i> Link copiado';}});});</script>
+<script>
+document.querySelectorAll('[data-company-share]').forEach(function(button){
+  button.addEventListener('click',function(){
+    var url=new URL(button.dataset.companyShare,window.location.origin).href;
+    if(navigator.share){
+      navigator.share({
+        title:'{{ empresa.nome_exibicao|escapejs }}',
+        url:url
+      }).catch(function(){});
+    }else if(navigator.clipboard){
+      navigator.clipboard.writeText(url);
+      button.innerHTML='<i class="bi bi-check2"></i> Link copiado';
+    }
+  });
+});
+
+(function(){
+  var toggle=document.querySelector('[data-company-sidebar-toggle]');
+  var sidebar=document.querySelector('[data-company-sidebar]');
+
+  if(!toggle || !sidebar){
+    return;
+  }
+
+  toggle.addEventListener('click',function(){
+    var open=sidebar.classList.toggle('is-open');
+    toggle.setAttribute('aria-expanded',open ? 'true' : 'false');
+  });
+
+  sidebar.querySelectorAll('a').forEach(function(link){
+    link.addEventListener('click',function(){
+      if(window.innerWidth <= 760){
+        sidebar.classList.remove('is-open');
+        toggle.setAttribute('aria-expanded','false');
+      }
+    });
+  });
+})();
+</script>
 {% endblock %}

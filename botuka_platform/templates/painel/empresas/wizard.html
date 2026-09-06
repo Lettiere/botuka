@@ -2,7 +2,7 @@
 {% block title %}{{ titulo }} | Painel BOTUKA{% endblock %}
 {% block painel_content %}
 <style>
-  .wizard-page{background:#f4f7fb;margin:-26px -18px;padding:28px 18px 48px;min-height:75vh}.wizard-wrap{width:min(1040px,100%);margin:auto}.wizard-head{display:flex;justify-content:space-between;gap:16px;align-items:end;margin-bottom:18px}.wizard-head h1{margin:0;color:#172033;font-weight:900}.wizard-head p{margin:6px 0 0;color:#667085}.wizard-progress{height:8px;background:#e4e7ec;border-radius:99px;overflow:hidden;margin:14px 0 20px}.wizard-progress span{display:block;height:100%;background:#ffd230;border-radius:inherit}.wizard-steps{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:16px}.wizard-step{padding:9px 6px;border:1px solid #e4e7ec;border-radius:11px;background:#fff;text-align:center;color:#667085;font-size:11px;font-weight:800}.wizard-step.is-current{border-color:#e5b800;background:#fff8d6;color:#172033}.wizard-step.is-done{background:#172033;color:#fff;border-color:#172033}.wizard-card{background:#fff;border:1px solid #e4e7ec;border-radius:20px;padding:clamp(18px,4vw,32px);box-shadow:0 14px 40px rgba(15,23,42,.07)}.wizard-card h2{margin:0 0 6px;font-weight:900;color:#172033}.wizard-note{color:#667085;margin:0 0 22px}.wizard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.wizard-field.full{grid-column:1/-1}.wizard-field label{display:block;margin-bottom:7px;font-size:13px;font-weight:850;color:#344054}.wizard-field input:not([type=checkbox]),.wizard-field select,.wizard-field textarea{width:100%;min-height:46px;border:1px solid #d0d5dd;border-radius:11px;padding:10px 12px}.wizard-field input:focus,.wizard-field select:focus,.wizard-field textarea:focus{outline:0;border-color:#d9b000;box-shadow:0 0 0 4px rgba(255,210,48,.18)}.wizard-field .errorlist{list-style:none;padding:8px 10px;margin:0 0 6px;border-radius:9px;background:#fef2f2;color:#b42318}.wizard-review{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:20px}.wizard-review div{padding:14px;border:1px solid #e4e7ec;border-radius:12px;background:#f8fafc}.wizard-review small{display:block;color:#667085}.wizard-review strong{color:#172033}.wizard-actions{display:flex;justify-content:space-between;gap:10px;margin-top:26px}.wizard-actions-group{display:flex;gap:10px}.wizard-btn{display:inline-flex;align-items:center;justify-content:center;min-height:45px;padding:10px 17px;border:1px solid #d0d5dd;border-radius:11px;background:#fff;color:#172033;text-decoration:none;font-weight:850}.wizard-btn.primary{background:#ffd230;border-color:#ffd230}.wizard-btn.ghost{background:transparent}.wizard-operation{padding:14px;border-radius:12px;background:#fff8d6;color:#594a00;margin-bottom:18px}
+  .wizard-page{background:#f4f7fb;margin:-26px -18px;padding:28px 18px 48px;min-height:75vh}.wizard-wrap{width:min(1040px,100%);margin:auto}.wizard-head{display:flex;justify-content:space-between;gap:16px;align-items:end;margin-bottom:18px}.wizard-head h1{margin:0;color:#172033;font-weight:900}.wizard-head p{margin:6px 0 0;color:#667085}.wizard-progress{height:8px;background:#e4e7ec;border-radius:99px;overflow:hidden;margin:14px 0 20px}.wizard-progress span{display:block;height:100%;background:#ffd230;border-radius:inherit}.wizard-steps{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;margin-bottom:16px}.wizard-step{padding:9px 6px;border:1px solid #e4e7ec;border-radius:11px;background:#fff;text-align:center;color:#667085;font-size:11px;font-weight:800}.wizard-step.is-current{border-color:#e5b800;background:#fff8d6;color:#172033}.wizard-step.is-done{background:#172033;color:#fff;border-color:#172033}.wizard-card{background:#fff;border:1px solid #e4e7ec;border-radius:20px;padding:clamp(18px,4vw,32px);box-shadow:0 14px 40px rgba(15,23,42,.07)}.wizard-card h2{margin:0 0 6px;font-weight:900;color:#172033}.wizard-note{color:#667085;margin:0 0 22px}.wizard-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.wizard-section-title{grid-column:1/-1;margin:8px 0 -4px;padding-bottom:8px;border-bottom:1px solid #e4e7ec;color:#667085;font-size:12px;font-weight:900;letter-spacing:.06em}.wizard-field.full{grid-column:1/-1}.wizard-field label{display:block;margin-bottom:7px;font-size:13px;font-weight:850;color:#344054}.wizard-field input:not([type=checkbox]),.wizard-field select,.wizard-field textarea{width:100%;min-height:46px;border:1px solid #d0d5dd;border-radius:11px;padding:10px 12px}.wizard-field input:focus,.wizard-field select:focus,.wizard-field textarea:focus{outline:0;border-color:#d9b000;box-shadow:0 0 0 4px rgba(255,210,48,.18)}.wizard-field .errorlist{list-style:none;padding:8px 10px;margin:0 0 6px;border-radius:9px;background:#fef2f2;color:#b42318}.wizard-field-help{display:flex;justify-content:space-between;gap:12px;margin-top:7px;color:#667085;font-size:12px}.wizard-image-preview{display:block;width:100%;max-width:360px;max-height:220px;margin-top:10px;border:1px solid #e4e7ec;border-radius:12px;background:#f8fafc;object-fit:contain}.wizard-image-preview.logo{width:140px;height:140px}.wizard-review{display:grid;gap:16px;margin-bottom:24px}.wizard-review-section{padding:18px;border:1px solid #e4e7ec;border-radius:14px;background:#f8fafc}.wizard-review-section h3{margin:0 0 14px;color:#667085;font-size:12px;font-weight:900;letter-spacing:.06em}.wizard-review-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}.wizard-review-item{min-width:0}.wizard-review-item.full{grid-column:1/-1}.wizard-review-item small{display:block;color:#667085}.wizard-review-item strong{color:#172033;overflow-wrap:anywhere}.wizard-review-image{display:block;width:100%;max-width:300px;max-height:180px;margin-top:6px;border-radius:10px;object-fit:contain;background:#fff}.wizard-actions{display:flex;justify-content:space-between;gap:10px;margin-top:26px}.wizard-actions-group{display:flex;gap:10px}.wizard-btn{display:inline-flex;align-items:center;justify-content:center;min-height:45px;padding:10px 17px;border:1px solid #d0d5dd;border-radius:11px;background:#fff;color:#172033;text-decoration:none;font-weight:850}.wizard-btn.primary{background:#ffd230;border-color:#ffd230}.wizard-btn.ghost{background:transparent}.wizard-operation{padding:14px;border-radius:12px;background:#fff8d6;color:#594a00;margin-bottom:18px}
   @media(max-width:760px){.wizard-page{padding:16px 12px 34px}.wizard-head{display:block}.wizard-steps{display:flex;overflow:auto}.wizard-step{min-width:105px}.wizard-grid,.wizard-review{grid-template-columns:1fr}.wizard-actions{flex-direction:column}.wizard-actions-group{display:grid;grid-template-columns:1fr}.wizard-btn{width:100%}}
 </style>
 <div class="wizard-page"><div class="wizard-wrap">
@@ -10,13 +10,213 @@
   <div class="wizard-progress" role="progressbar" aria-valuenow="{{ progresso }}" aria-valuemin="0" aria-valuemax="100"><span style="width:{{ progresso }}%"></span></div>
   <nav class="wizard-steps" aria-label="Etapas do cadastro">{% for numero,nome in etapas %}<span class="wizard-step {% if numero == etapa %}is-current{% elif numero < etapa %}is-done{% endif %}">{{ numero }}. {{ nome }}</span>{% endfor %}</nav>
   <form class="wizard-card" method="post" enctype="multipart/form-data">{% csrf_token %}
-    <h2>{% if etapa == 1 %}Identificação{% elif etapa == 2 %}Atuação{% elif etapa == 3 %}Apresentação{% elif etapa == 4 %}Contatos{% elif etapa == 5 %}Localização{% elif etapa == 6 %}Operação{% else %}Revisão e envio{% endif %}</h2>
-    <p class="wizard-note">{% if etapa == 2 %}A atuação define quais recursos fazem sentido para o negócio, mas não concede capacidades automaticamente.{% elif etapa == 7 %}Confira os dados principais antes de enviar o cadastro para análise.{% else %}Preencha os dados desta etapa. Campos opcionais podem ser completados depois.{% endif %}</p>
+    <h2>{% if etapa == 1 %}Identificação{% elif etapa == 2 %}Categoria e segmento{% elif etapa == 3 %}Apresentação{% elif etapa == 4 %}Contatos{% elif etapa == 5 %}Localização{% elif etapa == 6 %}Operação e atendimento{% else %}Revisão e envio{% endif %}</h2>
+    <p class="wizard-note">{% if etapa == 2 %}Escolha a categoria principal do negócio e depois o segmento que melhor representa a empresa.{% elif etapa == 3 %}Mostre ao público quem é sua empresa.{% elif etapa == 4 %}Informe como seus clientes podem falar com sua empresa.{% elif etapa == 5 %}Informe onde sua empresa está localizada.{% elif etapa == 6 %}Informe como sua empresa comercializa e atende seus clientes.{% elif etapa == 7 %}Confira os dados principais antes de enviar o cadastro para análise.{% else %}Preencha os dados desta etapa. Campos opcionais podem ser completados depois.{% endif %}</p>
     {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
-    {% if etapa == 6 %}<div class="wizard-operation"><strong>Como sua empresa atende?</strong> {% if empresa.atuacao == 'SERVICOS' %}Configure atendimento local, online e horários. Modalidade comercial não se aplica a empresas exclusivamente de serviços.{% else %}Escolha varejo, atacado ou ambos e informe como ocorre o atendimento.{% endif %}</div>{% endif %}
-    {% if etapa == 7 and empresa %}<div class="wizard-review"><div><small>Nome</small><strong>{{ empresa.nome_exibicao }}</strong></div><div><small>Atuação</small><strong>{{ empresa.get_atuacao_display|default:"Não informada" }}</strong></div><div><small>Categoria</small><strong>{{ empresa.categoria_empresa|default:"Não informada" }}</strong></div><div><small>Localização</small><strong>{{ empresa.endereco_resumido|default:"Não informada" }}</strong></div><div><small>Contato</small><strong>{{ empresa.email|default:empresa.telefone|default:"Não informado" }}</strong></div><div><small>Operação</small><strong>{{ empresa.get_modalidade_comercial_display|default:"Serviços/atendimento" }}</strong></div></div>{% endif %}
-    <div class="wizard-grid">{% for field in form %}<div class="wizard-field {% if field.name == 'razao_social' or field.name == 'nome_fantasia' or field.name == 'descricao_curta' or field.name == 'descricao_completa' or field.name == 'endereco' or field.name == 'horario_atendimento' or field.name == 'perfil_publico' %}full{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field.errors }}{{ field }}{% if field.help_text %}<small class="text-muted">{{ field.help_text }}</small>{% endif %}</div>{% endfor %}</div>
+    {% if etapa == 7 and empresa %}<div class="wizard-review">
+      <section class="wizard-review-section"><h3>IDENTIFICAÇÃO</h3><div class="wizard-review-list">
+        <div class="wizard-review-item"><small>Tipo de cadastro</small><strong>{{ empresa.get_tipo_cadastro_display }}</strong></div>
+        {% if empresa.razao_social %}<div class="wizard-review-item"><small>Razão social</small><strong>{{ empresa.razao_social }}</strong></div>{% endif %}
+        <div class="wizard-review-item"><small>Nome fantasia</small><strong>{{ empresa.nome_fantasia }}</strong></div>
+        {% if empresa.cpf_cnpj %}<div class="wizard-review-item"><small>CPF/CNPJ</small><strong>{{ empresa.cpf_cnpj }}</strong></div>{% endif %}
+        {% if empresa.inscricao_estadual %}<div class="wizard-review-item"><small>Inscrição estadual</small><strong>{{ empresa.inscricao_estadual }}</strong></div>{% endif %}
+        {% if empresa.inscricao_municipal %}<div class="wizard-review-item"><small>Inscrição municipal</small><strong>{{ empresa.inscricao_municipal }}</strong></div>{% endif %}
+      </div></section>
+      <section class="wizard-review-section"><h3>CLASSIFICAÇÃO</h3><div class="wizard-review-list">
+        <div class="wizard-review-item"><small>Atuação</small><strong>{{ empresa.get_atuacao_display }}</strong></div>
+        <div class="wizard-review-item"><small>Categoria</small><strong>{{ empresa.categoria_empresa }}</strong></div>
+        <div class="wizard-review-item"><small>Segmento</small><strong>{{ empresa.subcategoria_empresa }}</strong></div>
+      </div></section>
+      <section class="wizard-review-section"><h3>APRESENTAÇÃO</h3><div class="wizard-review-list">
+        {% if empresa.descricao_curta %}<div class="wizard-review-item full"><small>Descrição curta</small><strong>{{ empresa.descricao_curta }}</strong></div>{% endif %}
+        {% if empresa.descricao_completa %}<div class="wizard-review-item full"><small>Descrição completa</small><strong>{{ empresa.descricao_completa|striptags|truncatechars:400 }}</strong></div>{% endif %}
+        {% if empresa.logo %}<div class="wizard-review-item"><small>Logo</small><img class="wizard-review-image" src="{{ empresa.logo.url }}" alt="Logo atual da empresa"></div>{% endif %}
+        {% if empresa.imagem_capa %}<div class="wizard-review-item"><small>Imagem de capa</small><img class="wizard-review-image" src="{{ empresa.imagem_capa.url }}" alt="Imagem de capa atual da empresa"></div>{% endif %}
+      </div></section>
+      <section class="wizard-review-section"><h3>CONTATOS</h3><div class="wizard-review-list">
+        {% if empresa.whatsapp %}<div class="wizard-review-item"><small>WhatsApp</small><strong>{{ empresa.whatsapp }}</strong></div>{% endif %}
+        {% if empresa.telefone %}<div class="wizard-review-item"><small>Telefone</small><strong>{{ empresa.telefone }}</strong></div>{% endif %}
+        {% if empresa.email %}<div class="wizard-review-item"><small>E-mail</small><strong>{{ empresa.email }}</strong></div>{% endif %}
+        {% if empresa.site %}<div class="wizard-review-item"><small>Site</small><strong>{{ empresa.site }}</strong></div>{% endif %}
+      </div></section>
+      <section class="wizard-review-section"><h3>LOCALIZAÇÃO</h3><div class="wizard-review-list">
+        {% if empresa.cep %}<div class="wizard-review-item"><small>CEP</small><strong>{{ empresa.cep }}</strong></div>{% endif %}
+        {% if empresa.endereco %}<div class="wizard-review-item"><small>Endereço</small><strong>{{ empresa.endereco }}</strong></div>{% endif %}
+        {% if empresa.numero %}<div class="wizard-review-item"><small>Número</small><strong>{{ empresa.numero }}</strong></div>{% endif %}
+        {% if empresa.complemento %}<div class="wizard-review-item"><small>Complemento</small><strong>{{ empresa.complemento }}</strong></div>{% endif %}
+        {% if empresa.bairro %}<div class="wizard-review-item"><small>Bairro</small><strong>{{ empresa.bairro }}</strong></div>{% endif %}
+        <div class="wizard-review-item"><small>Estado</small><strong>{{ empresa.estado }}</strong></div>
+        <div class="wizard-review-item"><small>Cidade</small><strong>{{ empresa.cidade }}</strong></div>
+      </div></section>
+      <section class="wizard-review-section"><h3>OPERAÇÃO E ATENDIMENTO</h3><div class="wizard-review-list">
+        {% if empresa.modalidade_comercial %}<div class="wizard-review-item"><small>Modalidade comercial</small><strong>{{ empresa.get_modalidade_comercial_display }}</strong></div>{% endif %}
+        <div class="wizard-review-item"><small>Atendimento presencial</small><strong>{% if empresa.atende_local %}Sim{% else %}Não{% endif %}</strong></div>
+        <div class="wizard-review-item"><small>Atendimento online/remoto</small><strong>{% if empresa.atende_online %}Sim{% else %}Não{% endif %}</strong></div>
+        {% if empresa.horario_atendimento %}<div class="wizard-review-item full"><small>Horário de atendimento</small><strong>{{ empresa.horario_atendimento|linebreaksbr }}</strong></div>{% endif %}
+      </div></section>
+    </div>{% endif %}
+    {% if etapa == 7 %}<h3 class="wizard-section-title">PUBLICAÇÃO</h3>{% endif %}
+    <div class="wizard-grid">{% for field in form %}{% if etapa == 6 and field.name == 'modalidade_comercial' %}<h3 class="wizard-section-title">FORMA DE COMERCIALIZAÇÃO</h3>{% elif etapa == 6 and field.name == 'atende_local' %}<h3 class="wizard-section-title">FORMA DE ATENDIMENTO</h3>{% elif etapa == 6 and field.name == 'horario_atendimento' %}<h3 class="wizard-section-title">HORÁRIO DE ATENDIMENTO</h3>{% endif %}<div class="wizard-field {% if field.name == 'razao_social' or field.name == 'nome_fantasia' or field.name == 'descricao_curta' or field.name == 'descricao_completa' or field.name == 'endereco' or field.name == 'horario_atendimento' or field.name == 'perfil_publico' %}full{% endif %}"><label for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %} *{% endif %}</label>{{ field.errors }}{{ field }}{% if etapa == 3 and field.name == 'descricao_curta' %}<div class="wizard-field-help"><span>Usada em cards, buscas e resumos.</span><span id="descricao-curta-contador" aria-live="polite">0/220 caracteres</span></div>{% elif etapa == 3 and field.name == 'descricao_completa' %}<div class="wizard-field-help"><span>Exibida no perfil público da empresa.</span></div>{% elif etapa == 3 and field.name == 'logo' %}<div class="wizard-field-help"><span>Representa a marca. JPG, PNG ou WEBP, até 8 MB.</span></div><img id="logo-preview" class="wizard-image-preview logo" src="{% if empresa.logo %}{{ empresa.logo.url }}{% endif %}" alt="Prévia do logo"{% if not empresa.logo %} hidden{% endif %}>{% elif etapa == 3 and field.name == 'imagem_capa' %}<div class="wizard-field-help"><span>Será a imagem principal do perfil. JPG, PNG ou WEBP, até 8 MB.</span></div><img id="capa-preview" class="wizard-image-preview" src="{% if empresa.imagem_capa %}{{ empresa.imagem_capa.url }}{% endif %}" alt="Prévia da imagem de capa"{% if not empresa.imagem_capa %} hidden{% endif %}>{% elif field.help_text %}<small class="text-muted">{{ field.help_text }}</small>{% endif %}</div>{% endfor %}</div>
     <div class="wizard-actions"><div>{% if etapa > 1 and empresa %}<a class="wizard-btn" href="{% url 'painel:empresa_configurar' empresa.uuid etapa|add:'-1' %}"><i class="bi bi-arrow-left"></i> Voltar</a>{% endif %}</div><div class="wizard-actions-group"><button class="wizard-btn" type="submit" name="acao" value="sair">Salvar e sair</button><button class="wizard-btn primary" type="submit" name="acao" value="continuar">{% if etapa == 7 %}Concluir cadastro{% else %}Continuar <i class="bi bi-arrow-right"></i>{% endif %}</button></div></div>
   </form>
 </div></div>
+{% if etapa == 3 %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const descricaoCurta = document.getElementById("id_descricao_curta");
+    const contador = document.getElementById("descricao-curta-contador");
+
+    if (descricaoCurta && contador) {
+        const atualizarContador = function () {
+            contador.textContent = descricaoCurta.value.length + "/220 caracteres";
+        };
+        descricaoCurta.addEventListener("input", atualizarContador);
+        atualizarContador();
+    }
+
+    function configurarPreview(campoId, previewId) {
+        const campo = document.getElementById(campoId);
+        const preview = document.getElementById(previewId);
+
+        if (!campo || !preview) {
+            return;
+        }
+
+        let urlTemporaria = null;
+        campo.addEventListener("change", function () {
+            const arquivo = campo.files && campo.files[0];
+            if (!arquivo) {
+                return;
+            }
+            if (urlTemporaria) {
+                URL.revokeObjectURL(urlTemporaria);
+            }
+            urlTemporaria = URL.createObjectURL(arquivo);
+            preview.src = urlTemporaria;
+            preview.hidden = false;
+        });
+    }
+
+    configurarPreview("id_logo", "logo-preview");
+    configurarPreview("id_imagem_capa", "capa-preview");
+});
+</script>
+{% endif %}
+{% if etapa == 4 %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    function formatarTelefone(campo) {
+        const digitos = campo.value.replace(/\D/g, "").slice(0, 11);
+        let valor = digitos;
+
+        if (digitos.length > 2) {
+            valor = "(" + digitos.slice(0, 2) + ") " + digitos.slice(2);
+        }
+        if (digitos.length > 10) {
+            valor = valor.slice(0, 10) + "-" + valor.slice(10);
+        } else if (digitos.length > 6) {
+            valor = valor.slice(0, 9) + "-" + valor.slice(9);
+        }
+
+        campo.value = valor;
+    }
+
+    document.querySelectorAll("[data-telefone-br]").forEach(function (campo) {
+        campo.addEventListener("input", function () {
+            formatarTelefone(campo);
+        });
+        formatarTelefone(campo);
+    });
+});
+</script>
+{% endif %}
+{% if etapa == 5 %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const campoCep = document.querySelector("[data-cep-br]");
+
+    if (!campoCep) {
+        return;
+    }
+
+    const formatarCep = function () {
+        const digitos = campoCep.value.replace(/\D/g, "").slice(0, 8);
+        campoCep.value = digitos.length > 5
+            ? digitos.slice(0, 5) + "-" + digitos.slice(5)
+            : digitos;
+    };
+
+    campoCep.addEventListener("input", formatarCep);
+    formatarCep();
+});
+</script>
+{% endif %}
+<script>
+// BOTUKA_SUBCATEGORIA_DINAMICA
+document.addEventListener("DOMContentLoaded", function () {
+    const categoria = document.getElementById("id_categoria_empresa");
+    const subcategoria = document.getElementById("id_subcategoria_empresa");
+
+    if (!categoria || !subcategoria) {
+        return;
+    }
+
+    const endpoint = "{% url 'painel:empresa_subcategorias_json' %}";
+    const valorInicial = subcategoria.value;
+
+    async function carregarSubcategorias(manterValor = false) {
+        const categoriaId = categoria.value;
+
+        subcategoria.innerHTML = "";
+
+        const optionVazia = document.createElement("option");
+        optionVazia.value = "";
+        optionVazia.textContent = "---------";
+        subcategoria.appendChild(optionVazia);
+
+        if (!categoriaId) {
+            subcategoria.disabled = true;
+            return;
+        }
+
+        subcategoria.disabled = true;
+
+        try {
+            const resposta = await fetch(
+                endpoint + "?categoria=" + encodeURIComponent(categoriaId),
+                {headers: {"X-Requested-With": "XMLHttpRequest"}}
+            );
+
+            if (!resposta.ok) {
+                throw new Error("Falha ao carregar segmentos.");
+            }
+
+            const dados = await resposta.json();
+
+            for (const item of dados.subcategorias) {
+                const option = document.createElement("option");
+                option.value = item.id;
+                option.textContent = item.nome;
+
+                if (manterValor && String(item.id) === String(valorInicial)) {
+                    option.selected = true;
+                }
+
+                subcategoria.appendChild(option);
+            }
+
+            subcategoria.disabled = false;
+        } catch (erro) {
+            console.error(erro);
+            subcategoria.disabled = false;
+        }
+    }
+
+    categoria.addEventListener("change", function () {
+        carregarSubcategorias(false);
+    });
+
+    carregarSubcategorias(true);
+});
+</script>
 {% endblock %}
