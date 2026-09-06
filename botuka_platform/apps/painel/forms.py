@@ -7,6 +7,8 @@ import re
 from django import forms
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.core.files.uploadedfile import UploadedFile
+from django.core.validators import MaxLengthValidator
 from django.db.models import Q
 from django.utils import timezone
 
@@ -254,7 +256,7 @@ class EmpresaForm(forms.ModelForm):
             'cpf_cnpj': 'CPF/CNPJ',
             'atuacao': 'Atuação',
             'categoria_empresa': 'Categoria',
-            'subcategoria_empresa': 'Subcategoria',
+            'subcategoria_empresa': 'Segmento',
             'modalidade_comercial': 'Modalidade comercial',
         }
         widgets = {
@@ -361,18 +363,26 @@ class EmpresaForm(forms.ModelForm):
 
     def clean_logo(self):
         imagem = self._validar_imagem('logo', 8)
-        return optimize_uploaded_image(imagem, policy='avatar') if imagem else imagem
+        if isinstance(imagem, UploadedFile):
+            return optimize_uploaded_image(imagem, policy='avatar')
+        return imagem
 
     def clean_descricao_completa(self) -> str:
         return sanitizar_html_rico(self.cleaned_data.get('descricao_completa', ''))
 
     def clean_imagem_capa(self):
         imagem = self._validar_imagem('imagem_capa', 8)
-        return optimize_uploaded_image(imagem, policy='hero') if imagem else imagem
+        if isinstance(imagem, UploadedFile):
+            return optimize_uploaded_image(imagem, policy='hero')
+        return imagem
 
     def _validar_imagem(self, field_name: str, limite_mb: int):
         imagem = self.cleaned_data.get(field_name)
         if not imagem:
+            return imagem
+
+        # Em edições sem novo upload, preserve o FieldFile já armazenado.
+        if not isinstance(imagem, UploadedFile):
             return imagem
 
         if imagem.size > limite_mb * 1024 * 1024:
@@ -398,12 +408,12 @@ class EmpresaForm(forms.ModelForm):
 
         if categoria is None:
             raise forms.ValidationError(
-                'Selecione uma categoria antes da subcategoria.'
+                'Selecione uma categoria antes do segmento.'
             )
 
         if subcategoria.categoria_id != categoria.id:
             raise forms.ValidationError(
-                'A subcategoria selecionada não pertence à categoria informada.'
+                'O segmento selecionado não pertence à categoria informada.'
             )
 
         return subcategoria
@@ -427,9 +437,9 @@ class EmpresaEtapaForm(EmpresaForm):
             'inscricao_estadual', 'inscricao_municipal'),
         2: ('atuacao', 'categoria_empresa', 'subcategoria_empresa'),
         3: ('descricao_curta', 'descricao_completa', 'logo', 'imagem_capa'),
-        4: ('telefone', 'whatsapp', 'email', 'site'),
+        4: ('whatsapp', 'telefone', 'email', 'site'),
         5: ('cep', 'endereco', 'numero', 'complemento', 'bairro', 'estado', 'cidade'),
-        6: ('modalidade_comercial', 'atende_online', 'atende_local',
+        6: ('modalidade_comercial', 'atende_local', 'atende_online',
             'horario_atendimento'),
         7: ('perfil_publico',),
     }
@@ -442,20 +452,164 @@ class EmpresaEtapaForm(EmpresaForm):
             if nome not in permitidos:
                 self.fields.pop(nome)
 
+        if etapa == 4:
+            self.order_fields(self.CAMPOS_ETAPA[etapa])
+
         if etapa < 7:
             for nome in self.fields:
                 self.fields[nome].required = nome in {
-                    'nome_fantasia', 'atuacao', 'estado', 'cidade'
+                    'nome_fantasia', 'atuacao', 'categoria_empresa',
+                    'subcategoria_empresa', 'estado', 'cidade'
                 }
 
         atuacao = self.instance.atuacao if self.instance else None
         if etapa == 6 and atuacao == Empresa.Atuacao.SERVICOS:
             self.fields.pop('modalidade_comercial', None)
         elif etapa == 6 and 'modalidade_comercial' in self.fields:
-            self.fields['modalidade_comercial'].required = True
+            self.fields['modalidade_comercial'].required = atuacao in {
+                Empresa.Atuacao.COMERCIO,
+                Empresa.Atuacao.COMERCIO_E_SERVICOS,
+            }
+
+        if etapa == 6:
+            self.order_fields(self.CAMPOS_ETAPA[etapa])
+            if 'modalidade_comercial' in self.fields:
+                self.fields['modalidade_comercial'].help_text = (
+                    'Escolha como a empresa comercializa produtos.'
+                )
+            self.fields['atende_local'].label = 'Atendimento presencial'
+            self.fields['atende_local'].help_text = (
+                'Marque quando a empresa atende clientes presencialmente.'
+            )
+            self.fields['atende_online'].label = 'Atendimento online/remoto'
+            self.fields['atende_online'].help_text = (
+                'Marque quando a empresa atende clientes a distância. '
+                'As duas formas podem ser selecionadas.'
+            )
+            self.fields['horario_atendimento'].help_text = (
+                'Informação de funcionamento que poderá aparecer no '
+                'perfil público.'
+            )
+
+        if etapa == 7:
+            self.fields['perfil_publico'].label = 'Exibir perfil publicamente'
+            self.fields['perfil_publico'].help_text = (
+                'Marcado: o perfil poderá ser exibido ao público quando a '
+                'empresa estiver ativa. Desmarcado: o perfil permanece oculto.'
+            )
+
+        if etapa == 4:
+            self.fields['whatsapp'].label = 'WhatsApp'
+            self.fields['whatsapp'].help_text = 'Contato público com DDD.'
+            self.fields['telefone'].label = 'Telefone'
+            self.fields['telefone'].help_text = (
+                'Contato público fixo ou celular, com DDD.'
+            )
+            self.fields['email'].label = 'E-mail'
+            self.fields['email'].help_text = 'E-mail público da empresa.'
+            self.fields['site'].label = 'Site'
+            self.fields['site'].help_text = 'Exemplo: https://minhaempresa.com.br'
+
+            for nome in ('whatsapp', 'telefone'):
+                self.fields[nome].widget.attrs.update({
+                    'autocomplete': 'tel',
+                    'placeholder': '(14) 99999-9999',
+                    'data-telefone-br': '',
+                })
+
+        if etapa == 5:
+            self.fields['cep'].max_length = 9
+            for validator in self.fields['cep'].validators:
+                if isinstance(validator, MaxLengthValidator):
+                    validator.limit_value = 9
+            self.fields['cep'].help_text = (
+                'Informe um CEP brasileiro. Exemplo: 18600-000.'
+            )
+            self.fields['cep'].widget.attrs.update({
+                'autocomplete': 'postal-code',
+                'maxlength': '9',
+                'placeholder': '00000-000',
+                'data-cep-br': '',
+            })
+            self.fields['endereco'].help_text = (
+                'Informe rua, avenida, rodovia ou outro logradouro.'
+            )
+            self.fields['endereco'].widget.attrs.setdefault(
+                'placeholder', 'Rua, avenida, rodovia...'
+            )
+            self.fields['numero'].help_text = (
+                'Informe o número ou S/N quando não houver numeração.'
+            )
+            self.fields['numero'].widget.attrs.setdefault(
+                'placeholder', 'Número ou S/N'
+            )
+            self.fields['complemento'].help_text = (
+                'Opcional. Exemplo: sala, bloco ou ponto de referência.'
+            )
+            self.fields['bairro'].help_text = 'Bairro da empresa.'
+            self.fields['estado'].help_text = (
+                'Obrigatório também para empresas com atendimento online.'
+            )
+            self.fields['cidade'].help_text = (
+                'Cidade-base usada na organização e busca da plataforma.'
+            )
+
+    def clean_cep(self) -> str:
+        cep = somente_digitos(self.cleaned_data.get('cep', ''))
+
+        if not cep:
+            return ''
+
+        if len(cep) != 8 or len(set(cep)) == 1:
+            raise forms.ValidationError('Informe um CEP brasileiro válido.')
+
+        return cep
 
     def clean(self):
         cleaned_data = super().clean()
+
+        if self.etapa == 4:
+            for nome in ('whatsapp', 'telefone'):
+                valor_informado = cleaned_data.get(nome, '')
+                if not valor_informado:
+                    continue
+
+                valor_normalizado = somente_digitos(valor_informado)
+                valor_existente = somente_digitos(
+                    getattr(self.instance, nome, '')
+                )
+                legado_inalterado = bool(
+                    self.instance.pk
+                    and valor_normalizado == valor_existente
+                )
+
+                if len(valor_normalizado) not in {10, 11} and not legado_inalterado:
+                    self.add_error(
+                        nome,
+                        'Informe um telefone brasileiro com DDD.',
+                    )
+                    continue
+
+                cleaned_data[nome] = valor_normalizado
+
+            if not any(
+                cleaned_data.get(nome)
+                for nome in ('whatsapp', 'telefone', 'email', 'site')
+            ):
+                raise forms.ValidationError(
+                    'Informe pelo menos um contato público: WhatsApp, '
+                    'telefone, e-mail ou site.'
+                )
+
+        if self.etapa == 6 and not (
+            cleaned_data.get('atende_local')
+            or cleaned_data.get('atende_online')
+        ):
+            raise forms.ValidationError(
+                'Selecione pelo menos uma forma de atendimento: '
+                'presencial ou online/remoto.'
+            )
+
         atuacao = self.instance.atuacao if self.instance else None
         if atuacao == Empresa.Atuacao.SERVICOS:
             cleaned_data['modalidade_comercial'] = ''

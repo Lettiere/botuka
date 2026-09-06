@@ -11,6 +11,7 @@ from apps.locations.models import Cidade, Estado, Pais
 from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade, EmpresaUsuario
 from apps.products.models import Produto
 from apps.services.models import AreaProfissional, FormaCobranca, Profissao, Servico, Setor
+from apps.taxonomy.models import Categoria, Subcategoria
 
 
 class EmpresaWizardTests(TestCase):
@@ -24,6 +25,13 @@ class EmpresaWizardTests(TestCase):
         )
         self.estado = Estado.objects.create(pais=pais, nome='São Paulo', sigla='SP')
         self.cidade = Cidade.objects.create(estado=self.estado, nome='Botucatu')
+        self.categoria_empresa = Categoria.objects.create(
+            nome='Categoria empresa teste'
+        )
+        self.subcategoria_empresa = Subcategoria.objects.create(
+            categoria=self.categoria_empresa,
+            nome='Segmento empresa teste',
+        )
 
     def _post_etapa(self, empresa, etapa, dados, acao='continuar'):
         return self.client.post(
@@ -43,7 +51,11 @@ class EmpresaWizardTests(TestCase):
         empresa = Empresa.objects.get(nome_fantasia=f'Empresa {atuacao}')
 
         etapas = (
-            (2, {'atuacao': atuacao}),
+            (2, {
+                'atuacao': atuacao,
+                'categoria_empresa': self.categoria_empresa.pk,
+                'subcategoria_empresa': self.subcategoria_empresa.pk,
+            }),
             (3, {'descricao_curta': 'Apresentação da empresa'}),
             (4, {'email': 'empresa@example.com'}),
             (5, {'estado': self.estado.pk, 'cidade': self.cidade.pk}),
@@ -223,7 +235,7 @@ class EmpresaWizardTests(TestCase):
                 }))
                 self.assertEqual(response.status_code, 200)
                 self.assertContains(response, empresa.get_status_display())
-                self.assertContains(response, 'Gerenciar produtos')
+                self.assertContains(response, '>Produtos</span>')
                 if status != Empresa.Status.ATIVA:
                     self.assertIsNone(response.context['painel_empresa']['produtos']['limite'])
 
