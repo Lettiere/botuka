@@ -25,6 +25,14 @@
       <button class="btn-botuka btn-soft botuka-explore-trigger" type="button" {% if request.user.is_authenticated %}data-navigation-open aria-controls="userNavigationModal" aria-haspopup="dialog" aria-expanded="false"{% else %}data-bs-toggle="modal" data-bs-target="#botukaExploreModal"{% endif %} aria-label="Explorar recursos do BOTUKA">
         <i class="bi bi-grid-3x3-gap-fill"></i><span class="d-none d-lg-inline">Explorar</span>
       </button>
+      <a class="btn-botuka btn-soft btn-icon"
+         href="https://www.instagram.com/_botuka/"
+         target="_blank"
+         rel="noopener noreferrer"
+         aria-label="Instagram do BOTUKA"
+         title="Instagram do BOTUKA">
+        <i class="bi bi-instagram" aria-hidden="true"></i>
+      </a>
       <button class="btn-botuka btn-soft btn-icon" id="themeToggle" type="button" aria-label="Alternar tema">
         <i class="bi bi-moon-stars-fill" id="themeIcon"></i>
       </button>
