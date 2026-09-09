@@ -1,0 +1,215 @@
+{% extends "painel/base.html" %}
+
+{% block title %}Cadastrar estabelecimento | Painel BOTUKA{% endblock %}
+
+{% block painel_content %}
+<div class="container py-4" style="max-width:900px">
+
+  <div class="mb-4">
+    <h1 class="h3 fw-bold mb-2">Cadastrar estabelecimento</h1>
+    <p class="text-muted mb-0">
+      Informe os dados básicos. Outras informações poderão ser adicionadas depois.
+    </p>
+  </div>
+
+  <form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+
+    {% if form.non_field_errors %}
+      <div class="alert alert-danger">
+        {{ form.non_field_errors }}
+      </div>
+    {% endif %}
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h2 class="h5 fw-bold mb-3">Identificação</h2>
+
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.nome_fantasia.id_for_label }}">
+            {{ form.nome_fantasia.label }}
+          </label>
+          {{ form.nome_fantasia.errors }}
+          {{ form.nome_fantasia }}
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label" for="{{ form.categoria_empresa.id_for_label }}">
+            {{ form.categoria_empresa.label }}
+          </label>
+          {{ form.categoria_empresa.errors }}
+          {{ form.categoria_empresa }}
+        </div>
+
+        <div class="mb-0">
+          <label class="form-label" for="{{ form.subcategoria_empresa.id_for_label }}">
+            {{ form.subcategoria_empresa.label }}
+          </label>
+          {{ form.subcategoria_empresa.errors }}
+          {{ form.subcategoria_empresa }}
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h2 class="h5 fw-bold mb-3">Localização</h2>
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">{{ form.cep.label }}</label>
+            {{ form.cep.errors }}
+            {{ form.cep }}
+          </div>
+
+          <div class="col-md-8">
+            <label class="form-label">{{ form.endereco.label }}</label>
+            {{ form.endereco.errors }}
+            {{ form.endereco }}
+          </div>
+
+          <div class="col-md-3">
+            <label class="form-label">{{ form.numero.label }}</label>
+            {{ form.numero.errors }}
+            {{ form.numero }}
+          </div>
+
+          <div class="col-md-9">
+            <label class="form-label">{{ form.bairro.label }}</label>
+            {{ form.bairro.errors }}
+            {{ form.bairro }}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">{{ form.estado.label }}</label>
+            {{ form.estado.errors }}
+            {{ form.estado }}
+          </div>
+
+          <div class="col-md-6">
+            <label class="form-label">{{ form.cidade.label }}</label>
+            {{ form.cidade.errors }}
+            {{ form.cidade }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-3">
+      <div class="card-body">
+        <h2 class="h5 fw-bold mb-3">Contato</h2>
+        <p class="text-muted small">
+          Informe pelo menos WhatsApp, telefone ou e-mail.
+        </p>
+
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-label">{{ form.whatsapp.label }}</label>
+            {{ form.whatsapp.errors }}
+            {{ form.whatsapp }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">{{ form.telefone.label }}</label>
+            {{ form.telefone.errors }}
+            {{ form.telefone }}
+          </div>
+
+          <div class="col-md-4">
+            <label class="form-label">{{ form.email.label }}</label>
+            {{ form.email.errors }}
+            {{ form.email }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card border-0 shadow-sm mb-4">
+      <div class="card-body">
+        <h2 class="h5 fw-bold mb-3">Imagem</h2>
+
+        <label class="form-label">{{ form.logo.label }}</label>
+        {{ form.logo.errors }}
+        {{ form.logo }}
+        <div class="form-text">JPG, PNG ou WebP, até 2 MB.</div>
+      </div>
+    </div>
+
+    <div class="d-flex justify-content-end gap-2">
+      <a href="{% url 'painel:empresas_lista' %}" class="btn btn-light">
+        Cancelar
+      </a>
+      <button type="submit" class="btn btn-warning fw-bold">
+        Cadastrar estabelecimento
+      </button>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+
+{% block scripts %}
+{{ block.super }}
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const categoria = document.getElementById('{{ form.categoria_empresa.id_for_label }}');
+  const subcategoria = document.getElementById('{{ form.subcategoria_empresa.id_for_label }}');
+  const endpoint = "{% url 'painel:empresa_subcategorias_json' %}";
+  const selecionadaInicial = subcategoria.value;
+
+  async function carregarSubcategorias(valorSelecionado = '') {
+    subcategoria.innerHTML = '<option value="">---------</option>';
+    subcategoria.disabled = true;
+
+    if (!categoria.value) {
+      return;
+    }
+
+    try {
+      const response = await fetch(
+        `${endpoint}?categoria=${encodeURIComponent(categoria.value)}`,
+        {
+          headers: {
+            'X-Requested-With': 'XMLHttpRequest'
+          }
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error('Falha ao carregar tipos de estabelecimento');
+      }
+
+      const data = await response.json();
+
+      data.subcategorias.forEach(function (item) {
+        const option = document.createElement('option');
+        option.value = item.id;
+        option.textContent = item.nome;
+
+        if (String(item.id) === String(valorSelecionado)) {
+          option.selected = true;
+        }
+
+        subcategoria.appendChild(option);
+      });
+
+      subcategoria.disabled = false;
+    } catch (error) {
+      console.error(error);
+      subcategoria.disabled = false;
+    }
+  }
+
+  categoria.addEventListener('change', function () {
+    carregarSubcategorias('');
+  });
+
+  if (categoria.value) {
+    carregarSubcategorias(selecionadaInicial);
+  } else {
+    subcategoria.disabled = true;
+  }
+});
+</script>
+{% endblock %}

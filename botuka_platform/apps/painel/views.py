@@ -30,6 +30,7 @@ from apps.painel.forms import (
     ContatoUsuarioForm,
     DadosPessoaisForm,
     DocumentoUsuarioForm,
+    EmpresaCadastroSimplesForm,
     EmpresaCNPJConsultaForm,
     EmpresaCapacidadeForm,
     EmpresaDocumentoForm,
@@ -785,7 +786,58 @@ def empresa_excluir(request: HttpRequest, uuid) -> HttpResponse:
 
 @login_required
 def empresa_adicionar(request: HttpRequest) -> HttpResponse:
-    return empresa_criar(request)
+    from apps.organizations.plans import usuario_pode_criar_empresa
+
+    if request.method == 'GET':
+        limite = usuario_pode_criar_empresa(request.user)
+        if not limite.permitido:
+            messages.error(request, limite.motivo)
+            return redirect('painel:empresas_lista')
+
+    form = EmpresaCadastroSimplesForm(
+        request.POST or None,
+        request.FILES or None,
+        usuario=request.user,
+    )
+    if request.method == 'POST' and form.is_valid():
+        try:
+            with transaction.atomic():
+                bloquear_e_validar_criacao_empresa(request.user)
+                empresa = form.save(commit=False)
+                empresa.usuario_proprietario = request.user
+                empresa.status = Empresa.Status.RASCUNHO
+                empresa.cadastro_etapa = 2
+                empresa.save()
+                EmpresaUsuario.objects.create(
+                    empresa=empresa,
+                    usuario=request.user,
+                    funcao=EmpresaUsuario.Funcao.PROPRIETARIO,
+                    proprietario=True,
+                    administrador=True,
+                    pode_editar=True,
+                    pode_publicar_servico=True,
+                    pode_gerenciar_equipe=True,
+                )
+        except LimitePlanoExcedido as exc:
+            form.add_error(None, str(exc))
+        except ValidationError as exc:
+            _adicionar_erros_da_etapa(form, exc)
+        else:
+            messages.success(
+                request,
+                'Estabelecimento cadastrado. Continue a configuração.',
+            )
+            return redirect(
+                'painel:empresa_configurar',
+                uuid=empresa.uuid,
+                etapa=2,
+            )
+
+    return render(
+        request,
+        'painel/empresas/cadastro_simples.html',
+        {'form': form, 'titulo': 'Cadastrar estabelecimento'},
+    )
 
 
 @login_required
