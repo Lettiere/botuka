@@ -1,5 +1,6 @@
 from datetime import time, timedelta
 from decimal import Decimal
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
@@ -40,6 +41,150 @@ class EmpresaWizardTests(TestCase):
             }),
             {**dados, 'acao': acao},
         )
+
+    def _dados_cadastro_simples(self, **overrides):
+        dados = {
+            'nome_fantasia': 'Estabelecimento simples',
+            'categoria_empresa': self.categoria_empresa.pk,
+            'subcategoria_empresa': self.subcategoria_empresa.pk,
+            'estado': self.estado.pk,
+            'cidade': self.cidade.pk,
+            'email': 'contato@example.com',
+        }
+        dados.update(overrides)
+        return dados
+
+    def test_cadastro_simples_get_renderiza_template(self):
+        response = self.client.get(reverse('painel:empresa_adicionar'))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            'painel/empresas/cadastro_simples.html',
+        )
+
+    def test_cadastro_simples_cria_rascunho_vinculo_e_redireciona(self):
+        response = self.client.post(
+            reverse('painel:empresa_adicionar'),
+            self._dados_cadastro_simples(),
+        )
+
+        self.assertEqual(Empresa.objects.count(), 1)
+        empresa = Empresa.objects.get()
+        self.assertEqual(empresa.status, Empresa.Status.RASCUNHO)
+        self.assertEqual(empresa.cadastro_etapa, 2)
+        self.assertEqual(empresa.usuario_proprietario, self.usuario)
+        vinculo = EmpresaUsuario.objects.get(
+            empresa=empresa,
+            usuario=self.usuario,
+        )
+        self.assertEqual(vinculo.funcao, EmpresaUsuario.Funcao.PROPRIETARIO)
+        self.assertTrue(vinculo.proprietario)
+        self.assertTrue(vinculo.administrador)
+        self.assertTrue(vinculo.pode_editar)
+        self.assertTrue(vinculo.pode_publicar_servico)
+        self.assertTrue(vinculo.pode_gerenciar_equipe)
+        self.assertRedirects(
+            response,
+            reverse('painel:empresa_configurar', kwargs={
+                'uuid': empresa.uuid,
+                'etapa': 2,
+            }),
+        )
+
+    def test_cadastro_simples_post_invalido_nao_cria_empresa(self):
+        response = self.client.post(reverse('painel:empresa_adicionar'), {})
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Empresa.objects.exists())
+
+    def test_cadastro_simples_exige_algum_contato(self):
+        response = self.client.post(
+            reverse('painel:empresa_adicionar'),
+            self._dados_cadastro_simples(email=''),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Informe pelo menos um contato')
+        self.assertFalse(Empresa.objects.exists())
+
+    def test_cadastro_simples_rejeita_subcategoria_de_outra_categoria(self):
+        outra_categoria = Categoria.objects.create(nome='Outra categoria')
+        outra_subcategoria = Subcategoria.objects.create(
+            categoria=outra_categoria,
+            nome='Outro tipo',
+        )
+
+        response = self.client.post(
+            reverse('painel:empresa_adicionar'),
+            self._dados_cadastro_simples(
+                subcategoria_empresa=outra_subcategoria.pk,
+            ),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Empresa.objects.exists())
+        self.assertIn('subcategoria_empresa', response.context['form'].errors)
+
+    def test_cadastro_simples_rejeita_cidade_de_outro_estado(self):
+        outro_estado = Estado.objects.create(
+            pais=self.estado.pais,
+            nome='Paraná',
+            sigla='PR',
+        )
+        outra_cidade = Cidade.objects.create(
+            estado=outro_estado,
+            nome='Curitiba',
+        )
+
+        response = self.client.post(
+            reverse('painel:empresa_adicionar'),
+            self._dados_cadastro_simples(cidade=outra_cidade.pk),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Empresa.objects.exists())
+        self.assertIn('cidade', response.context['form'].errors)
+
+    def test_cadastro_simples_rejeita_subcategoria_removida(self):
+        self.subcategoria_empresa.delete()
+
+        response = self.client.post(
+            reverse('painel:empresa_adicionar'),
+            self._dados_cadastro_simples(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Empresa.objects.exists())
+        self.assertIn('subcategoria_empresa', response.context['form'].errors)
+
+    def test_cadastro_simples_respeita_limite_do_plano(self):
+        Empresa.objects.create(
+            usuario_proprietario=self.usuario,
+            nome_fantasia='Empresa já existente',
+        )
+
+        response = self.client.post(
+            reverse('painel:empresa_adicionar'),
+            self._dados_cadastro_simples(),
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(Empresa.objects.count(), 1)
+        self.assertTrue(response.context['form'].non_field_errors())
+
+    def test_cadastro_simples_reverte_empresa_se_vinculo_falhar(self):
+        with patch(
+            'apps.painel.views.EmpresaUsuario.objects.create',
+            side_effect=RuntimeError('falha simulada no vínculo'),
+        ):
+            with self.assertRaises(RuntimeError):
+                self.client.post(
+                    reverse('painel:empresa_adicionar'),
+                    self._dados_cadastro_simples(),
+                )
+
+        self.assertFalse(Empresa.objects.exists())
 
     def _executar_fluxo(self, atuacao, modalidade=''):
         response = self.client.post(reverse('painel:empresa_criar'), {

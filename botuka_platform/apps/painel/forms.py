@@ -16,6 +16,7 @@ from apps.core.models import EnderecoCore, PessoaDocumento
 from apps.organizations.models import Capacidade, Empresa, EmpresaLink, EmpresaUsuario
 from apps.organizations.models import EmpresaCapacidade, EmpresaSolicitacao, UsuarioLimitePersonalizado
 from apps.organizations.permissions import empresas_gerenciaveis_para_usuario
+from apps.taxonomy.models import Subcategoria
 from apps.services.models import (
     AreaProfissional,
     Profissao,
@@ -213,6 +214,112 @@ class ApresentacaoUsuarioForm(BasePerfilForm):
         widgets = {
             'biografia': forms.Textarea(attrs={'rows': 4, 'maxlength': 500}),
         }
+
+
+class EmpresaCadastroSimplesForm(forms.ModelForm):
+    class Meta:
+        model = Empresa
+        fields = [
+            'nome_fantasia',
+            'categoria_empresa',
+            'subcategoria_empresa',
+            'cep',
+            'endereco',
+            'numero',
+            'bairro',
+            'estado',
+            'cidade',
+            'whatsapp',
+            'telefone',
+            'email',
+            'logo',
+        ]
+        labels = {
+            'nome_fantasia': 'Nome do estabelecimento',
+            'categoria_empresa': 'Categoria',
+            'subcategoria_empresa': 'Tipo de estabelecimento',
+            'logo': 'Logo ou foto',
+        }
+
+    def __init__(self, *args: object, usuario=None, **kwargs: object) -> None:
+        self.usuario = usuario
+        super().__init__(*args, **kwargs)
+
+        for field in self.fields.values():
+            field.widget.attrs.setdefault('class', 'form-control')
+
+        self.fields['nome_fantasia'].required = True
+        self.fields['categoria_empresa'].required = True
+        self.fields['subcategoria_empresa'].required = True
+        self.fields['estado'].required = True
+        self.fields['cidade'].required = True
+        self.fields['subcategoria_empresa'].queryset = Subcategoria.objects.none()
+
+        categoria_id = None
+        if self.is_bound:
+            categoria_id = self.data.get('categoria_empresa')
+        elif self.instance and self.instance.pk:
+            categoria_id = self.instance.categoria_empresa_id
+
+        if categoria_id:
+            self.fields['subcategoria_empresa'].queryset = (
+                Subcategoria.objects.filter(
+                    categoria_id=categoria_id,
+                    ativo=True,
+                    removido_em__isnull=True,
+                ).order_by('ordem', 'nome')
+            )
+
+        self.fields['cep'].widget.attrs.setdefault('inputmode', 'numeric')
+        self.fields['telefone'].widget.attrs.setdefault('inputmode', 'tel')
+        self.fields['whatsapp'].widget.attrs.setdefault('inputmode', 'tel')
+
+    def clean_logo(self):
+        imagem = self.cleaned_data.get('logo')
+        if not imagem:
+            return imagem
+
+        if imagem.size > 2 * 1024 * 1024:
+            raise forms.ValidationError('A imagem deve ter até 2 MB.')
+
+        content_type = getattr(imagem, 'content_type', '')
+        if content_type and content_type not in {
+            'image/jpeg',
+            'image/png',
+            'image/webp',
+        }:
+            raise forms.ValidationError('Use imagem JPG, PNG ou WEBP.')
+
+        return imagem
+
+    def clean(self) -> dict:
+        cleaned_data = super().clean()
+        cidade = cleaned_data.get('cidade')
+        estado = cleaned_data.get('estado')
+        categoria = cleaned_data.get('categoria_empresa')
+        subcategoria = cleaned_data.get('subcategoria_empresa')
+
+        if categoria and subcategoria and subcategoria.categoria_id != categoria.id:
+            self.add_error(
+                'subcategoria_empresa',
+                'O tipo de estabelecimento não pertence à categoria informada.',
+            )
+
+        if cidade and estado and cidade.estado_id != estado.id:
+            self.add_error(
+                'cidade',
+                'A cidade selecionada não pertence ao estado informado.',
+            )
+
+        if not any(
+            cleaned_data.get(campo)
+            for campo in ('whatsapp', 'telefone', 'email')
+        ):
+            raise forms.ValidationError(
+                'Informe pelo menos um contato: WhatsApp, telefone ou e-mail.'
+            )
+
+        return cleaned_data
 
 
 class EmpresaForm(forms.ModelForm):
