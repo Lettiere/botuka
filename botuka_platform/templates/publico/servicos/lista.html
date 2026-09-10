@@ -5,6 +5,7 @@
   {% include "public/components/breadcrumb.html" with current_label="Serviços" %}
   {% include "public/components/page_header.html" with kicker="Serviços locais" title="Serviços em Botucatu" description="Prestadores e empresas com serviços publicados." count=total count_label="resultados" %}
   <form class="public-filters" method="get" aria-label="Filtros de serviços">
+    {% if request.GET.empresa %}<input type="hidden" name="empresa" value="{{ request.GET.empresa }}">{% endif %}
     <label>Buscar<input name="q" value="{{ request.GET.q }}" placeholder="Serviço, profissão ou empresa"></label>
     <label>Categoria<select name="categoria"><option value="">Todas</option>{% for item in categorias %}<option value="{{ item.slug }}" {% if request.GET.categoria == item.slug %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label>
     <label>Prestador<select name="prestador"><option value="">Todos</option><option value="PESSOA_FISICA" {% if request.GET.prestador == "PESSOA_FISICA" %}selected{% endif %}>Pessoa física</option><option value="EMPRESA" {% if request.GET.prestador == "EMPRESA" %}selected{% endif %}>Empresa</option></select></label>

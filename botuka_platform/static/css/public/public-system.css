@@ -218,6 +218,24 @@
   background: var(--public-surface);
   box-shadow: 0 7px 20px rgba(15,23,42,.05);
 }
+.company-share {
+  display: grid;
+  grid-template-columns: 152px minmax(0, 1fr);
+  align-items: center;
+  gap: 1.25rem;
+  margin: 0 0 1.5rem;
+  padding: 1.2rem;
+  border: 1px solid var(--public-line);
+  border-radius: 20px;
+  background: var(--public-surface);
+  box-shadow: 0 7px 20px rgba(15,23,42,.05);
+}
+.company-share > img { width: 152px; height: 152px; padding: 7px; border: 1px solid var(--public-line); border-radius: 14px; background: #fff; }
+.company-share h2 { margin: .15rem 0 .25rem; font-size: 1.3rem; font-weight: 900; }
+.company-share p { margin: 0 0 .8rem; color: var(--public-muted); }
+.company-share__actions { display: flex; flex-wrap: wrap; gap: .5rem; }
+.company-share__actions :where(a, button) { display: inline-flex; min-height: 42px; align-items: center; gap: .4rem; padding: .55rem .75rem; border: 1px solid var(--public-line); border-radius: .7rem; background: var(--public-surface); color: var(--public-blue); font: inherit; font-size: .8rem; font-weight: 800; text-decoration: none; cursor: pointer; }
+.company-share__actions :where(a, button):hover { border-color: var(--public-blue); background: var(--public-soft); }
 .job-hero { border-radius: 24px; }
 .surface-section, .sidebar-card, .quote-card {
   border-color: var(--public-line);
@@ -257,6 +275,10 @@
   .public-card:hover { transform: none; }
   .company-info-actions { display: grid; grid-template-columns: 1fr; }
   .company-info-actions a { justify-content: center; }
+  .company-share { grid-template-columns: 92px minmax(0, 1fr); gap: .85rem; padding: .9rem; }
+  .company-share > img { width: 92px; height: 92px; padding: 4px; }
+  .company-share__actions { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .company-share__actions :where(a, button) { justify-content: center; }
 }
 @media (prefers-reduced-motion: reduce) {
   .public-card { transition: none; }

@@ -1,4 +1,5 @@
 {% extends "_layout/platform/public.html" %}{% load content_tags %}
+{% block global_share %}{% endblock %}
 {% block public_content %}
 <main id="conteudo-principal" class="public-detail container-botuka business-detail" data-analytics-event="view_company" data-object-type="company" data-object-id="{{ empresa.uuid }}" data-analytics-context="company_page">
   <nav class="public-breadcrumb"><a href="{% url 'home' %}">Início</a><i class="bi bi-chevron-right"></i><a href="{% url 'publico:empresas' %}">Empresas</a><i class="bi bi-chevron-right"></i><span>{{ empresa.nome_exibicao }}</span></nav>
@@ -11,12 +12,26 @@
     </div>
   </header>
   <nav class="detail-actions" aria-label="Ações da empresa">
+    {% if whatsapp_url %}<a class="btn-botuka btn-yellow" href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp"></i> Falar no WhatsApp</a>{% endif %}
     {% if agenda_disponivel %}<a class="btn-botuka btn-yellow" href="{% url 'agenda_public:empresa' empresa.slug %}"><i class="bi bi-calendar-check"></i> Agendar horário</a>{% endif %}
+    {% if google_maps_url %}<a class="btn-botuka btn-soft" href="{{ google_maps_url }}" target="_blank" rel="noopener noreferrer" data-analytics-directions><i class="bi bi-geo-alt"></i> Ver no mapa</a>{% endif %}
+    {% if tem_produtos %}<a class="btn-botuka btn-soft" href="{{ produtos_url }}"><i class="bi bi-bag"></i> Ver produtos</a>{% endif %}
+    {% if tem_servicos %}<a class="btn-botuka btn-soft" href="{{ servicos_url }}"><i class="bi bi-tools"></i> Ver serviços</a>{% endif %}
     <span class="btn-botuka btn-soft" aria-label="Seguidores da empresa"><i class="bi bi-people"></i> {{ followers_count }} seguidores</span>
     {% if request.user.is_authenticated %}<form method="post" action="{{ botuka_social_base_url }}/social/empresas/{{ empresa.uuid }}/{% if is_following_company %}deixar-de-seguir{% else %}seguir{% endif %}/">{% csrf_token %}<input type="hidden" name="next" value="{{ request.build_absolute_uri }}"><button class="btn-botuka {% if is_following_company %}btn-soft{% else %}btn-yellow{% endif %}" type="submit"><i class="bi bi-person-plus"></i> {% if is_following_company %}Seguindo{% else %}Seguir{% endif %}</button></form>{% else %}<button class="btn-botuka btn-yellow" type="button" data-bs-toggle="modal" data-bs-target="#loginModal"><i class="bi bi-person-plus"></i> Seguir</button>{% endif %}
     {% for link in links %}<a class="btn-botuka {% if forloop.first %}btn-yellow{% else %}btn-soft{% endif %}" href="{{ link.url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-box-arrow-up-right"></i>{{ link.titulo|default:link.get_tipo_link_display }}</a>{% endfor %}
-    {% include 'publico/includes/share.html' with share_title=empresa.nome_exibicao %}
   </nav>
+  <section class="company-share" aria-labelledby="company-share-title" data-share-actions data-title="{{ empresa.nome_exibicao }}" data-url="{{ share.url }}">
+    <img src="{{ qrcode_url }}" alt="QR Code para acessar a página de {{ empresa.nome_exibicao }}" width="152" height="152">
+    <div class="company-share__content"><span class="section-kicker">Divulgue esta empresa</span><h2 id="company-share-title">Compartilhar</h2><p>Escaneie o QR Code ou envie o perfil oficial do BOTUKA.</p>
+      <div class="company-share__actions">
+        <a href="{{ share.whatsapp }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp"></i> WhatsApp</a>
+        <a href="{{ share.facebook }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-facebook"></i> Facebook</a>
+        <a href="{{ share.linkedin }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-linkedin"></i> LinkedIn</a>
+        <button type="button" data-copy-link><i class="bi bi-link-45deg"></i> Copiar link</button>
+      </div>
+    </div>
+  </section>
   <div class="detail-layout">
     <article>
       <section class="surface-section"><h2>Sobre a empresa</h2><div class="public-prose rich-text-content">{{ empresa.descricao_completa|default:empresa.descricao_curta|richtext }}</div></section>
@@ -25,15 +40,15 @@
       {% if vagas %}<section class="surface-section"><div class="section-heading"><div><span class="section-kicker">Oportunidades</span><h2>Vagas abertas</h2></div></div><div class="media-grid">{% for vaga in vagas %}<article class="sidebar-card"><h3>{{ vaga.titulo }}</h3><p>{{ vaga.descricao|truncatewords:20 }}</p></article>{% endfor %}</div></section>{% endif %}
       {% if produtos %}
         <section class="surface-section">
-          <div class="section-heading"><div><span class="section-kicker">Loja</span><h2>Produtos publicados</h2></div><a class="btn-botuka btn-yellow" href="{{ vendas_loja_url }}">Ver todos os produtos da empresa</a></div>
-          <div class="media-grid">{% for produto in produtos %}<article class="sidebar-card">{% with imagem=produto.imagem_principal %}{% if imagem %}<img src="{{ imagem.imagem.url }}" alt="{{ imagem.texto_alternativo }}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px">{% endif %}{% endwith %}<span class="city-tag">{{ produto.categoria_taxonomia|default:produto.categoria }}</span><h3>{{ produto.nome }}</h3><p>{% if produto.preco_sob_consulta %}Sob consulta{% else %}R$ {{ produto.preco_atual|floatformat:2 }}{% endif %} · {{ produto.get_disponibilidade_display }}</p><a class="btn-botuka btn-soft" href="{{ vendas_loja_url }}">Ver no BOTUKA Vendas</a></article>{% endfor %}</div>
+          <div class="section-heading"><div><span class="section-kicker">Loja</span><h2>Produtos publicados</h2></div><a class="btn-botuka btn-yellow" href="{{ produtos_url }}">Ver todos os produtos da empresa</a></div>
+          <div class="media-grid">{% for produto in produtos %}<article class="sidebar-card">{% with imagem=produto.imagem_principal %}{% if imagem %}<img src="{{ imagem.imagem.url }}" alt="{{ imagem.texto_alternativo }}" style="width:100%;aspect-ratio:4/3;object-fit:cover;border-radius:12px">{% endif %}{% endwith %}<span class="city-tag">{{ produto.categoria_taxonomia|default:produto.categoria }}</span><h3>{{ produto.nome }}</h3><p>{% if produto.preco_sob_consulta %}Sob consulta{% else %}R$ {{ produto.preco_atual|floatformat:2 }}{% endif %} · {{ produto.get_disponibilidade_display }}</p><a class="btn-botuka btn-soft" href="{{ produto.get_absolute_url }}">Ver produto</a></article>{% endfor %}</div>
         </section>
       {% endif %}
       {% include 'publico/includes/ad_slot.html' with format='in-content' %}
     </article>
     <aside class="content-sidebar">
       <section class="sidebar-card contact-card" aria-labelledby="empresa-informacoes"><h2 id="empresa-informacoes">Informações</h2><div class="company-info-list">
-        {% if endereco_publico %}<article class="company-info-item"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i><div><h3>Endereço</h3><p>{{ endereco_publico }}</p><div class="company-info-actions"><a href="{{ google_maps_url }}" target="_blank" rel="noopener noreferrer" data-analytics-directions>Abrir no Google Maps</a><a href="{{ waze_url }}" target="_blank" rel="noopener noreferrer" data-analytics-directions>Abrir no Waze</a></div></div></article>{% endif %}
+        {% if endereco_publico %}<article class="company-info-item"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i><div><h3>Endereço</h3><p>{{ endereco_publico }}</p>{% if google_maps_url %}<div class="company-info-actions"><a href="{{ google_maps_url }}" target="_blank" rel="noopener noreferrer" data-analytics-directions>Abrir no Google Maps</a><a href="{{ waze_url }}" target="_blank" rel="noopener noreferrer" data-analytics-directions>Abrir no Waze</a></div>{% endif %}</div></article>{% endif %}
         {% if telefone_url %}<article class="company-info-item"><i class="bi bi-telephone-fill" aria-hidden="true"></i><div><h3>Telefone</h3><p>{{ telefone_formatado }}</p><div class="company-info-actions"><a href="{{ telefone_url }}">Ligar agora</a></div></div></article>{% endif %}
         {% if whatsapp_url %}<article class="company-info-item"><i class="bi bi-whatsapp" aria-hidden="true"></i><div><h3>WhatsApp</h3><p>{{ whatsapp_formatado }}</p><div class="company-info-actions"><a href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer">Conversar no WhatsApp</a></div></div></article>{% endif %}
         {% if empresa.email %}<article class="company-info-item"><i class="bi bi-envelope-fill" aria-hidden="true"></i><div><h3>E-mail</h3><p>{{ empresa.email }}</p><div class="company-info-actions"><a href="mailto:{{ empresa.email }}">Enviar e-mail</a></div></div></article>{% endif %}
@@ -44,3 +59,4 @@
   </div>
 </main>
 {% endblock %}
+{% block public_scripts %}{{ block.super }}{% load static %}<script src="{% static 'public/js/share-actions.js' %}" defer></script>{% endblock %}

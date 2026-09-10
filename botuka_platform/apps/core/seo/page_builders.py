@@ -118,21 +118,49 @@ def listing_seo(request, title, description, *, robots=None):
 
 
 def empresa_seo(request, empresa):
-    title = f'{empresa.nome_fantasia} em {empresa.cidade} | BOTUKA'
+    nome = getattr(empresa, 'nome_exibicao', None) or empresa.nome_fantasia
+    cidade = getattr(empresa, 'cidade', None)
+    estado = getattr(empresa, 'estado', None)
+    cidade_id = getattr(empresa, 'cidade_id', bool(cidade))
+    estado_id = getattr(empresa, 'estado_id', bool(estado))
+    local = str(cidade) if cidade_id else 'Botucatu e região'
+    title = f'{nome} em {local} | BOTUKA'
     description = empresa.descricao_curta or empresa.descricao_completa
     image = [getattr(empresa, 'imagem_social', None), empresa.imagem_capa, empresa.logo]
     url = safe_absolute_url(request, request.path)
+    street = ' '.join(filter(None, [getattr(empresa, 'endereco', ''), getattr(empresa, 'numero', '')])).strip()
+    address = compact({
+        '@type': 'PostalAddress',
+        'streetAddress': street or None,
+        'addressLocality': str(cidade) if cidade_id else None,
+        'addressRegion': getattr(estado, 'sigla', None) if estado_id else None,
+        'postalCode': getattr(empresa, 'cep', None),
+        'addressCountry': 'BR',
+    }) if street and (cidade_id or getattr(empresa, 'bairro', '') or getattr(empresa, 'cep', '')) else None
+    links = getattr(empresa, 'links', None)
+    same_as = [
+        link.url for link in links.all()
+        if link.ativo and not link.excluido_em
+    ] if links is not None else []
     schema = compact({
         '@type': 'LocalBusiness',
         '@id': f'{url}#business',
-        'name': empresa.nome_fantasia,
+        'name': nome,
         'description': text(description),
         'url': url,
         'image': image_url(request, image),
-        'areaServed': {'@type': 'City', 'name': str(empresa.cidade)},
+        'logo': image_url(request, empresa.logo) if empresa.logo else None,
+        'telephone': getattr(empresa, 'telefone', '') or getattr(empresa, 'whatsapp', '') or None,
+        'address': address,
+        'geo': compact({
+            '@type': 'GeoCoordinates', 'latitude': str(empresa.latitude),
+            'longitude': str(empresa.longitude),
+        }) if getattr(empresa, 'latitude', None) is not None and getattr(empresa, 'longitude', None) is not None else None,
+        'areaServed': {'@type': 'City', 'name': local},
+        'sameAs': same_as or None,
     })
     return build_seo(request, title=title, description=description, image=image,
-                     image_alt=f'{empresa.nome_fantasia} em {empresa.cidade}',
+                     image_alt=f'{nome} em {local}',
                      breadcrumbs=[breadcrumb(request, 'Início', reverse('home')), breadcrumb(request, 'Empresas', reverse('publico:empresas')), breadcrumb(request, empresa.nome_fantasia, request.path)],
                      schemas=[schema], modified_time=empresa.atualizado_em)
 
