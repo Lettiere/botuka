@@ -240,7 +240,7 @@ def empresas_lista(request: HttpRequest) -> HttpResponse:
             filter=Q(usuarios_vinculados__ativo=True),
             distinct=True,
         )
-    )
+    ).order_by('nome_fantasia', 'pk')
     paginator = Paginator(empresas_filtradas, 9)
     page_obj = paginator.get_page(request.GET.get('page'))
     querystring = request.GET.copy()
@@ -784,16 +784,8 @@ def empresa_excluir(request: HttpRequest, uuid) -> HttpResponse:
     )
 
 
-@login_required
+@painel_permission_required('empresas.criar')
 def empresa_adicionar(request: HttpRequest) -> HttpResponse:
-    from apps.organizations.plans import usuario_pode_criar_empresa
-
-    if request.method == 'GET':
-        limite = usuario_pode_criar_empresa(request.user)
-        if not limite.permitido:
-            messages.error(request, limite.motivo)
-            return redirect('painel:empresas_lista')
-
     form = EmpresaCadastroSimplesForm(
         request.POST or None,
         request.FILES or None,
@@ -802,36 +794,23 @@ def empresa_adicionar(request: HttpRequest) -> HttpResponse:
     if request.method == 'POST' and form.is_valid():
         try:
             with transaction.atomic():
-                bloquear_e_validar_criacao_empresa(request.user)
                 empresa = form.save(commit=False)
-                empresa.usuario_proprietario = request.user
-                empresa.status = Empresa.Status.RASCUNHO
-                empresa.cadastro_etapa = 2
+                empresa.usuario_proprietario = None
+                empresa.criado_por = request.user
+                empresa.status = form.cleaned_data['status']
+                empresa.perfil_publico = empresa.status == Empresa.Status.ATIVA
                 empresa.save()
-                EmpresaUsuario.objects.create(
-                    empresa=empresa,
-                    usuario=request.user,
-                    funcao=EmpresaUsuario.Funcao.PROPRIETARIO,
-                    proprietario=True,
-                    administrador=True,
-                    pode_editar=True,
-                    pode_publicar_servico=True,
-                    pode_gerenciar_equipe=True,
-                )
-        except LimitePlanoExcedido as exc:
-            form.add_error(None, str(exc))
         except ValidationError as exc:
             _adicionar_erros_da_etapa(form, exc)
         else:
             messages.success(
                 request,
-                'Estabelecimento cadastrado. Continue a configuração.',
+                (
+                    f'Empresa "{empresa.nome_exibicao}" cadastrada com sucesso '
+                    f'como {empresa.get_status_display()}.'
+                ),
             )
-            return redirect(
-                'painel:empresa_configurar',
-                uuid=empresa.uuid,
-                etapa=2,
-            )
+            return redirect('painel:empresa_adicionar')
 
     return render(
         request,
