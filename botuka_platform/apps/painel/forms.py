@@ -217,6 +217,15 @@ class ApresentacaoUsuarioForm(BasePerfilForm):
 
 
 class EmpresaCadastroSimplesForm(forms.ModelForm):
+    status = forms.ChoiceField(
+        choices=(
+            (Empresa.Status.ATIVA, 'Ativa — publicar estabelecimento'),
+            (Empresa.Status.RASCUNHO, 'Rascunho — salvar sem publicar'),
+        ),
+        initial=Empresa.Status.ATIVA,
+        label='Status',
+    )
+
     class Meta:
         model = Empresa
         fields = [
@@ -233,6 +242,7 @@ class EmpresaCadastroSimplesForm(forms.ModelForm):
             'telefone',
             'email',
             'logo',
+            'status',
         ]
         labels = {
             'nome_fantasia': 'Nome do estabelecimento',

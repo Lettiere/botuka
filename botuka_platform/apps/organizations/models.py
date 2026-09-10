@@ -369,9 +369,20 @@ class Empresa(UUIDModel):
     usuario_proprietario = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
+        null=True,
+        blank=True,
         db_column='platform_empresa_usuario_proprietario_fk',
         related_name='empresas_proprietario_platform',
         verbose_name='usuário proprietário',
+    )
+    criado_por = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        db_column='platform_empresa_criado_por_fk',
+        related_name='empresas_criadas_administrativamente',
+        verbose_name='criado por',
     )
     tipo_cadastro = models.CharField(
         max_length=20,
