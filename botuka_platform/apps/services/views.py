@@ -2,21 +2,23 @@
 
 from urllib.parse import urlencode
 
-from django.conf import settings
 from django.core.paginator import Paginator
 from django.db.models import Prefetch, Q
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
+from django.urls import reverse
 
 from apps.organizations.models import Empresa
 from apps.services.models import Servico, ServicoImagem, Setor
 from apps.core.seo.page_builders import empresa_seo, listing_seo, servico_seo
 from apps.core.services.contacts import formatar_telefone, normalizar_telefone, telefone_para_whatsapp
 from apps.products.models import Produto
+from apps.products.public_catalog import produtos_publicos as catalogo_produtos_publicos
 from apps.recruitment.models import Vaga
 from apps.social.selectors import contagem_seguidores_empresa
 from apps.social.services import usuario_segue_empresa
 from apps.agenda.public_services import servicos_agendaveis, vinculos_agendaveis
+from apps.core.services.public_sharing import obter_dados_compartilhamento
 
 
 def empresas_publicas(request):
@@ -43,6 +45,9 @@ def servicos_publicos(request):
     if request.GET.get('prestador') in Servico.PrestadorTipo.values: queryset = queryset.filter(prestador_tipo=request.GET['prestador'])
     if request.GET.get('remoto') == '1': queryset = queryset.filter(atendimento_remoto=True)
     if request.GET.get('presencial') == '1': queryset = queryset.filter(atendimento_presencial=True)
+    empresa_slug = request.GET.get('empresa', '').strip()[:100]
+    if empresa_slug:
+        queryset = queryset.filter(empresa__slug=empresa_slug)
     queryset = queryset.order_by('titulo' if request.GET.get('ordem') == 'az' else '-publicado_em')
     page = Paginator(queryset, 12).get_page(request.GET.get('page'))
     seo = listing_seo(request, 'Serviços em Botucatu | BOTUKA', 'Encontre serviços, profissionais e empresas prestadoras em Botucatu.')
@@ -73,11 +78,16 @@ def empresa_publica(request, slug):
         status=Empresa.Status.ATIVA,
     )
     links = empresa.links.filter(ativo=True, excluido_em__isnull=True).order_by('-destaque', 'ordem')
-    produtos = Produto.objects.filter(
-        empresa_proprietaria=empresa, status=Produto.Status.PUBLICADO,
-        publico=True, ativo=True, removido_em__isnull=True,
-    ).prefetch_related('imagens') if empresa.verificada and empresa.pode_publicar_produto else Produto.objects.none()
-    servicos = Servico.objects.publicamente_visiveis().filter(empresa=empresa)[:6]
+    produtos_publicos = (
+        catalogo_produtos_publicos().filter(
+            empresa_proprietaria=empresa, ativo=True, removido_em__isnull=True,
+        )
+        if empresa.verificada and empresa.pode_publicar_produto
+        else Produto.objects.none()
+    )
+    servicos_publicados = Servico.objects.publicamente_visiveis().filter(empresa=empresa)
+    produtos = produtos_publicos[:6]
+    servicos = servicos_publicados[:6]
     servicos_agenda = servicos_agendaveis(empresa)
     vagas = Vaga.objects.filter(
         empresa=empresa, ativo=True, excluido_em__isnull=True,
@@ -89,7 +99,8 @@ def empresa_publica(request, slug):
     endereco_publico = ', '.join(str(parte).strip() for parte in partes_endereco if parte)
     coordenadas = (f'{empresa.latitude},{empresa.longitude}'
                    if empresa.latitude is not None and empresa.longitude is not None else '')
-    destino_mapa = coordenadas or endereco_publico
+    endereco_suficiente = bool(empresa.endereco and (empresa.cidade_id or empresa.bairro or empresa.cep))
+    destino_mapa = coordenadas or (endereco_publico if endereco_suficiente else '')
     google_maps_url = (f"https://www.google.com/maps/search/?{urlencode({'api': '1', 'query': destino_mapa})}"
                        if destino_mapa else '')
     waze_params = {'navigate': 'yes'}
@@ -101,11 +112,16 @@ def empresa_publica(request, slug):
     telefone_normalizado = normalizar_telefone(empresa.telefone)
     whatsapp_url = telefone_para_whatsapp(
         empresa.whatsapp, f'Olá! Encontrei {empresa.nome_exibicao} no BOTUKA.')
+    share = obter_dados_compartilhamento(empresa, request)
     return render(request, 'publico/empresas/detalhe.html', {
-        'empresa': empresa, 'share_object': empresa, 'share_type': 'empresa',
+        'empresa': empresa,
         'links': links, 'videos': [link for link in links if link.url_embed][:6],
         'seo': empresa_seo(request, empresa), 'produtos': produtos[:6],
         'servicos': servicos, 'vagas': vagas,
+        'tem_produtos': produtos_publicos.exists(),
+        'tem_servicos': servicos_publicados.exists(),
+        'produtos_url': f"{reverse('products:loja')}?{urlencode({'empresa': str(empresa.uuid)})}",
+        'servicos_url': f"{reverse('publico:servicos')}?{urlencode({'empresa': empresa.slug})}",
         'agenda_disponivel': servicos_agenda.exists(),
         'endereco_publico': endereco_publico,
         'google_maps_url': google_maps_url, 'waze_url': waze_url,
@@ -113,7 +129,8 @@ def empresa_publica(request, slug):
         'telefone_url': f'tel:+{telefone_normalizado}' if telefone_normalizado else '',
         'whatsapp_formatado': formatar_telefone(empresa.whatsapp),
         'whatsapp_url': whatsapp_url,
-        'vendas_loja_url': f"{settings.VENDAS_URL}/lojas/{empresa.slug}/",
+        'share': share,
+        'qrcode_url': reverse('sharing:png', args=['empresa', empresa.uuid]),
         'followers_count': contagem_seguidores_empresa(empresa),
         'is_following_company': usuario_segue_empresa(request.user, empresa),
     })
