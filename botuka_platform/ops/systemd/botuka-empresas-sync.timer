@@ -1,0 +1,10 @@
+[Unit]
+Description=BOTUKA - sincronizacao semanal de empresas de Botucatu
+
+[Timer]
+OnCalendar=Mon *-*-* 00:00:01 America/Sao_Paulo
+Persistent=true
+Unit=botuka-empresas-sync.service
+
+[Install]
+WantedBy=timers.target

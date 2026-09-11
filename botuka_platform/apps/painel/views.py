@@ -15,6 +15,7 @@ from django.conf import settings
 from django.contrib.auth.decorators import login_required
 from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied, ValidationError
+from django.core import signing
 from django.db import IntegrityError, transaction
 from django.db.models import Count, Q
 from django.core.paginator import Paginator
@@ -53,6 +54,7 @@ from apps.painel.forms import (
 from apps.core.models import Auditoria
 from apps.core.attribute_forms import atributo_formset
 from apps.integrations.cnpj.exceptions import CNPJError
+from apps.integrations.minha_receita.exceptions import MinhaReceitaError
 from apps.integrations.cnpj.services import consultar_cnpj
 from apps.agenda.models import (
     AgendaProfissional,
@@ -62,8 +64,8 @@ from apps.agenda.models import (
     Agendamento,
 )
 from apps.agenda.public_services import resumo_operacional_empresa
-from apps.taxonomy.models import Subcategoria
-from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade, EmpresaEndereco, EmpresaLink, EmpresaSolicitacao, EmpresaUsuario, UsuarioLimitePersonalizado
+from apps.taxonomy.models import Categoria, Subcategoria
+from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade, EmpresaEndereco, EmpresaImportacaoExecucao, EmpresaLink, EmpresaSolicitacao, EmpresaUsuario, UsuarioLimitePersonalizado
 from apps.organizations.plans import (
     LimiteUsuarioService, obter_assinatura_vigente,
     total_empresas_ativas, total_servicos_utilizados,
@@ -75,6 +77,15 @@ from apps.organizations.services.institutional import (
     atualizar_identidade_institucional, conceder_capacidade, revogar_capacidade,
 )
 from apps.organizations.services.company_dashboard import construir_painel_empresa
+from apps.organizations.services.botucatu_discovery import (
+    classificar_registro,
+    discover_batch,
+    importar_registro,
+    normalizar_registro_final,
+)
+from apps.organizations.services.empresa_importacao import (
+    SincronizacaoEmAndamento, sincronizar_empresas,
+)
 from apps.organizations.permissions import (
     empresas_disponiveis_para_usuario,
     usuario_pode_editar_empresa,
@@ -214,7 +225,8 @@ def _aplicar_filtros_empresas(request: HttpRequest, queryset):
         )
         queryset = queryset.filter(filtro_busca)
 
-    if status:
+    status_validos = {valor for valor, _ in Empresa.Status.choices}
+    if status in status_validos:
         queryset = queryset.filter(status=status)
 
     if cidade:
@@ -234,7 +246,10 @@ def empresas_lista(request: HttpRequest) -> HttpResponse:
     from apps.organizations.plans import usuario_pode_criar_empresa
     limite_empresas = usuario_pode_criar_empresa(request.user)
     empresas_base = empresas_disponiveis_para_usuario(request.user)
-    empresas_filtradas = _aplicar_filtros_empresas(request, empresas_base).annotate(
+    empresas_exibidas = empresas_base
+    if not request.GET.get('status'):
+        empresas_exibidas = empresas_exibidas.filter(status=Empresa.Status.ATIVA)
+    empresas_filtradas = _aplicar_filtros_empresas(request, empresas_exibidas).annotate(
         total_usuarios=Count(
             'usuarios_vinculados',
             filter=Q(usuarios_vinculados__ativo=True),
@@ -260,8 +275,304 @@ def empresas_lista(request: HttpRequest) -> HttpResponse:
             'total_pendentes': empresas_base.filter(status=Empresa.Status.PENDENTE).count(),
             'pode_criar_empresa': limite_empresas.permitido,
             'limite_empresas': limite_empresas.limite,
+            'pode_buscar_empresas': usuario_tem_permissao(request.user, 'empresas.criar'),
+            'pode_revisar_empresas': usuario_tem_permissao(request.user, 'empresas.gerenciar'),
+            'status_empresas': Empresa.Status.choices,
         },
     )
+
+
+@painel_permission_required('empresas.gerenciar')
+def empresas_pendentes(request: HttpRequest) -> HttpResponse:
+    """Fila administrativa de moderação, sem incluir empresas já aprovadas."""
+    status = request.GET.get('status', Empresa.Status.PENDENTE)
+    status_fila = {
+        valor for valor, _ in Empresa.Status.choices if valor != Empresa.Status.ATIVA
+    }
+    if status not in status_fila:
+        status = Empresa.Status.PENDENTE
+
+    queryset = Empresa.objects.filter(status=status).select_related(
+        'categoria_empresa', 'subcategoria_empresa',
+    ).prefetch_related('cnaes__cnae')
+    busca = request.GET.get('busca', '').strip()[:120]
+    if busca:
+        digitos = ''.join(char for char in busca if char.isdigit())
+        queryset = queryset.filter(
+            Q(nome_fantasia__icontains=busca)
+            | Q(razao_social__icontains=busca)
+            | Q(cpf_cnpj__icontains=digitos or busca)
+        )
+    cnae_principal = request.GET.get('cnae_principal', '').strip()[:120]
+    if cnae_principal:
+        queryset = queryset.filter(
+            Q(cnaes__cnae__codigo__icontains=cnae_principal)
+            | Q(cnaes__cnae__descricao__icontains=cnae_principal),
+            cnaes__principal=True, cnaes__ativo=True,
+        )
+    cnae_secundario = request.GET.get('cnae_secundario', '').strip()[:120]
+    if cnae_secundario:
+        queryset = queryset.filter(
+            Q(cnaes__cnae__codigo__icontains=cnae_secundario)
+            | Q(cnaes__cnae__descricao__icontains=cnae_secundario),
+            cnaes__principal=False, cnaes__ativo=True,
+        )
+    categoria = request.GET.get('categoria', '')
+    if categoria.isdigit():
+        queryset = queryset.filter(categoria_empresa_id=categoria)
+    subcategoria = request.GET.get('subcategoria', '')
+    if subcategoria.isdigit():
+        queryset = queryset.filter(subcategoria_empresa_id=subcategoria)
+    bairro = request.GET.get('bairro', '').strip()[:120]
+    if bairro:
+        queryset = queryset.filter(bairro__icontains=bairro)
+
+    queryset = queryset.distinct().order_by('-criado_em', 'nome_fantasia')
+    paginator = Paginator(queryset, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    querystring = request.GET.copy()
+    querystring.pop('page', None)
+    return render(request, 'painel/empresas/pendentes.html', {
+        'empresas': page_obj.object_list,
+        'page_obj': page_obj,
+        'querystring': querystring.urlencode(),
+        'categorias': Categoria.objects.filter(
+            ativo=True, removido_em__isnull=True,
+        ).order_by('nome'),
+        'subcategorias': Subcategoria.objects.filter(
+            ativo=True, removido_em__isnull=True,
+        ).select_related('categoria').order_by('categoria__nome', 'nome'),
+        'status_fila': [
+            (valor, rotulo) for valor, rotulo in Empresa.Status.choices
+            if valor != Empresa.Status.ATIVA
+        ],
+        'status_selecionado': status,
+    })
+
+
+def _empresas_importadas_queryset():
+    """Origem explícita para novos registros; fingerprint somente para legados."""
+    return Empresa.objects.filter(
+        Q(origem_cadastro=Empresa.OrigemCadastro.API) | Q(
+            origem_cadastro__isnull=True,
+            criado_por__isnull=True,
+            usuario_proprietario__isnull=True,
+            tipo_cadastro=Empresa.TipoCadastro.EMPRESA,
+            usuarios_vinculados__isnull=True,
+            propriedades__isnull=True,
+        )
+    )
+
+
+@painel_permission_required('empresas.gerenciar')
+def empresas_importadas(request: HttpRequest) -> HttpResponse:
+    queryset = _empresas_importadas_queryset().select_related(
+        'categoria_empresa', 'subcategoria_empresa', 'cidade', 'estado',
+    ).prefetch_related('cnaes__cnae')
+
+    busca = request.GET.get('busca', '').strip()[:120]
+    if busca:
+        queryset = queryset.filter(
+            Q(nome_fantasia__icontains=busca) | Q(razao_social__icontains=busca)
+        )
+    cnpj = ''.join(char for char in request.GET.get('cnpj', '') if char.isdigit())[:14]
+    if cnpj:
+        queryset = queryset.filter(cpf_cnpj__icontains=cnpj)
+    cnae = request.GET.get('cnae', '').strip()[:120]
+    if cnae:
+        queryset = queryset.filter(
+            Q(cnaes__cnae__codigo__icontains=cnae)
+            | Q(cnaes__cnae__descricao__icontains=cnae),
+            cnaes__principal=True, cnaes__ativo=True,
+        )
+    bairro = request.GET.get('bairro', '').strip()[:120]
+    if bairro:
+        queryset = queryset.filter(bairro__icontains=bairro)
+    categoria = request.GET.get('categoria', '')
+    if categoria.isdigit():
+        queryset = queryset.filter(categoria_empresa_id=categoria)
+    subcategoria = request.GET.get('subcategoria', '')
+    if subcategoria.isdigit():
+        queryset = queryset.filter(subcategoria_empresa_id=subcategoria)
+    status = request.GET.get('status', '')
+    if status in {valor for valor, _ in Empresa.Status.choices}:
+        queryset = queryset.filter(status=status)
+
+    queryset = queryset.distinct().order_by('-criado_em', 'pk')
+    paginator = Paginator(queryset, 25)
+    page_obj = paginator.get_page(request.GET.get('page'))
+    ultima_sincronizacao = EmpresaImportacaoExecucao.objects.order_by('-criado_em').first()
+    agora_local = timezone.localtime()
+    dias_ate_segunda = (7 - agora_local.weekday()) % 7
+    proxima_execucao = (agora_local + timedelta(days=dias_ate_segunda)).replace(
+        hour=0, minute=0, second=1, microsecond=0,
+    )
+    if proxima_execucao <= agora_local:
+        proxima_execucao += timedelta(days=7)
+    querystring = request.GET.copy()
+    querystring.pop('page', None)
+    return render(request, 'painel/empresas/importadas.html', {
+        'empresas': page_obj.object_list,
+        'page_obj': page_obj,
+        'querystring': querystring.urlencode(),
+        'categorias': Categoria.objects.filter(
+            ativo=True, removido_em__isnull=True,
+        ).order_by('nome'),
+        'subcategorias': Subcategoria.objects.filter(
+            ativo=True, removido_em__isnull=True,
+        ).select_related('categoria').order_by('categoria__nome', 'nome'),
+        'status_empresas': Empresa.Status.choices,
+        'ultima_sincronizacao': ultima_sincronizacao,
+        'proxima_execucao': proxima_execucao,
+    })
+
+
+@painel_permission_required('empresas.gerenciar')
+def empresas_importadas_sincronizar(request: HttpRequest) -> HttpResponse:
+    if request.method != 'POST':
+        raise PermissionDenied
+    try:
+        execucao = sincronizar_empresas(
+            tipo_execucao=EmpresaImportacaoExecucao.TipoExecucao.MANUAL,
+        )
+    except SincronizacaoEmAndamento as exc:
+        messages.warning(request, str(exc))
+    except Exception as exc:
+        messages.error(request, f'Sincronização interrompida: {exc}')
+    else:
+        messages.success(request, f'Sincronização #{execucao.pk} concluída.')
+    return redirect('painel:empresas_importadas')
+
+
+DESCOBERTA_SALT = 'painel.empresas.descoberta.v1'
+CURSOR_SALT = 'painel.empresas.descoberta.cursor.v1'
+
+
+@painel_permission_required('empresas.criar')
+def empresas_descoberta(request: HttpRequest) -> HttpResponse:
+    """Prévia assinada e importação explícita de empresas descobertas."""
+    contexto = {'lotes': (10, 20, 50), 'quantidade': 10, 'itens': []}
+    if request.method != 'POST':
+        return render(request, 'painel/empresas/descoberta.html', contexto)
+
+    acao = request.POST.get('acao')
+    if acao == 'importar':
+        importadas = 0
+        tokens = request.POST.getlist('registro')
+        if not tokens:
+            messages.warning(request, 'Selecione ao menos uma empresa para importar.')
+            return redirect('painel:empresas_descoberta')
+        for token in tokens:
+            try:
+                registro = signing.loads(token, salt=DESCOBERTA_SALT, max_age=3600)
+                registro = normalizar_registro_final(registro)
+                resultado, detalhe = classificar_registro(registro)
+                if resultado != 'CANDIDATA':
+                    raise ValidationError(detalhe)
+                _, criada = importar_registro(registro)
+                importadas += int(criada)
+            except (signing.BadSignature, signing.SignatureExpired):
+                messages.error(request, 'Uma prévia foi alterada ou expirou e não foi importada.')
+            except ValidationError as exc:
+                messages.error(request, f'Empresa não importada: {exc}')
+        messages.success(request, f'{importadas} empresa(s) importada(s), ativada(s) e publicada(s).')
+        return redirect(f"{reverse('painel:empresas_lista')}?status={Empresa.Status.ATIVA}")
+
+    try:
+        quantidade = int(request.POST.get('quantidade', 10))
+    except (TypeError, ValueError):
+        quantidade = 10
+    if quantidade not in contexto['lotes']:
+        quantidade = 10
+    cursor = None
+    cursor_assinado = request.POST.get('cursor', '')
+    if cursor_assinado:
+        try:
+            cursor = signing.loads(cursor_assinado, salt=CURSOR_SALT, max_age=86400)
+        except (signing.BadSignature, signing.SignatureExpired):
+            messages.error(request, 'O cursor do lote é inválido ou expirou.')
+            return render(request, 'painel/empresas/descoberta.html', contexto, status=400)
+    try:
+        resultado = discover_batch(
+            limit=quantidade, cursor=cursor, dry_run=True, enriquecer=True,
+        )
+    except (MinhaReceitaError, ValidationError, ValueError):
+        messages.error(request, 'Não foi possível consultar o lote. Verifique a configuração das fontes.')
+        return render(request, 'painel/empresas/descoberta.html', contexto, status=400)
+
+    candidatas = [item for item in resultado.itens if item.resultado == 'CANDIDATA']
+    for item in candidatas:
+        item.payload_assinado = signing.dumps(
+            item.registro_final, salt=DESCOBERTA_SALT, compress=True,
+        )
+    contexto.update({
+        'quantidade': quantidade,
+        'itens': candidatas,
+        'resultado': resultado,
+        'cursor': (
+            signing.dumps(resultado.proximo_cursor, salt=CURSOR_SALT)
+            if resultado.proximo_cursor else ''
+        ),
+    })
+    return render(request, 'painel/empresas/descoberta.html', contexto)
+
+
+@painel_permission_required('empresas.gerenciar')
+def empresa_revisar(request: HttpRequest, uuid) -> HttpResponse:
+    empresa = get_object_or_404(Empresa.objects.prefetch_related('cnaes__cnae'), uuid=uuid)
+    if request.method == 'POST':
+        form = EmpresaCadastroSimplesForm(
+            request.POST, request.FILES, instance=empresa, usuario=request.user,
+        )
+        form.fields.pop('status', None)
+        if form.is_valid():
+            empresa = form.save(commit=False)
+            empresa.status = Empresa.Status.PENDENTE
+            empresa.perfil_publico = False
+            empresa.save()
+            messages.success(request, 'Dados da empresa atualizados para revisão.')
+            return redirect('painel:empresa_revisar', uuid=empresa.uuid)
+    else:
+        form = EmpresaCadastroSimplesForm(instance=empresa, usuario=request.user)
+        form.fields.pop('status', None)
+    return render(request, 'painel/empresas/revisao.html', {'empresa': empresa, 'form': form})
+
+
+@painel_permission_required('empresas.gerenciar')
+def empresa_aprovar(request: HttpRequest, uuid) -> HttpResponse:
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    empresa = get_object_or_404(Empresa.objects, uuid=uuid)
+    ausentes = []
+    for campo, rotulo in (
+        ('categoria_empresa_id', 'categoria'), ('subcategoria_empresa_id', 'subcategoria'),
+        ('estado_id', 'estado'), ('cidade_id', 'cidade'), ('nome_fantasia', 'nome fantasia'),
+    ):
+        if not getattr(empresa, campo):
+            ausentes.append(rotulo)
+    if ausentes:
+        messages.error(request, f"Complete antes de aprovar: {', '.join(ausentes)}.")
+        return redirect('painel:empresa_revisar', uuid=empresa.uuid)
+    with transaction.atomic():
+        empresa.status = Empresa.Status.ATIVA
+        empresa.perfil_publico = True
+        empresa.ativo = True
+        empresa.save(update_fields=['status', 'perfil_publico', 'ativo', 'atualizado_em'])
+    messages.success(request, 'Empresa aprovada e publicada.')
+    return redirect('painel:empresa_detalhe', uuid=empresa.uuid)
+
+
+@painel_permission_required('empresas.gerenciar')
+def empresa_rejeitar(request: HttpRequest, uuid) -> HttpResponse:
+    if request.method != 'POST':
+        return HttpResponse(status=405)
+    empresa = get_object_or_404(Empresa.objects, uuid=uuid)
+    with transaction.atomic():
+        empresa.status = Empresa.Status.REJEITADA
+        empresa.perfil_publico = False
+        empresa.save(update_fields=['status', 'perfil_publico', 'atualizado_em'])
+    messages.success(request, 'Empresa rejeitada e mantida fora do perfil público.')
+    return redirect(f"{reverse('painel:empresas_lista')}?status={Empresa.Status.PENDENTE}")
 
 
 @login_required

@@ -1,0 +1,21 @@
+[Unit]
+Description=BOTUKA - sincronizacao completa de empresas de Botucatu
+After=network-online.target postgresql.service
+Wants=network-online.target
+ConditionPathExists=/home/botuka/htdocs/botuka.com.br/botuka_platform/manage.py
+
+[Service]
+Type=oneshot
+User=botuka
+Group=botuka
+WorkingDirectory=/home/botuka/htdocs/botuka.com.br/botuka_platform
+EnvironmentFile=/home/botuka/htdocs/botuka.com.br/.env.runtime
+Environment="BOTUKA_PLATFORM_BASE_URL=https://botuka.com.br"
+Environment="BOTUKA_SOCIAL_BASE_URL=https://botuka.com.br"
+ExecStart=/home/botuka/htdocs/botuka.com.br/.venv_linux/bin/python manage.py sincronizar_empresas_botucatu --tipo SEMANAL
+Nice=10
+PrivateTmp=true
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target

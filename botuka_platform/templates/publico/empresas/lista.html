@@ -1,9 +1,11 @@
 {% extends "_layout/platform/public.html" %}
+{% load gestao_extras %}
 {% block title %}Empresas em Botucatu · BOTUKA{% endblock %}
 {% block public_content %}
 <main class="public-directory container-botuka" id="conteudo-principal">
   {% include "public/components/breadcrumb.html" with current_label="Empresas" %}
   {% include "public/components/page_header.html" with kicker="Guia da cidade" title="Empresas em Botucatu" description="Encontre negócios com perfil público na plataforma." count=total count_label="resultados" %}
+  {% if request.user|has_perm_code:"empresas.gerenciar" %}<p><a class="btn-botuka" href="{% url 'painel:empresas_lista' %}">Gerenciar empresas</a></p>{% endif %}
   <form class="public-filters" method="get" aria-label="Filtros de empresas">
     <label>Buscar<input name="q" value="{{ request.GET.q }}" placeholder="Nome, categoria ou bairro"></label>
     <label>Categoria<select name="categoria"><option value="">Todas</option>{% for item in categorias %}<option value="{{ item.categoria_empresa__slug }}" {% if request.GET.categoria == item.categoria_empresa__slug %}selected{% endif %}>{{ item.categoria_empresa__nome }}</option>{% endfor %}</select></label>

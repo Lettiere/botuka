@@ -1,0 +1,42 @@
+{% extends "painel/base.html" %}
+{% block title %}Empresas importadas | Painel BOTUKA{% endblock %}
+{% block painel_content %}
+<style>
+  .imports{max-width:1400px;margin:0 auto}.imports-card{background:#fff;border:1px solid #e6eaf0;border-radius:16px;padding:20px;margin-bottom:18px}.imports-filters,.imports-actions{display:flex;gap:10px;align-items:end;flex-wrap:wrap}.imports-filters label{font-weight:700}.imports-filters input,.imports-filters select{display:block;padding:9px;border:1px solid #d9dee7;border-radius:9px;max-width:210px}.imports table{width:100%;border-collapse:collapse}.imports th,.imports td{padding:10px 8px;border-bottom:1px solid #e6eaf0;text-align:left;vertical-align:top}.imports a,.imports button{padding:8px 11px;border:0;border-radius:8px;text-decoration:none;font-weight:700}.primary{background:#ffd230;color:#111827}.muted{color:#667085;font-size:13px}.scroll{overflow-x:auto}
+</style>
+<div class="imports">
+  <header class="imports-card"><h1>Empresas importadas</h1><p>Consulte e revise empresas cadastradas automaticamente.</p></header>
+  <section class="imports-card">
+    <h2>Status da sincronização</h2>
+    {% if ultima_sincronizacao %}
+      <div class="imports-actions">
+        <span><strong>Última sincronização:</strong> {{ ultima_sincronizacao.iniciada_em|date:"d/m/Y H:i:s"|default:"—" }}</span>
+        <span><strong>Status:</strong> {{ ultima_sincronizacao.get_status_display }}</span>
+        <span><strong>Páginas:</strong> {{ ultima_sincronizacao.paginas_processadas }}</span>
+        <span><strong>Recebidos:</strong> {{ ultima_sincronizacao.registros_recebidos }}</span>
+        <span><strong>Importados:</strong> {{ ultima_sincronizacao.importados }}</span>
+        <span><strong>Já existentes:</strong> {{ ultima_sincronizacao.ja_existentes }}</span>
+        <span><strong>Rejeitados:</strong> {{ ultima_sincronizacao.rejeitados }}</span>
+        <span><strong>Erros:</strong> {{ ultima_sincronizacao.erros }}</span>
+      </div>
+      {% if ultima_sincronizacao.ultima_mensagem %}<p class="muted">{{ ultima_sincronizacao.ultima_mensagem }}</p>{% endif %}
+    {% else %}<p>Nenhuma sincronização executada.</p>{% endif %}
+    <p><strong>Próxima execução prevista:</strong> {{ proxima_execucao|date:"d/m/Y H:i:s" }}</p>
+    <form method="post" action="{% url 'painel:empresas_importadas_sincronizar' %}">{% csrf_token %}<button class="primary" type="submit">Sincronizar agora</button></form>
+  </section>
+  <section class="imports-card"><form method="get" class="imports-filters">
+    <label>Nome / razão social<input name="busca" value="{{ request.GET.busca }}"></label>
+    <label>CNPJ<input name="cnpj" value="{{ request.GET.cnpj }}"></label>
+    <label>CNAE principal<input name="cnae" value="{{ request.GET.cnae }}" placeholder="Código ou descrição"></label>
+    <label>Bairro<input name="bairro" value="{{ request.GET.bairro }}"></label>
+    <label>Categoria<select name="categoria"><option value="">Todas</option>{% for item in categorias %}<option value="{{ item.id }}" {% if request.GET.categoria == item.id|stringformat:"s" %}selected{% endif %}>{{ item.nome }}</option>{% endfor %}</select></label>
+    <label>Subcategoria<select name="subcategoria"><option value="">Todas</option>{% for item in subcategorias %}<option value="{{ item.id }}" {% if request.GET.subcategoria == item.id|stringformat:"s" %}selected{% endif %}>{{ item.categoria.nome }} — {{ item.nome }}</option>{% endfor %}</select></label>
+    <label>Status<select name="status"><option value="">Todos</option>{% for valor, rotulo in status_empresas %}<option value="{{ valor }}" {% if request.GET.status == valor %}selected{% endif %}>{{ rotulo }}</option>{% endfor %}</select></label>
+    <button class="primary" type="submit">Filtrar</button><a href="{% url 'painel:empresas_importadas' %}">Limpar</a>
+  </form></section>
+  <section class="imports-card scroll"><table><thead><tr><th>Nome fantasia</th><th>Razão social</th><th>CNPJ</th><th>CNAE principal</th><th>Bairro</th><th>Cidade/UF</th><th>Categoria</th><th>Subcategoria</th><th>Status</th><th>Cadastro</th><th>Ações</th></tr></thead><tbody>
+  {% for empresa in empresas %}<tr><td><strong>{{ empresa.nome_fantasia|default:"—" }}</strong></td><td>{{ empresa.razao_social|default:"—" }}</td><td>{{ empresa.documento_formatado|default:"—" }}</td><td>{% for vinculo in empresa.cnaes.all %}{% if vinculo.ativo and vinculo.principal %}{{ vinculo.cnae.codigo }}<br><span class="muted">{{ vinculo.cnae.descricao }}</span>{% endif %}{% empty %}—{% endfor %}</td><td>{{ empresa.bairro|default:"—" }}</td><td>{{ empresa.cidade.nome|default:"—" }}{% if empresa.estado %}/{{ empresa.estado.sigla }}{% endif %}</td><td>{{ empresa.categoria_empresa.nome|default:"—" }}</td><td>{{ empresa.subcategoria_empresa.nome|default:"—" }}</td><td>{{ empresa.get_status_display }}</td><td>{{ empresa.criado_em|date:"d/m/Y H:i" }}</td><td><div class="imports-actions"><a class="primary" href="{% url 'painel:empresa_revisar' empresa.uuid %}">Visualizar / revisar</a></div></td></tr>{% empty %}<tr><td colspan="11">Nenhuma empresa importada encontrada.</td></tr>{% endfor %}
+  </tbody></table></section>
+  {% if page_obj.has_other_pages %}<nav>{% if page_obj.has_previous %}<a href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.previous_page_number }}">Anterior</a>{% endif %} Página {{ page_obj.number }} de {{ page_obj.paginator.num_pages }} {% if page_obj.has_next %}<a href="?{% if querystring %}{{ querystring }}&amp;{% endif %}page={{ page_obj.next_page_number }}">Próxima</a>{% endif %}</nav>{% endif %}
+</div>
+{% endblock %}

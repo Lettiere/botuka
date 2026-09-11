@@ -22,41 +22,51 @@ def cnpj_valido(cnpj: str) -> bool:
     return True
 
 
-def consultar_cnpj(cnpj, usuario=None):
+def consultar_cnpj(cnpj, usuario=None, *, provider=None, persistir=True):
+    """Consulta um CNPJ usando o provider informado.
+
+    ``persistir=False`` desliga tanto leitura quanto escrita de CNPJConsulta e é
+    usado por dry-runs, para que uma consulta exploratória não altere o banco.
+    """
     cnpj = normalizar_digitos(cnpj)
     if not cnpj_valido(cnpj):
         raise CNPJInvalidoError('CNPJ inválido.')
 
-    provider = get_cnpj_provider()
+    provider = provider or get_cnpj_provider()
     agora = timezone.now()
-    cache = (
-        CNPJConsulta.objects.filter(cnpj=cnpj, provider=provider.name, sucesso=True, expira_em__gt=agora)
-        .order_by('-consultado_em')
-        .first()
-    )
-    if cache:
-        return cache.resposta_json
+    if persistir:
+        cache = (
+            CNPJConsulta.objects.filter(
+                cnpj=cnpj, provider=provider.name, sucesso=True, expira_em__gt=agora,
+            )
+            .order_by('-consultado_em')
+            .first()
+        )
+        if cache:
+            return cache.resposta_json
 
     cache_hours = int(getattr(settings, 'CNPJ_API_CACHE_HOURS', 24))
     try:
         dados = provider.consultar(cnpj)
         payload = dados.as_dict()
-        CNPJConsulta.objects.create(
-            cnpj=cnpj,
-            provider=provider.name,
-            sucesso=True,
-            codigo_resposta='200',
-            resposta_json=payload,
-            expira_em=agora + timedelta(hours=cache_hours),
-            solicitado_por=usuario if getattr(usuario, 'is_authenticated', False) else None,
-        )
+        if persistir:
+            CNPJConsulta.objects.create(
+                cnpj=cnpj,
+                provider=provider.name,
+                sucesso=True,
+                codigo_resposta='200',
+                resposta_json=payload,
+                expira_em=agora + timedelta(hours=cache_hours),
+                solicitado_por=usuario if getattr(usuario, 'is_authenticated', False) else None,
+            )
         return payload
     except Exception as exc:
-        CNPJConsulta.objects.create(
-            cnpj=cnpj,
-            provider=provider.name,
-            sucesso=False,
-            erro_resumido=str(exc)[:240],
-            solicitado_por=usuario if getattr(usuario, 'is_authenticated', False) else None,
-        )
+        if persistir:
+            CNPJConsulta.objects.create(
+                cnpj=cnpj,
+                provider=provider.name,
+                sucesso=False,
+                erro_resumido=str(exc)[:240],
+                solicitado_por=usuario if getattr(usuario, 'is_authenticated', False) else None,
+            )
         raise
