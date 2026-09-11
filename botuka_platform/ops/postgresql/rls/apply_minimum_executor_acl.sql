@@ -256,6 +256,13 @@ BEGIN
   ) AS grants(role_name,schema_name,object_name,operations) LOOP
     EXECUTE format('GRANT %s ON TABLE %I.%I TO %I',r.operations,r.schema_name,r.object_name,r.role_name);
   END LOOP;
+
+  -- A importacao precisa criar e atualizar execucoes, mas nunca exclui-las.
+  -- REVOKE explicito evita herdar DELETE de default privileges do PostgreSQL.
+  REVOKE DELETE
+    ON TABLE platform.platform_empresa_importacao_execucao_tb
+    FROM botuka_app;
+
   FOR r IN SELECT * FROM (VALUES
     ('botuka_app','agenda','agenda_agendamento_tb_agenda_agendamento_id_seq','USAGE,SELECT'),
     ('botuka_app','core','core_auditoria_tb_core_auditoria_id_seq','USAGE,SELECT'),
