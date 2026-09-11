@@ -318,6 +318,12 @@ class Empresa(UUIDModel):
         EMPRESA = 'EMPRESA', 'Empresa'
         ORGANIZACAO = 'ORGANIZACAO', 'Organização'
 
+    class OrigemCadastro(models.TextChoices):
+        MANUAL = 'MANUAL', 'Manual'
+        API = 'API', 'API'
+        ADMIN = 'ADMIN', 'Administração'
+        MIGRACAO = 'MIGRACAO', 'Migração'
+
     class Status(models.TextChoices):
         RASCUNHO = 'RASCUNHO', 'Rascunho'
         PENDENTE = 'PENDENTE', 'Pendente'
@@ -390,6 +396,11 @@ class Empresa(UUIDModel):
         default=TipoCadastro.INFORMAL,
         db_column='platform_empresa_tipo_cadastro',
         verbose_name='tipo de cadastro',
+    )
+    origem_cadastro = models.CharField(
+        max_length=12, choices=OrigemCadastro.choices, null=True, blank=True,
+        db_column='platform_empresa_origem_cadastro', verbose_name='origem do cadastro',
+        help_text='Nulo identifica registros legados cuja origem não pode ser inferida com segurança.',
     )
     atuacao = models.CharField(
         max_length=20,
@@ -1644,6 +1655,45 @@ class Endereco(UUIDModel, TimeStampedModel, SoftDeleteModel):
     def __str__(self) -> str:
         numero = f', {self.numero}' if self.numero else ''
         return f'{self.logradouro}{numero} - {self.cidade}'
+
+
+class EmpresaImportacaoExecucao(models.Model):
+    class TipoExecucao(models.TextChoices):
+        INICIAL = 'INICIAL', 'Inicial'
+        SEMANAL = 'SEMANAL', 'Semanal'
+        MANUAL = 'MANUAL', 'Manual'
+
+    class Status(models.TextChoices):
+        PENDENTE = 'PENDENTE', 'Pendente'
+        EXECUTANDO = 'EXECUTANDO', 'Executando'
+        CONCLUIDA = 'CONCLUIDA', 'Concluída'
+        ERRO = 'ERRO', 'Erro'
+
+    id = models.BigAutoField(primary_key=True)
+    fonte = models.CharField(max_length=40, default='MINHA_RECEITA')
+    tipo_execucao = models.CharField(max_length=10, choices=TipoExecucao.choices)
+    status = models.CharField(max_length=12, choices=Status.choices, default=Status.PENDENTE)
+    iniciada_em = models.DateTimeField(null=True, blank=True)
+    finalizada_em = models.DateTimeField(null=True, blank=True)
+    cursor_atual = models.TextField(blank=True)
+    paginas_processadas = models.PositiveIntegerField(default=0)
+    registros_recebidos = models.PositiveBigIntegerField(default=0)
+    registros_validos = models.PositiveBigIntegerField(default=0)
+    importados = models.PositiveBigIntegerField(default=0)
+    ja_existentes = models.PositiveBigIntegerField(default=0)
+    rejeitados = models.PositiveBigIntegerField(default=0)
+    erros = models.PositiveBigIntegerField(default=0)
+    ultima_mensagem = models.TextField(blank=True)
+    criado_em = models.DateTimeField(auto_now_add=True)
+    atualizado_em = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = '"platform"."platform_empresa_importacao_execucao_tb"'
+        ordering = ('-criado_em',)
+        constraints = [models.UniqueConstraint(
+            fields=('fonte',), condition=models.Q(status='EXECUTANDO'),
+            name='platform_empresa_import_running_uk',
+        )]
 
 
 class OrganizacaoUsuario(UUIDModel, TimeStampedModel, SoftDeleteModel):

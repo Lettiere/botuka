@@ -28,6 +28,10 @@ urlpatterns = [
     path('perfil/', views.perfil, name='perfil'),
     # --- Empresas ---
     path('empresas/', views.empresas_lista, name='empresas_lista'),
+    path('empresas/pendentes/', views.empresas_pendentes, name='empresas_pendentes'),
+    path('empresas/importadas/', views.empresas_importadas, name='empresas_importadas'),
+    path('empresas/importadas/sincronizar/', views.empresas_importadas_sincronizar, name='empresas_importadas_sincronizar'),
+    path('empresas/descoberta/', views.empresas_descoberta, name='empresas_descoberta'),
     path('empresas/nova/', views.empresa_criar, name='empresa_criar'),
     path('empresas/<uuid:uuid>/configuracao/<int:etapa>/', views.empresa_configurar, name='empresa_configurar'),
     path('empresas/adicionar/', views.empresa_adicionar, name='empresa_adicionar'),
@@ -37,6 +41,9 @@ urlpatterns = [
     # Preferir UUID se disponível, mantendo pk apenas se dependência forte (ver instruções)
     path('empresas/<uuid:uuid>/', views.empresa_detalhe, name='empresa_detalhe'),
     path('empresas/<uuid:uuid>/editar/', views.empresa_editar, name='empresa_editar'),
+    path('empresas/<uuid:uuid>/revisar/', views.empresa_revisar, name='empresa_revisar'),
+    path('empresas/<uuid:uuid>/aprovar/', views.empresa_aprovar, name='empresa_aprovar'),
+    path('empresas/<uuid:uuid>/rejeitar/', views.empresa_rejeitar, name='empresa_rejeitar'),
     path('empresas/<uuid:uuid>/institucional/', views.empresa_institucional, name='empresa_institucional'),
     path('empresas/<uuid:uuid>/equipe/', views.empresa_equipe, name='empresa_equipe'),
     path('empresas/<uuid:uuid>/agenda/', include('apps.agenda.urls')),

@@ -1,0 +1,32 @@
+{% extends "painel/base.html" %}
+{% block title %}Revisar empresa | Painel BOTUKA{% endblock %}
+{% block painel_content %}
+<style>.review{max-width:1050px;margin:0 auto}.review-card{background:#fff;border:1px solid #e6eaf0;border-radius:18px;padding:24px;margin-bottom:18px}.review-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.review-field label{display:block;font-weight:800;margin-bottom:6px}.review-field input,.review-field select{width:100%;padding:10px;border:1px solid #d9dee7;border-radius:10px}.review-actions{display:flex;gap:12px;justify-content:flex-end}.review button,.review a{padding:11px 17px;border:0;border-radius:10px;text-decoration:none;font-weight:800}.primary{background:#ffd230;color:#111827}.publish{background:#15803d;color:#fff}@media(max-width:700px){.review-grid{grid-template-columns:1fr}}</style>
+<div class="review"><header class="review-card"><h1>Revisar {{ empresa.nome_exibicao }}</h1><p>Confirme a categoria e os dados públicos antes da publicação.</p></header>
+<form method="post" enctype="multipart/form-data" class="review-card">{% csrf_token %}{{ form.non_field_errors }}<div class="review-grid">{% for field in form %}<div class="review-field"><label for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field.errors }}{{ field }}</div>{% endfor %}</div><div class="review-actions"><a href="{% url 'painel:empresas_lista' %}?status=PENDENTE">Cancelar</a><button class="primary" type="submit">Salvar revisão</button></div></form>
+<section class="review-card"><h2>Dados cadastrais</h2><dl><dt>CNPJ</dt><dd>{{ empresa.documento_formatado|default:"Não informado" }}</dd><dt>Razão social</dt><dd>{{ empresa.razao_social|default:"Não informada" }}</dd><dt>Natureza jurídica</dt><dd>{{ empresa.natureza_juridica|default:"Não informada" }}</dd><dt>Porte</dt><dd>{{ empresa.porte|default:"Não informado" }}</dd><dt>Data de abertura</dt><dd>{{ empresa.data_abertura|default:"Não informada" }}</dd><dt>Situação cadastral</dt><dd>{{ empresa.situacao_cadastral|default:"Não informada" }}</dd><dt>CNAE principal</dt><dd>{% for vinculo in empresa.cnaes.all %}{% if vinculo.ativo and vinculo.principal %}{{ vinculo.cnae.codigo }} — {{ vinculo.cnae.descricao }}{% endif %}{% empty %}Não informado{% endfor %}</dd><dt>CNAEs secundários</dt><dd>{% for vinculo in empresa.cnaes.all %}{% if vinculo.ativo and not vinculo.principal %}{{ vinculo.cnae.codigo }} — {{ vinculo.cnae.descricao }}<br>{% endif %}{% empty %}Não informados{% endfor %}</dd></dl></section>
+{% if empresa.status == "PENDENTE" %}<div class="review-card review-actions"><form method="post" action="{% url 'painel:empresa_rejeitar' empresa.uuid %}" onsubmit="return confirm('Rejeitar esta empresa?');">{% csrf_token %}<button type="submit">Rejeitar</button></form><form method="post" action="{% url 'painel:empresa_aprovar' empresa.uuid %}" onsubmit="return confirm('Aprovar e publicar esta empresa?');">{% csrf_token %}<button class="publish" type="submit">Aprovar e publicar</button></form></div>{% endif %}</div>
+{% endblock %}
+{% block scripts %}{{ block.super }}<script>
+document.addEventListener('DOMContentLoaded', function () {
+  const categoria = document.getElementById('{{ form.categoria_empresa.id_for_label }}');
+  const subcategoria = document.getElementById('{{ form.subcategoria_empresa.id_for_label }}');
+  const selecionada = subcategoria.value;
+  async function carregar(valor) {
+    subcategoria.innerHTML = '<option value="">---------</option>';
+    subcategoria.disabled = true;
+    if (!categoria.value) return;
+    try {
+      const resposta = await fetch("{% url 'painel:empresa_subcategorias_json' %}?categoria=" + encodeURIComponent(categoria.value), {headers: {'X-Requested-With': 'XMLHttpRequest'}});
+      if (!resposta.ok) throw new Error();
+      const dados = await resposta.json();
+      dados.subcategorias.forEach(function (item) {
+        const opcao = document.createElement('option'); opcao.value = item.id; opcao.textContent = item.nome;
+        opcao.selected = String(item.id) === String(valor); subcategoria.appendChild(opcao);
+      });
+    } finally { subcategoria.disabled = false; }
+  }
+  categoria.addEventListener('change', function () { carregar(''); });
+  if (categoria.value) carregar(selecionada);
+});
+</script>{% endblock %}

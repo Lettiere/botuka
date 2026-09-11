@@ -3,7 +3,7 @@
 from django.conf import settings
 from django.urls import NoReverseMatch, reverse
 from apps.accounts.authorization import criar_verificador_permissoes
-from apps.organizations.permissions import empresas_disponiveis_para_usuario
+from apps.organizations.permissions import empresas_relacionadas_ao_usuario
 from apps.painel.company_context import SESSION_KEY
 
 
@@ -54,6 +54,7 @@ def painel_navigation(request, permission_checker=None):
             "news.gerenciar_categorias", "news.gerenciar_destaques",
         ),
         "account_configure": _can("configuracoes.editar"),
+        "imported_companies_manage": _can("empresas.gerenciar"),
     }
 
     groups = []
@@ -149,9 +150,13 @@ def painel_navigation(request, permission_checker=None):
             {"label": "Esportes", "icon": "bi-trophy-fill", "url": reverse(route)},
         ]})
 
-    empresas_nav = list(
-        empresas_disponiveis_para_usuario(user).order_by('nome_fantasia')
-    )
+    empresas_nav_queryset = empresas_relacionadas_ao_usuario(user)
+    if getattr(getattr(request, 'resolver_match', None), 'namespace', None) != 'painel':
+        from apps.organizations.models import Empresa
+        empresas_nav_queryset = empresas_nav_queryset.filter(
+            status=Empresa.Status.ATIVA, perfil_publico=True,
+        )
+    empresas_nav = list(empresas_nav_queryset.order_by('nome_fantasia'))
     uuid_atual = (
         request.GET.get('empresa_menu')
         or getattr(getattr(request, 'resolver_match', None), 'kwargs', {}).get('uuid')

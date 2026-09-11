@@ -36,6 +36,24 @@ def empresas_disponiveis_para_usuario(usuario) -> QuerySet[Empresa]:
     ).distinct()
 
 
+def empresas_relacionadas_ao_usuario(usuario) -> QuerySet[Empresa]:
+    """Empresas do contexto pessoal, sem ampliar o escopo para administradores globais."""
+
+    if not usuario or not usuario.is_authenticated:
+        return Empresa.objects.none()
+    return Empresa.objects.select_related(
+        'usuario_proprietario', 'categoria_empresa', 'cidade', 'estado',
+    ).filter(
+        Q(usuario_proprietario=usuario)
+        | Q(usuarios_vinculados__usuario=usuario, usuarios_vinculados__ativo=True)
+        | Q(
+            propriedades__usuario=usuario,
+            propriedades__atual=True,
+            propriedades__fim_em__isnull=True,
+        )
+    ).distinct()
+
+
 def empresas_gerenciaveis_para_usuario(usuario) -> QuerySet[Empresa]:
     """Retorna somente empresas que o usuário pode administrar."""
 

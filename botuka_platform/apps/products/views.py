@@ -333,7 +333,12 @@ def loja(request):
     families = FamiliaProduto.objects.filter(ativo=True, produtos__in=base).select_related('categoria').distinct().order_by('ordem', 'nome')
     types = TipoProduto.objects.filter(ativo=True, produtos__in=base).select_related('familia').distinct().order_by('ordem', 'nome')
     segments = SegmentoProduto.objects.filter(ativo=True, produtos__in=base).prefetch_related('tipos').distinct().order_by('ordem', 'nome')
-    companies = Empresa.objects.filter(ativo=True, produtos__in=base).distinct().order_by('nome_fantasia')
+    companies = Empresa.objects.filter(
+        ativo=True,
+        perfil_publico=True,
+        status=Empresa.Status.ATIVA,
+        produtos__in=base,
+    ).distinct().order_by('nome_fantasia')
     page = Paginator(products, 12).get_page(request.GET.get('page'))
     return render(request, 'publico/produtos/loja.html', {
         'produtos': page.object_list, 'page_obj': page, 'categorias': categories,

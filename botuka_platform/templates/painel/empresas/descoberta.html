@@ -1,0 +1,47 @@
+{% extends "painel/base.html" %}
+{% block title %}Buscar novas empresas | Painel BOTUKA{% endblock %}
+{% block painel_content %}
+<style>
+  .discovery{max-width:1180px;margin:0 auto}.discovery-hero,.discovery-card{border:1px solid #e6eaf0;border-radius:18px;background:#fff;padding:24px;margin-bottom:18px}.discovery-hero{background:#111827;color:#fff}.discovery-hero p{color:#cbd5e1;margin-bottom:0}.discovery-actions{display:flex;gap:12px;align-items:end;flex-wrap:wrap}.discovery label{font-weight:800}.discovery select{display:block;min-width:140px;padding:10px;border:1px solid #d9dee7;border-radius:10px}.discovery button,.discovery a{padding:11px 16px;border:0;border-radius:10px;font-weight:800;text-decoration:none}.btn-yellow{background:#ffd230;color:#111827}.discovery-table{width:100%;border-collapse:collapse}.discovery-table th,.discovery-table td{padding:12px 9px;border-bottom:1px solid #e6eaf0;text-align:left;vertical-align:top}.tag{display:inline-block;padding:4px 8px;border-radius:99px;background:#f2f4f7;font-size:12px;font-weight:800}.tag-ok{background:#ecfdf3;color:#027a48}.tag-warn{background:#fff7d6;color:#8a5b00}.muted{color:#667085;font-size:13px}.import-confirm{margin:18px 0;padding:14px;border-radius:12px;background:#fff7d6}.scroll{overflow-x:auto}@media(max-width:700px){.discovery-table{min-width:900px}}
+</style>
+<div class="discovery">
+  <header class="discovery-hero"><h1>Buscar novas empresas de Botucatu</h1><p>O Botuka consulta fontes públicas, filtra empresas ativas de Botucatu e prepara os cadastros para revisão antes da publicação.</p></header>
+  <section class="discovery-card">
+    <form method="post" class="discovery-actions">{% csrf_token %}
+      <input type="hidden" name="acao" value="consultar"><input type="hidden" name="cursor" value="{{ cursor }}">
+      <div><label for="quantidade">Quantidade do lote</label><select id="quantidade" name="quantidade">{% for lote in lotes %}<option value="{{ lote }}" {% if lote == quantidade %}selected{% endif %}>{{ lote }}</option>{% endfor %}</select></div>
+      <button class="btn-yellow" type="submit">Consultar próximo lote</button>
+      <a href="{% url 'painel:empresas_lista' %}">Voltar às empresas</a>
+    </form>
+    {% if cursor %}<p class="muted">Próximo lote disponível.</p>{% endif %}
+  </section>
+  {% if resultado %}
+  <section class="discovery-card" aria-label="Resumo do lote">
+    <strong>Recebidas: {{ resultado.recebidas }}</strong><br>
+    <span>Inativas/fora dos critérios ignoradas: {{ resultado.rejeitadas }}</span><br>
+    <span>Já cadastradas: {{ resultado.ja_existentes }}</span><br>
+    <span>Novas encontradas: {{ resultado.candidatas }}</span>
+  </section>
+  {% endif %}
+  {% if itens %}
+  <form method="post" class="discovery-card" onsubmit="return confirm('As empresas selecionadas serão cadastradas como PENDENTES e não ficarão públicas até revisão.');">{% csrf_token %}<input type="hidden" name="acao" value="importar">
+    <div class="scroll"><table class="discovery-table"><thead><tr><th>Selecionar</th><th>Empresa</th><th>CNPJ / situação</th><th>Localização</th><th>Contato</th><th>CNAE principal</th><th>Origem / revisão</th></tr></thead><tbody>
+    {% for item in itens %}<tr>
+      <td><input type="checkbox" name="registro" value="{{ item.payload_assinado }}" aria-label="Selecionar {{ item.nome }}"></td>
+      <td><strong>{{ item.nome_fantasia|default:item.nome }}</strong><br><span class="muted">{{ item.razao_social }}</span><details><summary>Ver detalhes</summary><div class="muted">Natureza jurídica: {{ item.natureza_juridica|default:"não informada" }}<br>Porte: {{ item.porte|default:"não informado" }}<br>Abertura: {{ item.data_abertura|default:"não informada" }}<br>Complemento: {{ item.complemento|default:"não informado" }}<br>CNAEs secundários: {% for codigo, descricao in item.cnaes_secundarios %}{{ codigo }} — {{ descricao }}{% if not forloop.last %}; {% endif %}{% empty %}não informados{% endfor %}</div></details></td>
+      <td>{{ item.cnpj }}<br>{{ item.situacao }}<br>{% if item.resultado == "CANDIDATA" %}<span class="tag tag-ok">Nova candidata</span>{% elif item.resultado == "JA_EXISTE" %}<span class="tag">Já existe no Botuka</span>{% else %}<span class="tag tag-warn">Rejeitada pelo filtro</span><br><span class="muted">{{ item.detalhe }}</span>{% endif %}</td>
+      <td>{{ item.endereco }}, {{ item.numero }}<br>{{ item.bairro }} — {{ item.cidade }}/{{ item.uf }}</td>
+      <td>{{ item.telefone|default:"Telefone não informado" }}<br>{{ item.email|default:"E-mail não informado" }}</td>
+      <td>{{ item.cnae_principal }}<br><span class="muted">{{ item.cnae_principal_descricao }}</span></td>
+      <td>{{ item.fonte_enriquecimento }}<br><span class="tag {% if item.completude == 'COMPLETO' %}tag-ok{% else %}tag-warn{% endif %}">{{ item.completude }}</span>{% if item.campos_ausentes_revisao %}<br><span class="muted">Faltam: {{ item.campos_ausentes_revisao|join:", " }}</span>{% endif %}</td>
+    </tr>{% endfor %}</tbody></table></div>
+    <p class="import-confirm">As empresas selecionadas serão cadastradas como <strong>PENDENTES</strong> e não ficarão públicas até revisão.</p>
+    <button class="btn-yellow" type="submit">Importar selecionadas</button>
+  </form>
+  {% elif resultado %}
+  <section class="discovery-card">
+    <p>Nenhuma nova empresa elegível foi encontrada neste lote. Consulte o próximo lote.</p>
+  </section>
+  {% endif %}
+</div>
+{% endblock %}

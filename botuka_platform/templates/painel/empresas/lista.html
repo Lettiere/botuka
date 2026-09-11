@@ -659,6 +659,16 @@
           Cadastrar empresa
         </a>
         {% endif %}
+        {% if pode_buscar_empresas %}
+        <a class="empresas-button empresas-button-light" href="{% url 'painel:empresas_descoberta' %}">
+          <i class="bi bi-search"></i> Buscar novas empresas
+        </a>
+        {% endif %}
+        {% if pode_revisar_empresas %}
+        <a class="empresas-button empresas-button-light" href="{% url 'painel:empresas_pendentes' %}">
+          <i class="bi bi-hourglass-split"></i> Pendentes para revisão
+        </a>
+        {% endif %}
       </div>
     </header>
 
@@ -687,6 +697,12 @@
         </div>
       </article>
     </section>
+
+    <nav class="empresa-badges" aria-label="Filtrar empresas por status">
+      <a class="empresas-button empresas-button-light" href="{% url 'painel:empresas_lista' %}">Aprovadas</a>
+      <a class="empresas-button empresas-button-light" href="?status=ATIVA">Ativas</a>
+      {% if pode_revisar_empresas %}<a class="empresas-button empresas-button-light" href="{% url 'painel:empresas_pendentes' %}">Pendentes</a>{% endif %}
+    </nav>
 
     <section class="empresas-filters" id="empresasFilters">
       <div class="empresas-filters-head">
@@ -717,12 +733,8 @@
           <div class="empresas-field">
             <label for="status">Status</label>
             <select id="status" name="status">
-              <option value="">Todos</option>
-              <option value="RASCUNHO" {% if request.GET.status == "RASCUNHO" %}selected{% endif %}>Rascunho</option>
-              <option value="PENDENTE" {% if request.GET.status == "PENDENTE" %}selected{% endif %}>Pendente</option>
-              <option value="ATIVA" {% if request.GET.status == "ATIVA" %}selected{% endif %}>Ativa</option>
-              <option value="SUSPENSA" {% if request.GET.status == "SUSPENSA" %}selected{% endif %}>Suspensa</option>
-              <option value="BLOQUEADA" {% if request.GET.status == "BLOQUEADA" %}selected{% endif %}>Bloqueada</option>
+              <option value="">Ativas (padrão)</option>
+              {% for valor, rotulo in status_empresas %}<option value="{{ valor }}" {% if request.GET.status == valor %}selected{% endif %}>{{ rotulo }}</option>{% endfor %}
             </select>
           </div>
 
@@ -841,10 +853,16 @@
             </div>
 
             <div class="empresa-card-footer">
+              {% if empresa.status == "PENDENTE" and pode_revisar_empresas %}
+              <a class="empresas-button empresas-button-primary" href="{% url 'painel:empresa_revisar' empresa.uuid %}">
+                <i class="bi bi-clipboard-check"></i> Revisar
+              </a>
+              {% else %}
               <a class="empresas-button empresas-button-light" href="{% url 'painel:empresa_detalhe' empresa.uuid %}">
                 <i class="bi bi-eye"></i>
                 Visualizar
               </a>
+              {% endif %}
               <a class="empresas-button empresas-button-primary" href="{% url 'painel:empresa_editar' empresa.uuid %}">
                 <i class="bi bi-pencil"></i>
                 Editar
