@@ -6,6 +6,7 @@ from django.conf import settings
 from django.db import IntegrityError, transaction
 from django.utils import timezone
 
+from apps.core.db_routing import current_executor
 from apps.organizations.models import EmpresaImportacaoExecucao
 from apps.organizations.services.botucatu_discovery import (
     MAXIMO_REGISTROS_POR_PAGINA,
@@ -25,7 +26,8 @@ def _adquirir_execucao(tipo_execucao, retomar_id=None):
     limite = agora - timedelta(seconds=int(getattr(
         settings, 'EMPRESA_IMPORTACAO_LOCK_TIMEOUT', 7200,
     )))
-    with transaction.atomic():
+    executor = current_executor()
+    with transaction.atomic(using=executor):
         ativa = EmpresaImportacaoExecucao.objects.select_for_update().filter(
             fonte=FONTE, status=EmpresaImportacaoExecucao.Status.EXECUTANDO,
         ).first()
