@@ -83,3 +83,5 @@ desktop.ini
 # Inicializadores exclusivos do ambiente Windows local
 /start_botuka_platform.ps1
 /start_botuka_social.ps1
+
+.venv_broken_20260717_110709/
