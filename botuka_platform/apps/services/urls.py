@@ -9,6 +9,11 @@ urlpatterns = [
     path('empresas/', views.empresas_publicas, name='empresas'),
     path('servicos/<slug:slug>/', views.servico_publico, name='servico'),
     path('empresas/<slug:slug>/', views.empresa_publica, name='empresa'),
+    path(
+        'empresas/<slug:slug>/reivindicar/',
+        views.empresa_reivindicar,
+        name='empresa_reivindicar',
+    ),
     path('q/s/<uuid:token>/', views.qrcode_servico_redirect, name='qrcode_servico'),
     path('q/e/<uuid:token>/', views.qrcode_empresa_redirect, name='qrcode_empresa'),
 ]

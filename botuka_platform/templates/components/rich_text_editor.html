@@ -11,6 +11,9 @@
     <button type="button" data-command="insertOrderedList">1. Lista</button>
     <button type="button" data-command="formatBlock" data-value="blockquote">Citação</button>
     <button type="button" data-command="createLink">Link</button>
+    {% if youtube_enabled %}
+    <button type="button" data-youtube-insert>▶ YouTube</button>
+    {% endif %}
     <button type="button" data-command="undo">Desfazer</button>
     <button type="button" data-command="redo">Refazer</button>
     <button type="button" data-command="removeFormat">Limpar</button>

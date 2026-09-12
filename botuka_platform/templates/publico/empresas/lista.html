@@ -14,7 +14,52 @@
     <label>Ordenar<select name="ordem"><option value="recentes">Mais recentes</option><option value="az" {% if request.GET.ordem == "az" %}selected{% endif %}>Ordem alfabética</option></select></label>
     <button class="btn-botuka btn-yellow" type="submit">Filtrar</button>
   </form>
-  <section class="public-card-grid" aria-label="Empresas encontradas">{% for empresa in empresas %}<article class="public-card"><div class="public-card__media">{% if empresa.imagem_capa %}<img src="{{ empresa.imagem_capa.url }}" alt="Capa de {{ empresa.nome_exibicao }}" loading="lazy" decoding="async">{% elif empresa.logo %}<img src="{{ empresa.logo.url }}" alt="Logo de {{ empresa.nome_exibicao }}" loading="lazy" decoding="async">{% else %}<i class="bi bi-shop" aria-hidden="true"></i>{% endif %}</div><div>{% if empresa.categoria_empresa %}<span class="city-tag">{{ empresa.categoria_empresa.nome }}</span>{% endif %}<h2>{{ empresa.nome_fantasia }}</h2><p>{{ empresa.descricao_curta }}</p>{% if empresa.bairro %}<small>{{ empresa.bairro }}</small>{% endif %}{% if empresa.verificada %}<small> · Verificada</small>{% endif %}<a href="{% url 'publico:empresa' empresa.slug %}" aria-label="Ver empresa {{ empresa.nome_exibicao }}">Ver empresa</a></div></article>{% empty %}{% include "public/components/empty_state.html" with title="Nenhuma empresa encontrada" description="Tente outros termos ou filtros." icon="bi-shop" %}{% endfor %}</section>
+  <section class="public-card-grid" aria-label="Empresas encontradas">
+    {% for empresa in empresas %}
+      <a
+        class="public-card public-card--link"
+        href="{% url 'publico:empresa' empresa.slug %}"
+        aria-label="Ver empresa {{ empresa.nome_exibicao }}"
+      >
+        <div class="public-card__media">
+          {% if empresa.imagem_capa %}
+            <img src="{{ empresa.imagem_capa.url }}" alt="Capa de {{ empresa.nome_exibicao }}" loading="lazy" decoding="async">
+          {% elif empresa.logo %}
+            <img src="{{ empresa.logo.url }}" alt="Logo de {{ empresa.nome_exibicao }}" loading="lazy" decoding="async">
+          {% else %}
+            <i class="bi bi-shop" aria-hidden="true"></i>
+          {% endif %}
+        </div>
+
+        <div class="public-card__content">
+          {% if empresa.categoria_empresa %}
+            <span class="city-tag">{{ empresa.categoria_empresa.nome }}</span>
+          {% endif %}
+
+          <h2>{{ empresa.nome_exibicao }}</h2>
+
+          {% if empresa.nome_fantasia and empresa.razao_social and empresa.razao_social != empresa.nome_fantasia %}
+            <p class="public-card__legal-name">{{ empresa.razao_social }}</p>
+          {% endif %}
+
+          {% if empresa.descricao_curta %}
+            <p class="public-card__description">{{ empresa.descricao_curta }}</p>
+          {% endif %}
+
+          <div class="public-card__meta">
+            {% if empresa.bairro %}
+              <small>{{ empresa.bairro }}</small>
+            {% endif %}
+            {% if empresa.verificada %}
+              <small> · Verificada</small>
+            {% endif %}
+          </div>
+        </div>
+      </a>
+    {% empty %}
+      {% include "public/components/empty_state.html" with title="Nenhuma empresa encontrada" description="Tente outros termos ou filtros." icon="bi-shop" %}
+    {% endfor %}
+  </section>
   {% include "publico/includes/pagination.html" %}
 </main>
 {% endblock %}

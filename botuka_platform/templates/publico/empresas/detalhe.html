@@ -12,7 +12,9 @@
     </div>
   </header>
   <nav class="detail-actions" aria-label="Ações da empresa">
-    {% if whatsapp_url %}<a class="btn-botuka btn-yellow" href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp"></i> Falar no WhatsApp</a>{% endif %}
+    {% if pode_editar_empresa %}<a class="btn-botuka btn-yellow" href="{% url 'painel:empresa_editar' empresa.uuid %}"><i class="bi bi-pencil-square"></i> Editar empresa</a>{% endif %}
+    {% if whatsapp_url %}<a class="btn-botuka btn-yellow" href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp"></i> WhatsApp</a>{% endif %}
+    {% if telefone_url %}<a class="btn-botuka btn-soft" href="{{ telefone_url }}"><i class="bi bi-telephone-fill"></i> Ligar</a>{% endif %}
     {% if agenda_disponivel %}<a class="btn-botuka btn-yellow" href="{% url 'agenda_public:empresa' empresa.slug %}"><i class="bi bi-calendar-check"></i> Agendar horário</a>{% endif %}
     {% if google_maps_url %}<a class="btn-botuka btn-soft" href="{{ google_maps_url }}" target="_blank" rel="noopener noreferrer" data-analytics-directions><i class="bi bi-geo-alt"></i> Ver no mapa</a>{% endif %}
     {% if tem_produtos %}<a class="btn-botuka btn-soft" href="{{ produtos_url }}"><i class="bi bi-bag"></i> Ver produtos</a>{% endif %}
@@ -34,6 +36,120 @@
   </section>
   <div class="detail-layout">
     <article>
+      {% if endereco_publico %}
+      <section class="surface-section">
+        <div class="section-heading">
+          <div>
+            <span class="section-kicker">Localização</span>
+            <h2>Endereço</h2>
+          </div>
+        </div>
+
+        <div class="company-info-item">
+          <i class="bi bi-geo-alt-fill" aria-hidden="true"></i>
+          <div style="width:100%">
+            <p>{{ endereco_publico }}</p>
+
+            {% if mapa_embed_url %}
+            <div style="margin:16px 0;border-radius:16px;overflow:hidden">
+              <iframe
+                src="{{ mapa_embed_url }}"
+                title="Mapa de {{ empresa.nome_exibicao }}"
+                width="100%"
+                height="360"
+                style="border:0;display:block"
+                loading="lazy"
+                referrerpolicy="no-referrer-when-downgrade"
+                allowfullscreen>
+              </iframe>
+            </div>
+            {% endif %}
+
+            {% if google_maps_url %}
+            <div class="company-info-actions">
+              <a href="{{ google_maps_url }}"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 data-analytics-directions>
+                <i class="bi bi-google"></i>
+                Google Maps
+              </a>
+
+              <a href="{{ waze_url }}"
+                 target="_blank"
+                 rel="noopener noreferrer"
+                 data-analytics-directions>
+                <i class="bi bi-sign-turn-right-fill"></i>
+                Waze
+              </a>
+            </div>
+            {% endif %}
+          </div>
+        </div>
+      </section>
+      {% endif %}
+
+      {% if pode_reivindicar %}
+      <section class="surface-section">
+        <span class="section-kicker">Gerencie este perfil</span>
+        <h2>Esta empresa é sua?</h2>
+
+        {% if reivindicacao_aberta %}
+          <p>Você já possui uma solicitação de reivindicação em análise.</p>
+
+        {% elif request.user.is_authenticated %}
+          <p>
+            Se você é proprietário, sócio ou responsável por esta empresa,
+            solicite o gerenciamento do perfil no BOTUKA.
+          </p>
+
+          <form method="post" action="{% url 'publico:empresa_reivindicar' empresa.slug %}">
+            {% csrf_token %}
+
+            {{ reivindicacao_form.non_field_errors }}
+
+            <div style="margin-bottom:12px">
+              {{ reivindicacao_form.funcao_pretendida.label_tag }}
+              {{ reivindicacao_form.funcao_pretendida }}
+              {{ reivindicacao_form.funcao_pretendida.errors }}
+            </div>
+
+            <div style="margin-bottom:12px">
+              {{ reivindicacao_form.relacao_empresa.label_tag }}
+              {{ reivindicacao_form.relacao_empresa }}
+              {{ reivindicacao_form.relacao_empresa.errors }}
+            </div>
+
+            <div style="margin-bottom:12px">
+              {{ reivindicacao_form.justificativa.label_tag }}
+              {{ reivindicacao_form.justificativa }}
+              {{ reivindicacao_form.justificativa.errors }}
+            </div>
+
+            <button class="btn-botuka btn-yellow" type="submit">
+              <i class="bi bi-patch-check"></i>
+              Reivindicar esta empresa
+            </button>
+          </form>
+
+        {% else %}
+          <p>
+            É proprietário, sócio ou responsável por esta empresa?
+            Entre na sua conta para solicitar o gerenciamento do perfil.
+          </p>
+
+          <button
+            class="btn-botuka btn-yellow"
+            type="button"
+            data-bs-toggle="modal"
+            data-bs-target="#loginModal">
+            <i class="bi bi-patch-check"></i>
+            Reivindicar esta empresa
+          </button>
+        {% endif %}
+      </section>
+      {% endif %}
+
       <section class="surface-section"><h2>Sobre a empresa</h2><div class="public-prose rich-text-content">{{ empresa.descricao_completa|default:empresa.descricao_curta|richtext }}</div></section>
       {% if videos %}<section><div class="section-heading"><div><span class="section-kicker">Conheça por dentro</span><h2>Galeria e vídeos</h2></div></div><div class="media-grid">{% for video in videos %}<div class="video-shell"><iframe loading="lazy" src="{{ video.url_embed }}" title="Vídeo de {{ empresa.nome_exibicao }}" allowfullscreen referrerpolicy="strict-origin-when-cross-origin"></iframe></div>{% endfor %}</div></section>{% endif %}
       {% if servicos %}<section class="surface-section"><div class="section-heading"><div><span class="section-kicker">Soluções</span><h2>Serviços oferecidos</h2></div></div><div class="media-grid">{% for servico in servicos %}<article class="sidebar-card"><h3><a href="{% url 'publico:servico' servico.slug %}">{{ servico.titulo }}</a></h3><p>{{ servico.descricao_curta }}</p></article>{% endfor %}</div></section>{% endif %}
@@ -47,13 +163,90 @@
       {% include 'publico/includes/ad_slot.html' with format='in-content' %}
     </article>
     <aside class="content-sidebar">
-      <section class="sidebar-card contact-card" aria-labelledby="empresa-informacoes"><h2 id="empresa-informacoes">Informações</h2><div class="company-info-list">
-        {% if endereco_publico %}<article class="company-info-item"><i class="bi bi-geo-alt-fill" aria-hidden="true"></i><div><h3>Endereço</h3><p>{{ endereco_publico }}</p>{% if google_maps_url %}<div class="company-info-actions"><a href="{{ google_maps_url }}" target="_blank" rel="noopener noreferrer" data-analytics-directions>Abrir no Google Maps</a><a href="{{ waze_url }}" target="_blank" rel="noopener noreferrer" data-analytics-directions>Abrir no Waze</a></div>{% endif %}</div></article>{% endif %}
+      <section class="sidebar-card contact-card" aria-labelledby="empresa-contato"><h2 id="empresa-contato">Contato</h2><div class="company-info-list">
         {% if telefone_url %}<article class="company-info-item"><i class="bi bi-telephone-fill" aria-hidden="true"></i><div><h3>Telefone</h3><p>{{ telefone_formatado }}</p><div class="company-info-actions"><a href="{{ telefone_url }}">Ligar agora</a></div></div></article>{% endif %}
         {% if whatsapp_url %}<article class="company-info-item"><i class="bi bi-whatsapp" aria-hidden="true"></i><div><h3>WhatsApp</h3><p>{{ whatsapp_formatado }}</p><div class="company-info-actions"><a href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer">Conversar no WhatsApp</a></div></div></article>{% endif %}
         {% if empresa.email %}<article class="company-info-item"><i class="bi bi-envelope-fill" aria-hidden="true"></i><div><h3>E-mail</h3><p>{{ empresa.email }}</p><div class="company-info-actions"><a href="mailto:{{ empresa.email }}">Enviar e-mail</a></div></div></article>{% endif %}
         <article class="company-info-item"><i class="bi bi-clock-fill" aria-hidden="true"></i><div><h3>Atendimento</h3><p>{{ empresa.horario_atendimento|default:"Consulte os horários com a empresa"|linebreaksbr }}</p></div></article>
       </div></section>
+
+      {% if empresa.razao_social or cnpj_formatado or empresa.situacao_cadastral or empresa.natureza_juridica or empresa.porte or empresa.data_abertura %}
+      <section class="sidebar-card">
+        <span class="section-kicker">Registro empresarial</span>
+        <h2>Dados cadastrais</h2>
+
+        <div class="company-info-list">
+          {% if empresa.razao_social %}
+          <article class="company-info-item">
+            <i class="bi bi-building"></i>
+            <div>
+              <h3>Razão social</h3>
+              <p>{{ empresa.razao_social }}</p>
+            </div>
+          </article>
+          {% endif %}
+
+          {% if cnpj_formatado %}
+          <article class="company-info-item">
+            <i class="bi bi-card-text"></i>
+            <div>
+              <h3>CNPJ</h3>
+              <p>{{ cnpj_formatado }}</p>
+            </div>
+          </article>
+          {% endif %}
+
+          {% if empresa.situacao_cadastral %}
+          <article class="company-info-item">
+            <i class="bi bi-check-circle-fill"></i>
+            <div>
+              <h3>Situação cadastral</h3>
+              <p>{{ empresa.situacao_cadastral }}</p>
+            </div>
+          </article>
+          {% endif %}
+
+          {% if empresa.natureza_juridica %}
+          <article class="company-info-item">
+            <i class="bi bi-briefcase"></i>
+            <div>
+              <h3>Natureza jurídica</h3>
+              <p>{{ empresa.natureza_juridica }}</p>
+            </div>
+          </article>
+          {% endif %}
+
+          {% if empresa.porte %}
+          <article class="company-info-item">
+            <i class="bi bi-bar-chart"></i>
+            <div>
+              <h3>Porte</h3>
+              <p>{{ empresa.porte }}</p>
+            </div>
+          </article>
+          {% endif %}
+
+          {% if empresa.data_abertura %}
+          <article class="company-info-item">
+            <i class="bi bi-calendar3"></i>
+            <div>
+              <h3>Data de abertura</h3>
+              <p>{{ empresa.data_abertura|date:"d/m/Y" }}</p>
+            </div>
+          </article>
+          {% endif %}
+        </div>
+
+        {% if origem_publica %}
+        <p style="font-size:.85rem;opacity:.72;margin-top:1rem">
+          <i class="bi bi-info-circle"></i>
+          {{ origem_publica }}
+        </p>
+        {% endif %}
+      </section>
+      {% endif %}
+
+
       {% include 'publico/includes/ad_slot.html' with format='sidebar' %}
     </aside>
   </div>

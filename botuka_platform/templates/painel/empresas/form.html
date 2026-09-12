@@ -81,7 +81,7 @@
           <h2>Apresentação</h2>
           <div class="empresa-grid">
             {% for field in form %}
-              {% if field.name == "descricao_curta" or field.name == "descricao_completa" or field.name == "logo" or field.name == "imagem_capa" %}
+              {% if field.name == "descricao_curta" or field.name == "descricao_completa" or field.name == "logo" or field.name == "imagem_capa" or field.name == "imagem_social" %}
                 <div class="empresa-field {% if field.name == 'descricao_curta' or field.name == 'descricao_completa' %}full{% endif %}">
                   <label for="{{ field.id_for_label }}">{{ field.label }}</label>
                   {{ field.errors }}{% if field.name == "descricao_completa" %}{% include "components/rich_text_editor.html" with field=field %}<small class="text-muted">Formatação segura; scripts, iframes e estilos arbitrários são removidos no servidor.</small>{% else %}{{ field }}{% endif %}

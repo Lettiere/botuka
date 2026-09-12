@@ -570,6 +570,13 @@ class Empresa(UUIDModel):
         db_column='platform_empresa_imagem_capa',
         verbose_name='imagem de capa',
     )
+    imagem_social = models.ImageField(
+        upload_to='empresas/social/',
+        blank=True,
+        db_column='platform_empresa_imagem_social',
+        verbose_name='imagem para compartilhamento',
+        help_text='Recomendado: 1200 x 630 px. JPG, PNG ou WEBP.',
+    )
     cep = models.CharField(
         max_length=8,
         blank=True,
@@ -1334,10 +1341,63 @@ class CNAE(UUIDModel):
     codigo = models.CharField(max_length=20, unique=True, db_column='platform_cnae_codigo')
     descricao = models.TextField(db_column='platform_cnae_descricao')
     secao = models.CharField(max_length=5, blank=True, db_column='platform_cnae_secao')
+    secao_descricao = models.CharField(
+        max_length=255,
+        blank=True,
+        db_column='platform_cnae_secao_descricao',
+    )
+
     divisao = models.CharField(max_length=5, blank=True, db_column='platform_cnae_divisao')
+    divisao_descricao = models.CharField(
+        max_length=255,
+        blank=True,
+        db_column='platform_cnae_divisao_descricao',
+    )
+
     grupo = models.CharField(max_length=5, blank=True, db_column='platform_cnae_grupo')
+    grupo_descricao = models.CharField(
+        max_length=500,
+        blank=True,
+        db_column='platform_cnae_grupo_descricao',
+    )
+
     classe = models.CharField(max_length=10, blank=True, db_column='platform_cnae_classe')
+    classe_descricao = models.TextField(
+        blank=True,
+        db_column='platform_cnae_classe_descricao',
+    )
+
     subclasse = models.CharField(max_length=20, blank=True, db_column='platform_cnae_subclasse')
+
+    atividades = models.JSONField(
+        default=list,
+        blank=True,
+        db_column='platform_cnae_atividades',
+    )
+    classe_observacoes = models.JSONField(
+        default=list,
+        blank=True,
+        db_column='platform_cnae_classe_observacoes',
+    )
+    observacoes = models.JSONField(
+        default=list,
+        blank=True,
+        db_column='platform_cnae_observacoes',
+    )
+
+    fonte = models.CharField(
+        max_length=50,
+        blank=True,
+        default='',
+        db_column='platform_cnae_fonte',
+    )
+    versao = models.CharField(
+        max_length=30,
+        blank=True,
+        default='',
+        db_column='platform_cnae_versao',
+    )
+
     ativo = models.BooleanField(default=True, db_column='platform_cnae_ativo')
     criado_em = models.DateTimeField(auto_now_add=True, db_column='platform_cnae_criado_em')
     atualizado_em = models.DateTimeField(auto_now=True, db_column='platform_cnae_atualizado_em')
@@ -1347,6 +1407,86 @@ class CNAE(UUIDModel):
 
     def __str__(self) -> str:
         return f'{self.codigo} - {self.descricao[:80]}'
+
+
+class SubcategoriaCNAE(UUIDModel):
+    id = models.BigAutoField(
+        primary_key=True,
+        db_column='platform_subcategoria_cnae_id',
+    )
+    subcategoria = models.ForeignKey(
+        Subcategoria,
+        on_delete=models.CASCADE,
+        db_column='platform_subcategoria_cnae_fk_subcategoria',
+        related_name='cnaes_mapeados',
+        verbose_name='tipo de estabelecimento',
+    )
+    cnae = models.ForeignKey(
+        CNAE,
+        on_delete=models.PROTECT,
+        db_column='platform_subcategoria_cnae_fk_cnae',
+        related_name='subcategorias_mapeadas',
+        verbose_name='CNAE',
+    )
+    relevancia = models.PositiveSmallIntegerField(
+        default=100,
+        db_column='platform_subcategoria_cnae_relevancia',
+    )
+    principal = models.BooleanField(
+        default=False,
+        db_column='platform_subcategoria_cnae_principal',
+    )
+    revisado = models.BooleanField(
+        default=False,
+        db_column='platform_subcategoria_cnae_revisado',
+    )
+    ativo = models.BooleanField(
+        default=True,
+        db_column='platform_subcategoria_cnae_ativo',
+    )
+    criado_em = models.DateTimeField(
+        auto_now_add=True,
+        db_column='platform_subcategoria_cnae_criado_em',
+    )
+    atualizado_em = models.DateTimeField(
+        auto_now=True,
+        db_column='platform_subcategoria_cnae_atualizado_em',
+    )
+
+    class Meta:
+        db_table = '"platform"."platform_subcategoria_cnae_tb"'
+        ordering = [
+            'subcategoria__categoria__nome',
+            'subcategoria__nome',
+            '-relevancia',
+            'cnae__codigo',
+        ]
+        constraints = [
+            models.UniqueConstraint(
+                fields=['subcategoria', 'cnae'],
+                name='platform_subcategoria_cnae_uk',
+            ),
+        ]
+        indexes = [
+            models.Index(
+                fields=['subcategoria', 'ativo'],
+                name='platform_subcat_cnae_sub_idx',
+            ),
+            models.Index(
+                fields=['cnae', 'ativo'],
+                name='platform_subcat_cnae_cnae_idx',
+            ),
+            models.Index(
+                fields=['cnae', 'relevancia'],
+                name='platform_subcat_cnae_rel_idx',
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return (
+            f'{self.subcategoria} → '
+            f'{self.cnae.codigo} - {self.cnae.descricao[:60]}'
+        )
 
 
 class EmpresaCNAE(UUIDModel):

@@ -35,7 +35,9 @@ def _empresa():
     return Empresa.objects.filter(
         ativo=True, perfil_publico=True, status=Empresa.Status.ATIVA,
         excluido_em__isnull=True,
-    ).select_related('categoria_empresa', 'cidade', 'estado')
+    ).select_related(
+        'categoria_empresa', 'subcategoria_empresa', 'cidade', 'estado',
+    ).prefetch_related('cnaes__cnae')
 
 
 def _servico():
@@ -167,7 +169,14 @@ def default_registry():
     return (
         SearchSpec('empresas', 'Empresas', 'bi-buildings', _empresa, 'nome_fantasia',
                    ('descricao_curta',), ('razao_social', 'descricao_completa', 'endereco', 'bairro'),
-                   ('categoria_empresa__nome', 'cidade__nome', 'estado__sigla'),
+                   (
+                       'categoria_empresa__nome',
+                       'subcategoria_empresa__nome',
+                       'cnaes__cnae__codigo',
+                       'cnaes__cnae__descricao',
+                       'cidade__nome',
+                       'estado__sigla',
+                   ),
                    lambda o: _present(o, title=o.nome_exibicao, summary=o.descricao_curta,
                        category=str(o.categoria_empresa or ''), location=o.endereco_resumido,
                        url=o.get_absolute_url(), image=_file_url(o.logo or o.imagem_capa)),

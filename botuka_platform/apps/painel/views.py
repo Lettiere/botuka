@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import logging
+
 from functools import wraps
 import re
 from datetime import timedelta
@@ -118,6 +120,9 @@ from apps.painel.company_context import (
     empresa_selecionada, limpar_empresa_selecionada, selecionar_empresa,
 )
 
+
+
+logger = logging.getLogger(__name__)
 
 def painel_permission_required(codigo: str):
     """Decorator para validar permissões de domínio no painel."""
@@ -853,18 +858,24 @@ def empresa_editar(request: HttpRequest, uuid) -> HttpResponse:
         raise PermissionDenied
 
     if request.method == 'POST':
-        form = EmpresaForm(
-            request.POST,
-            request.FILES,
-            instance=empresa,
-            usuario=request.user,
-            pode_alterar_status=usuario_pode_gerenciar_empresa(request.user, empresa),
-        )
+        try:
+            form = EmpresaForm(
+                request.POST,
+                request.FILES,
+                instance=empresa,
+                usuario=request.user,
+                pode_alterar_status=usuario_pode_gerenciar_empresa(request.user, empresa),
+            )
 
-        if form.is_valid():
-            form.save()
-            messages.success(request, 'Empresa atualizada com sucesso.')
-            return redirect('painel:empresa_detalhe', uuid=empresa.uuid)
+            if form.is_valid():
+                form.save()
+                messages.success(request, 'Empresa atualizada com sucesso.')
+                return redirect('painel:empresa_detalhe', uuid=empresa.uuid)
+
+        except Exception:
+            import traceback
+            traceback.print_exc()
+            raise
     else:
         form = EmpresaForm(
             instance=empresa,

@@ -356,6 +356,7 @@ class EmpresaForm(forms.ModelForm):
             'site',
             'logo',
             'imagem_capa',
+            'imagem_social',
             'cep',
             'endereco',
             'numero',
@@ -493,6 +494,12 @@ class EmpresaForm(forms.ModelForm):
             return optimize_uploaded_image(imagem, policy='hero')
         return imagem
 
+    def clean_imagem_social(self):
+        imagem = self._validar_imagem('imagem_social', 8)
+        if isinstance(imagem, UploadedFile):
+            return optimize_uploaded_image(imagem, policy='hero')
+        return imagem
+
     def _validar_imagem(self, field_name: str, limite_mb: int):
         imagem = self.cleaned_data.get(field_name)
         if not imagem:
@@ -553,7 +560,8 @@ class EmpresaEtapaForm(EmpresaForm):
         1: ('tipo_cadastro', 'razao_social', 'nome_fantasia', 'cpf_cnpj',
             'inscricao_estadual', 'inscricao_municipal'),
         2: ('atuacao', 'categoria_empresa', 'subcategoria_empresa'),
-        3: ('descricao_curta', 'descricao_completa', 'logo', 'imagem_capa'),
+        3: ('descricao_curta', 'descricao_completa', 'logo', 'imagem_capa',
+            'imagem_social'),
         4: ('whatsapp', 'telefone', 'email', 'site'),
         5: ('cep', 'endereco', 'numero', 'complemento', 'bairro', 'estado', 'cidade'),
         6: ('modalidade_comercial', 'atende_local', 'atende_online',

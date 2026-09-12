@@ -6,7 +6,7 @@
   <section class="panel-card news-form-section"><h2>Conteúdo principal</h2>
     <div class="row g-3">{% for name in "titulo,subtitulo,resumo"|split:"," %}{% with field=form|get_item:name %}<div class="col-12"><label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>{{ field }}{{ field.errors }}</div>{% endwith %}{% endfor %}
       <div class="col-12"><label class="form-label" for="{{ form.conteudo.id_for_label }}">{{ form.conteudo.label }}</label>
-        {% include "components/rich_text_editor.html" with field=form.conteudo %}{{ form.conteudo.errors }}
+        {% include "components/rich_text_editor.html" with field=form.conteudo youtube_enabled=True %}{{ form.conteudo.errors }}
       </div>
     </div>
   </section>

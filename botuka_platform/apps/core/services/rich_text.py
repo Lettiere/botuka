@@ -43,6 +43,14 @@ class _Sanitizer(HTMLParser):
             "richtext-align-left", "richtext-align-center", "richtext-align-right",
         }:
             clean.append(("class", existing_class))
+        elif tag == "div" and existing_class == "richtext-youtube":
+            youtube_id = (attrs.get("data-youtube-id") or "").strip()
+            if (
+                len(youtube_id) == 11
+                and all(char.isalnum() or char in "_-" for char in youtube_id)
+            ):
+                clean.append(("class", "richtext-youtube"))
+                clean.append(("data-youtube-id", youtube_id))
         rendered = "".join(f' {name}="{escape(value, quote=True)}"' for name, value in clean)
         self.output.append(f"<{tag}{rendered}>")
         if tag not in VOID_TAGS:

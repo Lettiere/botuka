@@ -2,13 +2,18 @@
 
 from urllib.parse import urlencode
 
+from django.contrib import messages
+from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
-from django.db.models import Prefetch, Q
+from django.db.models import Case, Exists, IntegerField, OuterRef, Prefetch, Q, Value, When
 from django.http import Http404
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
+from django.views.decorators.http import require_POST
 
-from apps.organizations.models import Empresa
+from apps.organizations.models import Empresa, EmpresaSolicitacao, EmpresaUsuario
+from apps.organizations.permissions import usuario_pode_editar_empresa
+from apps.services.forms import EmpresaReivindicacaoForm
 from apps.services.models import Servico, ServicoImagem, Setor
 from apps.core.seo.page_builders import empresa_seo, listing_seo, servico_seo
 from apps.core.services.contacts import formatar_telefone, normalizar_telefone, telefone_para_whatsapp
@@ -22,14 +27,55 @@ from apps.core.services.public_sharing import obter_dados_compartilhamento
 
 
 def empresas_publicas(request):
-    queryset = Empresa.objects.filter(ativo=True, perfil_publico=True, status=Empresa.Status.ATIVA, excluido_em__isnull=True).select_related('categoria_empresa', 'cidade', 'estado')
+    queryset = (
+        Empresa.objects
+        .filter(
+            ativo=True,
+            perfil_publico=True,
+            status=Empresa.Status.ATIVA,
+            excluido_em__isnull=True,
+        )
+        .select_related('categoria_empresa', 'cidade', 'estado')
+        .annotate(
+            tem_usuario=Exists(
+                EmpresaUsuario.objects.filter(
+                    empresa_id=OuterRef('pk'),
+                    ativo=True,
+                )
+            ),
+            tem_imagem=Case(
+                When(
+                    Q(logo__isnull=False) & ~Q(logo=''),
+                    then=Value(1),
+                ),
+                When(
+                    Q(imagem_capa__isnull=False) & ~Q(imagem_capa=''),
+                    then=Value(1),
+                ),
+                default=Value(0),
+                output_field=IntegerField(),
+            ),
+        )
+    )
     q = request.GET.get('q', '').strip()[:100]
     if q:
         queryset = queryset.filter(Q(nome_fantasia__icontains=q) | Q(razao_social__icontains=q) | Q(descricao_curta__icontains=q) | Q(categoria_empresa__nome__icontains=q) | Q(bairro__icontains=q))
     if request.GET.get('categoria'): queryset = queryset.filter(categoria_empresa__slug=request.GET['categoria'][:100])
     if request.GET.get('bairro'): queryset = queryset.filter(bairro__iexact=request.GET['bairro'][:100])
     if request.GET.get('verificada') == '1': queryset = queryset.filter(verificada=True)
-    queryset = queryset.order_by('nome_fantasia' if request.GET.get('ordem') == 'az' else '-atualizado_em')
+    if request.GET.get('ordem') == 'az':
+        queryset = queryset.order_by(
+            '-tem_usuario',
+            '-tem_imagem',
+            'nome_fantasia',
+            'razao_social',
+        )
+    else:
+        queryset = queryset.order_by(
+            '-tem_usuario',
+            '-tem_imagem',
+            '-atualizado_em',
+        )
     page = Paginator(queryset, 12).get_page(request.GET.get('page'))
     categorias = Empresa.objects.filter(ativo=True, perfil_publico=True, status=Empresa.Status.ATIVA, categoria_empresa__isnull=False).values('categoria_empresa__slug', 'categoria_empresa__nome').distinct().order_by('categoria_empresa__nome')
     seo = listing_seo(request, 'Empresas em Botucatu | BOTUKA', 'Encontre empresas, negócios e organizações com perfil público em Botucatu.')
@@ -70,6 +116,14 @@ def servico_publico(request, slug):
 
 
 def empresa_publica(request, slug):
+    # Mantém compatibilidade com a URL pública histórica da Golden Beer.
+    if slug == 'aleicah-marketing-digital':
+        return redirect(
+            'publico:empresa',
+            slug='golden-beer-tap-house',
+            permanent=True,
+        )
+
     empresa = get_object_or_404(
         Empresa.objects.prefetch_related('links'),
         slug=slug,
@@ -110,8 +164,81 @@ def empresa_publica(request, slug):
         waze_params['q'] = endereco_publico
     waze_url = f"https://www.waze.com/ul?{urlencode(waze_params)}" if destino_mapa else ''
     telefone_normalizado = normalizar_telefone(empresa.telefone)
+
+    telefone_local = telefone_normalizado or ''
+    if telefone_local.startswith('55') and len(telefone_local) == 13:
+        telefone_local = telefone_local[2:]
+
+    telefone_parece_celular = (
+        len(telefone_local) == 11
+        and telefone_local[2:3] == '9'
+    )
+
+    numero_whatsapp = (
+        empresa.whatsapp
+        or (empresa.telefone if telefone_parece_celular else '')
+    )
+
     whatsapp_url = telefone_para_whatsapp(
-        empresa.whatsapp, f'Olá! Encontrei {empresa.nome_exibicao} no BOTUKA.')
+        numero_whatsapp,
+        f'Olá! Encontrei {empresa.nome_exibicao} no BOTUKA.',
+    )
+
+    whatsapp_formatado = formatar_telefone(numero_whatsapp)
+
+    mapa_embed_url = (
+        f"https://www.google.com/maps?{urlencode({'q': destino_mapa, 'output': 'embed'})}"
+        if destino_mapa
+        else ''
+    )
+
+    pode_editar_empresa = usuario_pode_editar_empresa(
+        request.user,
+        empresa,
+    )
+
+    reivindicacao_aberta = False
+    if request.user.is_authenticated:
+        reivindicacao_aberta = EmpresaSolicitacao.objects.filter(
+            empresa=empresa,
+            usuario_solicitante=request.user,
+            tipo_solicitacao=EmpresaSolicitacao.TipoSolicitacao.REIVINDICACAO,
+            status__in=[
+                EmpresaSolicitacao.Status.RASCUNHO,
+                EmpresaSolicitacao.Status.PENDENTE,
+                EmpresaSolicitacao.Status.EM_ANALISE,
+                EmpresaSolicitacao.Status.CORRECAO_SOLICITADA,
+            ],
+        ).exists()
+
+    pode_reivindicar = (
+        empresa.usuario_proprietario_id is None
+        and not pode_editar_empresa
+    )
+
+    reivindicacao_form = (
+        EmpresaReivindicacaoForm()
+        if request.user.is_authenticated
+        and pode_reivindicar
+        and not reivindicacao_aberta
+        else None
+    )
+
+    origem_publica = ''
+    if empresa.origem_cadastro == Empresa.OrigemCadastro.API:
+        origem_publica = (
+            'Perfil criado pelo BOTUKA a partir de dados cadastrais '
+            'obtidos por integração com fonte pública.'
+        )
+
+    cnpj_formatado = ''
+    cnpj = ''.join(ch for ch in (empresa.cpf_cnpj or '') if ch.isdigit())
+    if len(cnpj) == 14:
+        cnpj_formatado = (
+            f'{cnpj[:2]}.{cnpj[2:5]}.{cnpj[5:8]}/'
+            f'{cnpj[8:12]}-{cnpj[12:]}'
+        )
+
     share = obter_dados_compartilhamento(empresa, request)
     return render(request, 'publico/empresas/detalhe.html', {
         'empresa': empresa,
@@ -127,14 +254,92 @@ def empresa_publica(request, slug):
         'google_maps_url': google_maps_url, 'waze_url': waze_url,
         'telefone_formatado': formatar_telefone(empresa.telefone),
         'telefone_url': f'tel:+{telefone_normalizado}' if telefone_normalizado else '',
-        'whatsapp_formatado': formatar_telefone(empresa.whatsapp),
+        'whatsapp_formatado': whatsapp_formatado,
         'whatsapp_url': whatsapp_url,
+        'mapa_embed_url': mapa_embed_url,
+        'pode_editar_empresa': pode_editar_empresa,
+        'pode_reivindicar': pode_reivindicar,
+        'reivindicacao_aberta': reivindicacao_aberta,
+        'reivindicacao_form': reivindicacao_form,
+        'origem_publica': origem_publica,
+        'cnpj_formatado': cnpj_formatado,
         'share': share,
         'qrcode_url': reverse('sharing:png', args=['empresa', empresa.uuid]),
         'followers_count': contagem_seguidores_empresa(empresa),
         'is_following_company': usuario_segue_empresa(request.user, empresa),
     })
 
+
+
+@login_required
+@require_POST
+def empresa_reivindicar(request, slug):
+    empresa = get_object_or_404(
+        Empresa,
+        slug=slug,
+        ativo=True,
+        perfil_publico=True,
+        status=Empresa.Status.ATIVA,
+    )
+
+    if usuario_pode_editar_empresa(request.user, empresa):
+        messages.info(
+            request,
+            'Você já possui permissão para administrar esta empresa.',
+        )
+        return redirect('publico:empresa', slug=empresa.slug)
+
+    if empresa.usuario_proprietario_id is not None:
+        messages.warning(
+            request,
+            'Esta empresa já possui um responsável cadastrado.',
+        )
+        return redirect('publico:empresa', slug=empresa.slug)
+
+    existente = EmpresaSolicitacao.objects.filter(
+        empresa=empresa,
+        usuario_solicitante=request.user,
+        tipo_solicitacao=EmpresaSolicitacao.TipoSolicitacao.REIVINDICACAO,
+        status__in=[
+            EmpresaSolicitacao.Status.RASCUNHO,
+            EmpresaSolicitacao.Status.PENDENTE,
+            EmpresaSolicitacao.Status.EM_ANALISE,
+            EmpresaSolicitacao.Status.CORRECAO_SOLICITADA,
+        ],
+    ).first()
+
+    if existente:
+        messages.info(
+            request,
+            'Você já possui uma solicitação de reivindicação em andamento.',
+        )
+        return redirect('publico:empresa', slug=empresa.slug)
+
+    form = EmpresaReivindicacaoForm(request.POST)
+
+    if not form.is_valid():
+        messages.error(
+            request,
+            'Confira os dados informados para reivindicar esta empresa.',
+        )
+        return redirect('publico:empresa', slug=empresa.slug)
+
+    solicitacao = form.save(commit=False)
+    solicitacao.empresa = empresa
+    solicitacao.cnpj = empresa.cpf_cnpj or ''
+    solicitacao.usuario_solicitante = request.user
+    solicitacao.tipo_solicitacao = (
+        EmpresaSolicitacao.TipoSolicitacao.REIVINDICACAO
+    )
+    solicitacao.status = EmpresaSolicitacao.Status.PENDENTE
+    solicitacao.save()
+
+    messages.success(
+        request,
+        'Solicitação enviada. O BOTUKA analisará a reivindicação da empresa.',
+    )
+
+    return redirect('publico:empresa', slug=empresa.slug)
 
 def qrcode_servico_redirect(request, token):
     servico = get_object_or_404(

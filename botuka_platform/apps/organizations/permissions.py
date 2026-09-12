@@ -101,6 +101,9 @@ def usuario_pode_visualizar_empresa(usuario, empresa: Empresa) -> bool:
     if _usuario_admin_global(usuario):
         return True
 
+    if not usuario or not usuario.is_authenticated:
+        return False
+
     return bool(
         empresa.usuario_proprietario_id == getattr(usuario, 'id', None)
         or _vinculo_ativo(usuario, empresa)
@@ -110,6 +113,9 @@ def usuario_pode_visualizar_empresa(usuario, empresa: Empresa) -> bool:
 def usuario_pode_editar_empresa(usuario, empresa: Empresa) -> bool:
     if _usuario_admin_global(usuario):
         return True
+
+    if not usuario or not usuario.is_authenticated:
+        return False
 
     if empresa.usuario_proprietario_id == getattr(usuario, 'id', None):
         return True
@@ -122,6 +128,9 @@ def usuario_pode_gerenciar_empresa(usuario, empresa: Empresa) -> bool:
     if _usuario_admin_global(usuario):
         return True
 
+    if not usuario or not usuario.is_authenticated:
+        return False
+
     if empresa.usuario_proprietario_id == getattr(usuario, 'id', None):
         return True
 
@@ -132,6 +141,9 @@ def usuario_pode_gerenciar_empresa(usuario, empresa: Empresa) -> bool:
 def usuario_pode_gerenciar_equipe(usuario, empresa: Empresa) -> bool:
     if _usuario_admin_global(usuario):
         return True
+
+    if not usuario or not usuario.is_authenticated:
+        return False
 
     if empresa.usuario_proprietario_id == getattr(usuario, 'id', None):
         return True
@@ -150,6 +162,9 @@ def usuario_pode_gerenciar_equipe(usuario, empresa: Empresa) -> bool:
 def usuario_pode_publicar_por_empresa(usuario, empresa: Empresa) -> bool:
     if _usuario_admin_global(usuario):
         return True
+
+    if not usuario or not usuario.is_authenticated:
+        return False
 
     if empresa.usuario_proprietario_id == getattr(usuario, 'id', None):
         return True

@@ -1,60 +1,119 @@
-<section class="showcase-section" id="produtos">
+{% load static %}
+<section class="botuka-products-home" id="produtos">
+  <link rel="stylesheet" href="{% static 'home/css/produtos.css' %}">
+
   <div class="container-botuka">
-    <div class="section-title">
+    <header class="botuka-products-header">
       <div>
+        <span class="botuka-products-kicker">
+          <i class="bi bi-bag" aria-hidden="true"></i>
+          Comércio local
+        </span>
         <h2>Produtos em destaque</h2>
-        <small>Encontre produtos e ofertas de empresas da cidade.</small>
+        <p>Encontre produtos e ofertas de empresas da cidade.</p>
       </div>
-      <a href="{% url 'products:loja' %}" class="feed-link">Ver todos os produtos</a>
-    </div>
+
+      <a href="{% url 'products:loja' %}" class="botuka-products-all">
+        Ver todos os produtos
+        <i class="bi bi-arrow-right" aria-hidden="true"></i>
+      </a>
+    </header>
+
     {% if produtos_destaque %}
-      <div class="row g-2 g-md-3 justify-content-center" style="--bs-gutter-x:1rem;">
-        {% for produto in produtos_destaque %}
-          <div class="col-6 col-sm-4 col-md-3 col-lg-2 d-flex">
-            <article class="showcase-card reveal" style="width:100%;min-width:0;flex:1 1 0%;border-radius:12px;box-shadow:0 2px 8px rgba(0,0,0,0.04);padding:0.5rem 0.5rem 1rem 0.5rem;">
-              {% with image=produto.imagem_principal %}
-                {% if image %}
-                  <div class="home-product-media" style="width:100%;aspect-ratio:4/3;overflow:hidden;border-radius:8px;background:#eef2f6;display:flex;align-items:center;justify-content:center;">
+      {% with principal=produtos_destaque.0 %}
+        <div class="botuka-products-layout">
+
+          <article class="botuka-products-featured">
+            <a href="{{ principal.get_absolute_url }}" class="botuka-products-featured-link">
+              {% with image=principal.imagem_principal %}
+                <div class="botuka-products-featured-image">
+                  {% if image %}
                     <img
-                      class="showcase-img"
-                      style="width:100%;height:100%;object-fit:contain;display:block;"
                       src="{{ image.imagem.url }}"
-                      alt="{{ image.texto_alternativo }}"
-                      loading="lazy"
+                      alt="{{ image.texto_alternativo|default:principal.nome }}"
                       decoding="async"
-                      width="900"
-                      height="675"
                     >
+                  {% endif %}
+
+                  <span class="botuka-products-featured-overlay"></span>
+
+                  <div class="botuka-products-featured-content">
+                    {% if principal.categoria_taxonomia %}
+                      <span class="botuka-products-category">
+                        {{ principal.categoria_taxonomia.nome }}
+                      </span>
+                    {% endif %}
+
+                    <h3>{{ principal.nome }}</h3>
+
+                    <div class="botuka-products-featured-footer">
+                      <strong>
+                        {% if principal.preco_sob_consulta %}
+                          Preço sob consulta
+                        {% else %}
+                          R$ {{ principal.preco_atual|floatformat:2 }}
+                        {% endif %}
+                      </strong>
+
+                      {% if principal.empresa_proprietaria %}
+                        <span>{{ principal.empresa_proprietaria.nome_fantasia }}</span>
+                      {% endif %}
+                    </div>
                   </div>
-                {% else %}
-                  <div class="showcase-img" style="width:100%;aspect-ratio:1/1;background:#eef2f6;border-radius:8px"></div>
-                {% endif %}
+                </div>
               {% endwith %}
-              <div class="showcase-body" style="padding:0.5rem 0 0 0; font-size:0.98em;">
-                <div class="feed-type" style="font-size:0.87em;color:#789;margin-bottom:0.15em;">
-                  {{ produto.categoria_taxonomia.nome }}
-                </div>
-                <div class="showcase-title" style="font-size:1.07em;font-weight:600;line-height:1.18;margin-bottom:0.2em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
-                  {{ produto.nome }}
-                </div>
-                <p class="showcase-text" style="margin:0;margin-bottom:0.36em;font-size:0.99em;">
-                  {% if produto.preco_sob_consulta %}
-                    Preço sob consulta
-                  {% else %}
-                    R$ {{ produto.preco_atual|floatformat:2 }}
+            </a>
+          </article>
+
+          <div class="botuka-products-list">
+            {% for produto in produtos_destaque|slice:"1:5" %}
+              <article class="botuka-products-card">
+                <a href="{{ produto.get_absolute_url }}" class="botuka-products-card-image">
+                  {% with image=produto.imagem_principal %}
+                    {% if image %}
+                      <img
+                        src="{{ image.imagem.url }}"
+                        alt="{{ image.texto_alternativo|default:produto.nome }}"
+                        loading="lazy"
+                        decoding="async"
+                      >
+                    {% endif %}
+                  {% endwith %}
+                </a>
+
+                <div class="botuka-products-card-content">
+                  {% if produto.categoria_taxonomia %}
+                    <span class="botuka-products-category">
+                      {{ produto.categoria_taxonomia.nome }}
+                    </span>
                   {% endif %}
-                  {% if produto.empresa_proprietaria %}
-                    · {{ produto.empresa_proprietaria.nome_fantasia }}
-                  {% endif %}
-                </p>
-                <a href="{{ produto.get_absolute_url }}" class="feed-link" style="font-size:0.96em;display:inline-block;padding:0.15em 0;">Ver produto</a>
-              </div>
-            </article>
+
+                  <h3>
+                    <a href="{{ produto.get_absolute_url }}">
+                      {{ produto.nome }}
+                    </a>
+                  </h3>
+
+                  <div class="botuka-products-card-footer">
+                    <strong>
+                      {% if produto.preco_sob_consulta %}
+                        Sob consulta
+                      {% else %}
+                        R$ {{ produto.preco_atual|floatformat:2 }}
+                      {% endif %}
+                    </strong>
+                  </div>
+                </div>
+              </article>
+            {% endfor %}
           </div>
-        {% endfor %}
-      </div>
+
+        </div>
+      {% endwith %}
     {% else %}
-      <p style="text-align:center;">Nenhum produto em destaque publicado no momento.</p>
+      <p class="botuka-products-empty">
+        Nenhum produto em destaque publicado no momento.
+      </p>
     {% endif %}
   </div>
 </section>

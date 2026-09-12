@@ -5,7 +5,14 @@ from django.utils import timezone
 
 from apps.core.search import GlobalSearchService
 from apps.locations.models import Cidade, Estado, Pais
-from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade
+from apps.organizations.models import (
+    CNAE,
+    Capacidade,
+    Empresa,
+    EmpresaCNAE,
+    EmpresaCapacidade,
+)
+from apps.taxonomy.models import Categoria, Subcategoria
 from apps.services.models import AreaProfissional, FormaCobranca, Profissao, ProfissaoTipoServico, Servico, Setor, TipoServico
 from apps.media.models import (
     Canal, CategoriaYuBotuka, Playlist, PlaylistVideo, TagYuBotuka, Video, VideoTag,
@@ -213,3 +220,229 @@ class GlobalSearchTests(TestCase):
                     str(object_id),
                     [item.object_id for item in self.search(query) if item.kind == kind],
                 )
+
+    def test_company_is_found_by_category(self):
+        category = Categoria.objects.create(nome='Gastronomia Busca Teste')
+
+        company = self.company(
+            'Casa Categoria Busca',
+            categoria_empresa=category,
+        )
+
+        companies = [
+            item for item in self.search('gastronomia')
+            if item.kind == 'empresas'
+        ]
+
+        self.assertIn(
+            str(company.uuid),
+            [item.object_id for item in companies],
+        )
+
+    def test_company_is_found_by_subcategory(self):
+        category = Categoria.objects.create(nome='Alimentacao Busca Teste')
+        subcategory = Subcategoria.objects.create(
+            categoria=category,
+            nome='Bar',
+        )
+
+        company = self.company(
+            'Golden Busca Teste',
+            categoria_empresa=category,
+            subcategoria_empresa=subcategory,
+        )
+
+        companies = [
+            item for item in self.search('bar')
+            if item.kind == 'empresas'
+        ]
+
+        self.assertIn(
+            str(company.uuid),
+            [item.object_id for item in companies],
+        )
+
+    def test_company_is_found_by_principal_cnae(self):
+        company = self.company('Empresa CNAE Principal Busca')
+
+        cnae = CNAE.objects.create(
+            codigo='9999901',
+            descricao='Fabricacao especial marcenaria experimental',
+        )
+
+        EmpresaCNAE.objects.create(
+            empresa=company,
+            cnae=cnae,
+            principal=True,
+            ativo=True,
+        )
+
+        for query in ('9999901', 'marcenaria experimental'):
+            with self.subTest(query=query):
+                companies = [
+                    item for item in self.search(query)
+                    if item.kind == 'empresas'
+                ]
+
+                self.assertIn(
+                    str(company.uuid),
+                    [item.object_id for item in companies],
+                )
+
+    def test_company_is_found_by_secondary_cnae(self):
+        company = self.company('Empresa CNAE Secundario Busca')
+
+        principal = CNAE.objects.create(
+            codigo='9999902',
+            descricao='Atividade principal sintetica busca',
+        )
+        secondary = CNAE.objects.create(
+            codigo='9999903',
+            descricao='Ceramica artistica secundaria exclusiva',
+        )
+
+        EmpresaCNAE.objects.create(
+            empresa=company,
+            cnae=principal,
+            principal=True,
+            ativo=True,
+        )
+        EmpresaCNAE.objects.create(
+            empresa=company,
+            cnae=secondary,
+            principal=False,
+            ativo=True,
+        )
+
+        for query in ('9999903', 'ceramica artistica'):
+            with self.subTest(query=query):
+                companies = [
+                    item for item in self.search(query)
+                    if item.kind == 'empresas'
+                ]
+
+                self.assertIn(
+                    str(company.uuid),
+                    [item.object_id for item in companies],
+                )
+
+    def test_api_company_without_category_is_found_by_cnae(self):
+        company = self.company(
+            'Empresa API Sem Categoria Busca',
+            usuario_proprietario=None,
+            criado_por=None,
+            categoria_empresa=None,
+            subcategoria_empresa=None,
+            origem_cadastro=Empresa.OrigemCadastro.API,
+        )
+
+        cnae = CNAE.objects.create(
+            codigo='9999904',
+            descricao='Reparacao nautica importada exclusiva',
+        )
+
+        EmpresaCNAE.objects.create(
+            empresa=company,
+            cnae=cnae,
+            principal=True,
+            ativo=True,
+        )
+
+        companies = [
+            item for item in self.search('reparacao nautica')
+            if item.kind == 'empresas'
+        ]
+
+        self.assertIn(
+            str(company.uuid),
+            [item.object_id for item in companies],
+        )
+
+    def test_semantic_bar_synonyms_find_bar_subcategory(self):
+        category = Categoria.objects.create(nome='Gastronomia Semantica Teste')
+        subcategory = Subcategoria.objects.create(
+            categoria=category,
+            nome='Bar',
+        )
+
+        company = self.company(
+            'Golden Semantic Search',
+            categoria_empresa=category,
+            subcategoria_empresa=subcategory,
+        )
+
+        for query in (
+            'bar',
+            'boteco',
+            'buteco',
+            'barzinho',
+            'pub',
+            'botequim',
+            'choperia',
+        ):
+            with self.subTest(query=query):
+                companies = [
+                    item for item in self.search(query)
+                    if item.kind == 'empresas'
+                ]
+
+                self.assertIn(
+                    str(company.uuid),
+                    [item.object_id for item in companies],
+                )
+
+    def test_semantic_bar_does_not_match_partial_words(self):
+        self.company('Barbara Pesquisa Semantica')
+        self.company('Barbosa Pesquisa Semantica')
+        self.company('Servidores Publicos Pesquisa')
+
+        bar_titles = [
+            item.title
+            for item in self.search('bar')
+            if item.kind == 'empresas'
+        ]
+
+        pub_titles = [
+            item.title
+            for item in self.search('pub')
+            if item.kind == 'empresas'
+        ]
+
+        self.assertNotIn('Barbara Pesquisa Semantica', bar_titles)
+        self.assertNotIn('Barbosa Pesquisa Semantica', bar_titles)
+        self.assertNotIn('Servidores Publicos Pesquisa', pub_titles)
+
+    def test_multiple_cnaes_do_not_duplicate_company_result(self):
+        company = self.company('Empresa Multiplos CNAEs Busca')
+
+        first = CNAE.objects.create(
+            codigo='9999905',
+            descricao='Artesanato mineral multiplo exclusivo',
+        )
+        second = CNAE.objects.create(
+            codigo='9999906',
+            descricao='Artesanato vegetal multiplo exclusivo',
+        )
+
+        EmpresaCNAE.objects.create(
+            empresa=company,
+            cnae=first,
+            principal=True,
+            ativo=True,
+        )
+        EmpresaCNAE.objects.create(
+            empresa=company,
+            cnae=second,
+            principal=False,
+            ativo=True,
+        )
+
+        companies = [
+            item for item in self.search('artesanato')
+            if (
+                item.kind == 'empresas'
+                and item.object_id == str(company.uuid)
+            )
+        ]
+
+        self.assertEqual(len(companies), 1)
