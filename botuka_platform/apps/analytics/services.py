@@ -28,25 +28,127 @@ def is_bot(user_agent):
 def resolve_company(object_type, object_id):
     if not object_id:
         return None
+
     try:
         object_id = uuid.UUID(str(object_id))
     except (ValueError, TypeError, AttributeError):
         return None
+
     if object_type == 'company':
-        return Empresa.objects.filter(uuid=object_id, ativo=True, excluido_em__isnull=True).first()
+        return Empresa.objects.filter(
+            uuid=object_id,
+            ativo=True,
+            excluido_em__isnull=True,
+        ).first()
+
+    if object_type == 'article':
+        from apps.news.models import ArtigoFonte
+
+        company_ids = list(
+            ArtigoFonte.objects.filter(
+                artigo__uuid=object_id,
+                organizacao__isnull=False,
+                principal=True,
+                ativo=True,
+                excluido_em__isnull=True,
+            )
+            .values_list('organizacao_id', flat=True)
+            .distinct()[:2]
+        )
+
+        if len(company_ids) != 1:
+            return None
+
+        return Empresa.objects.filter(
+            pk=company_ids[0],
+            ativo=True,
+            excluido_em__isnull=True,
+        ).first()
+
+    if object_type == 'tourism_place':
+        from apps.tourism.models import LocalTuristico
+
+        obj = (
+            LocalTuristico.objects
+            .filter(uuid=object_id)
+            .select_related('empresa_responsavel')
+            .first()
+        )
+        return obj.empresa_responsavel if obj else None
+
+    if object_type == 'appointment':
+        from apps.agenda.models import Agendamento
+
+        obj = (
+            Agendamento.objects
+            .filter(uuid=object_id)
+            .select_related(
+                'profissional_servico__servico__empresa',
+            )
+            .first()
+        )
+
+        if not obj:
+            return None
+
+        return obj.profissional_servico.servico.empresa
+
+    if object_type == 'sports_team':
+        from apps.sports.models import Equipe
+
+        obj = (
+            Equipe.objects
+            .filter(uuid=object_id)
+            .select_related('organizacao__empresa')
+            .first()
+        )
+
+        if not obj:
+            return None
+
+        return obj.organizacao.empresa
+
+    if object_type == 'sports_athlete':
+        from apps.sports.models import Atleta
+
+        obj = (
+            Atleta.objects
+            .filter(uuid=object_id)
+            .select_related('equipe__organizacao__empresa')
+            .first()
+        )
+
+        if not obj or not obj.equipe_id:
+            return None
+
+        return obj.equipe.organizacao.empresa
+
     mappings = {
         'service': ('apps.services.models', 'Servico', 'empresa'),
         'product': ('apps.products.models', 'Produto', 'empresa_proprietaria'),
         'event': ('apps.events.models', 'Evento', 'empresa_promotora'),
         'job': ('apps.recruitment.models', 'Vaga', 'empresa'),
+        'ad_campaign': ('apps.advertising.models', 'Campanha', 'empresa'),
+        'tourism_guide': ('apps.tourism.models', 'GuiaTuristico', 'empresa'),
+        'tourism_company': ('apps.tourism.models', 'EmpresaTuristica', 'empresa'),
+        'sports_org': ('apps.sports.models', 'OrganizacaoEsportiva', 'empresa'),
     }
+
     config = mappings.get(object_type)
     if not config:
         return None
+
     module, model_name, company_field = config
     module_obj = __import__(module, fromlist=[model_name])
     model = getattr(module_obj, model_name)
-    obj = model.objects.filter(uuid=object_id).select_related(company_field).first()
+
+    obj = (
+        model.objects
+        .filter(uuid=object_id)
+        .select_related(company_field)
+        .first()
+    )
+
     return getattr(obj, company_field, None) if obj else None
 
 
@@ -112,6 +214,13 @@ def register_event(request, payload):
 
 def _aggregate(event):
     metric = EVENT_METRIC.get(event.event_name)
+
+    if (
+        event.event_name == 'company_contact'
+        and event.metadata.get('method') == 'email'
+    ):
+        metric = 'email_clicks'
+
     term = str(event.metadata.get('search_term', '')).strip().casefold()[:120]
     if not metric and not (term and event.event_name == 'select_search_result'):
         return

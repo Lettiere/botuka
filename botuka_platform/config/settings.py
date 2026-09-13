@@ -375,6 +375,10 @@ SITE_DEFAULT_IMAGE = config(
 SITE_DEFAULT_LOCALE = config('SITE_DEFAULT_LOCALE', default='pt_BR')
 GOOGLE_TAG_MANAGER_ID = config('GOOGLE_TAG_MANAGER_ID', default='GTM-WDQRGG2X').strip()
 GOOGLE_ANALYTICS_ID = config('GOOGLE_ANALYTICS_ID', default='G-MM63NQ7BGP').strip()
+GA4_PROPERTY_ID = config('GA4_PROPERTY_ID', default='').strip()
+ENABLE_GA4_DATA_API = config(
+    'ENABLE_GA4_DATA_API', default=False, cast=cast_debug,
+)
 GOOGLE_SITE_VERIFICATION = config('GOOGLE_SITE_VERIFICATION', default='').strip()
 GOOGLE_ADS_ID = config('GOOGLE_ADS_ID', default='').strip()
 GOOGLE_ADS_CONVERSION_ID = config('GOOGLE_ADS_CONVERSION_ID', default='').strip()

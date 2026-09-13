@@ -287,6 +287,7 @@ def meu_agendamento(request, uuid):
             Agendamento.Status.PENDENTE,
             Agendamento.Status.CONFIRMADO,
         ),
+        'criado': request.GET.get('criado') == '1',
     })
 
 

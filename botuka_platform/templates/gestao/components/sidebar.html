@@ -1,3 +1,4 @@
+{% load gestao_extras %}
 <aside class="gestao-sidebar">
   <div class="gestao-brand">BOTUKA</div>
   <nav class="gestao-menu" aria-label="Menu de gestão">
@@ -21,6 +22,9 @@
     <a href="{% url 'gestao:bairros_lista' %}">Bairros</a>
     <a href="{% url 'gestao:contatos_lista' %}">Contatos</a>
     <a href="{% url 'gestao:configuracoes_lista' %}">Configurações</a>
+    {% if request.user|is_master %}
+    <a href="{% url 'gestao:analytics_ga4' %}">Analytics GA4</a>
+    {% endif %}
     <a href="{% url 'accounts:logout' %}">Sair</a>
   </nav>
 </aside>
