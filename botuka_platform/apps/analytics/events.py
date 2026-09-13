@@ -15,6 +15,7 @@ ALLOWED_EVENTS = {
     'social_story_create', 'social_story_view', 'social_follow_request',
     'social_follow_approve', 'social_follow_reject', 'social_block',
     'social_unblock', 'social_share_platform_content',
+    'ad_impression', 'ad_click',
 }
 
 ALLOWED_METADATA = {

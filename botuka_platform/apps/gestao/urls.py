@@ -3,12 +3,14 @@
 from django.urls import include, path
 
 from apps.gestao import views
+from apps.gestao import analytics_views
 from apps.products import taxonomy_views
 
 app_name = 'gestao'
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
+    path('analytics/ga4/', analytics_views.ga4_dashboard, name='analytics_ga4'),
     path('comunicacao/', include('apps.comunicacao.urls')),
     path('taxonomias/produtos/', taxonomy_views.dashboard, name='taxonomia_produtos_dashboard'),
     path('taxonomias/produtos/api/setores/', taxonomy_views.api_setores, name='api_produtos_setores'),

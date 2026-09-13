@@ -102,6 +102,7 @@
         objectType: page.dataset.objectType, objectId: page.dataset.objectId,
         searchTerm: page.dataset.searchTerm, resultsCount: Number(page.dataset.resultsCount || 0),
         context: page.dataset.analyticsContext || location.pathname,
+        dedupeKey: page.dataset.analyticsDedupeKey || '',
       });
     }
     const observer = new IntersectionObserver(function (entries) {
@@ -141,6 +142,7 @@
     const base = {objectType: context?.dataset.objectType, objectId: context?.dataset.objectId, context: context?.dataset.analyticsContext || location.pathname};
     if (href.startsWith('https://wa.me/') || href.includes('whatsapp.com')) track('whatsapp_click', base);
     else if (href.startsWith('tel:')) track('phone_click', base);
+    else if (href.startsWith('mailto:')) track('company_contact', {...base, method: 'email'});
     else if (link.dataset.analyticsDirections !== undefined) track('directions_click', base);
     else if (/^https?:\/\//.test(href) && new URL(href, location.href).origin !== location.origin) track('website_click', base);
   });

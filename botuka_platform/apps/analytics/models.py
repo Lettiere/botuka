@@ -51,6 +51,7 @@ class AnalyticsDailyCompany(models.Model):
     product_views = models.PositiveBigIntegerField(default=0)
     whatsapp_clicks = models.PositiveBigIntegerField(default=0)
     phone_clicks = models.PositiveBigIntegerField(default=0)
+    email_clicks = models.PositiveBigIntegerField(default=0)
     website_clicks = models.PositiveBigIntegerField(default=0)
     directions_clicks = models.PositiveBigIntegerField(default=0)
     leads = models.PositiveBigIntegerField(default=0)

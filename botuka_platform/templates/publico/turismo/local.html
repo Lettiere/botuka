@@ -207,7 +207,7 @@
     margin-bottom: .2em;
   }
 </style>
-<main class="public-detail container-botuka" id="conteudo-principal">
+<main class="public-detail container-botuka" id="conteudo-principal" data-analytics-event="view_content" data-object-type="tourism_place" data-object-id="{{ local.uuid }}" data-analytics-context="tourism_place_page">
   {# Breadcrumb #}
   {% url "tourism_public:locais" as parent_url %}
   {% include "public/components/breadcrumb.html" with parent_url=parent_url parent_label="Turismo" current_label=local.nome %}

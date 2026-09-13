@@ -1,7 +1,7 @@
 """Filtros auxiliares para templates de gestão."""
 
 from django import template
-from apps.accounts.permissions import usuario_tem_permissao
+from apps.accounts.permissions import usuario_e_master, usuario_tem_permissao
 
 register = template.Library()
 
@@ -28,6 +28,11 @@ def has_perm_code(user: object, code: str) -> bool:
     """Permite checar permissão de domínio em templates."""
 
     return usuario_tem_permissao(user, code)
+
+
+@register.filter
+def is_master(user: object) -> bool:
+    return usuario_e_master(user)
 
 
 @register.filter

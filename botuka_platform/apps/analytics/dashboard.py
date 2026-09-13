@@ -1,6 +1,6 @@
 from datetime import date, timedelta
 
-from django.db.models import Count, Sum
+from django.db.models import Count, Q, Sum
 from django.utils import timezone
 
 from .models import AnalyticsDailyCompany, AnalyticsDailyCompanyTerm, AnalyticsEvent
@@ -8,8 +8,8 @@ from .models import AnalyticsDailyCompany, AnalyticsDailyCompanyTerm, AnalyticsE
 
 METRICS = (
     'impressions', 'views', 'visitors', 'search_views', 'service_views',
-    'product_views', 'whatsapp_clicks', 'phone_clicks', 'website_clicks',
-    'directions_clicks', 'leads',
+    'product_views', 'whatsapp_clicks', 'phone_clicks', 'email_clicks',
+    'website_clicks', 'directions_clicks', 'leads',
 )
 
 
@@ -64,8 +64,8 @@ def dashboard_data(empresa, start, end, previous_start, previous_end):
             'date': cursor,
             'views': row.views if row else 0,
             'contacts': (
-                row.whatsapp_clicks + row.phone_clicks + row.website_clicks
-                + row.directions_clicks
+                row.whatsapp_clicks + row.phone_clicks + row.email_clicks
+                + row.website_clicks + row.directions_clicks
             ) if row else 0,
         })
         cursor += timedelta(days=1)
@@ -84,11 +84,83 @@ def dashboard_data(empresa, start, end, previous_start, previous_end):
         event_name__in=('view_service', 'view_item', 'view_job', 'view_event'),
     ).values('object_type', 'object_id').annotate(total=Count('id')).order_by('-total')[:10])
 
+    content_counts = events.aggregate(
+        company_views=Count(
+            'id',
+            filter=Q(event_name='view_company', object_type='company'),
+        ),
+        service_views=Count(
+            'id',
+            filter=Q(event_name='view_service'),
+        ),
+        product_views=Count(
+            'id',
+            filter=Q(event_name='view_item'),
+        ),
+        article_views=Count(
+            'id',
+            filter=Q(event_name='view_content', object_type='article'),
+        ),
+        tourism_views=Count(
+            'id',
+            filter=Q(
+                event_name='view_content',
+                object_type__in=('tourism_place', 'tourism_guide', 'tourism_company'),
+            ),
+        ),
+        sports_views=Count(
+            'id',
+            filter=Q(
+                event_name='view_content',
+                object_type__in=('sports_team', 'sports_athlete', 'sports_org'),
+            ),
+        ),
+        event_views=Count(
+            'id',
+            filter=Q(event_name='view_event'),
+        ),
+        job_views=Count(
+            'id',
+            filter=Q(event_name='view_job'),
+        ),
+        appointments=Count(
+            'id',
+            filter=Q(event_name='generate_lead', object_type='appointment'),
+        ),
+        ad_impressions=Count(
+            'id',
+            filter=Q(event_name='ad_impression', object_type='ad_campaign'),
+        ),
+        ad_clicks=Count(
+            'id',
+            filter=Q(event_name='ad_click', object_type='ad_campaign'),
+        ),
+    )
+
+    content_metrics = [
+        ('Perfil da empresa', content_counts['company_views']),
+        ('Serviços', content_counts['service_views']),
+        ('Produtos', content_counts['product_views']),
+        ('Notícias', content_counts['article_views']),
+        ('Turismo', content_counts['tourism_views']),
+        ('Esportes', content_counts['sports_views']),
+        ('Eventos', content_counts['event_views']),
+        ('Vagas', content_counts['job_views']),
+        ('Agendamentos gerados', content_counts['appointments']),
+    ]
+
+    advertising_metrics = {
+        'impressions': content_counts['ad_impressions'],
+        'clicks': content_counts['ad_clicks'],
+    }
+
     contact_total = sum(current[key] for key in (
-        'whatsapp_clicks', 'phone_clicks', 'website_clicks', 'directions_clicks',
+        'whatsapp_clicks', 'phone_clicks', 'email_clicks',
+        'website_clicks', 'directions_clicks',
     ))
     previous_contact = sum(previous[key] for key in (
-        'whatsapp_clicks', 'phone_clicks', 'website_clicks', 'directions_clicks',
+        'whatsapp_clicks', 'phone_clicks', 'email_clicks',
+        'website_clicks', 'directions_clicks',
     ))
     cards = [
         ('Visualizações', current['views'], _change(current['views'], previous['views'])),
@@ -114,4 +186,6 @@ def dashboard_data(empresa, start, end, previous_start, previous_end):
     return {
         'cards': cards, 'totals': current, 'series': series, 'sources': sources,
         'terms': terms, 'top_content': top_content, 'insights': insights,
+        'content_metrics': content_metrics,
+        'advertising_metrics': advertising_metrics,
     }

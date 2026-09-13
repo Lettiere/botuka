@@ -10,6 +10,7 @@ from apps.core.seo.context import _consent
 
 from .services import register_event
 from .dashboard import dashboard_data, resolve_period
+from .ga4 import get_company_ga4_overview
 from apps.organizations.permissions import empresas_disponiveis_para_usuario
 
 
@@ -34,8 +35,20 @@ def company_dashboard(request, uuid):
         raise PermissionDenied
     period, start, end, previous_start, previous_end = resolve_period(request.GET)
     context = dashboard_data(empresa, start, end, previous_start, previous_end)
+
+    ga4 = get_company_ga4_overview(
+        empresa,
+        start.isoformat(),
+        end.isoformat(),
+    )
+
     context.update({
-        'empresa': empresa, 'period': period, 'start': start, 'end': end,
-        'previous_start': previous_start, 'previous_end': previous_end,
+        'empresa': empresa,
+        'period': period,
+        'start': start,
+        'end': end,
+        'previous_start': previous_start,
+        'previous_end': previous_end,
+        'ga4': ga4,
     })
     return render(request, 'painel/analytics/company_dashboard.html', context)

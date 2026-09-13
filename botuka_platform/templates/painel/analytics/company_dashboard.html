@@ -17,6 +17,66 @@
   <section class="analytics-cards">
     {% for label, value, change in cards %}<article class="metric"><span>{{ label }}</span><strong>{{ value }}</strong>{% if change == None %}<small class="change">Sem base anterior</small>{% else %}<small class="change {% if change > 0 %}positive{% elif change < 0 %}negative{% endif %}">{{ change }}% vs. período anterior</small>{% endif %}</article>{% endfor %}
   </section>
+  <section class="analytics-panel" style="margin-top:16px">
+    <h2>Google Analytics</h2>
+
+    {% if ga4.available %}
+      <p class="analytics-muted">
+        Tráfego das páginas públicas vinculadas a esta empresa no período selecionado.
+      </p>
+
+      <div class="analytics-cards" style="margin-top:14px">
+        <article class="metric">
+          <span>Usuários ativos</span>
+          <strong>{{ ga4.active_users }}</strong>
+        </article>
+
+        <article class="metric">
+          <span>Sessões</span>
+          <strong>{{ ga4.sessions }}</strong>
+        </article>
+
+        <article class="metric">
+          <span>Visualizações</span>
+          <strong>{{ ga4.page_views }}</strong>
+        </article>
+      </div>
+    {% else %}
+      <p class="analytics-muted">
+        Dados do Google Analytics indisponíveis no momento.
+        O Analytics interno do BOTUKA continua funcionando normalmente.
+      </p>
+    {% endif %}
+  </section>
+
+  <section class="analytics-panel" style="margin-top:16px">
+    <h2>Ecossistema da empresa</h2>
+    <table class="analytics-table">
+      <thead>
+        <tr>
+          <th>Conteúdo / origem</th>
+          <th>Total</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for label, value in content_metrics %}
+        <tr>
+          <td>{{ label }}</td>
+          <td>{{ value }}</td>
+        </tr>
+        {% endfor %}
+        <tr>
+          <td>Publicidade · impressões</td>
+          <td>{{ advertising_metrics.impressions }}</td>
+        </tr>
+        <tr>
+          <td>Publicidade · cliques</td>
+          <td>{{ advertising_metrics.clicks }}</td>
+        </tr>
+      </tbody>
+    </table>
+  </section>
+
   <section class="analytics-grid">
     <article class="analytics-panel"><h2>Visualizações por dia</h2><div class="chart" role="img" aria-label="Gráfico de visualizações diárias">{% for point in series %}<span class="bar" style="height:{{ point.height }}%" title="{{ point.date|date:'d/m' }}: {{ point.views }}"></span>{% endfor %}</div></article>
     <article class="analytics-panel"><h2>Insights</h2><ul class="insights">{% for insight in insights %}<li>{{ insight }}</li>{% endfor %}</ul></article>

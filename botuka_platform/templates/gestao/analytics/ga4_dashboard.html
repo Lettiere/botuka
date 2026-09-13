@@ -1,0 +1,53 @@
+{% extends "gestao/base.html" %}
+
+{% block title %}Analytics Global — GA4 | BOTUKA{% endblock %}
+
+{% block content %}
+<section>
+  <div style="display:flex;justify-content:space-between;gap:16px;align-items:end;flex-wrap:wrap;margin-bottom:24px;">
+    <div>
+      <h1>Analytics Global — GA4</h1>
+      <p>Dados gerais de audiência do BOTUKA via Google Analytics 4.</p>
+    </div>
+
+    <form method="get">
+      <label for="period">Período</label>
+      <select id="period" name="period" onchange="this.form.submit()">
+        <option value="7" {% if period == "7" %}selected{% endif %}>7 dias</option>
+        <option value="30" {% if period == "30" %}selected{% endif %}>30 dias</option>
+        <option value="90" {% if period == "90" %}selected{% endif %}>90 dias</option>
+      </select>
+    </form>
+  </div>
+
+  {% if ga4.available %}
+    <div class="grid-cards">
+      <article class="stat">
+        <span>Usuários ativos</span>
+        <strong>{{ ga4.active_users }}</strong>
+      </article>
+
+      <article class="stat">
+        <span>Sessões</span>
+        <strong>{{ ga4.sessions }}</strong>
+      </article>
+
+      <article class="stat">
+        <span>Visualizações de página</span>
+        <strong>{{ ga4.page_views }}</strong>
+      </article>
+    </div>
+
+    <p style="margin-top:18px;">
+      Fonte: Google Analytics 4 · período: {{ period_label }}.
+    </p>
+  {% else %}
+    <article class="alert alert-warning">
+      <strong>GA4 indisponível.</strong>
+      {% if ga4.error %}
+        <div>{{ ga4.error }}</div>
+      {% endif %}
+    </article>
+  {% endif %}
+</section>
+{% endblock %}
