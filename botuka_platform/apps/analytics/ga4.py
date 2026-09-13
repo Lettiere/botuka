@@ -219,6 +219,12 @@ def company_public_paths(empresa) -> tuple[str, ...]:
 
 
 
+def _ga4_date(value):
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return str(value)
+
+
 def get_company_ga4_overview(
     empresa,
     start_date,
@@ -276,8 +282,8 @@ def get_company_ga4_overview(
                 property=f"properties/{property_id}",
                 date_ranges=[
                     DateRange(
-                        start_date=start_date,
-                        end_date=end_date,
+                        start_date=_ga4_date(start_date),
+                        end_date=_ga4_date(end_date),
                     )
                 ],
                 metrics=[
@@ -364,8 +370,8 @@ def get_ga4_overview(
                 property=f"properties/{property_id}",
                 date_ranges=[
                     DateRange(
-                        start_date=start_date,
-                        end_date=end_date,
+                        start_date=_ga4_date(start_date),
+                        end_date=_ga4_date(end_date),
                     )
                 ],
                 metrics=[

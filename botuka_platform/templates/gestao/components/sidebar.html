@@ -25,6 +25,9 @@
     {% if request.user|is_master %}
     <a href="{% url 'gestao:analytics_ga4' %}">Analytics GA4</a>
     {% endif %}
-    <a href="{% url 'accounts:logout' %}">Sair</a>
+    <form method="post" action="{% url 'accounts:logout' %}">
+      {% csrf_token %}
+      <button type="submit">Sair</button>
+    </form>
   </nav>
 </aside>
