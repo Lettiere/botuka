@@ -410,3 +410,390 @@ def get_ga4_overview(
         cache.set(cache_key, result, 60)
 
         return result
+
+
+# ============================================================
+# Analytics 360 — camada reutilizável de relatórios GA4
+# ============================================================
+
+def _ga4_number(value):
+    """
+    Converte valores retornados pelo GA4 preservando inteiros e decimais.
+    """
+    if value in (None, ""):
+        return 0
+
+    try:
+        if "." in str(value):
+            return float(value)
+        return int(value)
+    except (TypeError, ValueError):
+        try:
+            return float(value)
+        except (TypeError, ValueError):
+            return 0
+
+
+def get_ga4_report(
+    *,
+    dimensions=(),
+    metrics=(),
+    start_date="7daysAgo",
+    end_date="today",
+    paths=None,
+    limit=100,
+    order_bys=(),
+):
+    """
+    Executa um relatório genérico na GA4 Data API.
+
+    Retorno:
+        {
+            "available": bool,
+            "error": str,
+            "dimensions": [...],
+            "metrics": [...],
+            "rows": [
+                {
+                    "dimension_name": "...",
+                    "metric_name": 123,
+                }
+            ],
+        }
+
+    Se `paths` for informado, restringe o relatório às páginas públicas
+    associadas à entidade/empresa.
+    """
+    from hashlib import sha256
+
+    from django.core.cache import cache
+
+    if not getattr(settings, "ENABLE_GA4_DATA_API", False):
+        return {
+            "available": False,
+            "error": "GA4 indisponível.",
+            "dimensions": list(dimensions),
+            "metrics": list(metrics),
+            "rows": [],
+        }
+
+    property_id = str(
+        getattr(settings, "GA4_PROPERTY_ID", "")
+    ).strip()
+
+    if not property_id:
+        return {
+            "available": False,
+            "error": "GA4 indisponível.",
+            "dimensions": list(dimensions),
+            "metrics": list(metrics),
+            "rows": [],
+        }
+
+    dimensions = tuple(dimensions)
+    metrics = tuple(metrics)
+
+    if not metrics:
+        return {
+            "available": False,
+            "error": "Nenhuma métrica GA4 informada.",
+            "dimensions": list(dimensions),
+            "metrics": [],
+            "rows": [],
+        }
+
+    if len(metrics) > 10:
+        return {
+            "available": False,
+            "error": "O GA4 aceita no máximo 10 métricas por relatório.",
+            "dimensions": list(dimensions),
+            "metrics": list(metrics),
+            "rows": [],
+        }
+
+    normalized_paths = tuple(sorted(set(paths or ())))
+
+    cache_signature = "|".join(
+        [
+            property_id,
+            str(start_date),
+            str(end_date),
+            ",".join(dimensions),
+            ",".join(metrics),
+            ",".join(normalized_paths),
+            str(limit),
+            ",".join(order_bys),
+        ]
+    )
+
+    signature = sha256(
+        cache_signature.encode("utf-8")
+    ).hexdigest()[:24]
+
+    cache_key = f"analytics:ga4:report:{signature}"
+
+    cached = cache.get(cache_key)
+    if cached is not None:
+        return cached
+
+    try:
+        from google.analytics.data_v1beta import BetaAnalyticsDataClient
+        from google.analytics.data_v1beta.types import (
+            DateRange,
+            Dimension,
+            Filter,
+            FilterExpression,
+            Metric,
+            OrderBy,
+            RunReportRequest,
+        )
+
+        request_kwargs = {
+            "property": f"properties/{property_id}",
+            "date_ranges": [
+                DateRange(
+                    start_date=_ga4_date(start_date),
+                    end_date=_ga4_date(end_date),
+                )
+            ],
+            "dimensions": [
+                Dimension(name=name)
+                for name in dimensions
+            ],
+            "metrics": [
+                Metric(name=name)
+                for name in metrics
+            ],
+            "limit": int(limit),
+        }
+
+        if normalized_paths:
+            request_kwargs["dimension_filter"] = FilterExpression(
+                filter=Filter(
+                    field_name="pagePath",
+                    in_list_filter=Filter.InListFilter(
+                        values=list(normalized_paths),
+                        case_sensitive=True,
+                    ),
+                )
+            )
+
+        if order_bys:
+            ga4_order_bys = []
+
+            for field_name in order_bys:
+                descending = True
+
+                if field_name.startswith("+"):
+                    descending = False
+                    field_name = field_name[1:]
+                elif field_name.startswith("-"):
+                    field_name = field_name[1:]
+
+                if field_name in metrics:
+                    ga4_order_bys.append(
+                        OrderBy(
+                            metric=OrderBy.MetricOrderBy(
+                                metric_name=field_name
+                            ),
+                            desc=descending,
+                        )
+                    )
+                elif field_name in dimensions:
+                    ga4_order_bys.append(
+                        OrderBy(
+                            dimension=OrderBy.DimensionOrderBy(
+                                dimension_name=field_name
+                            ),
+                            desc=descending,
+                        )
+                    )
+
+            if ga4_order_bys:
+                request_kwargs["order_bys"] = ga4_order_bys
+
+        client = BetaAnalyticsDataClient()
+
+        response = client.run_report(
+            RunReportRequest(**request_kwargs)
+        )
+
+        rows = []
+
+        for row in response.rows:
+            item = {}
+
+            for index, name in enumerate(dimensions):
+                item[name] = row.dimension_values[index].value
+
+            for index, name in enumerate(metrics):
+                item[name] = _ga4_number(
+                    row.metric_values[index].value
+                )
+
+            rows.append(item)
+
+        result = {
+            "available": True,
+            "error": "",
+            "dimensions": list(dimensions),
+            "metrics": list(metrics),
+            "rows": rows,
+        }
+
+        cache.set(cache_key, result, 600)
+        return result
+
+    except Exception:
+        logger.exception(
+            "Falha ao executar relatório genérico GA4."
+        )
+
+        result = {
+            "available": False,
+            "error": "Google Analytics temporariamente indisponível.",
+            "dimensions": list(dimensions),
+            "metrics": list(metrics),
+            "rows": [],
+        }
+
+        cache.set(cache_key, result, 60)
+        return result
+
+
+def get_ga4_360_reports(
+    start_date="7daysAgo",
+    end_date="today",
+    *,
+    paths=None,
+):
+    """
+    Conjunto principal de relatórios usados pelo Analytics 360.
+    Pode ser utilizado globalmente ou filtrado pelos caminhos
+    públicos de uma empresa.
+    """
+
+    return {
+        "overview": get_ga4_report(
+            start_date=start_date,
+            end_date=end_date,
+            paths=paths,
+            metrics=(
+                "activeUsers",
+                "totalUsers",
+                "newUsers",
+                "sessions",
+                "engagedSessions",
+                "engagementRate",
+                "bounceRate",
+                "averageSessionDuration",
+                "screenPageViews",
+                "screenPageViewsPerSession",
+            ),
+        ),
+
+        "engagement": get_ga4_report(
+            start_date=start_date,
+            end_date=end_date,
+            paths=paths,
+            metrics=(
+                "sessionsPerUser",
+                "eventCount",
+                "keyEvents",
+                "userEngagementDuration",
+            ),
+        ),
+
+        "timeseries": get_ga4_report(
+            start_date=start_date,
+            end_date=end_date,
+            paths=paths,
+            dimensions=("date",),
+            metrics=(
+                "activeUsers",
+                "sessions",
+                "screenPageViews",
+                "engagedSessions",
+                "keyEvents",
+            ),
+            limit=400,
+            order_bys=("+date",),
+        ),
+
+        "acquisition": get_ga4_report(
+            start_date=start_date,
+            end_date=end_date,
+            paths=paths,
+            dimensions=(
+                "sessionDefaultChannelGroup",
+                "sessionSource",
+                "sessionMedium",
+            ),
+            metrics=(
+                "activeUsers",
+                "sessions",
+                "engagedSessions",
+                "engagementRate",
+                "keyEvents",
+            ),
+            limit=100,
+            order_bys=("-sessions",),
+        ),
+
+        "pages": get_ga4_report(
+            start_date=start_date,
+            end_date=end_date,
+            paths=paths,
+            dimensions=("pagePath", "pageTitle"),
+            metrics=(
+                "activeUsers",
+                "screenPageViews",
+                "userEngagementDuration",
+                "eventCount",
+            ),
+            limit=100,
+            order_bys=("-screenPageViews",),
+        ),
+
+        "devices": get_ga4_report(
+            start_date=start_date,
+            end_date=end_date,
+            paths=paths,
+            dimensions=("deviceCategory",),
+            metrics=(
+                "activeUsers",
+                "sessions",
+                "screenPageViews",
+            ),
+            limit=20,
+            order_bys=("-sessions",),
+        ),
+
+        "geography": get_ga4_report(
+            start_date=start_date,
+            end_date=end_date,
+            paths=paths,
+            dimensions=("city", "region", "country"),
+            metrics=(
+                "activeUsers",
+                "sessions",
+                "screenPageViews",
+            ),
+            limit=100,
+            order_bys=("-activeUsers",),
+        ),
+
+        "events": get_ga4_report(
+            start_date=start_date,
+            end_date=end_date,
+            paths=paths,
+            dimensions=("eventName",),
+            metrics=(
+                "eventCount",
+                "activeUsers",
+                "keyEvents",
+            ),
+            limit=100,
+            order_bys=("-eventCount",),
+        ),
+    }

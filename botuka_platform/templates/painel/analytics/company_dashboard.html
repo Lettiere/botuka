@@ -50,6 +50,110 @@
   </section>
 
   <section class="analytics-panel" style="margin-top:16px">
+    <h2>Público e usuários relacionados</h2>
+
+    <p class="analytics-muted">
+      Usuários registrados que tiveram relacionamento real com esta empresa
+      no período selecionado. Cada usuário é contado apenas uma vez no total.
+    </p>
+
+    <div class="analytics-cards" style="margin-top:14px">
+      <article class="metric">
+        <span>Usuários relacionados</span>
+        <strong>{{ audience.unique_users }}</strong>
+      </article>
+
+      <article class="metric">
+        <span>Identificados no Analytics</span>
+        <strong>{{ audience.identified_users }}</strong>
+      </article>
+
+      <article class="metric">
+        <span>Novos seguidores</span>
+        <strong>{{ audience.followers }}</strong>
+      </article>
+
+      <article class="metric">
+        <span>Clientes de agendamento</span>
+        <strong>{{ audience.appointment_clients }}</strong>
+      </article>
+    </div>
+
+    <div class="analytics-grid">
+      <article class="analytics-panel">
+        <h2>Relacionamentos</h2>
+
+        <table class="analytics-table">
+          <tbody>
+            <tr>
+              <td>Favoritaram serviços</td>
+              <td>{{ audience.favorites }}</td>
+            </tr>
+            <tr>
+              <td>Avaliaram serviços</td>
+              <td>{{ audience.reviewers }}</td>
+            </tr>
+            <tr>
+              <td>Seguiram a empresa</td>
+              <td>{{ audience.followers }}</td>
+            </tr>
+            <tr>
+              <td>Clientes de agendamento</td>
+              <td>{{ audience.appointment_clients }}</td>
+            </tr>
+          </tbody>
+        </table>
+      </article>
+
+      <article class="analytics-panel">
+        <h2>Perfil demográfico</h2>
+
+        {% if audience.demographics_available %}
+          <h3 style="font-size:15px;margin:0 0 10px">Faixa etária</h3>
+
+          <table class="analytics-table">
+            <tbody>
+              {% for row in audience.age_bands %}
+              <tr>
+                <td>{{ row.label }}</td>
+                <td>{{ row.total }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="2">Sem idade informada.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+          <h3 style="font-size:15px;margin:18px 0 10px">Localização</h3>
+
+          <table class="analytics-table">
+            <tbody>
+              {% for row in audience.locations %}
+              <tr>
+                <td>{{ row.label }}</td>
+                <td>{{ row.total }}</td>
+              </tr>
+              {% empty %}
+              <tr>
+                <td colspan="2">Sem localização pública disponível.</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% else %}
+          <p class="analytics-muted">
+            Dados demográficos disponíveis somente a partir de
+            {{ audience.demographic_min_users }} usuários relacionados,
+            protegendo a privacidade individual.
+          </p>
+        {% endif %}
+      </article>
+    </div>
+  </section>
+
+  <section class="analytics-panel" style="margin-top:16px">
     <h2>Ecossistema da empresa</h2>
     <table class="analytics-table">
       <thead>

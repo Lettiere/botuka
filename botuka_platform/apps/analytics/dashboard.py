@@ -12,6 +12,8 @@ METRICS = (
     'website_clicks', 'directions_clicks', 'leads',
 )
 
+DEMOGRAPHIC_MIN_USERS = 5
+
 
 def resolve_period(params):
     today = timezone.localdate()
@@ -48,6 +50,153 @@ def _change(current, previous):
         return None if current else 0
     return round(((current - previous) / previous) * 100, 1)
 
+
+
+def company_audience_data(empresa, start, end):
+    """
+    Consolida usuários que tiveram relacionamento real com a empresa
+    no período, sem expor dados pessoais sensíveis.
+    """
+    from django.contrib.auth import get_user_model
+
+    from apps.agenda.models import Agendamento
+    from apps.services.models import ServicoAvaliacao, ServicoFavorito
+    from apps.social.models import EmpresaSeguidor
+
+    User = get_user_model()
+
+    identified_ids = set(
+        AnalyticsEvent.objects.filter(
+            empresa=empresa,
+            user__isnull=False,
+            created_at__date__range=(start, end),
+        ).values_list('user_id', flat=True).distinct()
+    )
+
+    follower_ids = set(
+        EmpresaSeguidor.objects.filter(
+            empresa=empresa,
+            criado_em__date__range=(start, end),
+        ).values_list('usuario_id', flat=True).distinct()
+    )
+
+    favorite_ids = set(
+        ServicoFavorito.objects.filter(
+            servico__empresa=empresa,
+            criado_em__date__range=(start, end),
+        ).values_list('usuario_id', flat=True).distinct()
+    )
+
+    reviewer_ids = set(
+        ServicoAvaliacao.objects.filter(
+            servico__empresa=empresa,
+            criado_em__date__range=(start, end),
+            excluido_em__isnull=True,
+        ).values_list('usuario_avaliador_id', flat=True).distinct()
+    )
+
+    appointment_ids = set(
+        Agendamento.objects.filter(
+            profissional_servico__servico__empresa=empresa,
+            criado_em__date__range=(start, end),
+        ).values_list('cliente_id', flat=True).distinct()
+    )
+
+    all_ids = (
+        identified_ids
+        | follower_ids
+        | favorite_ids
+        | reviewer_ids
+        | appointment_ids
+    )
+
+    users = list(
+        User.objects.filter(
+            pk__in=all_ids,
+            is_active=True,
+        ).select_related('cidade', 'estado')
+    )
+
+    demographics_available = len(users) >= DEMOGRAPHIC_MIN_USERS
+
+    age_bands = {
+        'Até 17': 0,
+        '18–24': 0,
+        '25–34': 0,
+        '35–44': 0,
+        '45–54': 0,
+        '55–64': 0,
+        '65+': 0,
+        'Não informado': 0,
+    }
+
+    today = timezone.localdate()
+    locations = {}
+
+    for user in users if demographics_available else []:
+        if user.data_nascimento:
+            age = (
+                today.year
+                - user.data_nascimento.year
+                - (
+                    (today.month, today.day)
+                    < (user.data_nascimento.month, user.data_nascimento.day)
+                )
+            )
+
+            if age < 18:
+                band = 'Até 17'
+            elif age <= 24:
+                band = '18–24'
+            elif age <= 34:
+                band = '25–34'
+            elif age <= 44:
+                band = '35–44'
+            elif age <= 54:
+                band = '45–54'
+            elif age <= 64:
+                band = '55–64'
+            else:
+                band = '65+'
+        else:
+            band = 'Não informado'
+
+        age_bands[band] += 1
+
+        if (
+            user.visibilidade_localizacao != user.VisibilidadeLocalizacao.PRIVADA
+            and user.cidade_id
+            and user.estado_id
+        ):
+            location = f'{user.cidade} / {user.estado}'
+            locations[location] = locations.get(location, 0) + 1
+
+    age_bands = [
+        {'label': label, 'total': total}
+        for label, total in age_bands.items()
+        if total
+    ]
+
+    locations = [
+        {'label': label, 'total': total}
+        for label, total in sorted(
+            locations.items(),
+            key=lambda item: (-item[1], item[0]),
+        )[:10]
+    ]
+
+    return {
+        'unique_users': len(all_ids),
+        'identified_users': len(identified_ids),
+        'followers': len(follower_ids),
+        'favorites': len(favorite_ids),
+        'reviewers': len(reviewer_ids),
+        'appointment_clients': len(appointment_ids),
+        'demographics_available': demographics_available,
+        'demographic_min_users': DEMOGRAPHIC_MIN_USERS,
+        'age_bands': age_bands if demographics_available else [],
+        'locations': locations if demographics_available else [],
+    }
 
 def dashboard_data(empresa, start, end, previous_start, previous_end):
     daily = AnalyticsDailyCompany.objects.filter(empresa=empresa, date__range=(start, end))
@@ -188,4 +337,5 @@ def dashboard_data(empresa, start, end, previous_start, previous_end):
         'terms': terms, 'top_content': top_content, 'insights': insights,
         'content_metrics': content_metrics,
         'advertising_metrics': advertising_metrics,
+        'audience': company_audience_data(empresa, start, end),
     }

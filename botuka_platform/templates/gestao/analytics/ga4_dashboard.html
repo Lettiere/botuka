@@ -1,53 +1,1374 @@
 {% extends "gestao/base.html" %}
 
-{% block title %}Analytics Global — GA4 | BOTUKA{% endblock %}
+{% block title %}Analytics 360° | BOTUKA{% endblock %}
 
 {% block content %}
-<section>
-  <div style="display:flex;justify-content:space-between;gap:16px;align-items:end;flex-wrap:wrap;margin-bottom:24px;">
+
+<link
+  rel="stylesheet"
+  href="https://cdn.datatables.net/1.13.6/css/jquery.dataTables.min.css"
+>
+
+<style>
+.analytics360{
+  --a-bg:#f6f8fb;
+  --a-card:#ffffff;
+  --a-border:#e4eaf2;
+  --a-ink:#172033;
+  --a-muted:#667085;
+  --a-primary:#0f766e;
+  --a-primary-soft:#ecfdf5;
+  --a-blue:#2563eb;
+  --a-blue-soft:#eff6ff;
+  --a-violet:#7c3aed;
+  --a-violet-soft:#f5f3ff;
+  --a-orange:#ea580c;
+  --a-orange-soft:#fff7ed;
+  --a-red:#dc2626;
+  --a-red-soft:#fef2f2;
+}
+
+.analytics360 *{
+  box-sizing:border-box;
+}
+
+.a360-header{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-end;
+  gap:24px;
+  margin-bottom:24px;
+}
+
+.a360-eyebrow{
+  display:inline-flex;
+  align-items:center;
+  gap:7px;
+  margin-bottom:9px;
+  color:var(--a-primary);
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+
+.a360-header h1{
+  margin:0;
+  color:var(--a-ink);
+  font-size:30px;
+  letter-spacing:-.03em;
+}
+
+.a360-header p{
+  max-width:760px;
+  margin:8px 0 0;
+  color:var(--a-muted);
+  font-size:14px;
+  line-height:1.65;
+}
+
+.a360-filter{
+  min-width:180px;
+}
+
+.a360-filter label{
+  display:block;
+  margin-bottom:7px;
+  color:var(--a-muted);
+  font-size:12px;
+  font-weight:700;
+}
+
+.a360-filter select{
+  min-width:180px;
+  background:#fff;
+  font-weight:700;
+}
+
+.a360-summary{
+  padding:18px 20px;
+  margin-bottom:20px;
+  border:1px solid #dbeafe;
+  border-radius:14px;
+  background:linear-gradient(135deg,#eff6ff,#f8fafc);
+}
+
+.a360-summary strong{
+  display:flex;
+  align-items:center;
+  gap:8px;
+  margin-bottom:6px;
+  color:#1e3a8a;
+  font-size:15px;
+}
+
+.a360-summary p{
+  margin:0;
+  color:#475569;
+  font-size:13px;
+  line-height:1.6;
+}
+
+.a360-kpis{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:14px;
+  margin-bottom:24px;
+}
+
+.a360-kpi{
+  min-height:150px;
+  padding:18px;
+  border:1px solid var(--a-border);
+  border-radius:14px;
+  background:var(--a-card);
+  box-shadow:0 3px 14px rgba(15,23,42,.035);
+}
+
+.a360-kpi-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:12px;
+}
+
+.a360-kpi-icon{
+  display:flex;
+  width:38px;
+  height:38px;
+  align-items:center;
+  justify-content:center;
+  flex:0 0 auto;
+  border-radius:10px;
+  font-size:18px;
+}
+
+.a360-kpi-icon.green{background:var(--a-primary-soft);color:var(--a-primary)}
+.a360-kpi-icon.blue{background:var(--a-blue-soft);color:var(--a-blue)}
+.a360-kpi-icon.violet{background:var(--a-violet-soft);color:var(--a-violet)}
+.a360-kpi-icon.orange{background:var(--a-orange-soft);color:var(--a-orange)}
+
+.a360-kpi-label{
+  margin-bottom:8px;
+  color:var(--a-muted);
+  font-size:12px;
+  font-weight:750;
+}
+
+.a360-kpi-value{
+  color:var(--a-ink);
+  font-size:29px;
+  font-weight:850;
+  letter-spacing:-.04em;
+}
+
+.a360-kpi-help{
+  margin-top:12px;
+  color:var(--a-muted);
+  font-size:12px;
+  line-height:1.45;
+}
+
+.a360-grid-main{
+  display:grid;
+  grid-template-columns:minmax(0,2fr) minmax(300px,1fr);
+  gap:18px;
+  margin-bottom:18px;
+}
+
+.a360-panel{
+  min-width:0;
+  border:1px solid var(--a-border);
+  border-radius:14px;
+  background:#fff;
+  box-shadow:0 3px 14px rgba(15,23,42,.035);
+}
+
+.a360-panel-head{
+  display:flex;
+  justify-content:space-between;
+  align-items:flex-start;
+  gap:16px;
+  padding:19px 20px 14px;
+  border-bottom:1px solid #eef2f7;
+}
+
+.a360-panel-title{
+  margin:0;
+  color:var(--a-ink);
+  font-size:17px;
+  letter-spacing:-.015em;
+}
+
+.a360-panel-subtitle{
+  margin:5px 0 0;
+  color:var(--a-muted);
+  font-size:12px;
+  line-height:1.5;
+}
+
+.a360-panel-body{
+  padding:20px;
+}
+
+.a360-chart-main{
+  position:relative;
+  height:330px;
+}
+
+.a360-chart-device{
+  position:relative;
+  height:245px;
+}
+
+.a360-mini-grid{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:10px;
+  margin-top:14px;
+}
+
+.a360-mini{
+  padding:12px;
+  border-radius:10px;
+  background:#f8fafc;
+}
+
+.a360-mini span{
+  display:block;
+  color:var(--a-muted);
+  font-size:11px;
+}
+
+.a360-mini strong{
+  display:block;
+  margin-top:4px;
+  color:var(--a-ink);
+  font-size:16px;
+}
+
+.a360-grid-2{
+  display:grid;
+  grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:18px;
+  margin-bottom:18px;
+}
+
+.a360-insights{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:14px;
+  margin-bottom:18px;
+}
+
+.a360-insight{
+  padding:18px;
+  border:1px solid var(--a-border);
+  border-radius:13px;
+  background:#fff;
+}
+
+.a360-insight i{
+  color:var(--a-primary);
+  font-size:20px;
+}
+
+.a360-insight strong{
+  display:block;
+  margin:10px 0 5px;
+  color:var(--a-ink);
+  font-size:14px;
+}
+
+.a360-insight p{
+  margin:0;
+  color:var(--a-muted);
+  font-size:12px;
+  line-height:1.5;
+}
+
+.a360-table-panel{
+  margin-bottom:18px;
+}
+
+.a360-table-wrap{
+  padding:4px 20px 18px;
+  overflow-x:auto;
+}
+
+.a360-table{
+  width:100% !important;
+}
+
+.a360-table td{
+  color:#344054;
+}
+
+.a360-table td strong{
+  color:var(--a-ink);
+}
+
+.a360-path{
+  max-width:420px;
+  word-break:break-word;
+}
+
+.a360-channel{
+  display:inline-flex;
+  padding:4px 8px;
+  border-radius:999px;
+  background:#f1f5f9;
+  color:#475569;
+  font-size:11px;
+  font-weight:750;
+}
+
+.a360-channel.ai{
+  background:#ede9fe;
+  color:#6d28d9;
+}
+
+.a360-channel.direct{
+  background:#ecfdf5;
+  color:#047857;
+}
+
+.a360-source-note{
+  display:flex;
+  justify-content:space-between;
+  gap:16px;
+  flex-wrap:wrap;
+  padding-top:8px;
+  color:var(--a-muted);
+  font-size:11px;
+}
+
+div.dataTables_wrapper div.dataTables_filter input,
+.dataTables_wrapper .dataTables_length select{
+  width:auto;
+  min-width:60px;
+  padding:7px 9px;
+  border:1px solid var(--a-border);
+  border-radius:7px;
+}
+
+.dataTables_wrapper .dataTables_filter,
+.dataTables_wrapper .dataTables_length{
+  margin:12px 0;
+  color:var(--a-muted);
+  font-size:12px;
+}
+
+.dataTables_wrapper .dataTables_info,
+.dataTables_wrapper .dataTables_paginate{
+  padding-top:14px !important;
+  color:var(--a-muted) !important;
+  font-size:12px;
+}
+
+.dataTables_wrapper .dataTables_paginate .paginate_button{
+  border-radius:7px !important;
+}
+
+@media(max-width:1180px){
+  .a360-kpis{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .a360-grid-main{grid-template-columns:1fr}
+}
+
+@media(max-width:900px){
+  .a360-header{align-items:stretch;flex-direction:column}
+  .a360-filter{width:100%}
+  .a360-filter select{width:100%}
+  .a360-grid-2,
+  .a360-insights{grid-template-columns:1fr}
+}
+
+@media(max-width:600px){
+  .a360-kpis{grid-template-columns:1fr}
+  .a360-header h1{font-size:25px}
+  .a360-chart-main{height:280px}
+  .a360-mini-grid{grid-template-columns:1fr}
+}
+</style>
+
+<div class="analytics360">
+
+  <header class="a360-header">
     <div>
-      <h1>Analytics Global — GA4</h1>
-      <p>Dados gerais de audiência do BOTUKA via Google Analytics 4.</p>
+      <div class="a360-eyebrow">
+        <i class="bi bi-graph-up-arrow"></i>
+        Inteligência de Dados
+      </div>
+
+      <h1>Analytics 360°</h1>
+
+      <p>
+        Uma visão clara do comportamento do público no BOTUKA.
+        Aqui você acompanha quantas pessoas acessaram a plataforma,
+        como chegaram, quais conteúdos despertaram mais interesse,
+        de quais cidades vieram e como interagiram com o site.
+      </p>
     </div>
 
-    <form method="get">
-      <label for="period">Período</label>
-      <select id="period" name="period" onchange="this.form.submit()">
-        <option value="7" {% if period == "7" %}selected{% endif %}>7 dias</option>
-        <option value="30" {% if period == "30" %}selected{% endif %}>30 dias</option>
-        <option value="90" {% if period == "90" %}selected{% endif %}>90 dias</option>
+    <form method="get" class="a360-filter">
+      <label for="period">Período analisado</label>
+
+      <select
+        id="period"
+        name="period"
+        onchange="this.form.submit()"
+      >
+        <option value="today" {% if period == "today" %}selected{% endif %}>
+          Hoje
+        </option>
+        <option value="7" {% if period == "7" %}selected{% endif %}>
+          Últimos 7 dias
+        </option>
+        <option value="30" {% if period == "30" %}selected{% endif %}>
+          Últimos 30 dias
+        </option>
+        <option value="90" {% if period == "90" %}selected{% endif %}>
+          Últimos 90 dias
+        </option>
       </select>
     </form>
-  </div>
+  </header>
 
-  {% if ga4.available %}
-    <div class="grid-cards">
-      <article class="stat">
-        <span>Usuários ativos</span>
-        <strong>{{ ga4.active_users }}</strong>
-      </article>
 
-      <article class="stat">
-        <span>Sessões</span>
-        <strong>{{ ga4.sessions }}</strong>
-      </article>
+  {% if ga4_360.overview.available %}
 
-      <article class="stat">
-        <span>Visualizações de página</span>
-        <strong>{{ ga4.page_views }}</strong>
-      </article>
+    {% with overview=ga4_360.overview.rows.0 engagement=ga4_360.engagement.rows.0 %}
+
+    <div class="a360-summary">
+      <strong>
+        <i class="bi bi-info-circle"></i>
+        Como interpretar este painel
+      </strong>
+
+      <p>
+        Os números abaixo mostram o movimento real registrado pelo Google Analytics.
+        “Usuários” representa pessoas que acessaram o BOTUKA;
+        “sessões” são as visitas realizadas;
+        “visualizações” mostram quantas páginas foram abertas;
+        e “engajamento” ajuda a entender se essas visitas realmente interagiram com o conteúdo.
+      </p>
     </div>
 
-    <p style="margin-top:18px;">
-      Fonte: Google Analytics 4 · período: {{ period_label }}.
-    </p>
+
+    <section class="a360-kpis">
+
+      <article class="a360-kpi">
+        <div class="a360-kpi-head">
+          <div>
+            <div class="a360-kpi-label">Pessoas alcançadas</div>
+            <div class="a360-kpi-value">
+              {{ overview.activeUsers|default:0 }}
+            </div>
+          </div>
+
+          <div class="a360-kpi-icon green">
+            <i class="bi bi-people"></i>
+          </div>
+        </div>
+
+        <div class="a360-kpi-help">
+          Pessoas diferentes que utilizaram o BOTUKA no período selecionado.
+        </div>
+      </article>
+
+
+      <article class="a360-kpi">
+        <div class="a360-kpi-head">
+          <div>
+            <div class="a360-kpi-label">Visitas realizadas</div>
+            <div class="a360-kpi-value">
+              {{ overview.sessions|default:0 }}
+            </div>
+          </div>
+
+          <div class="a360-kpi-icon blue">
+            <i class="bi bi-window-stack"></i>
+          </div>
+        </div>
+
+        <div class="a360-kpi-help">
+          Quantidade de sessões iniciadas. Uma mesma pessoa pode realizar mais de uma visita.
+        </div>
+      </article>
+
+
+      <article class="a360-kpi">
+        <div class="a360-kpi-head">
+          <div>
+            <div class="a360-kpi-label">Novos visitantes</div>
+            <div class="a360-kpi-value">
+              {{ overview.newUsers|default:0 }}
+            </div>
+          </div>
+
+          <div class="a360-kpi-icon violet">
+            <i class="bi bi-person-plus"></i>
+          </div>
+        </div>
+
+        <div class="a360-kpi-help">
+          Pessoas que chegaram ao BOTUKA pela primeira vez no período.
+        </div>
+      </article>
+
+
+      <article class="a360-kpi">
+        <div class="a360-kpi-head">
+          <div>
+            <div class="a360-kpi-label">Páginas visualizadas</div>
+            <div class="a360-kpi-value">
+              {{ overview.screenPageViews|default:0 }}
+            </div>
+          </div>
+
+          <div class="a360-kpi-icon orange">
+            <i class="bi bi-eye"></i>
+          </div>
+        </div>
+
+        <div class="a360-kpi-help">
+          Total de páginas abertas pelos visitantes durante suas navegações.
+        </div>
+      </article>
+
+
+      <article class="a360-kpi">
+        <div class="a360-kpi-head">
+          <div>
+            <div class="a360-kpi-label">Visitas com interação</div>
+            <div class="a360-kpi-value">
+              {{ overview.engagedSessions|default:0 }}
+            </div>
+          </div>
+
+          <div class="a360-kpi-icon green">
+            <i class="bi bi-hand-index-thumb"></i>
+          </div>
+        </div>
+
+        <div class="a360-kpi-help">
+          Sessões em que o visitante permaneceu ou realizou alguma interação relevante.
+        </div>
+      </article>
+
+
+      <article class="a360-kpi">
+        <div class="a360-kpi-head">
+          <div>
+            <div class="a360-kpi-label">Taxa de engajamento</div>
+            <div class="a360-kpi-value">
+              {% widthratio overview.engagementRate 1 100 %}%
+            </div>
+          </div>
+
+          <div class="a360-kpi-icon blue">
+            <i class="bi bi-activity"></i>
+          </div>
+        </div>
+
+        <div class="a360-kpi-help">
+          Percentual das visitas que demonstraram envolvimento real com a plataforma.
+        </div>
+      </article>
+
+
+      <article class="a360-kpi">
+        <div class="a360-kpi-head">
+          <div>
+            <div class="a360-kpi-label">Páginas por visita</div>
+            <div class="a360-kpi-value">
+              {{ overview.screenPageViewsPerSession|floatformat:2 }}
+            </div>
+          </div>
+
+          <div class="a360-kpi-icon violet">
+            <i class="bi bi-layers"></i>
+          </div>
+        </div>
+
+        <div class="a360-kpi-help">
+          Média de páginas abertas a cada visita realizada no BOTUKA.
+        </div>
+      </article>
+
+
+      <article class="a360-kpi">
+        <div class="a360-kpi-head">
+          <div>
+            <div class="a360-kpi-label">Interações registradas</div>
+            <div class="a360-kpi-value">
+              {{ engagement.eventCount|default:0 }}
+            </div>
+          </div>
+
+          <div class="a360-kpi-icon orange">
+            <i class="bi bi-lightning-charge"></i>
+          </div>
+        </div>
+
+        <div class="a360-kpi-help">
+          Ações registradas pelo Analytics, como visualizações, sessões, formulários e engajamento.
+        </div>
+      </article>
+
+    </section>
+
+
+    <div class="a360-grid-main">
+
+      <section class="a360-panel">
+        <header class="a360-panel-head">
+          <div>
+            <h2 class="a360-panel-title">
+              Evolução da audiência
+            </h2>
+
+            <p class="a360-panel-subtitle">
+              Acompanhe como usuários, visitas e visualizações evoluíram ao longo do período.
+            </p>
+          </div>
+        </header>
+
+        <div class="a360-panel-body">
+          <div class="a360-chart-main">
+            <canvas id="trafficChart"></canvas>
+          </div>
+        </div>
+      </section>
+
+
+      <section class="a360-panel">
+        <header class="a360-panel-head">
+          <div>
+            <h2 class="a360-panel-title">
+              Dispositivos utilizados
+            </h2>
+
+            <p class="a360-panel-subtitle">
+              Mostra se o público navega principalmente pelo computador, celular ou outros dispositivos.
+            </p>
+          </div>
+        </header>
+
+        <div class="a360-panel-body">
+
+          <div class="a360-chart-device">
+            <canvas id="deviceChart"></canvas>
+          </div>
+
+          <div class="a360-mini-grid">
+            {% for row in ga4_360.devices.rows %}
+              <div class="a360-mini">
+                <span>
+                  {% if row.deviceCategory == "desktop" %}
+                    Computador
+                  {% elif row.deviceCategory == "mobile" %}
+                    Celular
+                  {% elif row.deviceCategory == "tablet" %}
+                    Tablet
+                  {% else %}
+                    {{ row.deviceCategory }}
+                  {% endif %}
+                </span>
+
+                <strong>{{ row.activeUsers }} usuários</strong>
+              </div>
+            {% endfor %}
+          </div>
+
+        </div>
+      </section>
+
+    </div>
+
+
+    <section class="a360-insights">
+
+      <article class="a360-insight">
+        <i class="bi bi-geo-alt"></i>
+
+        <strong>Presença local</strong>
+
+        <p id="insightBotucatu">
+          Analisando a participação de Botucatu na audiência...
+        </p>
+      </article>
+
+
+      <article class="a360-insight">
+        <i class="bi bi-stars"></i>
+
+        <strong>Inteligência artificial como origem</strong>
+
+        <p id="insightAI">
+          Verificando acessos originados por assistentes de inteligência artificial...
+        </p>
+      </article>
+
+
+      <article class="a360-insight">
+        <i class="bi bi-phone"></i>
+
+        <strong>Perfil de acesso</strong>
+
+        <p id="insightDevice">
+          Analisando quais dispositivos são mais utilizados pelo público...
+        </p>
+      </article>
+
+    </section>
+
+
+    <div class="a360-grid-2">
+
+      <section class="a360-panel">
+        <header class="a360-panel-head">
+          <div>
+            <h2 class="a360-panel-title">
+              Como as pessoas chegaram ao BOTUKA
+            </h2>
+
+            <p class="a360-panel-subtitle">
+              Identifica os canais e origens que trouxeram visitantes para a plataforma.
+            </p>
+          </div>
+        </header>
+
+        <div class="a360-table-wrap">
+          <table class="a360-table">
+            <thead>
+              <tr>
+                <th>Canal</th>
+                <th>Origem</th>
+                <th>Visitas</th>
+                <th>Pessoas</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for row in ga4_360.acquisition.rows %}
+                <tr>
+                  <td>
+                    {% if row.sessionDefaultChannelGroup == "Direct" %}
+                      <span class="a360-channel direct">
+                        Acesso direto
+                      </span>
+                    {% elif row.sessionDefaultChannelGroup == "AI Assistant" %}
+                      <span class="a360-channel ai">
+                        Assistente de IA
+                      </span>
+                    {% elif row.sessionDefaultChannelGroup == "Organic Search" %}
+                      <span class="a360-channel">
+                        Pesquisa orgânica
+                      </span>
+                    {% elif row.sessionDefaultChannelGroup == "Organic Social" %}
+                      <span class="a360-channel">
+                        Redes sociais
+                      </span>
+                    {% elif row.sessionDefaultChannelGroup == "Referral" %}
+                      <span class="a360-channel">
+                        Indicação de outro site
+                      </span>
+                    {% elif row.sessionDefaultChannelGroup == "Unassigned" %}
+                      <span class="a360-channel">
+                        Origem não identificada
+                      </span>
+                    {% else %}
+                      <span class="a360-channel">
+                        {{ row.sessionDefaultChannelGroup }}
+                      </span>
+                    {% endif %}
+                  </td>
+
+                  <td>
+                    {% if row.sessionSource == "(direct)" %}
+                      Digitação do endereço, favorito ou origem não informada
+                    {% elif row.sessionSource == "(not set)" %}
+                      Não identificada
+                    {% else %}
+                      {{ row.sessionSource }}
+                    {% endif %}
+                  </td>
+
+                  <td><strong>{{ row.sessions }}</strong></td>
+                  <td>{{ row.activeUsers }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4">
+                    Ainda não há dados disponíveis.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+
+      <section class="a360-panel">
+        <header class="a360-panel-head">
+          <div>
+            <h2 class="a360-panel-title">
+              Principais cidades
+            </h2>
+
+            <p class="a360-panel-subtitle">
+              Mostra de onde vieram os visitantes que utilizaram a plataforma.
+            </p>
+          </div>
+        </header>
+
+        <div class="a360-table-wrap">
+          <table class="a360-table">
+            <thead>
+              <tr>
+                <th>Cidade</th>
+                <th>Região</th>
+                <th>Pessoas</th>
+                <th>Visitas</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for row in ga4_360.geography.rows|slice:":15" %}
+                <tr>
+                  <td><strong>{{ row.city }}</strong></td>
+                  <td>{{ row.region }}</td>
+                  <td>{{ row.activeUsers }}</td>
+                  <td>{{ row.sessions }}</td>
+                </tr>
+              {% empty %}
+                <tr>
+                  <td colspan="4">
+                    Ainda não há dados disponíveis.
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+    </div>
+
+
+    <section class="a360-panel a360-table-panel">
+
+      <header class="a360-panel-head">
+        <div>
+          <h2 class="a360-panel-title">
+            Conteúdos e páginas mais acessados
+          </h2>
+
+          <p class="a360-panel-subtitle">
+            Descubra quais páginas despertaram maior interesse.
+            Você pode pesquisar, ordenar os resultados e navegar pela tabela.
+          </p>
+        </div>
+      </header>
+
+      <div class="a360-table-wrap">
+
+        <table
+          id="pagesTable"
+          class="a360-table display"
+        >
+          <thead>
+            <tr>
+              <th>Página</th>
+              <th>Título</th>
+              <th>Pessoas</th>
+              <th>Visualizações</th>
+              <th>Interações</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for row in ga4_360.pages.rows %}
+              <tr>
+                <td class="a360-path">
+                  <strong>{{ row.pagePath }}</strong>
+                </td>
+
+                <td>{{ row.pageTitle|default:"Sem título identificado" }}</td>
+
+                <td>{{ row.activeUsers }}</td>
+
+                <td>{{ row.screenPageViews }}</td>
+
+                <td>{{ row.eventCount }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+
+      </div>
+
+    </section>
+
+
+    <div class="a360-grid-2">
+
+      <section class="a360-panel">
+        <header class="a360-panel-head">
+          <div>
+            <h2 class="a360-panel-title">
+              Interações registradas
+            </h2>
+
+            <p class="a360-panel-subtitle">
+              Eventos são ações realizadas durante a navegação.
+            </p>
+          </div>
+        </header>
+
+        <div class="a360-table-wrap">
+
+          <table
+            id="eventsTable"
+            class="a360-table display"
+          >
+            <thead>
+              <tr>
+                <th>Interação</th>
+                <th>Quantidade</th>
+                <th>Pessoas</th>
+              </tr>
+            </thead>
+
+            <tbody>
+              {% for row in ga4_360.events.rows %}
+                <tr>
+                  <td>
+                    {% if row.eventName == "page_view" %}
+                      Visualização de página
+                    {% elif row.eventName == "user_engagement" %}
+                      Engajamento do visitante
+                    {% elif row.eventName == "session_start" %}
+                      Início de visita
+                    {% elif row.eventName == "first_visit" %}
+                      Primeira visita
+                    {% elif row.eventName == "form_submit" %}
+                      Envio de formulário
+                    {% elif row.eventName == "scroll" %}
+                      Rolagem de página
+                    {% elif row.eventName == "click" %}
+                      Clique
+                    {% else %}
+                      {{ row.eventName }}
+                    {% endif %}
+                  </td>
+
+                  <td><strong>{{ row.eventCount }}</strong></td>
+
+                  <td>{{ row.activeUsers }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+
+        </div>
+      </section>
+
+
+      <section class="a360-panel">
+        <header class="a360-panel-head">
+          <div>
+            <h2 class="a360-panel-title">
+              Indicadores de qualidade
+            </h2>
+
+            <p class="a360-panel-subtitle">
+              Métricas que ajudam a compreender a profundidade das visitas.
+            </p>
+          </div>
+        </header>
+
+        <div class="a360-panel-body">
+
+          <div class="a360-mini-grid">
+
+            <div class="a360-mini">
+              <span>Total de usuários</span>
+              <strong>{{ overview.totalUsers|default:0 }}</strong>
+            </div>
+
+            <div class="a360-mini">
+              <span>Sessões por pessoa</span>
+              <strong>{{ engagement.sessionsPerUser|floatformat:2 }}</strong>
+            </div>
+
+            <div class="a360-mini">
+              <span>Tempo médio da sessão</span>
+              <strong>{{ overview.averageSessionDuration|floatformat:0 }} s</strong>
+            </div>
+
+            <div class="a360-mini">
+              <span>Taxa de rejeição</span>
+              <strong>
+                {% widthratio overview.bounceRate 1 100 %}%
+              </strong>
+            </div>
+
+            <div class="a360-mini">
+              <span>Eventos importantes</span>
+              <strong>{{ engagement.keyEvents|default:0 }}</strong>
+            </div>
+
+            <div class="a360-mini">
+              <span>Tempo total de engajamento</span>
+              <strong>{{ engagement.userEngagementDuration|default:0 }} s</strong>
+            </div>
+
+          </div>
+
+          <p style="margin:18px 0 0;color:#667085;font-size:12px;line-height:1.6;">
+            Estes indicadores devem ser analisados em conjunto.
+            Uma visita curta não é necessariamente ruim: em serviços locais,
+            por exemplo, o usuário pode encontrar rapidamente telefone,
+            endereço ou WhatsApp e concluir sua intenção.
+          </p>
+
+        </div>
+      </section>
+
+    </div>
+
+
+    <div class="a360-source-note">
+      <span>
+        <i class="bi bi-google"></i>
+        Dados agregados pelo Google Analytics 4.
+      </span>
+
+      <span>
+        Período selecionado: <strong>{{ period_label }}</strong>
+      </span>
+    </div>
+
+    {% endwith %}
+
   {% else %}
-    <article class="alert alert-warning">
-      <strong>GA4 indisponível.</strong>
-      {% if ga4.error %}
-        <div>{{ ga4.error }}</div>
+
+    <div class="alert alert-error">
+      <strong>Não foi possível carregar os dados do Google Analytics.</strong>
+
+      {% if ga4_360.overview.error %}
+        {{ ga4_360.overview.error }}
       {% endif %}
-    </article>
+    </div>
+
   {% endif %}
-</section>
+
+</div>
+
+
+{{ ga4_360.timeseries.rows|json_script:"ga4-timeseries-data" }}
+{{ ga4_360.devices.rows|json_script:"ga4-devices-data" }}
+{{ ga4_360.geography.rows|json_script:"ga4-geography-data" }}
+{{ ga4_360.acquisition.rows|json_script:"ga4-acquisition-data" }}
+
+
+<script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+<script src="https://cdn.datatables.net/1.13.6/js/jquery.dataTables.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+
+<script>
+(function () {
+
+  function readJson(id) {
+    const element = document.getElementById(id);
+
+    if (!element) {
+      return [];
+    }
+
+    try {
+      return JSON.parse(element.textContent || "[]");
+    } catch (error) {
+      console.error("Analytics 360:", error);
+      return [];
+    }
+  }
+
+
+  function formatDate(value) {
+    if (!value || value.length !== 8) {
+      return value;
+    }
+
+    return value.substring(6, 8) + "/" +
+           value.substring(4, 6);
+  }
+
+
+  const timeseries = readJson("ga4-timeseries-data");
+  const devices = readJson("ga4-devices-data");
+  const geography = readJson("ga4-geography-data");
+  const acquisition = readJson("ga4-acquisition-data");
+
+
+  const trafficCanvas = document.getElementById("trafficChart");
+
+  if (trafficCanvas && window.Chart) {
+
+    new Chart(trafficCanvas, {
+      type: "line",
+
+      data: {
+        labels: timeseries.map(item => formatDate(item.date)),
+
+        datasets: [
+          {
+            label: "Pessoas",
+            data: timeseries.map(item => item.activeUsers || 0),
+            borderColor: "#0f766e",
+            backgroundColor: "rgba(15,118,110,.10)",
+            borderWidth: 3,
+            pointRadius: 3,
+            tension: .35
+          },
+          {
+            label: "Visitas",
+            data: timeseries.map(item => item.sessions || 0),
+            borderColor: "#2563eb",
+            backgroundColor: "rgba(37,99,235,.08)",
+            borderWidth: 2,
+            pointRadius: 2,
+            tension: .35
+          },
+          {
+            label: "Visualizações",
+            data: timeseries.map(item => item.screenPageViews || 0),
+            borderColor: "#7c3aed",
+            backgroundColor: "rgba(124,58,237,.06)",
+            borderWidth: 2,
+            pointRadius: 2,
+            tension: .35
+          }
+        ]
+      },
+
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+
+        interaction: {
+          intersect: false,
+          mode: "index"
+        },
+
+        plugins: {
+          legend: {
+            position: "top",
+            align: "end"
+          }
+        },
+
+        scales: {
+          y: {
+            beginAtZero: true,
+            grid: {
+              color: "#eef2f7"
+            }
+          },
+
+          x: {
+            grid: {
+              display: false
+            }
+          }
+        }
+      }
+    });
+  }
+
+
+  const deviceCanvas = document.getElementById("deviceChart");
+
+  if (deviceCanvas && window.Chart) {
+
+    const deviceNames = {
+      desktop: "Computador",
+      mobile: "Celular",
+      tablet: "Tablet"
+    };
+
+    new Chart(deviceCanvas, {
+      type: "doughnut",
+
+      data: {
+        labels: devices.map(
+          item => deviceNames[item.deviceCategory] || item.deviceCategory
+        ),
+
+        datasets: [{
+          data: devices.map(item => item.activeUsers || 0),
+          backgroundColor: [
+            "#0f766e",
+            "#2563eb",
+            "#7c3aed",
+            "#ea580c"
+          ],
+          borderWidth: 0
+        }]
+      },
+
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        cutout: "68%",
+
+        plugins: {
+          legend: {
+            position: "bottom"
+          }
+        }
+      }
+    });
+  }
+
+
+  if (window.jQuery && $.fn.DataTable) {
+
+    const language = {
+      decimal: ",",
+      thousands: ".",
+      search: "Pesquisar:",
+      lengthMenu: "Mostrar _MENU_ registros",
+      info: "Mostrando _START_ a _END_ de _TOTAL_ registros",
+      infoEmpty: "Nenhum registro disponível",
+      infoFiltered: "(filtrado de _MAX_ registros)",
+      zeroRecords: "Nenhum resultado encontrado",
+      emptyTable: "Nenhum dado disponível",
+      paginate: {
+        first: "Primeira",
+        previous: "Anterior",
+        next: "Próxima",
+        last: "Última"
+      }
+    };
+
+
+    $("#pagesTable").DataTable({
+      pageLength: 10,
+      order: [[3, "desc"]],
+      language: language
+    });
+
+
+    $("#eventsTable").DataTable({
+      pageLength: 10,
+      order: [[1, "desc"]],
+      language: language
+    });
+  }
+
+
+  const totalGeoUsers = geography.reduce(
+    (total, item) => total + Number(item.activeUsers || 0),
+    0
+  );
+
+  const botucatu = geography.find(
+    item => String(item.city || "").toLowerCase() === "botucatu"
+  );
+
+  const botucatuInsight = document.getElementById("insightBotucatu");
+
+  if (botucatuInsight) {
+    if (botucatu && totalGeoUsers > 0) {
+      const percentage = (
+        Number(botucatu.activeUsers || 0) /
+        totalGeoUsers *
+        100
+      ).toFixed(1);
+
+      botucatuInsight.textContent =
+        "Botucatu concentrou aproximadamente " +
+        percentage +
+        "% dos usuários identificados por localização neste período.";
+    } else {
+      botucatuInsight.textContent =
+        "Ainda não há volume suficiente para destacar a participação de Botucatu.";
+    }
+  }
+
+
+  const aiRows = acquisition.filter(item =>
+    String(item.sessionDefaultChannelGroup || "").toLowerCase().includes("ai") ||
+    String(item.sessionSource || "").toLowerCase().includes("chatgpt")
+  );
+
+  const aiSessions = aiRows.reduce(
+    (total, item) => total + Number(item.sessions || 0),
+    0
+  );
+
+  const aiInsight = document.getElementById("insightAI");
+
+  if (aiInsight) {
+    if (aiSessions > 0) {
+      aiInsight.textContent =
+        "Assistentes de inteligência artificial geraram " +
+        aiSessions +
+        " visita" +
+        (aiSessions === 1 ? "" : "s") +
+        " ao BOTUKA no período analisado.";
+    } else {
+      aiInsight.textContent =
+        "Não foram identificadas visitas relevantes vindas de assistentes de IA neste período.";
+    }
+  }
+
+
+  const mainDevice = devices
+    .slice()
+    .sort(
+      (a, b) =>
+        Number(b.activeUsers || 0) -
+        Number(a.activeUsers || 0)
+    )[0];
+
+  const deviceInsight = document.getElementById("insightDevice");
+
+  if (deviceInsight && mainDevice) {
+
+    const names = {
+      desktop: "computador",
+      mobile: "celular",
+      tablet: "tablet"
+    };
+
+    const totalDeviceUsers = devices.reduce(
+      (total, item) =>
+        total + Number(item.activeUsers || 0),
+      0
+    );
+
+    const percentage = totalDeviceUsers
+      ? (
+          Number(mainDevice.activeUsers || 0) /
+          totalDeviceUsers *
+          100
+        ).toFixed(1)
+      : 0;
+
+    deviceInsight.textContent =
+      "O " +
+      (names[mainDevice.deviceCategory] || mainDevice.deviceCategory) +
+      " é o principal meio de acesso, representando cerca de " +
+      percentage +
+      "% dos usuários registrados.";
+  }
+
+})();
+</script>
+
 {% endblock %}
