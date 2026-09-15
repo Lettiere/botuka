@@ -338,3 +338,238 @@ class AdvertisingCampaignCentralTests(AdvertisingManagementTests):
                 Campanha.Status.ATIVA,
             },
         )
+
+
+class AdvertisingCommercialConfigurationTests(AdvertisingManagementTests):
+    def test_configuracao_comercial_e_exclusiva_master(self):
+        url = reverse('gestao:publicidade_configuracao')
+
+        self.client.force_login(self.outsider)
+        self.assertEqual(self.client.get(url).status_code, 403)
+
+        self.client.force_login(self.master)
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            'gestao/publicidade/configuracao_comercial.html',
+        )
+        self.assertContains(response, self.plan.nome)
+        self.assertContains(response, self.position.nome)
+
+    def test_master_pode_criar_plano(self):
+        self.client.force_login(self.master)
+
+        response = self.client.post(
+            reverse('gestao:publicidade_plano_novo'),
+            {
+                'nome': 'Standard Gestão',
+                'nivel': PlanoPublicitario.Nivel.QUATRO,
+                'descricao': 'Plano de teste da gestão.',
+                'preco_diario': '25.00',
+                'prioridade': '10',
+                'limite_anunciantes': '0',
+                'impressoes_por_usuario_dia': '3',
+                'duracao_segundos': '8',
+                'ativo': 'on',
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse('gestao:publicidade_configuracao'),
+        )
+
+        plano = PlanoPublicitario.objects.get(nome='Standard Gestão')
+        self.assertEqual(plano.preco_diario, Decimal('25.00'))
+        self.assertFalse(plano.exclusivo)
+        self.assertTrue(plano.ativo)
+
+    def test_master_pode_editar_plano(self):
+        self.client.force_login(self.master)
+
+        response = self.client.post(
+            reverse(
+                'gestao:publicidade_plano_editar',
+                args=[self.plan.pk],
+            ),
+            {
+                'nome': self.plan.nome,
+                'nivel': PlanoPublicitario.Nivel.ZERO,
+                'descricao': 'Atualizado pela gestão.',
+                'preco_diario': '150.00',
+                'prioridade': '60',
+                'exclusivo': 'on',
+                'limite_anunciantes': '1',
+                'impressoes_por_usuario_dia': '4',
+                'duracao_segundos': '10',
+                'ativo': 'on',
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse('gestao:publicidade_configuracao'),
+        )
+
+        self.plan.refresh_from_db()
+        self.assertEqual(self.plan.preco_diario, Decimal('150.00'))
+        self.assertEqual(self.plan.prioridade, 60)
+        self.assertEqual(self.plan.limite_anunciantes, 1)
+
+    def test_takeover_sem_exclusividade_e_rejeitado(self):
+        self.client.force_login(self.master)
+
+        response = self.client.post(
+            reverse('gestao:publicidade_plano_novo'),
+            {
+                'nome': 'Takeover Inválido',
+                'nivel': PlanoPublicitario.Nivel.ZERO,
+                'descricao': '',
+                'preco_diario': '100.00',
+                'prioridade': '10',
+                'limite_anunciantes': '1',
+                'impressoes_por_usuario_dia': '3',
+                'duracao_segundos': '8',
+                'ativo': 'on',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(
+            PlanoPublicitario.objects.filter(
+                nome='Takeover Inválido',
+            ).exists()
+        )
+        self.assertContains(response, 'Takeover deve ser exclusivo.')
+
+    def test_master_pode_criar_posicionamento_e_normaliza_formatos(self):
+        self.client.force_login(self.master)
+
+        response = self.client.post(
+            reverse('gestao:publicidade_posicionamento_novo'),
+            {
+                'nome': 'Sidebar Gestão',
+                'codigo': 'sidebar-gestao-teste',
+                'descricao': 'Posição criada pela gestão.',
+                'contexto': 'public',
+                'largura': '400',
+                'altura': '600',
+                'largura_mobile': '720',
+                'altura_mobile': '360',
+                'proporcao_recomendada': '2:3',
+                'tamanho_maximo_bytes': str(5 * 1024 * 1024),
+                'formatos_permitidos': '.JPG, png, jpg, WEBP',
+                'permite_imagem': 'on',
+                'permite_texto': 'on',
+                'ativo': 'on',
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse('gestao:publicidade_configuracao'),
+        )
+
+        posicionamento = Posicionamento.objects.get(
+            codigo='sidebar-gestao-teste'
+        )
+        self.assertEqual(
+            posicionamento.formatos_permitidos,
+            ['jpg', 'png', 'webp'],
+        )
+        self.assertTrue(posicionamento.permite_imagem)
+        self.assertFalse(posicionamento.permite_video)
+
+    def test_master_pode_editar_posicionamento(self):
+        self.client.force_login(self.master)
+
+        response = self.client.post(
+            reverse(
+                'gestao:publicidade_posicionamento_editar',
+                args=[self.position.pk],
+            ),
+            {
+                'nome': 'Takeover Home Atualizado',
+                'codigo': self.position.codigo,
+                'descricao': '',
+                'contexto': 'public',
+                'largura': '1200',
+                'altura': '300',
+                'largura_mobile': '720',
+                'altura_mobile': '360',
+                'proporcao_recomendada': '4:1',
+                'tamanho_maximo_bytes': str(5 * 1024 * 1024),
+                'formatos_permitidos': 'jpg, png, webp',
+                'permite_imagem': 'on',
+                'aceita_takeover': 'on',
+                'ativo': 'on',
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse('gestao:publicidade_configuracao'),
+        )
+
+        self.position.refresh_from_db()
+        self.assertEqual(
+            self.position.nome,
+            'Takeover Home Atualizado',
+        )
+        self.assertEqual(self.position.largura, 1200)
+        self.assertEqual(self.position.altura, 300)
+
+    def test_posicionamento_sem_tipo_de_criativo_e_rejeitado(self):
+        self.client.force_login(self.master)
+
+        response = self.client.post(
+            reverse('gestao:publicidade_posicionamento_novo'),
+            {
+                'nome': 'Posição Inválida',
+                'codigo': 'posicao-invalida-gestao',
+                'descricao': '',
+                'contexto': 'public',
+                'largura': '400',
+                'altura': '600',
+                'largura_mobile': '',
+                'altura_mobile': '',
+                'proporcao_recomendada': '',
+                'tamanho_maximo_bytes': str(5 * 1024 * 1024),
+                'formatos_permitidos': 'jpg',
+                'ativo': 'on',
+            },
+        )
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(
+            Posicionamento.objects.filter(
+                codigo='posicao-invalida-gestao',
+            ).exists()
+        )
+        self.assertContains(
+            response,
+            'Permita ao menos um tipo de criativo.',
+        )
+
+    def test_usuario_comum_nao_pode_alterar_configuracao(self):
+        self.client.force_login(self.outsider)
+
+        urls = (
+            reverse('gestao:publicidade_plano_novo'),
+            reverse(
+                'gestao:publicidade_plano_editar',
+                args=[self.plan.pk],
+            ),
+            reverse('gestao:publicidade_posicionamento_novo'),
+            reverse(
+                'gestao:publicidade_posicionamento_editar',
+                args=[self.position.pk],
+            ),
+        )
+
+        for url in urls:
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 403)
+                self.assertEqual(self.client.post(url, {}).status_code, 403)

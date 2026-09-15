@@ -154,8 +154,8 @@ ADVERTISING_KINDS = (
 )
 
 _ADVERTISING_WORKFLOW_ROUTES = {
-    'planos-publicitarios': ('advertising:configuracao_comercial', (), 'Configuração comercial MASTER'),
-    'posicionamentos-publicitarios': ('advertising:configuracao_comercial', (), 'Configuração comercial MASTER'),
+    'planos-publicitarios': ('gestao:publicidade_configuracao', (), 'Configuração comercial MASTER'),
+    'posicionamentos-publicitarios': ('gestao:publicidade_configuracao', (), 'Configuração comercial MASTER'),
     'campanhas': ('gestao:publicidade_campanhas', (), 'Moderação auditada MASTER'),
 }
 

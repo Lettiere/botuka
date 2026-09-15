@@ -5,7 +5,8 @@ from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
-from apps.advertising.models import Campanha
+from apps.advertising.forms import PlanoPublicitarioForm, PosicionamentoForm
+from apps.advertising.models import Campanha, PlanoPublicitario, Posicionamento
 from apps.advertising.services import aprovar_campanha, moderar_campanha
 from apps.gestao.decorators import master_required
 
@@ -226,4 +227,90 @@ def campanha_moderar(request, uuid, acao):
     return redirect(
         'gestao:publicidade_campanha_detalhe',
         uuid=uuid,
+    )
+
+
+@master_required
+def configuracao_comercial(request):
+    planos = PlanoPublicitario.objects.order_by('nivel', 'nome')
+    posicionamentos = Posicionamento.objects.order_by('contexto', 'nome')
+
+    return render(
+        request,
+        'gestao/publicidade/configuracao_comercial.html',
+        {
+            'section': 'Publicidade',
+            'planos': planos,
+            'posicionamentos': posicionamentos,
+        },
+    )
+
+
+@master_required
+def plano_form(request, pk=None):
+    plano = get_object_or_404(PlanoPublicitario, pk=pk) if pk else None
+    form = PlanoPublicitarioForm(request.POST or None, instance=plano)
+
+    if request.method == 'POST' and form.is_valid():
+        plano = form.save()
+        messages.success(
+            request,
+            'Plano publicitário atualizado com sucesso.'
+            if pk else
+            'Plano publicitário criado com sucesso.',
+        )
+        return redirect('gestao:publicidade_configuracao')
+
+    return render(
+        request,
+        'gestao/publicidade/configuracao_form.html',
+        {
+            'section': 'Publicidade',
+            'form': form,
+            'titulo': (
+                'Editar plano publicitário'
+                if plano else
+                'Novo plano publicitário'
+            ),
+            'tipo': 'plano',
+            'objeto': plano,
+        },
+    )
+
+
+@master_required
+def posicionamento_form(request, pk=None):
+    posicionamento = (
+        get_object_or_404(Posicionamento, pk=pk)
+        if pk else None
+    )
+    form = PosicionamentoForm(
+        request.POST or None,
+        instance=posicionamento,
+    )
+
+    if request.method == 'POST' and form.is_valid():
+        posicionamento = form.save()
+        messages.success(
+            request,
+            'Posicionamento atualizado com sucesso.'
+            if pk else
+            'Posicionamento criado com sucesso.',
+        )
+        return redirect('gestao:publicidade_configuracao')
+
+    return render(
+        request,
+        'gestao/publicidade/configuracao_form.html',
+        {
+            'section': 'Publicidade',
+            'form': form,
+            'titulo': (
+                'Editar posicionamento'
+                if posicionamento else
+                'Novo posicionamento'
+            ),
+            'tipo': 'posicionamento',
+            'objeto': posicionamento,
+        },
     )

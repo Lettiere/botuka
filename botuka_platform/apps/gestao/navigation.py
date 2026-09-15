@@ -84,7 +84,18 @@ def gestao_navigation(request):
                     "publicidade_campanha_moderar",
                 ),
             ),
-            _item("Planos e posições", "bi-sliders", reverse("advertising:configuracao_comercial"), names=("configuracao_comercial",)),
+            _item(
+                "Planos e posições",
+                "bi-sliders",
+                reverse("gestao:publicidade_configuracao"),
+                names=(
+                    "publicidade_configuracao",
+                    "publicidade_plano_novo",
+                    "publicidade_plano_editar",
+                    "publicidade_posicionamento_novo",
+                    "publicidade_posicionamento_editar",
+                ),
+            ),
             _item("Criativos", "bi-image", reverse("gestao:central_lista", args=["criativos"]), names=("central_lista", "central_detalhe"), kind="criativos"),
             _item("Entregas", "bi-bar-chart", reverse("gestao:central_lista", args=["entregas"]), names=("central_lista", "central_detalhe"), kind="entregas"),
         ]})

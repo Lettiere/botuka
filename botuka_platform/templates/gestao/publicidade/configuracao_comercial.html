@@ -1,0 +1,172 @@
+{% extends "gestao/base.html" %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>Planos e posicionamentos</h1>
+        <p>Configuração comercial e técnica da publicidade do BOTUKA.</p>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="page-head">
+        <div>
+            <h2>Planos publicitários</h2>
+            <p>Valores, níveis, prioridade, frequência e limites comerciais.</p>
+        </div>
+        <div class="actions">
+            <a class="btn" href="{% url 'gestao:publicidade_plano_novo' %}">
+                Novo plano
+            </a>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Plano</th>
+                    <th>Nível</th>
+                    <th>Preço/dia</th>
+                    <th>Prioridade</th>
+                    <th>Anunciantes</th>
+                    <th>Frequência</th>
+                    <th>Duração</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in planos %}
+                <tr>
+                    <td>
+                        <strong>{{ item.nome }}</strong>
+                        {% if item.exclusivo %}
+                            <br><small>Exclusivo</small>
+                        {% endif %}
+                    </td>
+                    <td>{{ item.get_nivel_display }}</td>
+                    <td>R$ {{ item.preco_diario }}</td>
+                    <td>{{ item.prioridade }}</td>
+                    <td>
+                        {% if item.limite_anunciantes %}
+                            {{ item.limite_anunciantes }}
+                        {% else %}
+                            Sem limite
+                        {% endif %}
+                    </td>
+                    <td>{{ item.impressoes_por_usuario_dia }}/dia</td>
+                    <td>{{ item.duracao_segundos }}s</td>
+                    <td>
+                        {% if item.ativo %}
+                            <span class="badge">Ativo</span>
+                        {% else %}
+                            <span class="badge">Inativo</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="actions">
+                            <a class="btn"
+                               href="{% url 'gestao:publicidade_plano_editar' item.pk %}">
+                                Editar
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9">Nenhum plano publicitário cadastrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="panel">
+    <div class="page-head">
+        <div>
+            <h2>Posicionamentos</h2>
+            <p>Espaços disponíveis, dimensões e formatos aceitos.</p>
+        </div>
+        <div class="actions">
+            <a class="btn" href="{% url 'gestao:publicidade_posicionamento_novo' %}">
+                Novo posicionamento
+            </a>
+        </div>
+    </div>
+
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Posicionamento</th>
+                    <th>Contexto</th>
+                    <th>Desktop</th>
+                    <th>Mobile</th>
+                    <th>Formatos</th>
+                    <th>Tipos</th>
+                    <th>Takeover</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in posicionamentos %}
+                <tr>
+                    <td>
+                        <strong>{{ item.nome }}</strong><br>
+                        <small>{{ item.codigo }}</small>
+                    </td>
+
+                    <td>{{ item.contexto }}</td>
+
+                    <td>
+                        {{ item.largura|default:"—" }}
+                        ×
+                        {{ item.altura|default:"—" }}
+                    </td>
+
+                    <td>
+                        {{ item.largura_mobile|default:"—" }}
+                        ×
+                        {{ item.altura_mobile|default:"—" }}
+                    </td>
+
+                    <td>{{ item.formatos_permitidos|join:", " }}</td>
+
+                    <td>
+                        {% if item.permite_imagem %}Imagem{% endif %}
+                        {% if item.permite_video %} Vídeo{% endif %}
+                        {% if item.permite_texto %} Texto{% endif %}
+                    </td>
+
+                    <td>{{ item.aceita_takeover|yesno:"Sim,Não" }}</td>
+
+                    <td>
+                        {% if item.ativo %}
+                            <span class="badge">Ativo</span>
+                        {% else %}
+                            <span class="badge">Inativo</span>
+                        {% endif %}
+                    </td>
+
+                    <td>
+                        <div class="actions">
+                            <a class="btn"
+                               href="{% url 'gestao:publicidade_posicionamento_editar' item.pk %}">
+                                Editar
+                            </a>
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="9">Nenhum posicionamento cadastrado.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

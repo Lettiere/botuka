@@ -18,6 +18,31 @@ app_name = 'gestao'
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
     path(
+        'publicidade/configuracoes/',
+        advertising_views.configuracao_comercial,
+        name='publicidade_configuracao',
+    ),
+    path(
+        'publicidade/planos/novo/',
+        advertising_views.plano_form,
+        name='publicidade_plano_novo',
+    ),
+    path(
+        'publicidade/planos/<int:pk>/editar/',
+        advertising_views.plano_form,
+        name='publicidade_plano_editar',
+    ),
+    path(
+        'publicidade/posicionamentos/novo/',
+        advertising_views.posicionamento_form,
+        name='publicidade_posicionamento_novo',
+    ),
+    path(
+        'publicidade/posicionamentos/<int:pk>/editar/',
+        advertising_views.posicionamento_form,
+        name='publicidade_posicionamento_editar',
+    ),
+    path(
         'publicidade/campanhas/',
         advertising_views.campanha_lista,
         name='publicidade_campanhas',

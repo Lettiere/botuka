@@ -1,0 +1,61 @@
+{% extends "gestao/base.html" %}
+
+{% block content %}
+<div class="page-head">
+    <div>
+        <h1>{{ titulo }}</h1>
+
+        {% if tipo == "plano" %}
+            <p>Configure as regras comerciais do plano publicitário.</p>
+        {% else %}
+            <p>Configure as regras técnicas do posicionamento publicitário.</p>
+        {% endif %}
+    </div>
+
+    <div class="actions">
+        <a class="btn" href="{% url 'gestao:publicidade_configuracao' %}">
+            Voltar
+        </a>
+    </div>
+</div>
+
+<div class="panel">
+    <form method="post">
+        {% csrf_token %}
+
+        {% if form.non_field_errors %}
+            <div class="alert alert-error">
+                {{ form.non_field_errors }}
+            </div>
+        {% endif %}
+
+        <div class="form-grid">
+            {% for field in form %}
+                <div>
+                    <label for="{{ field.id_for_label }}">
+                        {{ field.label }}
+                    </label>
+
+                    {{ field }}
+
+                    {% if field.help_text %}
+                        <small>{{ field.help_text }}</small>
+                    {% endif %}
+
+                    {% for error in field.errors %}
+                        <div class="alert alert-error">{{ error }}</div>
+                    {% endfor %}
+                </div>
+            {% endfor %}
+        </div>
+
+        <div class="actions">
+            <button class="btn" type="submit">Salvar</button>
+
+            <a class="btn" href="{% url 'gestao:publicidade_configuracao' %}">
+                Cancelar
+            </a>
+        </div>
+    </form>
+</div>
+{% endblock %}
