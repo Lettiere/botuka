@@ -359,6 +359,19 @@
   <div class="company-sidebar-section">
     <span class="company-sidebar-label">Gestão</span>
 
+    {% if pode_acessar_crm %}
+    <a class="company-sidebar-link"
+       href="{% url 'painel:empresa_crm' empresa.uuid %}">
+      <i class="bi bi-person-lines-fill"></i>
+      <span>
+        CRM / Leads
+        {% if crm.novos %}
+          <strong>({{ crm.novos }})</strong>
+        {% endif %}
+      </span>
+    </a>
+    {% endif %}
+
     <a class="company-sidebar-link"
        href="{% url 'painel:empresa_capacidades' empresa.uuid %}">
       <i class="bi bi-toggles"></i>
@@ -460,6 +473,34 @@
         </div>
       </article>
 
+
+      {% if pode_acessar_crm %}
+      <article class="hub-card">
+        <div class="hub-card-head">
+          <span class="hub-icon">
+            <i class="bi bi-person-lines-fill"></i>
+          </span>
+          <span class="hub-state">Leads</span>
+        </div>
+
+        <strong class="dashboard-number">
+          {{ crm.novos }}
+        </strong>
+
+        <p>
+          Novo{{ crm.novos|pluralize }}:
+          {{ crm.novos }} ·
+          Total: {{ crm.total }}
+        </p>
+
+        <div class="card-actions">
+          <a class="company-btn"
+             href="{% url 'painel:empresa_crm' empresa.uuid %}">
+            Abrir CRM
+          </a>
+        </div>
+      </article>
+      {% endif %}
 
       <article class="hub-card">
         <div class="hub-card-head">

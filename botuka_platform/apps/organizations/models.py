@@ -1797,6 +1797,281 @@ class Endereco(UUIDModel, TimeStampedModel, SoftDeleteModel):
         return f'{self.logradouro}{numero} - {self.cidade}'
 
 
+
+class EmpresaLead(UUIDModel):
+    """Lead comercial originado por interação pública no BOTUKA."""
+
+    class Status(models.TextChoices):
+        NOVO = 'NOVO', 'Novo'
+        VISUALIZADO = 'VISUALIZADO', 'Visualizado'
+        EM_ATENDIMENTO = 'EM_ATENDIMENTO', 'Em atendimento'
+        AGUARDANDO_CLIENTE = 'AGUARDANDO_CLIENTE', 'Aguardando cliente'
+        CONVERTIDO = 'CONVERTIDO', 'Convertido'
+        PERDIDO = 'PERDIDO', 'Perdido'
+        SPAM = 'SPAM', 'Spam'
+
+    class Canal(models.TextChoices):
+        WHATSAPP = 'WHATSAPP', 'WhatsApp'
+        EMAIL = 'EMAIL', 'E-mail'
+        TELEFONE = 'TELEFONE', 'Telefone'
+        FORMULARIO = 'FORMULARIO', 'Formulário'
+        PAINEL = 'PAINEL', 'Painel'
+
+    class Origem(models.TextChoices):
+        EMPRESA = 'EMPRESA', 'Página da empresa'
+        SERVICO = 'SERVICO', 'Serviço'
+        PRODUTO = 'PRODUTO', 'Produto'
+        PUBLICIDADE = 'PUBLICIDADE', 'Publicidade'
+        BUSCA = 'BUSCA', 'Busca'
+        AGENDA = 'AGENDA', 'Agenda'
+        OUTRO = 'OUTRO', 'Outro'
+
+    id = models.BigAutoField(
+        primary_key=True,
+        db_column='platform_empresa_lead_id',
+    )
+
+    uuid = models.UUIDField(
+        default=uuid.uuid4,
+        editable=False,
+        unique=True,
+        db_column='platform_empresa_lead_uuid',
+    )
+
+    empresa = models.ForeignKey(
+        Empresa,
+        on_delete=models.CASCADE,
+        related_name='leads',
+        db_column='platform_empresa_lead_empresa_fk',
+        verbose_name='empresa',
+    )
+
+    usuario = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='leads_empresa',
+        db_column='platform_empresa_lead_usuario_fk',
+        verbose_name='usuário',
+    )
+
+    responsavel = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='leads_empresa_responsavel',
+        db_column='platform_empresa_lead_responsavel_fk',
+        verbose_name='responsável',
+    )
+
+    nome = models.CharField(
+        max_length=160,
+        db_column='platform_empresa_lead_nome',
+        verbose_name='nome',
+    )
+
+    email = models.EmailField(
+        blank=True,
+        db_column='platform_empresa_lead_email',
+        verbose_name='e-mail',
+    )
+
+    telefone = models.CharField(
+        max_length=20,
+        blank=True,
+        db_column='platform_empresa_lead_telefone',
+        verbose_name='telefone',
+    )
+
+    assunto = models.CharField(
+        max_length=180,
+        db_column='platform_empresa_lead_assunto',
+        verbose_name='assunto',
+    )
+
+    mensagem = models.TextField(
+        db_column='platform_empresa_lead_mensagem',
+        verbose_name='mensagem',
+    )
+
+    canal = models.CharField(
+        max_length=20,
+        choices=Canal.choices,
+        default=Canal.WHATSAPP,
+        db_column='platform_empresa_lead_canal',
+        verbose_name='canal',
+    )
+
+    origem = models.CharField(
+        max_length=20,
+        choices=Origem.choices,
+        default=Origem.EMPRESA,
+        db_column='platform_empresa_lead_origem',
+        verbose_name='origem',
+    )
+
+    status = models.CharField(
+        max_length=24,
+        choices=Status.choices,
+        default=Status.NOVO,
+        db_column='platform_empresa_lead_status',
+        verbose_name='status',
+    )
+
+    pagina_origem = models.CharField(
+        max_length=300,
+        blank=True,
+        db_column='platform_empresa_lead_pagina_origem',
+        verbose_name='página de origem',
+    )
+
+    url_origem = models.URLField(
+        max_length=500,
+        blank=True,
+        db_column='platform_empresa_lead_url_origem',
+        verbose_name='URL de origem',
+    )
+
+    referrer = models.URLField(
+        max_length=500,
+        blank=True,
+        db_column='platform_empresa_lead_referrer',
+        verbose_name='referência',
+    )
+
+    utm_source = models.CharField(
+        max_length=120,
+        blank=True,
+        db_column='platform_empresa_lead_utm_source',
+    )
+
+    utm_medium = models.CharField(
+        max_length=120,
+        blank=True,
+        db_column='platform_empresa_lead_utm_medium',
+    )
+
+    utm_campaign = models.CharField(
+        max_length=180,
+        blank=True,
+        db_column='platform_empresa_lead_utm_campaign',
+    )
+
+    utm_content = models.CharField(
+        max_length=180,
+        blank=True,
+        db_column='platform_empresa_lead_utm_content',
+    )
+
+    utm_term = models.CharField(
+        max_length=180,
+        blank=True,
+        db_column='platform_empresa_lead_utm_term',
+    )
+
+    session_id = models.CharField(
+        max_length=120,
+        blank=True,
+        db_column='platform_empresa_lead_session_id',
+    )
+
+    ga_client_id = models.CharField(
+        max_length=120,
+        blank=True,
+        db_column='platform_empresa_lead_ga_client_id',
+    )
+
+    ga_session_id = models.CharField(
+        max_length=120,
+        blank=True,
+        db_column='platform_empresa_lead_ga_session_id',
+    )
+
+    ip_hash = models.CharField(
+        max_length=64,
+        blank=True,
+        db_column='platform_empresa_lead_ip_hash',
+    )
+
+    user_agent = models.CharField(
+        max_length=500,
+        blank=True,
+        db_column='platform_empresa_lead_user_agent',
+    )
+
+    whatsapp_destino = models.CharField(
+        max_length=20,
+        blank=True,
+        db_column='platform_empresa_lead_whatsapp_destino',
+    )
+
+    mensagem_whatsapp = models.TextField(
+        blank=True,
+        db_column='platform_empresa_lead_mensagem_whatsapp',
+    )
+
+    whatsapp_aberto_em = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_column='platform_empresa_lead_whatsapp_aberto_em',
+    )
+
+    visualizado_em = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_column='platform_empresa_lead_visualizado_em',
+    )
+
+    atendimento_em = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_column='platform_empresa_lead_atendimento_em',
+    )
+
+    convertido_em = models.DateTimeField(
+        null=True,
+        blank=True,
+        db_column='platform_empresa_lead_convertido_em',
+    )
+
+    criado_em = models.DateTimeField(
+        auto_now_add=True,
+        db_column='platform_empresa_lead_criado_em',
+    )
+
+    atualizado_em = models.DateTimeField(
+        auto_now=True,
+        db_column='platform_empresa_lead_atualizado_em',
+    )
+
+    class Meta:
+        db_table = '"platform"."platform_empresa_lead_tb"'
+        ordering = ('-criado_em',)
+        indexes = [
+            models.Index(
+                fields=('empresa', 'status', 'criado_em'),
+                name='platform_lead_emp_status_idx',
+            ),
+            models.Index(
+                fields=('empresa', 'canal', 'criado_em'),
+                name='platform_lead_emp_canal_idx',
+            ),
+            models.Index(
+                fields=('responsavel', 'status'),
+                name='platform_lead_resp_status_idx',
+            ),
+            models.Index(
+                fields=('utm_campaign',),
+                name='platform_lead_campaign_idx',
+            ),
+        ]
+
+    def __str__(self) -> str:
+        return f'{self.empresa} - {self.nome} - {self.get_status_display()}'
+
+
 class EmpresaImportacaoExecucao(models.Model):
     class TipoExecucao(models.TextChoices):
         INICIAL = 'INICIAL', 'Inicial'

@@ -1,0 +1,220 @@
+{% extends "painel/base.html" %}
+{% block title %}{{ lead.nome }} · CRM | BOTUKA{% endblock %}
+
+{% block painel_content %}
+<style>
+.lead-page{background:#f4f7fb;margin:0 -18px;padding:26px 18px 50px;min-height:80vh}
+.lead-wrap{width:min(1100px,100%);margin:auto}
+.lead-head{display:flex;justify-content:space-between;gap:18px;align-items:center;margin-bottom:17px}
+.lead-head small{display:block;color:#8a6d00;font-weight:900;text-transform:uppercase;letter-spacing:.08em}
+.lead-head h1{margin:4px 0 0;color:#172033;font-size:30px;font-weight:950}
+.lead-actions{display:flex;gap:8px}
+.lead-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:43px;padding:9px 14px;border:1px solid #d0d5dd;border-radius:10px;background:#fff;color:#172033;text-decoration:none;font-weight:850}
+.lead-btn:hover{color:#172033;border-color:#ffd230;background:#fffbeb}
+.lead-btn.primary{background:#ffd230;border-color:#ffd230}
+.lead-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(280px,.6fr);gap:17px}
+.lead-card{padding:20px;background:#fff;border:1px solid #e4e7ec;border-radius:17px;box-shadow:0 7px 22px rgba(15,23,42,.04)}
+.lead-card+.lead-card{margin-top:15px}
+.lead-card h2{margin:0 0 15px;color:#172033;font-size:18px;font-weight:950}
+.lead-info{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px}
+.lead-field{padding:12px;background:#f8fafc;border-radius:10px}
+.lead-field.full{grid-column:1/-1}
+.lead-field small{display:block;margin-bottom:4px;color:#667085;font-size:11px;font-weight:800;text-transform:uppercase}
+.lead-field strong,.lead-field span{color:#172033;overflow-wrap:anywhere}
+.lead-message{padding:16px;background:#fffdf5;border:1px solid #f5e7a4;border-radius:12px;color:#344054;white-space:pre-wrap}
+.lead-status{display:inline-flex;padding:6px 10px;border-radius:999px;background:#fff3b5;color:#594a00;font-size:12px;font-weight:900}
+.lead-form{display:grid;gap:9px}
+.lead-form select{width:100%;min-height:43px;padding:9px 10px;border:1px solid #d0d5dd;border-radius:9px;background:#fff}
+.lead-meta{display:grid;gap:9px}
+.lead-meta div{padding-bottom:9px;border-bottom:1px solid #eef1f5}
+.lead-meta small{display:block;color:#667085}
+.lead-meta strong{display:block;margin-top:3px;color:#172033;overflow-wrap:anywhere}
+@media(max-width:800px){.lead-grid{grid-template-columns:1fr}.lead-head{display:block}.lead-actions{margin-top:13px}.lead-info{grid-template-columns:1fr}.lead-field.full{grid-column:auto}}
+@media(max-width:520px){.lead-page{margin:0 -12px;padding:15px 10px 35px}.lead-actions{display:grid}.lead-btn{width:100%}}
+</style>
+
+<div class="lead-page">
+  <div class="lead-wrap">
+
+    <header class="lead-head">
+      <div>
+        <small>CRM · {{ empresa.nome_exibicao }}</small>
+        <h1>{{ lead.nome }}</h1>
+      </div>
+
+      <div class="lead-actions">
+        <a class="lead-btn" href="{% url 'painel:empresa_crm' empresa.uuid %}">
+          <i class="bi bi-arrow-left"></i>
+          Leads
+        </a>
+
+        {% if lead.telefone %}
+          <a
+            class="lead-btn primary"
+            href="https://wa.me/{% if lead.telefone|slice:':2' == '55' %}{{ lead.telefone }}{% else %}55{{ lead.telefone }}{% endif %}"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            <i class="bi bi-whatsapp"></i>
+            WhatsApp
+          </a>
+        {% endif %}
+      </div>
+    </header>
+
+    <div class="lead-grid">
+
+      <main>
+        <section class="lead-card">
+          <h2>Contato</h2>
+
+          <div class="lead-info">
+            <div class="lead-field">
+              <small>Nome</small>
+              <strong>{{ lead.nome }}</strong>
+            </div>
+
+            <div class="lead-field">
+              <small>Telefone</small>
+              <strong>{{ lead.telefone|default:"Não informado" }}</strong>
+            </div>
+
+            <div class="lead-field full">
+              <small>E-mail</small>
+              <strong>{{ lead.email|default:"Não informado" }}</strong>
+            </div>
+          </div>
+        </section>
+
+        <section class="lead-card">
+          <h2>{{ lead.assunto }}</h2>
+          <div class="lead-message">{{ lead.mensagem }}</div>
+        </section>
+
+        <section class="lead-card">
+          <h2>Origem do lead</h2>
+
+          <div class="lead-info">
+            <div class="lead-field">
+              <small>Canal</small>
+              <span>{{ lead.get_canal_display }}</span>
+            </div>
+
+            <div class="lead-field">
+              <small>Origem</small>
+              <span>{{ lead.get_origem_display }}</span>
+            </div>
+
+            {% if lead.url_origem %}
+              <div class="lead-field full">
+                <small>Página de origem</small>
+                <span>{{ lead.url_origem }}</span>
+              </div>
+            {% endif %}
+
+            {% if lead.utm_campaign %}
+              <div class="lead-field full">
+                <small>Campanha</small>
+                <span>{{ lead.utm_campaign }}</span>
+              </div>
+            {% endif %}
+          </div>
+        </section>
+      </main>
+
+      <aside>
+
+        <section class="lead-card">
+          <h2>Status</h2>
+
+          <p>
+            <span class="lead-status">{{ lead.get_status_display }}</span>
+          </p>
+
+          <form method="post" class="lead-form">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="status">
+
+            <select name="status" required>
+              {% for codigo, nome in status_choices %}
+                <option value="{{ codigo }}" {% if lead.status == codigo %}selected{% endif %}>
+                  {{ nome }}
+                </option>
+              {% endfor %}
+            </select>
+
+            <button class="lead-btn primary" type="submit">
+              Atualizar status
+            </button>
+          </form>
+        </section>
+
+        <section class="lead-card">
+          <h2>Responsável</h2>
+
+          <form method="post" class="lead-form">
+            {% csrf_token %}
+            <input type="hidden" name="acao" value="responsavel">
+
+            <select name="responsavel">
+              <option value="">Não atribuído</option>
+
+              {% for vinculo in responsaveis %}
+                <option
+                  value="{{ vinculo.usuario_id }}"
+                  {% if lead.responsavel_id == vinculo.usuario_id %}selected{% endif %}
+                >
+                  {{ vinculo.usuario.get_full_name|default:vinculo.usuario.username }}
+                </option>
+              {% endfor %}
+            </select>
+
+            <button class="lead-btn" type="submit">
+              Salvar responsável
+            </button>
+          </form>
+        </section>
+
+        <section class="lead-card">
+          <h2>Registro</h2>
+
+          <div class="lead-meta">
+            <div>
+              <small>Recebido em</small>
+              <strong>{{ lead.criado_em|date:"d/m/Y H:i" }}</strong>
+            </div>
+
+            {% if lead.visualizado_em %}
+              <div>
+                <small>Visualizado em</small>
+                <strong>{{ lead.visualizado_em|date:"d/m/Y H:i" }}</strong>
+              </div>
+            {% endif %}
+
+            {% if lead.atendimento_em %}
+              <div>
+                <small>Atendimento iniciado</small>
+                <strong>{{ lead.atendimento_em|date:"d/m/Y H:i" }}</strong>
+              </div>
+            {% endif %}
+
+            {% if lead.convertido_em %}
+              <div>
+                <small>Convertido em</small>
+                <strong>{{ lead.convertido_em|date:"d/m/Y H:i" }}</strong>
+              </div>
+            {% endif %}
+
+            <div>
+              <small>ID</small>
+              <strong>{{ lead.uuid }}</strong>
+            </div>
+          </div>
+        </section>
+
+      </aside>
+    </div>
+
+  </div>
+</div>
+{% endblock %}

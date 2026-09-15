@@ -13,7 +13,7 @@
   </header>
   <nav class="detail-actions" aria-label="Ações da empresa">
     {% if pode_editar_empresa %}<a class="btn-botuka btn-yellow" href="{% url 'painel:empresa_editar' empresa.uuid %}"><i class="bi bi-pencil-square"></i> Editar empresa</a>{% endif %}
-    {% if whatsapp_url %}<a class="btn-botuka btn-yellow" href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer"><i class="bi bi-whatsapp"></i> WhatsApp</a>{% endif %}
+    {% if whatsapp_url and empresa.aceita_leads %}<button class="btn-botuka btn-yellow" type="button" data-lead-whatsapp><i class="bi bi-whatsapp"></i> WhatsApp</button>{% endif %}
     {% if telefone_url %}<a class="btn-botuka btn-soft" href="{{ telefone_url }}"><i class="bi bi-telephone-fill"></i> Ligar</a>{% endif %}
     {% if agenda_disponivel %}<a class="btn-botuka btn-yellow" href="{% url 'agenda_public:empresa' empresa.slug %}"><i class="bi bi-calendar-check"></i> Agendar horário</a>{% endif %}
     {% if google_maps_url %}<a class="btn-botuka btn-soft" href="{{ google_maps_url }}" target="_blank" rel="noopener noreferrer" data-analytics-directions><i class="bi bi-geo-alt"></i> Ver no mapa</a>{% endif %}
@@ -165,7 +165,7 @@
     <aside class="content-sidebar">
       <section class="sidebar-card contact-card" aria-labelledby="empresa-contato"><h2 id="empresa-contato">Contato</h2><div class="company-info-list">
         {% if telefone_url %}<article class="company-info-item"><i class="bi bi-telephone-fill" aria-hidden="true"></i><div><h3>Telefone</h3><p>{{ telefone_formatado }}</p><div class="company-info-actions"><a href="{{ telefone_url }}">Ligar agora</a></div></div></article>{% endif %}
-        {% if whatsapp_url %}<article class="company-info-item"><i class="bi bi-whatsapp" aria-hidden="true"></i><div><h3>WhatsApp</h3><p>{{ whatsapp_formatado }}</p><div class="company-info-actions"><a href="{{ whatsapp_url }}" target="_blank" rel="noopener noreferrer">Conversar no WhatsApp</a></div></div></article>{% endif %}
+        {% if whatsapp_url and empresa.aceita_leads %}<article class="company-info-item"><i class="bi bi-whatsapp" aria-hidden="true"></i><div><h3>WhatsApp</h3><p>{{ whatsapp_formatado }}</p><div class="company-info-actions"><button type="button" class="btn btn-link p-0" data-lead-whatsapp>Conversar no WhatsApp</button></div></div></article>{% endif %}
         {% if empresa.email %}<article class="company-info-item"><i class="bi bi-envelope-fill" aria-hidden="true"></i><div><h3>E-mail</h3><p>{{ empresa.email }}</p><div class="company-info-actions"><a href="mailto:{{ empresa.email }}">Enviar e-mail</a></div></div></article>{% endif %}
         <article class="company-info-item"><i class="bi bi-clock-fill" aria-hidden="true"></i><div><h3>Atendimento</h3><p>{{ empresa.horario_atendimento|default:"Consulte os horários com a empresa"|linebreaksbr }}</p></div></article>
       </div></section>
@@ -250,6 +250,259 @@
       {% include 'publico/includes/ad_slot.html' with format='sidebar' %}
     </aside>
   </div>
+
+{% if whatsapp_url and empresa.aceita_leads %}
+<div
+  class="modal fade"
+  id="empresaLeadModal"
+  tabindex="-1"
+  aria-labelledby="empresaLeadModalLabel"
+  aria-hidden="true"
+>
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header">
+        <div>
+          <span class="section-kicker">Contato pelo BOTUKA</span>
+          <h2 class="modal-title fs-5" id="empresaLeadModalLabel">
+            Falar com {{ empresa.nome_exibicao }}
+          </h2>
+        </div>
+
+        <button
+          type="button"
+          class="btn-close"
+          data-bs-dismiss="modal"
+          aria-label="Fechar">
+        </button>
+      </div>
+
+      <form
+        id="empresaLeadForm"
+        method="post"
+        action="{% url 'publico:empresa_lead_criar' empresa.slug %}"
+        novalidate>
+        {% csrf_token %}
+
+        <div class="modal-body">
+          <div
+            id="empresaLeadAlert"
+            class="alert alert-danger d-none"
+            role="alert">
+          </div>
+
+          <div class="mb-3">
+            <label for="leadNome" class="form-label">Nome</label>
+            <input
+              type="text"
+              class="form-control"
+              id="leadNome"
+              name="nome"
+              maxlength="160"
+              autocomplete="name"
+              value="{{ lead_prefill.nome }}"
+              required>
+          </div>
+
+          <div class="mb-3">
+            <label for="leadTelefone" class="form-label">Telefone</label>
+            <input
+              type="tel"
+              class="form-control"
+              id="leadTelefone"
+              name="telefone"
+              maxlength="20"
+              autocomplete="tel"
+              inputmode="tel"
+              value="{{ lead_prefill.telefone }}"
+              required>
+          </div>
+
+          <div class="mb-3">
+            <label for="leadEmail" class="form-label">E-mail</label>
+            <input
+              type="email"
+              class="form-control"
+              id="leadEmail"
+              name="email"
+              maxlength="254"
+              autocomplete="email"
+              value="{{ lead_prefill.email }}"
+              required>
+          </div>
+
+          <div class="mb-3">
+            <label for="leadAssunto" class="form-label">Assunto</label>
+            <input
+              type="text"
+              class="form-control"
+              id="leadAssunto"
+              name="assunto"
+              maxlength="180"
+              placeholder="Ex.: orçamento, disponibilidade, informações"
+              required>
+          </div>
+
+          <div class="mb-3">
+            <label for="leadMensagem" class="form-label">Mensagem</label>
+            <textarea
+              class="form-control"
+              id="leadMensagem"
+              name="mensagem"
+              rows="5"
+              maxlength="2000"
+              placeholder="Escreva sua mensagem para a empresa"
+              required></textarea>
+          </div>
+
+          <input
+            type="text"
+            name="website"
+            value=""
+            tabindex="-1"
+            autocomplete="off"
+            aria-hidden="true"
+            style="position:absolute;left:-9999px">
+
+          <p class="small text-muted mb-0">
+            Ao continuar, seus dados de contato serão registrados no BOTUKA
+            e compartilhados com esta empresa para que ela possa responder
+            ao seu contato.
+          </p>
+        </div>
+
+        <div class="modal-footer">
+          <button
+            type="button"
+            class="btn-botuka btn-soft"
+            data-bs-dismiss="modal">
+            Cancelar
+          </button>
+
+          <button
+            type="submit"
+            class="btn-botuka btn-yellow"
+            id="empresaLeadSubmit">
+            <i class="bi bi-whatsapp"></i>
+            Continuar para o WhatsApp
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endif %}
+
 </main>
 {% endblock %}
-{% block public_scripts %}{{ block.super }}{% load static %}<script src="{% static 'public/js/share-actions.js' %}" defer></script>{% endblock %}
+{% block public_scripts %}
+{{ block.super }}
+{% load static %}
+<script src="{% static 'public/js/share-actions.js' %}" defer></script>
+
+{% if whatsapp_url and empresa.aceita_leads %}
+<script>
+document.addEventListener("DOMContentLoaded", function () {
+    const modalElement = document.getElementById("empresaLeadModal");
+    const form = document.getElementById("empresaLeadForm");
+    const submitButton = document.getElementById("empresaLeadSubmit");
+    const alertBox = document.getElementById("empresaLeadAlert");
+
+    if (!modalElement || !form) {
+        return;
+    }
+
+    const modal = bootstrap.Modal.getOrCreateInstance(modalElement);
+
+    document.querySelectorAll("[data-lead-whatsapp]").forEach(function (button) {
+        button.addEventListener("click", function () {
+            alertBox.classList.add("d-none");
+            alertBox.textContent = "";
+            modal.show();
+        });
+    });
+
+    form.addEventListener("submit", async function (event) {
+        event.preventDefault();
+
+        alertBox.classList.add("d-none");
+        alertBox.textContent = "";
+
+        if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+        }
+
+        submitButton.disabled = true;
+
+        const originalHtml = submitButton.innerHTML;
+        submitButton.innerHTML =
+            '<span class="spinner-border spinner-border-sm" aria-hidden="true"></span> Enviando...';
+
+        try {
+            const response = await fetch(form.action, {
+                method: "POST",
+                body: new FormData(form),
+                headers: {
+                    "X-Requested-With": "XMLHttpRequest"
+                },
+                credentials: "same-origin"
+            });
+
+            let data = {};
+
+            try {
+                data = await response.json();
+            } catch (jsonError) {
+                throw new Error("Resposta inválida do servidor.");
+            }
+
+            if (!response.ok || !data.ok) {
+                let message = data.message || "Não foi possível enviar o contato.";
+
+                if (data.errors) {
+                    const messages = [];
+
+                    Object.values(data.errors).forEach(function (fieldErrors) {
+                        fieldErrors.forEach(function (item) {
+                            if (item.message) {
+                                messages.push(item.message);
+                            }
+                        });
+                    });
+
+                    if (messages.length) {
+                        message = messages.join(" ");
+                    }
+                }
+
+                throw new Error(message);
+            }
+
+            if (!data.whatsapp_url) {
+                throw new Error("WhatsApp indisponível para este contato.");
+            }
+
+            modal.hide();
+
+            window.open(
+                data.whatsapp_url,
+                "_blank",
+                "noopener,noreferrer"
+            );
+
+        } catch (error) {
+            alertBox.textContent =
+                error.message || "Não foi possível enviar o contato.";
+
+            alertBox.classList.remove("d-none");
+
+        } finally {
+            submitButton.disabled = false;
+            submitButton.innerHTML = originalHtml;
+        }
+    });
+});
+</script>
+{% endif %}
+{% endblock %}

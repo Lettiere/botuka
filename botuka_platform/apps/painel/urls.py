@@ -46,6 +46,18 @@ urlpatterns = [
     path('empresas/<uuid:uuid>/rejeitar/', views.empresa_rejeitar, name='empresa_rejeitar'),
     path('empresas/<uuid:uuid>/institucional/', views.empresa_institucional, name='empresa_institucional'),
     path('empresas/<uuid:uuid>/equipe/', views.empresa_equipe, name='empresa_equipe'),
+
+    # --- CRM / Leads ---
+    path(
+        'empresas/<uuid:uuid>/crm/',
+        views.empresa_crm,
+        name='empresa_crm',
+    ),
+    path(
+        'empresas/<uuid:uuid>/crm/leads/<uuid:lead_uuid>/',
+        views.empresa_crm_lead,
+        name='empresa_crm_lead',
+    ),
     path('empresas/<uuid:uuid>/agenda/', include('apps.agenda.urls')),
     path('empresas/<uuid:uuid>/links/', views.empresa_links, name='empresa_links'),
     path('empresas/<uuid:uuid>/qrcode/', views.empresa_qrcode, name='empresa_qrcode'),

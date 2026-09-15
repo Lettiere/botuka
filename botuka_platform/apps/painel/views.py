@@ -67,7 +67,7 @@ from apps.agenda.models import (
 )
 from apps.agenda.public_services import resumo_operacional_empresa
 from apps.taxonomy.models import Categoria, Subcategoria
-from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade, EmpresaEndereco, EmpresaImportacaoExecucao, EmpresaLink, EmpresaSolicitacao, EmpresaUsuario, UsuarioLimitePersonalizado
+from apps.organizations.models import Capacidade, Empresa, EmpresaCapacidade, EmpresaEndereco, EmpresaImportacaoExecucao, EmpresaLead, EmpresaLink, EmpresaSolicitacao, EmpresaUsuario, UsuarioLimitePersonalizado
 from apps.organizations.plans import (
     LimiteUsuarioService, obter_assinatura_vigente,
     total_empresas_ativas, total_servicos_utilizados,
@@ -681,6 +681,26 @@ def empresa_detalhe(request: HttpRequest, uuid) -> HttpResponse:
         empresa=empresa, usuario=request.user, permissoes=permissoes,
     )
 
+    pode_acessar_crm = _usuario_pode_acessar_crm(
+        request.user,
+        empresa,
+    )
+
+    crm_leads = EmpresaLead.objects.filter(empresa=empresa)
+
+    crm = {
+        'total': crm_leads.count(),
+        'novos': crm_leads.filter(
+            status=EmpresaLead.Status.NOVO,
+        ).count(),
+        'em_atendimento': crm_leads.filter(
+            status=EmpresaLead.Status.EM_ATENDIMENTO,
+        ).count(),
+        'convertidos': crm_leads.filter(
+            status=EmpresaLead.Status.CONVERTIDO,
+        ).count(),
+    }
+
     return render(
         request,
         'painel/empresas/detalhe.html',
@@ -692,6 +712,8 @@ def empresa_detalhe(request: HttpRequest, uuid) -> HttpResponse:
                 or usuario_tem_permissao(request.user, 'institucional.gerenciar')
             ),
             'painel_empresa': painel_empresa,
+            'pode_acessar_crm': pode_acessar_crm,
+            'crm': crm,
         },
     )
 
@@ -2110,4 +2132,228 @@ def empresa_subcategorias_json(
                 for item in qs
             ]
         }
+    )
+
+
+# ============================================================
+# CRM / LEADS
+# ============================================================
+
+def _usuario_pode_acessar_crm(usuario, empresa: Empresa) -> bool:
+    """
+    CRM pertence ao escopo da empresa.
+
+    Master possui acesso global.
+    Proprietário, administrador e membros com gestão da empresa
+    podem acessar o CRM nesta primeira versão.
+    """
+    if usuario_e_master(usuario):
+        return True
+
+    vinculo = EmpresaUsuario.objects.filter(
+        empresa=empresa,
+        usuario=usuario,
+        ativo=True,
+    ).first()
+
+    if not vinculo:
+        return False
+
+    return bool(
+        vinculo.proprietario
+        or vinculo.administrador
+        or vinculo.funcao in {
+            EmpresaUsuario.Funcao.PROPRIETARIO,
+            EmpresaUsuario.Funcao.ADMINISTRADOR,
+            EmpresaUsuario.Funcao.GERENTE,
+            EmpresaUsuario.Funcao.GESTOR,
+            EmpresaUsuario.Funcao.ATENDENTE,
+        }
+    )
+
+
+@login_required
+def empresa_crm(request: HttpRequest, uuid) -> HttpResponse:
+    empresa = _empresa_autorizada(request, uuid)
+
+    if not _usuario_pode_acessar_crm(request.user, empresa):
+        raise PermissionDenied
+
+    leads_qs = (
+        EmpresaLead.objects
+        .filter(empresa=empresa)
+        .select_related('usuario', 'responsavel')
+    )
+
+    status = request.GET.get('status', '').strip().upper()
+    busca = request.GET.get('q', '').strip()
+
+    status_validos = {codigo for codigo, _ in EmpresaLead.Status.choices}
+
+    if status and status in status_validos:
+        leads_qs = leads_qs.filter(status=status)
+
+    if busca:
+        leads_qs = leads_qs.filter(
+            Q(nome__icontains=busca)
+            | Q(email__icontains=busca)
+            | Q(telefone__icontains=busca)
+            | Q(assunto__icontains=busca)
+        )
+
+    totais = {
+        'total': EmpresaLead.objects.filter(empresa=empresa).count(),
+        'novos': EmpresaLead.objects.filter(
+            empresa=empresa,
+            status=EmpresaLead.Status.NOVO,
+        ).count(),
+        'atendimento': EmpresaLead.objects.filter(
+            empresa=empresa,
+            status=EmpresaLead.Status.EM_ATENDIMENTO,
+        ).count(),
+        'convertidos': EmpresaLead.objects.filter(
+            empresa=empresa,
+            status=EmpresaLead.Status.CONVERTIDO,
+        ).count(),
+    }
+
+    paginator = Paginator(leads_qs, 25)
+    pagina = paginator.get_page(request.GET.get('page'))
+
+    return render(
+        request,
+        'painel/crm/leads.html',
+        {
+            'empresa': empresa,
+            'leads': pagina,
+            'pagina': pagina,
+            'totais': totais,
+            'status_choices': EmpresaLead.Status.choices,
+            'status_atual': status,
+            'busca': busca,
+        },
+    )
+
+
+@login_required
+def empresa_crm_lead(
+    request: HttpRequest,
+    uuid,
+    lead_uuid,
+) -> HttpResponse:
+    empresa = _empresa_autorizada(request, uuid)
+
+    if not _usuario_pode_acessar_crm(request.user, empresa):
+        raise PermissionDenied
+
+    lead = get_object_or_404(
+        EmpresaLead.objects.select_related(
+            'empresa',
+            'usuario',
+            'responsavel',
+        ),
+        uuid=lead_uuid,
+        empresa=empresa,
+    )
+
+    if request.method == 'POST':
+        acao = request.POST.get('acao', '').strip()
+
+        if acao == 'status':
+            novo_status = request.POST.get('status', '').strip().upper()
+            status_validos = {
+                codigo for codigo, _ in EmpresaLead.Status.choices
+            }
+
+            if novo_status not in status_validos:
+                messages.error(request, 'Status de lead inválido.')
+            else:
+                agora = timezone.now()
+
+                lead.status = novo_status
+
+                if novo_status == EmpresaLead.Status.VISUALIZADO:
+                    lead.visualizado_em = lead.visualizado_em or agora
+
+                elif novo_status == EmpresaLead.Status.EM_ATENDIMENTO:
+                    lead.atendimento_em = lead.atendimento_em or agora
+
+                elif novo_status == EmpresaLead.Status.CONVERTIDO:
+                    lead.convertido_em = lead.convertido_em or agora
+
+                lead.save()
+
+                messages.success(
+                    request,
+                    'Status do lead atualizado com sucesso.',
+                )
+
+            return redirect(
+                'painel:empresa_crm_lead',
+                uuid=empresa.uuid,
+                lead_uuid=lead.uuid,
+            )
+
+        if acao == 'responsavel':
+            responsavel_id = request.POST.get('responsavel', '').strip()
+
+            if not responsavel_id:
+                lead.responsavel = None
+                lead.save(update_fields=['responsavel', 'atualizado_em'])
+
+                messages.success(
+                    request,
+                    'Responsável removido do lead.',
+                )
+
+            else:
+                vinculo = get_object_or_404(
+                    EmpresaUsuario.objects.select_related('usuario'),
+                    empresa=empresa,
+                    usuario_id=responsavel_id,
+                    ativo=True,
+                )
+
+                lead.responsavel = vinculo.usuario
+                lead.save(update_fields=['responsavel', 'atualizado_em'])
+
+                messages.success(
+                    request,
+                    'Responsável atualizado com sucesso.',
+                )
+
+            return redirect(
+                'painel:empresa_crm_lead',
+                uuid=empresa.uuid,
+                lead_uuid=lead.uuid,
+            )
+
+    responsaveis = (
+        EmpresaUsuario.objects
+        .filter(empresa=empresa, ativo=True)
+        .select_related('usuario')
+        .order_by('usuario__first_name', 'usuario__username')
+    )
+
+    # Ao abrir um lead novo, registramos a primeira visualização.
+    if lead.status == EmpresaLead.Status.NOVO:
+        lead.status = EmpresaLead.Status.VISUALIZADO
+        lead.visualizado_em = timezone.now()
+        lead.save(
+            update_fields=[
+                'status',
+                'visualizado_em',
+                'atualizado_em',
+            ],
+        )
+
+    return render(
+        request,
+        'painel/crm/lead_detalhe.html',
+        {
+            'empresa': empresa,
+            'lead': lead,
+            'responsaveis': responsaveis,
+            'status_choices': EmpresaLead.Status.choices,
+        },
     )

@@ -1,0 +1,193 @@
+{% extends "painel/base.html" %}
+{% block title %}CRM · {{ empresa.nome_exibicao }} | BOTUKA{% endblock %}
+
+{% block painel_content %}
+<style>
+.crm-page{background:#f4f7fb;margin:0 -18px;padding:26px 18px 50px;min-height:80vh}
+.crm-wrap{width:min(1220px,100%);margin:auto}
+.crm-hero{display:flex;justify-content:space-between;gap:20px;align-items:center;padding:24px 26px;background:linear-gradient(135deg,#111827,#29364b);color:#fff;border-radius:22px}
+.crm-eyebrow{display:block;margin-bottom:5px;color:#ffd230;font-size:11px;font-weight:900;letter-spacing:.1em;text-transform:uppercase}
+.crm-hero h1{margin:0;font-size:clamp(27px,4vw,38px);font-weight:950}
+.crm-hero p{margin:7px 0 0;color:#cbd5e1}
+.crm-btn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:42px;padding:9px 14px;border:1px solid #e4e7ec;border-radius:10px;background:#fff;color:#172033;text-decoration:none;font-weight:800}
+.crm-btn:hover{color:#172033;background:#fffbeb;border-color:#ffd230}
+.crm-stats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:13px;margin:18px 0}
+.crm-stat{padding:18px;background:#fff;border:1px solid #e4e7ec;border-radius:16px;box-shadow:0 5px 18px rgba(15,23,42,.04)}
+.crm-stat span{display:block;color:#667085;font-size:12px;font-weight:800}
+.crm-stat strong{display:block;margin-top:7px;color:#172033;font-size:28px;font-weight:950}
+.crm-filter{padding:16px;margin-bottom:15px;background:#fff;border:1px solid #e4e7ec;border-radius:16px}
+.crm-filter form{display:grid;grid-template-columns:minmax(220px,1fr) 220px auto;gap:10px}
+.crm-filter input,.crm-filter select{width:100%;min-height:43px;padding:9px 11px;border:1px solid #d0d5dd;border-radius:9px;background:#fff}
+.crm-table-card{overflow:hidden;background:#fff;border:1px solid #e4e7ec;border-radius:17px;box-shadow:0 8px 24px rgba(15,23,42,.05)}
+.crm-table{width:100%;border-collapse:collapse}
+.crm-table th{padding:12px 14px;background:#f8fafc;color:#667085;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.05em}
+.crm-table td{padding:14px;border-top:1px solid #eef1f5;color:#344054;vertical-align:middle}
+.crm-table tr:hover td{background:#fffdf5}
+.crm-name{display:block;color:#172033;font-weight:900}
+.crm-contact{display:block;margin-top:3px;color:#667085;font-size:12px}
+.crm-status{display:inline-flex;padding:5px 9px;border-radius:999px;background:#f2f4f7;color:#475467;font-size:11px;font-weight:900}
+.crm-status.NOVO{background:#fff3b5;color:#594a00}
+.crm-status.EM_ATENDIMENTO{background:#dbeafe;color:#1d4ed8}
+.crm-status.CONVERTIDO{background:#dcfce7;color:#166534}
+.crm-status.PERDIDO,.crm-status.SPAM{background:#fee2e2;color:#991b1b}
+.crm-empty{padding:50px 20px;text-align:center;color:#667085}
+.crm-pagination{display:flex;justify-content:center;align-items:center;gap:8px;margin-top:16px}
+@media(max-width:850px){.crm-stats{grid-template-columns:repeat(2,1fr)}.crm-filter form{grid-template-columns:1fr}.crm-table-card{overflow-x:auto}.crm-table{min-width:800px}}
+@media(max-width:520px){.crm-page{margin:0 -12px;padding:14px 10px 35px}.crm-hero{display:block}.crm-hero .crm-btn{margin-top:15px;width:100%}.crm-stats{grid-template-columns:1fr 1fr}}
+</style>
+
+<div class="crm-page">
+  <div class="crm-wrap">
+
+    <header class="crm-hero">
+      <div>
+        <span class="crm-eyebrow">CRM · BOTUKA</span>
+        <h1>Leads</h1>
+        <p>{{ empresa.nome_exibicao }} · contatos comerciais recebidos pelo BOTUKA.</p>
+      </div>
+
+      <a class="crm-btn" href="{% url 'painel:empresa_detalhe' empresa.uuid %}">
+        <i class="bi bi-arrow-left"></i>
+        Empresa
+      </a>
+    </header>
+
+    <section class="crm-stats">
+      <article class="crm-stat">
+        <span>Total de leads</span>
+        <strong>{{ totais.total }}</strong>
+      </article>
+
+      <article class="crm-stat">
+        <span>Novos</span>
+        <strong>{{ totais.novos }}</strong>
+      </article>
+
+      <article class="crm-stat">
+        <span>Em atendimento</span>
+        <strong>{{ totais.atendimento }}</strong>
+      </article>
+
+      <article class="crm-stat">
+        <span>Convertidos</span>
+        <strong>{{ totais.convertidos }}</strong>
+      </article>
+    </section>
+
+    <section class="crm-filter">
+      <form method="get">
+        <input
+          type="search"
+          name="q"
+          value="{{ busca }}"
+          placeholder="Buscar nome, telefone, e-mail ou assunto"
+          aria-label="Buscar leads"
+        >
+
+        <select name="status" aria-label="Filtrar por status">
+          <option value="">Todos os status</option>
+          {% for codigo, nome in status_choices %}
+            <option value="{{ codigo }}" {% if status_atual == codigo %}selected{% endif %}>
+              {{ nome }}
+            </option>
+          {% endfor %}
+        </select>
+
+        <button class="crm-btn" type="submit">
+          <i class="bi bi-search"></i>
+          Filtrar
+        </button>
+      </form>
+    </section>
+
+    <section class="crm-table-card">
+      {% if leads %}
+        <table class="crm-table">
+          <thead>
+            <tr>
+              <th>Contato</th>
+              <th>Assunto</th>
+              <th>Canal</th>
+              <th>Status</th>
+              <th>Responsável</th>
+              <th>Recebido</th>
+              <th></th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {% for lead in leads %}
+              <tr>
+                <td>
+                  <span class="crm-name">{{ lead.nome }}</span>
+                  {% if lead.telefone %}
+                    <span class="crm-contact">{{ lead.telefone }}</span>
+                  {% endif %}
+                  {% if lead.email %}
+                    <span class="crm-contact">{{ lead.email }}</span>
+                  {% endif %}
+                </td>
+
+                <td>{{ lead.assunto|truncatechars:65 }}</td>
+
+                <td>{{ lead.get_canal_display }}</td>
+
+                <td>
+                  <span class="crm-status {{ lead.status }}">
+                    {{ lead.get_status_display }}
+                  </span>
+                </td>
+
+                <td>
+                  {% if lead.responsavel %}
+                    {{ lead.responsavel.get_full_name|default:lead.responsavel.username }}
+                  {% else %}
+                    <span class="text-muted">Não atribuído</span>
+                  {% endif %}
+                </td>
+
+                <td>{{ lead.criado_em|date:"d/m/Y H:i" }}</td>
+
+                <td>
+                  <a
+                    class="crm-btn"
+                    href="{% url 'painel:empresa_crm_lead' empresa.uuid lead.uuid %}"
+                  >
+                    Abrir
+                  </a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <div class="crm-empty">
+          <i class="bi bi-inbox fs-2"></i>
+          <p class="mt-2 mb-0">Nenhum lead encontrado.</p>
+        </div>
+      {% endif %}
+    </section>
+
+    {% if pagina.paginator.num_pages > 1 %}
+      <nav class="crm-pagination" aria-label="Paginação dos leads">
+        {% if pagina.has_previous %}
+          <a class="crm-btn" href="?page={{ pagina.previous_page_number }}&q={{ busca|urlencode }}&status={{ status_atual|urlencode }}">
+            Anterior
+          </a>
+        {% endif %}
+
+        <span>
+          Página {{ pagina.number }} de {{ pagina.paginator.num_pages }}
+        </span>
+
+        {% if pagina.has_next %}
+          <a class="crm-btn" href="?page={{ pagina.next_page_number }}&q={{ busca|urlencode }}&status={{ status_atual|urlencode }}">
+            Próxima
+          </a>
+        {% endif %}
+      </nav>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

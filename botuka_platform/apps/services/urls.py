@@ -10,6 +10,11 @@ urlpatterns = [
     path('servicos/<slug:slug>/', views.servico_publico, name='servico'),
     path('empresas/<slug:slug>/', views.empresa_publica, name='empresa'),
     path(
+        'empresas/<slug:slug>/lead/',
+        views.empresa_lead_criar,
+        name='empresa_lead_criar',
+    ),
+    path(
         'empresas/<slug:slug>/reivindicar/',
         views.empresa_reivindicar,
         name='empresa_reivindicar',

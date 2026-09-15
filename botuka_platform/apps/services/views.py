@@ -1,19 +1,22 @@
 """Páginas públicas e redirecionamentos curtos de serviços e empresas."""
 
+import time
+
 from urllib.parse import urlencode
 
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.paginator import Paginator
 from django.db.models import Case, Exists, IntegerField, OuterRef, Prefetch, Q, Value, When
-from django.http import Http404
+from django.http import Http404, JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.urls import reverse
 from django.views.decorators.http import require_POST
+from django.utils.crypto import salted_hmac
 
-from apps.organizations.models import Empresa, EmpresaSolicitacao, EmpresaUsuario
+from apps.organizations.models import Empresa, EmpresaLead, EmpresaSolicitacao, EmpresaUsuario
 from apps.organizations.permissions import usuario_pode_editar_empresa
-from apps.services.forms import EmpresaReivindicacaoForm
+from apps.services.forms import EmpresaLeadForm, EmpresaReivindicacaoForm
 from apps.services.models import Servico, ServicoImagem, Setor
 from apps.core.seo.page_builders import empresa_seo, listing_seo, servico_seo
 from apps.core.services.contacts import formatar_telefone, normalizar_telefone, telefone_para_whatsapp
@@ -239,6 +242,25 @@ def empresa_publica(request, slug):
             f'{cnpj[8:12]}-{cnpj[12:]}'
         )
 
+    lead_prefill = {
+        'nome': '',
+        'telefone': '',
+        'email': '',
+    }
+
+    if request.user.is_authenticated:
+        nome_usuario = (
+            request.user.get_full_name().strip()
+            or request.user.nome_exibicao.strip()
+            or request.user.username
+        )
+
+        lead_prefill = {
+            'nome': nome_usuario,
+            'telefone': request.user.celular or request.user.telefone or '',
+            'email': request.user.email or '',
+        }
+
     share = obter_dados_compartilhamento(empresa, request)
     return render(request, 'publico/empresas/detalhe.html', {
         'empresa': empresa,
@@ -256,6 +278,7 @@ def empresa_publica(request, slug):
         'telefone_url': f'tel:+{telefone_normalizado}' if telefone_normalizado else '',
         'whatsapp_formatado': whatsapp_formatado,
         'whatsapp_url': whatsapp_url,
+        'lead_prefill': lead_prefill,
         'mapa_embed_url': mapa_embed_url,
         'pode_editar_empresa': pode_editar_empresa,
         'pode_reivindicar': pode_reivindicar,
@@ -269,6 +292,152 @@ def empresa_publica(request, slug):
         'is_following_company': usuario_segue_empresa(request.user, empresa),
     })
 
+
+
+
+@require_POST
+def empresa_lead_criar(request, slug):
+    empresa = get_object_or_404(
+        Empresa,
+        slug=slug,
+        ativo=True,
+        perfil_publico=True,
+        status=Empresa.Status.ATIVA,
+        excluido_em__isnull=True,
+    )
+
+    if not empresa.aceita_leads:
+        return JsonResponse(
+            {
+                "ok": False,
+                "message": "Esta empresa não está recebendo contatos pelo BOTUKA no momento.",
+            },
+            status=403,
+        )
+
+    telefone_normalizado = normalizar_telefone(empresa.telefone)
+    telefone_local = telefone_normalizado or ""
+
+    if telefone_local.startswith("55") and len(telefone_local) == 13:
+        telefone_local = telefone_local[2:]
+
+    telefone_parece_celular = (
+        len(telefone_local) == 11
+        and telefone_local[2:3] == "9"
+    )
+
+    numero_whatsapp = (
+        empresa.whatsapp
+        or (empresa.telefone if telefone_parece_celular else "")
+    )
+
+    whatsapp_destino = normalizar_telefone(numero_whatsapp)
+
+    if not telefone_para_whatsapp(numero_whatsapp):
+        return JsonResponse(
+            {
+                "ok": False,
+                "message": "Esta empresa não possui WhatsApp disponível.",
+            },
+            status=400,
+        )
+
+    # Proteção simples contra envio repetitivo.
+    cooldown_key = f"empresa_lead_cooldown_{empresa.pk}"
+    agora = time.time()
+    ultimo_envio = request.session.get(cooldown_key)
+
+    if ultimo_envio:
+        try:
+            if agora - float(ultimo_envio) < 10:
+                return JsonResponse(
+                    {
+                        "ok": False,
+                        "message": "Aguarde alguns segundos antes de enviar outro contato.",
+                    },
+                    status=429,
+                )
+        except (TypeError, ValueError):
+            pass
+
+    form = EmpresaLeadForm(request.POST)
+
+    if not form.is_valid():
+        return JsonResponse(
+            {
+                "ok": False,
+                "message": "Confira os dados informados.",
+                "errors": form.errors.get_json_data(),
+            },
+            status=400,
+        )
+
+    dados = form.cleaned_data
+
+    perfil_publico_url = (
+        f"https://www.botuka.com.br"
+        f"{reverse('publico:empresa', kwargs={'slug': empresa.slug})}"
+    )
+
+    mensagem_whatsapp = (
+        "Olá! Encontrei seu perfil no BOTUKA:\n"
+        f"{perfil_publico_url}\n\n"
+        f"Assunto: {dados['assunto']}\n\n"
+        f"{dados['mensagem']}\n\n"
+        "Meus dados:\n"
+        f"Nome: {dados['nome']}\n"
+        f"Telefone: {dados['telefone']}\n"
+        f"E-mail: {dados['email']}\n\n"
+        "Contato gerado pelo BOTUKA."
+    )
+
+    whatsapp_url = telefone_para_whatsapp(
+        numero_whatsapp,
+        mensagem_whatsapp,
+    )
+
+    ip = request.META.get("REMOTE_ADDR", "")
+    ip_hash = (
+        salted_hmac("empresa_lead_ip", ip).hexdigest()
+        if ip
+        else ""
+    )
+
+    lead = EmpresaLead.objects.create(
+        empresa=empresa,
+        usuario=request.user if request.user.is_authenticated else None,
+        nome=dados["nome"],
+        email=dados["email"],
+        telefone=dados["telefone"],
+        assunto=dados["assunto"],
+        mensagem=dados["mensagem"],
+        canal=EmpresaLead.Canal.WHATSAPP,
+        origem=EmpresaLead.Origem.EMPRESA,
+        pagina_origem=request.path[:300],
+        url_origem=perfil_publico_url[:500],
+        referrer=request.META.get("HTTP_REFERER", "")[:500],
+        utm_source=request.POST.get("utm_source", "")[:120],
+        utm_medium=request.POST.get("utm_medium", "")[:120],
+        utm_campaign=request.POST.get("utm_campaign", "")[:180],
+        utm_content=request.POST.get("utm_content", "")[:180],
+        utm_term=request.POST.get("utm_term", "")[:180],
+        session_id=request.session.session_key or "",
+        ip_hash=ip_hash,
+        user_agent=request.META.get("HTTP_USER_AGENT", "")[:500],
+        whatsapp_destino=whatsapp_destino[:20],
+        mensagem_whatsapp=mensagem_whatsapp,
+    )
+
+    request.session[cooldown_key] = agora
+
+    return JsonResponse(
+        {
+            "ok": True,
+            "lead_id": str(lead.uuid),
+            "whatsapp_url": whatsapp_url,
+        },
+        status=201,
+    )
 
 
 @login_required
