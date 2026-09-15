@@ -85,18 +85,6 @@
       });
     }
 
-    const nativeShare = page.querySelector('[data-native-share]');
-    if (nativeShare) {
-      if (!navigator.share) nativeShare.hidden = true;
-      nativeShare.addEventListener('click', async function () {
-        try {
-          await navigator.share({title: document.title, url: page.dataset.publicUrl});
-        } catch (error) {
-          if (error.name !== 'AbortError') announce('Não foi possível compartilhar agora.');
-        }
-      });
-    }
-
     page.querySelectorAll('[data-comment-text]').forEach(function (textarea) {
       const counter = textarea.closest('form').querySelector('[data-comment-counter]');
       const update = function () { counter.textContent = textarea.value.length + '/1000'; };

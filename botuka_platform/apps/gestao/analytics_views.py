@@ -1,6 +1,9 @@
 from django.shortcuts import render
 
-from apps.analytics.ga4 import get_ga4_overview
+from apps.analytics.ga4 import (
+    get_ga4_360_reports,
+    get_ga4_overview,
+)
 from apps.gestao.decorators import master_required
 
 
@@ -9,6 +12,7 @@ def ga4_dashboard(request):
     period = request.GET.get("period", "7")
 
     periods = {
+        "today": ("today", "today", "Hoje"),
         "7": ("7daysAgo", "today", "7 dias"),
         "30": ("30daysAgo", "today", "30 dias"),
         "90": ("90daysAgo", "today", "90 dias"),
@@ -19,7 +23,14 @@ def ga4_dashboard(request):
 
     start_date, end_date, period_label = periods[period]
 
+    # Mantido por compatibilidade com o painel existente.
     ga4 = get_ga4_overview(
+        start_date=start_date,
+        end_date=end_date,
+    )
+
+    # Nova camada Analytics 360.
+    ga4_360 = get_ga4_360_reports(
         start_date=start_date,
         end_date=end_date,
     )
@@ -29,6 +40,7 @@ def ga4_dashboard(request):
         "gestao/analytics/ga4_dashboard.html",
         {
             "ga4": ga4,
+            "ga4_360": ga4_360,
             "period": period,
             "period_label": period_label,
             "section": "Inteligência",

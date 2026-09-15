@@ -470,6 +470,185 @@ class AnalyticsTests(TestCase):
             )
         )
 
+
+    def test_company_audience_deduplicates_users_across_sources(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.analytics.dashboard import company_audience_data
+        from apps.services.models import Servico, ServicoFavorito
+        from apps.social.models import EmpresaSeguidor
+
+        servico = Servico.objects.create(
+            usuario_responsavel=self.owner,
+            empresa=self.company,
+            prestador_tipo='EMPRESA',
+            titulo='Serviço Audience',
+            slug='servico-audience',
+        )
+
+        now = timezone.now()
+
+        AnalyticsEvent.objects.create(
+            event_name='view_company',
+            visitor_id=str(uuid.uuid4()),
+            session_id=str(uuid.uuid4()),
+            user=self.other,
+            empresa=self.company,
+            object_type='company',
+            object_id=self.company.uuid,
+            path='/empresas/empresa-analytics/',
+            dedupe_key=str(uuid.uuid4()),
+        )
+
+        EmpresaSeguidor.objects.create(
+            usuario=self.other,
+            empresa=self.company,
+        )
+
+        ServicoFavorito.objects.create(
+            servico=servico,
+            usuario=self.other,
+        )
+
+        data = company_audience_data(
+            self.company,
+            now.date() - timedelta(days=1),
+            now.date(),
+        )
+
+        self.assertEqual(data['unique_users'], 1)
+        self.assertEqual(data['identified_users'], 1)
+        self.assertEqual(data['followers'], 1)
+        self.assertEqual(data['favorites'], 1)
+        self.assertFalse(data['demographics_available'])
+        self.assertEqual(data['age_bands'], [])
+        self.assertEqual(data['locations'], [])
+
+    def test_company_audience_is_company_isolated(self):
+        from datetime import timedelta
+
+        from django.utils import timezone
+
+        from apps.analytics.dashboard import company_audience_data
+
+        other_company = Empresa.objects.create(
+            usuario_proprietario=self.other,
+            nome_fantasia='Empresa Audience Isolada',
+            status=Empresa.Status.ATIVA,
+            ativo=True,
+            perfil_publico=True,
+            cidade=self.company.cidade,
+            estado=self.company.estado,
+        )
+
+        third_user = get_user_model().objects.create_user(
+            'analytics-third',
+            password='safe-pass',
+        )
+
+        AnalyticsEvent.objects.create(
+            event_name='view_company',
+            visitor_id=str(uuid.uuid4()),
+            session_id=str(uuid.uuid4()),
+            user=third_user,
+            empresa=other_company,
+            object_type='company',
+            object_id=other_company.uuid,
+            path='/empresas/empresa-isolada/',
+            dedupe_key=str(uuid.uuid4()),
+        )
+
+        today = timezone.localdate()
+
+        data = company_audience_data(
+            self.company,
+            today - timedelta(days=1),
+            today,
+        )
+
+        self.assertEqual(data['unique_users'], 0)
+        self.assertEqual(data['identified_users'], 0)
+
+    def test_company_audience_demographics_require_minimum_sample(self):
+        from datetime import date
+
+        from django.utils import timezone
+
+        from apps.analytics.dashboard import company_audience_data
+        from apps.social.models import EmpresaSeguidor
+
+        users = []
+
+        for index in range(5):
+            user = get_user_model().objects.create_user(
+                f'analytics-demo-{index}',
+                password='safe-pass',
+                data_nascimento=date(1996, 1, 1),
+                cidade=self.company.cidade,
+                estado=self.company.estado,
+            )
+            users.append(user)
+            EmpresaSeguidor.objects.create(
+                usuario=user,
+                empresa=self.company,
+            )
+
+        today = timezone.localdate()
+
+        data = company_audience_data(
+            self.company,
+            today,
+            today,
+        )
+
+        self.assertTrue(data['demographics_available'])
+        self.assertEqual(data['unique_users'], 5)
+
+        age_map = {
+            item['label']: item['total']
+            for item in data['age_bands']
+        }
+
+        self.assertEqual(age_map.get('25–34'), 5)
+        self.assertTrue(data['locations'])
+
+    def test_company_audience_private_location_is_hidden(self):
+        from datetime import date
+
+        from django.utils import timezone
+
+        from apps.analytics.dashboard import company_audience_data
+        from apps.social.models import EmpresaSeguidor
+
+        for index in range(5):
+            user = get_user_model().objects.create_user(
+                f'analytics-private-{index}',
+                password='safe-pass',
+                data_nascimento=date(1996, 1, 1),
+                cidade=self.company.cidade,
+                estado=self.company.estado,
+                visibilidade_localizacao='PRIVADA',
+            )
+
+            EmpresaSeguidor.objects.create(
+                usuario=user,
+                empresa=self.company,
+            )
+
+        today = timezone.localdate()
+
+        data = company_audience_data(
+            self.company,
+            today,
+            today,
+        )
+
+        self.assertTrue(data['demographics_available'])
+        self.assertEqual(data['unique_users'], 5)
+        self.assertEqual(data['locations'], [])
+
     def test_custom_period_rejects_future_or_oversized_ranges(self):
         period, start, end, _, _ = resolve_period({
             'period': 'custom', 'start': '2020-01-01', 'end': '2030-01-01',
