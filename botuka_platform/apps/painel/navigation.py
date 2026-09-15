@@ -3,7 +3,9 @@
 from django.conf import settings
 from django.urls import NoReverseMatch, reverse
 from apps.accounts.authorization import criar_verificador_permissoes
-from apps.organizations.permissions import empresas_relacionadas_ao_usuario
+from apps.accounts.permissions import usuario_e_master
+from apps.organizations.permissions import (empresas_gerenciaveis_para_usuario,
+                                            empresas_relacionadas_ao_usuario)
 from apps.painel.company_context import SESSION_KEY
 
 
@@ -113,6 +115,11 @@ def painel_navigation(request, permission_checker=None):
         business.append({"label": "Conversas de produtos", "icon": "bi-chat-left-text-fill", "url": reverse("painel:produto_conversas")})
     if _can("products.visualizar_denuncias"):
         business.append({"label": "Denúncias de produtos", "icon": "bi-shield-exclamation", "url": reverse("painel:produto_denuncias")})
+    if usuario_e_master(user) or empresas_gerenciaveis_para_usuario(user).exists():
+        business.append({"label": "Publicidade", "icon": "bi-megaphone-fill", "url": reverse("advertising:campanha_lista")})
+    if usuario_e_master(user):
+        business.append({"label": "Administrar publicidade", "icon": "bi-shield-check", "url": reverse("advertising:campanha_administracao")})
+        business.append({"label": "Configurações de publicidade", "icon": "bi-sliders", "url": reverse("advertising:configuracao_comercial")})
     groups.append({"label": "Negócios", "items": business})
 
     opportunities = []
@@ -165,7 +172,7 @@ def painel_navigation(request, permission_checker=None):
         (empresa for empresa in empresas_nav if str(empresa.uuid) == str(uuid_atual)),
         next(
             (empresa for empresa in empresas_nav
-             if empresa.pk == request.session.get(SESSION_KEY)),
+             if empresa.pk == getattr(request, 'session', {}).get(SESSION_KEY)),
             empresas_nav[0] if len(empresas_nav) == 1 else None,
         ),
     )

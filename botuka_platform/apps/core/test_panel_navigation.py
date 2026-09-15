@@ -28,7 +28,10 @@ class PanelNavigationTests(TestCase):
         response = self.client.get(reverse("painel:dashboard"))
         self.assertEqual(response.status_code, 200)
         items = [item for group in response.context["painel_module_groups"] for item in group["items"]]
-        self.assertEqual({item["label"] for item in items}, set(self.module_labels))
+        expected = set(self.module_labels)
+        if profile_name == "MASTER":
+            expected.update({"Publicidade", "Administrar publicidade", "Configurações de publicidade"})
+        self.assertEqual({item["label"] for item in items}, expected)
         self.assertTrue(all(item["url"] for item in items))
 
     def test_root_ve_todos_os_modulos(self):
@@ -46,6 +49,27 @@ class PanelNavigationTests(TestCase):
             {item["label"] for item in items},
             {"Empresas", "Serviços", "Currículo", "Candidaturas", "Rede Social"},
         )
+
+    def test_publicidade_aparece_somente_com_empresa_gerenciavel(self):
+        sem_empresa = self.make_user("sem_empresa_ads", "CIDADAO_SEM_EMPRESA_ADS")
+        self.client.force_login(sem_empresa)
+        response = self.client.get(reverse("painel:dashboard"))
+        labels = {
+            item["label"] for group in response.context["painel_module_groups"]
+            for item in group["items"]
+        }
+        self.assertNotIn("Publicidade", labels)
+
+        com_empresa = self.make_user("com_empresa_ads", "CIDADAO_COM_EMPRESA_ADS")
+        Empresa.objects.create(usuario_proprietario=com_empresa, nome_fantasia="Anunciante")
+        self.client.force_login(com_empresa)
+        response = self.client.get(reverse("painel:dashboard"))
+        labels = {
+            item["label"] for group in response.context["painel_module_groups"]
+            for item in group["items"]
+        }
+        self.assertIn("Publicidade", labels)
+        self.assertNotIn("Administrar publicidade", labels)
 
     def test_comunidade_exibe_somente_atalho_central_do_social(self):
         user = self.make_user("comunidade_nav", "CIDADAO_COMUNIDADE_NAV")
@@ -88,7 +112,7 @@ class PanelNavigationTests(TestCase):
             response,
             f'class="navigation-company-create" href="{reverse("painel:empresa_criar")}"',
         )
-        self.assertContains(response, "Cadastrar nova empresa")
+        self.assertContains(response, "Cadastro completo")
 
         total_antes = Empresa.objects.filter(usuario_proprietario=user).count()
         wizard = self.client.get(reverse("painel:empresa_criar"))
@@ -107,7 +131,7 @@ class PanelNavigationTests(TestCase):
 
         response = self.client.get(reverse("painel:dashboard"))
         self.assertContains(response, "Empresa Alfa")
-        self.assertContains(response, "Cadastrar nova empresa")
+        self.assertContains(response, "Cadastro completo")
         self.assertContains(response, reverse("painel:empresa_detalhe", args=[primeira.uuid]))
 
         segunda = Empresa.objects.create(
@@ -117,7 +141,7 @@ class PanelNavigationTests(TestCase):
         self.assertContains(response, 'data-company-menu-select')
         self.assertContains(response, "Empresa Alfa")
         self.assertContains(response, "Empresa Beta")
-        self.assertContains(response, "Cadastrar nova empresa")
+        self.assertContains(response, "Cadastro completo")
         self.assertContains(response, reverse("painel:empresa_detalhe", args=[primeira.uuid]))
         self.assertContains(response, reverse("painel:empresa_detalhe", args=[segunda.uuid]))
 

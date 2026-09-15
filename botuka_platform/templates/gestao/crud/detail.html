@@ -1,0 +1,27 @@
+{% extends "gestao/base.html" %}
+{% load gestao_extras %}
+
+{% block title %}{{ title }} | Gestão BOTUKA{% endblock %}
+
+{% block content %}
+  <div class="page-head">
+    <h1>{{ title }}</h1>
+    <div class="actions">
+      <a class="btn btn-muted" href="{% url list_url_name %}">Voltar</a>
+      <a class="btn btn-primary" href="{% url edit_url_name object.pk %}">Editar</a>
+    </div>
+  </div>
+  <section class="panel panel-pad">
+    <dl class="detail-grid">
+      {% for label, field in columns %}
+        <div><dt>{{ label }}</dt><dd>{{ object|attr:field|default:"—" }}</dd></div>
+      {% endfor %}
+    </dl>
+    <form method="post" action="{% url status_url_name object.pk %}" data-confirm="Confirma esta alteração de status?">
+      {% csrf_token %}
+      <button class="btn {% if object.ativo %}btn-danger{% else %}btn-soft{% endif %}" type="submit">
+        {% if object.ativo %}Inativar{% else %}Reativar{% endif %}
+      </button>
+    </form>
+  </section>
+{% endblock %}

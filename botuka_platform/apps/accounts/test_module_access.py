@@ -1,6 +1,7 @@
 from datetime import timedelta
 
 from django.contrib.auth import get_user_model
+from django.core.exceptions import PermissionDenied, ValidationError
 from django.test import TestCase
 from django.utils import timezone
 
@@ -66,4 +67,322 @@ class ModuleAccessTests(TestCase):
         self.grant("news", [self.news_access, self.news_create])
         self.assertEqual(
             AcessoModulo.objects.filter(usuario=self.user, modulo="news").count(), 1,
+        )
+
+
+    def test_gestor_nao_pode_alterar_o_proprio_acesso(self):
+        manager = get_user_model().objects.create_user(
+            "access-manager-self",
+            password="x",
+        )
+        gestao_access = Permissao.objects.get(codigo="gestao.acessar")
+        manage_permissions = Permissao.objects.get(
+            codigo="gestao.gerenciar_permissoes"
+        )
+        manager_access = salvar_acesso_modulo(
+            ator=self.actor,
+            beneficiado=manager,
+            modulo="gestao",
+            permissoes=[gestao_access, manage_permissions],
+            justificativa="Preparação do gestor para teste",
+        )
+
+        with self.assertRaises(PermissionDenied):
+            alterar_status_acesso(
+                ator=manager,
+                acesso=manager_access,
+                status=AcessoModulo.Status.SUSPENSO,
+                justificativa="Tentativa de autoalteração",
+            )
+
+        manager_access.refresh_from_db()
+        self.assertEqual(manager_access.status, AcessoModulo.Status.ATIVO)
+
+
+    def test_nao_master_nao_pode_alterar_acesso_de_master(self):
+        User = get_user_model()
+        manager = User.objects.create_user(
+            "access-manager-master-target",
+            password="x",
+        )
+        gestao_access = Permissao.objects.get(codigo="gestao.acessar")
+        manage_permissions = Permissao.objects.get(
+            codigo="gestao.gerenciar_permissoes"
+        )
+        salvar_acesso_modulo(
+            ator=self.actor,
+            beneficiado=manager,
+            modulo="gestao",
+            permissoes=[gestao_access, manage_permissions],
+            justificativa="Preparação do gestor para teste",
+        )
+
+        master_target = User.objects.create_superuser(
+            "protected-master-target",
+            password="x",
+        )
+        protected_access = AcessoModulo.objects.create(
+            usuario=master_target,
+            modulo="news",
+            concedido_por=self.actor,
+            justificativa="Acesso MASTER protegido",
+        )
+
+        with self.assertRaises(PermissionDenied):
+            alterar_status_acesso(
+                ator=manager,
+                acesso=protected_access,
+                status=AcessoModulo.Status.SUSPENSO,
+                justificativa="Tentativa indevida",
+            )
+
+        protected_access.refresh_from_db()
+        self.assertEqual(protected_access.status, AcessoModulo.Status.ATIVO)
+
+
+    def test_gestor_nao_pode_alterar_acesso_com_permissao_protegida(self):
+        User = get_user_model()
+        manager = User.objects.create_user(
+            "access-manager-protected-permission",
+            password="x",
+        )
+        target = User.objects.create_user(
+            "access-target-protected-permission",
+            password="x",
+        )
+
+        gestao_access = Permissao.objects.get(codigo="gestao.acessar")
+        manage_permissions = Permissao.objects.get(
+            codigo="gestao.gerenciar_permissoes"
+        )
+        salvar_acesso_modulo(
+            ator=self.actor,
+            beneficiado=manager,
+            modulo="gestao",
+            permissoes=[gestao_access, manage_permissions],
+            justificativa="Preparação do gestor para teste",
+        )
+
+        protected_permission = Permissao.objects.create(
+            modulo="news",
+            grupo="Teste",
+            codigo="news.protegida_status_teste",
+            nome="Permissão protegida para teste de status",
+            criticidade=Permissao.Criticidade.PROTEGIDA,
+            protegida=True,
+        )
+        protected_access = salvar_acesso_modulo(
+            ator=self.actor,
+            beneficiado=target,
+            modulo="news",
+            permissoes=[self.news_access, protected_permission],
+            justificativa="Acesso protegido para teste",
+        )
+
+        with self.assertRaises(PermissionDenied):
+            alterar_status_acesso(
+                ator=manager,
+                acesso=protected_access,
+                status=AcessoModulo.Status.SUSPENSO,
+                justificativa="Tentativa sobre permissão protegida",
+            )
+
+        protected_access.refresh_from_db()
+        self.assertEqual(protected_access.status, AcessoModulo.Status.ATIVO)
+
+
+    def test_acesso_revogado_nao_pode_ser_reativado_diretamente(self):
+        access = self.grant(
+            "news",
+            [self.news_access, self.news_create],
+        )
+
+        alterar_status_acesso(
+            ator=self.actor,
+            acesso=access,
+            status=AcessoModulo.Status.REVOGADO,
+            justificativa="Revogação definitiva para teste",
+        )
+
+        access.refresh_from_db()
+        self.assertEqual(access.status, AcessoModulo.Status.REVOGADO)
+        self.assertIsNotNone(access.revogado_em)
+        self.assertIsNotNone(access.revogado_por)
+
+        with self.assertRaises(ValidationError):
+            alterar_status_acesso(
+                ator=self.actor,
+                acesso=access,
+                status=AcessoModulo.Status.ATIVO,
+                justificativa="Tentativa de reativação direta",
+            )
+
+        access.refresh_from_db()
+        self.assertEqual(access.status, AcessoModulo.Status.REVOGADO)
+
+
+    def test_suspensao_e_reativacao_normal_continuam_funcionando(self):
+        access = self.grant(
+            "news",
+            [self.news_access, self.news_create],
+        )
+        self.assertTrue(pode(self.user, "news.cadastrar"))
+
+        alterar_status_acesso(
+            ator=self.actor,
+            acesso=access,
+            status=AcessoModulo.Status.SUSPENSO,
+            justificativa="Suspensão temporária de teste",
+        )
+        access.refresh_from_db()
+        self.assertEqual(access.status, AcessoModulo.Status.SUSPENSO)
+        self.assertFalse(pode(self.user, "news.cadastrar"))
+
+        alterar_status_acesso(
+            ator=self.actor,
+            acesso=access,
+            status=AcessoModulo.Status.ATIVO,
+            justificativa="Reativação após suspensão",
+        )
+        access.refresh_from_db()
+        self.assertEqual(access.status, AcessoModulo.Status.ATIVO)
+        self.assertTrue(pode(self.user, "news.cadastrar"))
+
+
+    def test_revogacao_revoga_concessoes_e_registra_auditoria(self):
+        access = self.grant(
+            "news",
+            [self.news_access, self.news_create],
+        )
+        self.assertEqual(
+            access.concessoes.filter(revogada_em__isnull=True).count(),
+            2,
+        )
+
+        alterar_status_acesso(
+            ator=self.actor,
+            acesso=access,
+            status=AcessoModulo.Status.REVOGADO,
+            justificativa="Revogação auditada de teste",
+        )
+
+        access.refresh_from_db()
+        self.assertEqual(access.status, AcessoModulo.Status.REVOGADO)
+        self.assertEqual(
+            access.concessoes.filter(revogada_em__isnull=True).count(),
+            0,
+        )
+        self.assertTrue(
+            AuditoriaPermissao.objects.filter(
+                usuario_beneficiado=self.user,
+                acao=AuditoriaPermissao.Acao.REVOGAR,
+            ).exists()
+        )
+        self.assertTrue(
+            AuditoriaPermissao.objects.filter(
+                usuario_beneficiado=self.user,
+                acao=AuditoriaPermissao.Acao.ALTERAR,
+            ).exists()
+        )
+
+
+    def test_gestor_nao_pode_conceder_acesso_a_superusuario(self):
+        User = get_user_model()
+
+        manager = User.objects.create_user(
+            "access-manager-superuser-target",
+            password="x",
+        )
+        gestao_access = Permissao.objects.get(codigo="gestao.acessar")
+        manage_permissions = Permissao.objects.get(
+            codigo="gestao.gerenciar_permissoes"
+        )
+
+        salvar_acesso_modulo(
+            ator=self.actor,
+            beneficiado=manager,
+            modulo="gestao",
+            permissoes=[gestao_access, manage_permissions],
+            justificativa="Preparação do gestor para teste",
+        )
+
+        master_target = User.objects.create_superuser(
+            "access-superuser-target",
+            password="x",
+        )
+
+        with self.assertRaises(PermissionDenied):
+            salvar_acesso_modulo(
+                ator=manager,
+                beneficiado=master_target,
+                modulo="news",
+                permissoes=[self.news_access],
+                justificativa="Tentativa sobre superusuário",
+            )
+
+        self.assertFalse(
+            AcessoModulo.objects.filter(
+                usuario=master_target,
+                modulo="news",
+            ).exists()
+        )
+
+
+    def test_gestor_nao_pode_herdar_permissao_protegida_por_perfil(self):
+        User = get_user_model()
+
+        manager = User.objects.create_user(
+            "access-manager-protected-profile",
+            password="x",
+        )
+        target = User.objects.create_user(
+            "access-target-protected-profile",
+            password="x",
+        )
+
+        gestao_access = Permissao.objects.get(codigo="gestao.acessar")
+        manage_permissions = Permissao.objects.get(
+            codigo="gestao.gerenciar_permissoes"
+        )
+
+        salvar_acesso_modulo(
+            ator=self.actor,
+            beneficiado=manager,
+            modulo="gestao",
+            permissoes=[gestao_access, manage_permissions],
+            justificativa="Preparação do gestor para teste",
+        )
+
+        protected_permission = Permissao.objects.create(
+            modulo="news",
+            grupo="Teste",
+            codigo="news.protegida_perfil_teste",
+            nome="Permissão protegida herdada por perfil",
+            criticidade=Permissao.Criticidade.PROTEGIDA,
+            protegida=True,
+        )
+
+        protected_profile = Perfil.objects.create(
+            nome="NEWS_PROTECTED_PROFILE_TEST"
+        )
+        PerfilPermissao.objects.create(
+            perfil=protected_profile,
+            permissao=protected_permission,
+        )
+
+        with self.assertRaises(PermissionDenied):
+            salvar_acesso_modulo(
+                ator=manager,
+                beneficiado=target,
+                modulo="news",
+                permissoes=[],
+                perfil=protected_profile,
+                justificativa="Tentativa de herança protegida",
+            )
+
+        self.assertFalse(
+            AcessoModulo.objects.filter(
+                usuario=target,
+                modulo="news",
+            ).exists()
         )

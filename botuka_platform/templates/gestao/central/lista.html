@@ -1,0 +1,22 @@
+{% extends "gestao/base.html" %}{% load gestao_extras %}
+{% block title %}{{ title }} | Gestão BOTUKA{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ title }}</h1><p>Visão administrativa central — somente leitura.</p></div>{% if workflow_url %}<a class="btn btn-primary" href="{{ workflow_url }}">Abrir fluxo operacional</a>{% endif %}</div>
+{% if content_modules %}<nav class="toolbar" aria-label="Domínios de conteúdo">{% for module in content_modules %}<a class="btn {% if module.kind == kind %}btn-primary{% else %}btn-soft{% endif %}" href="{% url 'gestao:central_lista' module.kind %}"{% if module.kind == kind %} aria-current="page"{% endif %}>{{ module.title }}</a>{% endfor %}</nav>
+<p class="muted"><strong>Capacidade do backend:</strong> {{ capability }}. Alterações permanecem no fluxo de domínio para preservar permissões e auditoria.</p>{% endif %}
+{% if business_modules %}<nav class="toolbar" aria-label="Domínios de negócios">{% for module in business_modules %}<a class="btn {% if module.kind == kind %}btn-primary{% else %}btn-soft{% endif %}" href="{% url 'gestao:central_lista' module.kind %}"{% if module.kind == kind %} aria-current="page"{% endif %}>{{ module.title }}</a>{% endfor %}</nav>
+<p class="muted"><strong>Capacidade do backend:</strong> {{ capability }}. A operação permanece no fluxo empresarial para preservar escopo, transições e auditoria.</p>{% endif %}
+{% if advertising_modules %}<nav class="toolbar" aria-label="Domínios de publicidade">{% for module in advertising_modules %}<a class="btn {% if module.kind == kind %}btn-primary{% else %}btn-soft{% endif %}" href="{% url 'gestao:central_lista' module.kind %}"{% if module.kind == kind %} aria-current="page"{% endif %}>{{ module.title }}</a>{% endfor %}</nav>
+<p class="muted"><strong>Capacidade do backend:</strong> {{ capability }}. Contratação e pagamento permanecem nos serviços de Advertising e BOTUKA Pay.</p>{% endif %}
+<section class="panel panel-pad">
+  <form class="toolbar search" method="get">
+    <input type="search" name="q" value="{{ query }}" placeholder="Buscar">
+    {% if filter_choices %}<select name="status"><option value="">Todos</option>{% for value,label in filter_choices %}<option value="{{ value }}" {% if selected_filter == value|stringformat:'s' %}selected{% endif %}>{{ label }}</option>{% endfor %}</select>{% endif %}
+    {% if date_field %}<input type="date" name="de" value="{{ date_from|date:'Y-m-d' }}" aria-label="Data inicial"><input type="date" name="ate" value="{{ date_to|date:'Y-m-d' }}" aria-label="Data final">{% endif %}
+    <button class="btn btn-muted" type="submit">Filtrar</button>
+  </form>
+  <div class="table-wrap"><table><thead><tr>{% for field in columns %}<th>{{ field|capfirst }}</th>{% endfor %}<th>Ações</th></tr></thead><tbody>
+  {% for object in page_obj %}<tr>{% for field in columns %}<td>{{ object|attr:field|default:"—" }}</td>{% endfor %}<td><a class="btn btn-soft" href="{% url 'gestao:central_detalhe' kind object.pk %}">Ver</a></td></tr>{% empty %}<tr><td colspan="10">Nenhum registro encontrado.</td></tr>{% endfor %}
+  </tbody></table></div>{% include "gestao/components/pagination.html" %}
+</section>
+{% endblock %}

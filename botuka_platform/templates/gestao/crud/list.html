@@ -14,6 +14,11 @@
     <div class="toolbar">
       <form class="search" method="get">
         <input type="search" name="q" value="{{ query }}" placeholder="Buscar">
+        {% if user_filters %}
+          <select name="ativo"><option value="">Todos os status</option><option value="1" {% if active_filter == '1' %}selected{% endif %}>Ativos</option><option value="0" {% if active_filter == '0' %}selected{% endif %}>Inativos</option></select>
+          <select name="staff"><option value="">Staff e comuns</option><option value="1" {% if staff_filter == '1' %}selected{% endif %}>Somente staff</option><option value="0" {% if staff_filter == '0' %}selected{% endif %}>Sem staff</option></select>
+          <select name="perfil"><option value="">Todos os perfis</option>{% for profile in profiles %}<option value="{{ profile.pk }}" {% if profile_filter == profile.pk|stringformat:'s' %}selected{% endif %}>{{ profile.nome }}</option>{% endfor %}</select>
+        {% endif %}
         <button class="btn btn-muted" type="submit">Buscar</button>
       </form>
     </div>
@@ -40,21 +45,25 @@
                     <a class="btn btn-muted" href="{% url edit_url_name object.pk %}">Editar</a>
                   {% endif %}
                   {% if title == "Perfis" %}
+                    <a class="btn btn-soft" href="{% url 'gestao:controle_detalhe' 'perfis' object.pk %}">Ver</a>
                     <a class="btn btn-soft" href="{% url 'gestao:perfil_permissoes' object.pk %}">Permissões</a>
+                  {% endif %}
+                  {% if title == "Permissões" %}
+                    <a class="btn btn-soft" href="{% url 'gestao:controle_detalhe' 'permissoes' object.pk %}">Ver</a>
                   {% endif %}
                   {% if title == "Usuários" %}
                     <a class="btn btn-soft" href="{% url 'gestao:usuario_acessos' object.uuid %}">Gerenciar acessos</a>
                     {% if object.is_active %}
-                      <a class="btn btn-danger" href="{% url 'gestao:usuarios_desativar' object.pk %}">Desativar</a>
+                      <form method="post" action="{% url 'gestao:usuarios_desativar' object.pk %}" data-confirm="Confirma a desativação deste usuário?">{% csrf_token %}<button class="btn btn-danger" type="submit">Desativar</button></form>
                     {% else %}
-                      <a class="btn btn-soft" href="{% url 'gestao:usuarios_ativar' object.pk %}">Ativar</a>
+                      <form method="post" action="{% url 'gestao:usuarios_ativar' object.pk %}">{% csrf_token %}<button class="btn btn-soft" type="submit">Ativar</button></form>
                     {% endif %}
                   {% endif %}
                   {% if title == "Contatos" %}
                     {% if object.ativo %}
-                      <a class="btn btn-danger" href="{% url 'gestao:contatos_desativar' object.pk %}">Desativar</a>
+                      <form method="post" action="{% url 'gestao:contatos_desativar' object.pk %}" data-confirm="Confirma a desativação deste contato?">{% csrf_token %}<button class="btn btn-danger" type="submit">Desativar</button></form>
                     {% else %}
-                      <a class="btn btn-soft" href="{% url 'gestao:contatos_ativar' object.pk %}">Ativar</a>
+                      <form method="post" action="{% url 'gestao:contatos_ativar' object.pk %}">{% csrf_token %}<button class="btn btn-soft" type="submit">Ativar</button></form>
                     {% endif %}
                   {% endif %}
                 </div>

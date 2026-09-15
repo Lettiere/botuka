@@ -1,26 +1,43 @@
 {% extends "gestao/base.html" %}
-
 {% block title %}Dashboard | Gestão BOTUKA{% endblock %}
-
 {% block content %}
-  <div class="page-head">
-    <div><p>Gestão › Visão geral</p><h1>Gestão e Controladoria</h1>
-    <p>Indicadores administrativos reais da plataforma. Atualizado em {{ atualizado_em|date:"d/m/Y H:i" }}.</p></div>
+<style>
+.exec{display:grid;gap:28px}.exec-hero{display:flex;align-items:flex-end;justify-content:space-between;gap:24px;padding:26px;border-radius:18px;background:linear-gradient(135deg,#0f172a,#26354e);color:#fff}.exec-hero h1{margin:0;font-size:clamp(25px,4vw,38px)}.exec-hero p{max-width:720px;margin:8px 0 0;color:#cbd5e1}.exec-kicker{color:#facc15!important;font-size:12px;font-weight:850;letter-spacing:.09em;text-transform:uppercase}.exec-updated{white-space:nowrap;color:#cbd5e1;font-size:12px}.exec-section{display:grid;gap:12px}.exec-head{display:flex;align-items:end;justify-content:space-between;gap:16px}.exec-head h2{margin:0;font-size:20px}.exec-head p,.exec-section>p{margin:4px 0 0;color:var(--muted);font-size:13px}.exec-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:14px}.exec-grid--two{grid-template-columns:repeat(2,minmax(0,1fr))}.exec-card{display:grid;align-content:start;min-height:126px;padding:18px;border:1px solid var(--line);border-radius:14px;background:var(--panel);box-shadow:0 7px 20px rgba(15,23,42,.04)}a.exec-card:hover{border-color:#facc15;transform:translateY(-1px)}.exec-card span{color:var(--muted);font-size:13px;font-weight:750}.exec-card strong{margin-top:8px;color:var(--ink);font-size:30px;line-height:1}.exec-card small{margin-top:8px;color:var(--muted)}.exec-card--warning{border-left:4px solid #f59e0b}.exec-card--danger{border-left:4px solid #dc2626}.exec-card--clear{border-left:4px solid #16a34a}.exec-split{display:grid;grid-template-columns:minmax(0,1.3fr) minmax(320px,.7fr);gap:20px}.exec-insights{display:grid;gap:10px}.exec-insight{padding:14px;border:1px solid var(--line);border-radius:12px;background:var(--panel)}.exec-insight p{margin:8px 0 0;color:var(--muted);font-size:13px}@media(max-width:1100px){.exec-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.exec-split{grid-template-columns:1fr}}@media(max-width:620px){.exec-hero{align-items:flex-start;flex-direction:column;padding:20px}.exec-updated{white-space:normal}.exec-grid{grid-template-columns:1fr}.exec-card{min-height:104px}.exec-head{align-items:flex-start;flex-direction:column}.exec-activity table{min-width:680px}}
+</style>
+<div class="exec">
+  <header class="exec-hero"><div><p class="exec-kicker">Visão executiva e operacional</p><h1>Estado da plataforma</h1><p>Indicadores reais do seu escopo, prioridades que exigem ação e caminhos diretos para administrar.</p></div><span class="exec-updated">Atualizado em {{ atualizado_em|date:"d/m/Y H:i" }}</span></header>
+
+  {% if cards %}<section class="exec-section"><div class="exec-head"><div><h2>Seu escopo</h2><p>Cadastros ativos ou publicados que você pode administrar.</p></div></div><div class="exec-grid">{% for card in cards %}<a class="exec-card" href="{{ card.url }}"><span>{{ card.label }}</span><strong>{{ card.total }}</strong><small>{{ card.detail }} · Abrir área</small></a>{% endfor %}</div></section>{% endif %}
+
+  <section class="exec-section"><div class="exec-head"><div><h2>Atenção operacional</h2><p>Filas e inconsistências reais, com ocorrências exibidas primeiro.</p></div></div><div class="exec-grid">{% for item in pendencias %}<a class="exec-card {% if item.total %}exec-card--{{ item.level }}{% else %}exec-card--clear{% endif %}" href="{{ item.url }}"><span>{{ item.label }}</span><strong>{{ item.total }}</strong><small>{% if item.total %}Requer acompanhamento{% else %}Sem itens na fila{% endif %} · Ver detalhes</small></a>{% empty %}<article class="exec-card exec-card--clear"><span>Nenhuma pendência disponível para seu escopo.</span><strong>0</strong></article>{% endfor %}</div></section>
+
+  {% if operational %}
+  <section class="exec-section"><div class="exec-head"><div><h2>Plataforma</h2><p>Volume cadastrado e operação efetivamente publicada ou ativa.</p></div></div><div class="exec-grid">
+    <a class="exec-card" href="{% url 'gestao:empresas_lista' %}"><span>Empresas ativas</span><strong>{{ operational.platform.companies.active }}</strong><small>{{ operational.platform.companies.total }} cadastradas</small></a>
+    <a class="exec-card" href="{% url 'gestao:usuarios_lista' %}"><span>Usuários ativos</span><strong>{{ operational.platform.users.active }}</strong><small>{{ operational.platform.users.total }} cadastrados</small></a>
+    <a class="exec-card" href="{% url 'gestao:central_lista' 'artigos' %}"><span>Artigos publicados</span><strong>{{ operational.platform.content.published_articles }}</strong><small>{{ operational.platform.content.articles }} artigos</small></a>
+    <a class="exec-card" href="{% url 'gestao:central_lista' 'eventos' %}"><span>Eventos publicados</span><strong>{{ operational.platform.content.published_events }}</strong><small>{{ operational.platform.content.events }} cadastrados</small></a>
+    <a class="exec-card" href="{% url 'gestao:central_lista' 'produtos' %}"><span>Produtos publicados</span><strong>{{ operational.platform.products.published }}</strong><small>{{ operational.platform.products.total }} cadastrados</small></a>
+    <a class="exec-card" href="{% url 'gestao:central_lista' 'servicos' %}"><span>Serviços publicados</span><strong>{{ operational.platform.services.published }}</strong><small>{{ operational.platform.services.total }} cadastrados</small></a>
+    <a class="exec-card" href="{% url 'gestao:central_lista' 'agendamentos' %}"><span>Agendamentos</span><strong>{{ operational.platform.appointments }}</strong><small>registros operacionais</small></a>
+    <a class="exec-card" href="{% url 'gestao:central_lista' 'vagas' %}"><span>Vagas</span><strong>{{ operational.platform.jobs }}</strong><small>registros cadastrados</small></a>
+  </div></section>
+
+  <div class="exec-split">
+    <section class="exec-section"><div class="exec-head"><div><h2>Operação comercial</h2><p>Publicidade e BOTUKA Pay — dados exclusivos para MASTER.</p></div></div><div class="exec-grid exec-grid--two">
+      <a class="exec-card" href="{% url 'advertising:campanha_administracao' %}"><span>Campanhas ativas</span><strong>{{ operational.advertising.active }}</strong><small>{{ operational.advertising.total }} campanhas</small></a>
+      <a class="exec-card" href="{% url 'gestao:central_lista' 'entregas' %}"><span>Impressões / cliques</span><strong>{{ operational.advertising.impressions }} / {{ operational.advertising.clicks }}</strong><small>CTR acumulado: {{ operational.advertising.ctr }}%</small></a>
+      <a class="exec-card" href="{% url 'gestao:central_lista' 'cobrancas' %}"><span>Cobranças pagas</span><strong>{{ operational.payments.paid }}</strong><small>R$ {{ operational.payments.paid_total|floatformat:2 }}</small></a>
+      <a class="exec-card" href="{% url 'gestao:central_lista' 'cobrancas' %}?status=PENDENTE"><span>Cobranças pendentes</span><strong>{{ operational.payments.pending }}</strong><small>R$ {{ operational.payments.pending_total|floatformat:2 }}</small></a>
+    </div></section>
+    <section class="exec-section"><div class="exec-head"><div><h2>Analytics — 30 dias</h2><p>Sinais agregados; não representam crescimento sem série comparativa.</p></div></div><div class="exec-grid exec-grid--two">
+      <a class="exec-card" href="{% url 'gestao:central_lista' 'analytics-empresas' %}"><span>Visualizações</span><strong>{{ operational.analytics.views }}</strong><small>{{ operational.analytics.visitors }} visitantes agregados</small></a>
+      <a class="exec-card" href="{% url 'gestao:central_lista' 'analytics-eventos' %}"><span>Leads</span><strong>{{ operational.analytics.leads }}</strong><small>{{ operational.analytics.events_24h }} eventos nas últimas 24h</small></a>
+    </div></section>
   </div>
-  <div class="grid-cards">
-    {% for label, total, url_name in cards %}
-      <a class="stat" href="{% url url_name %}">
-        <span>{{ label }}</span>
-        <strong>{{ total }}</strong>
-      </a>
-    {% endfor %}
-  </div>
-  <section>
-    <h2>Pendências operacionais</h2>
-    <div class="grid-cards">
-      {% for label, total, url_name in pendencias %}
-        <a class="stat" href="{% url url_name %}"><span>{{ label }}</span><strong>{{ total }}</strong></a>
-      {% endfor %}
-    </div>
-  </section>
+
+  <section class="exec-section"><div class="exec-head"><div><h2>Insights derivados</h2><p>Leituras geradas exclusivamente a partir dos indicadores acima.</p></div></div><div class="exec-insights">{% for insight in insights %}<article class="exec-insight"><span class="badge badge-{{ insight.level }}">{{ insight.title }}</span><p>{{ insight.text }}</p></article>{% empty %}<article class="exec-insight"><p>Nenhuma ocorrência suficiente para gerar um insight operacional.</p></article>{% endfor %}</div></section>
+  <section class="panel panel-pad exec-activity"><h2>Atividade recente</h2><p>Últimos registros das trilhas de auditoria disponíveis.</p><div class="table-wrap"><table><thead><tr><th>Quando</th><th>Módulo</th><th>Ação</th><th>Registro</th><th>Responsável</th></tr></thead><tbody>{% for item in activities %}<tr><td>{{ item.when|date:"d/m/Y H:i" }}</td><td>{{ item.module }}</td><td>{{ item.action }}</td><td>{{ item.subject|default:"-" }}</td><td>{{ item.actor|default:"Sistema" }}</td></tr>{% empty %}<tr><td colspan="5">Nenhuma atividade auditada.</td></tr>{% endfor %}</tbody></table></div></section>
+  {% endif %}
+</div>
 {% endblock %}

@@ -1,6 +1,7 @@
 <header class="gestao-topbar">
   <div>
-    <strong>{{ section|default:"Gestão" }}</strong>
+    <button class="gestao-menu-toggle" type="button" data-sidebar-open aria-controls="gestao-sidebar" aria-expanded="false" aria-label="Abrir menu"><i class="bi bi-list" aria-hidden="true"></i></button>
+    <strong id="gestao-page-section">{{ section|default:"Gestão" }}</strong>
   </div>
   <div>
     <a class="gestao-return-site" href="{% url 'home' %}">

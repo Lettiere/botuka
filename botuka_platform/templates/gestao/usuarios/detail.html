@@ -7,10 +7,17 @@
     <h1>{{ object.nome_exibicao|default:object.get_full_name|default:object.email }}</h1>
     <div class="actions">
       <a class="btn btn-muted" href="{% url 'gestao:usuarios_lista' %}">Voltar</a>
-      <a class="btn btn-primary" href="{% url 'gestao:usuarios_editar' object.pk %}">Editar</a>
-      <a class="btn btn-muted" href="{% url 'gestao:usuario_permissoes' object.uuid %}">Permissões</a>
+      {% if can_edit_user %}<a class="btn btn-primary" href="{% url 'gestao:usuarios_editar' object.pk %}">Editar</a>{% endif %}
+      {% if can_manage_access %}<a class="btn btn-muted" href="{% url 'gestao:usuario_acessos' object.uuid %}">Acessos e permissões</a>{% endif %}
+      {% if can_change_status and request.user.pk != object.pk %}{% if object.is_active %}<form method="post" action="{% url 'gestao:usuarios_desativar' object.pk %}" data-confirm="Desativar esta conta?">{% csrf_token %}<button class="btn btn-danger" type="submit">Desativar</button></form>{% else %}<form method="post" action="{% url 'gestao:usuarios_ativar' object.pk %}">{% csrf_token %}<button class="btn btn-soft" type="submit">Ativar</button></form>{% endif %}{% endif %}
     </div>
   </div>
+  {% if actor_is_master and request.user.pk != object.pk %}
+    <section class="panel panel-pad">
+      <h2>Papel global protegido</h2>
+      <form method="post" action="{% url 'gestao:usuario_papel_global' object.pk %}">{% csrf_token %}<select name="papel"><option value="">Revogar papel global</option><option value="ADMIN_GLOBAL">Administrador global</option><option value="SUPORTE_GLOBAL">Suporte global</option><option value="AUDITOR_GLOBAL">Auditor global</option><option value="MASTER">MASTER</option></select><button class="btn btn-danger" type="submit">Aplicar com auditoria</button></form>
+    </section>
+  {% endif %}
   <div class="grid-cards">
     <section class="panel panel-pad">
       <h2>Dados pessoais</h2>
@@ -23,6 +30,7 @@
     <section class="panel panel-pad">
       <h2>Contato</h2>
       <p><strong>E-mail:</strong> {{ object.email }}</p>
+      <p><strong>Login:</strong> {{ object.username }}</p>
       <p><strong>Telefone:</strong> {{ object.telefone|default:"-" }}</p>
       <p><strong>Celular:</strong> {{ object.celular|default:"-" }}</p>
       <p><strong>Cidade:</strong> {{ object.cidade|default:"-" }}</p>
@@ -42,11 +50,18 @@
           -
         {% endfor %}
       </p>
+      <p><strong>Grupos Django (legado, leitura):</strong> {% for grupo in object.groups.all %}{{ grupo }}{% if not forloop.last %}, {% endif %}{% empty %}-{% endfor %}</p>
+      <p><strong>Permissões Django diretas (legado, leitura):</strong> {{ object.user_permissions.count }}</p>
+      <p><strong>Perfis, grupos e permissões legadas:</strong> somente leitura.</p>
+    </section>
+    <section class="panel panel-pad">
+      <h2>Capacidades pessoais</h2>
+      {% for item in object.capacidades_usuario.all %}<p>{{ item.capacidade.nome }} — {{ item.get_status_display }}{% if not item.ativo %} (inativa){% endif %}</p>{% empty %}<p>Nenhuma capacidade registrada.</p>{% endfor %}
+      <small>Somente leitura: não existe serviço auditado de concessão/revogação pessoal.</small>
     </section>
     <section class="panel panel-pad">
       <h2>Empresas</h2>
-      <p><strong>Vinculadas:</strong> {{ object.organizacoes.count }}</p>
-      <p><strong>Como proprietário:</strong> {{ object.organizacoes_proprietario.count }}</p>
+      {% for item in company_links %}<p><strong>{{ item.empresa.nome_fantasia }}</strong> — {{ item.get_funcao_display }} / {{ item.get_escopo_display }} — {{ item.ativo|yesno:"ativo,inativo" }}</p>{% empty %}<p>Nenhum vínculo empresarial na plataforma atual.</p>{% endfor %}
     </section>
     <section class="panel panel-pad">
       <h2>Status e auditoria</h2>
@@ -58,4 +73,7 @@
       <p><strong>Último acesso:</strong> {{ object.ultimo_acesso|default:"-" }}</p>
     </section>
   </div>
+  <section class="panel panel-pad" style="margin-top:18px"><h2>Acessos a módulos</h2><div class="table-wrap"><table><thead><tr><th>Módulo</th><th>Perfil funcional</th><th>Escopo</th><th>Status</th><th>Validade</th></tr></thead><tbody>{% for item in object.acessos_modulos.all %}<tr><td>{{ item.modulo }}</td><td>{{ item.perfil|default:"Personalizado" }}</td><td>{{ item.get_escopo_display }}</td><td>{{ item.get_status_display }}</td><td>{{ item.valida_ate|date:"d/m/Y H:i"|default:"Sem expiração" }}</td></tr>{% empty %}<tr><td colspan="5">Nenhum acesso modular registrado.</td></tr>{% endfor %}</tbody></table></div></section>
+  <section class="panel panel-pad" style="margin-top:18px"><h2>Permissões individuais vigentes</h2><div class="table-wrap"><table><thead><tr><th>Código</th><th>Escopo</th><th>Concessor</th><th>Validade</th></tr></thead><tbody>{% for item in active_grants %}<tr><td>{{ item.permissao.codigo }}</td><td>{{ item.get_escopo_display }}</td><td>{{ item.concedida_por }}</td><td>{{ item.valida_ate|date:"d/m/Y H:i"|default:"Sem expiração" }}</td></tr>{% empty %}<tr><td colspan="4">Nenhuma concessão individual vigente.</td></tr>{% endfor %}</tbody></table></div></section>
+  <section class="panel panel-pad" style="margin-top:18px"><h2>Auditoria de acessos</h2><div class="table-wrap"><table><thead><tr><th>Data</th><th>Ação</th><th>Permissão</th><th>Responsável</th><th>Justificativa</th></tr></thead><tbody>{% for item in permission_audit %}<tr><td>{{ item.criado_em|date:"d/m/Y H:i" }}</td><td>{{ item.get_acao_display }}</td><td>{{ item.permissao.codigo }}</td><td>{{ item.ator }}</td><td>{{ item.justificativa }}</td></tr>{% empty %}<tr><td colspan="5">Nenhum evento de permissão registrado.</td></tr>{% endfor %}</tbody></table></div></section>
 {% endblock %}

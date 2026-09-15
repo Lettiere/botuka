@@ -1,0 +1,7 @@
+{% extends "gestao/base.html" %}{% load gestao_extras %}
+{% block title %}{{ title }} | Gestão BOTUKA{% endblock %}
+{% block content %}
+<div class="page-head"><div><h1>{{ title }}</h1><p>Registro somente leitura; alterações devem usar o fluxo de domínio correspondente.</p></div><div class="actions">{% if workflow_url %}<a class="btn btn-primary" href="{{ workflow_url }}">Abrir fluxo operacional</a>{% endif %}<a class="btn btn-muted" href="{% url 'gestao:central_lista' kind %}">Voltar</a></div></div>
+{% if capability %}<p class="muted"><strong>Capacidade do backend:</strong> {{ capability }}.</p>{% endif %}
+<section class="panel panel-pad"><dl class="detail-grid">{% for field in columns %}<div><dt>{{ field|capfirst }}</dt><dd>{{ object|attr:field|default:"—" }}</dd></div>{% endfor %}</dl></section>
+{% endblock %}

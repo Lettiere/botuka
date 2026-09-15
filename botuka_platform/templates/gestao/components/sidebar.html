@@ -1,30 +1,20 @@
-{% load gestao_extras %}
-<aside class="gestao-sidebar">
-  <div class="gestao-brand">BOTUKA</div>
+<aside class="gestao-sidebar" id="gestao-sidebar" aria-label="Navegação administrativa" aria-hidden="false">
+  <div class="gestao-sidebar-head">
+    <a class="gestao-brand" href="{% url 'gestao:dashboard' %}">BOTUKA <small>Gestão</small></a>
+    <button class="gestao-sidebar-close" type="button" data-sidebar-close aria-label="Fechar menu"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+  </div>
   <nav class="gestao-menu" aria-label="Menu de gestão">
-    <a href="{% url 'gestao:dashboard' %}">Dashboard</a>
-    <a href="{% url 'gestao:usuarios_lista' %}">Usuários</a>
-    <a href="{% url 'gestao:perfis_lista' %}">Perfis</a>
-    <a href="{% url 'gestao:permissoes_lista' %}">Permissões</a>
-    <a href="{% url 'gestao:organizacoes_lista' %}">Organizações</a>
-    <a href="{% url 'gestao:unidades_lista' %}">Unidades</a>
-    <strong class="gestao-menu-label">Taxonomias</strong>
-    <a href="{% url 'gestao:taxonomia_produtos_dashboard' %}">Produtos</a>
-    <a href="{% url 'gestao:taxonomia_categorias_lista' %}">— Categorias</a>
-    <a href="{% url 'gestao:taxonomia_familias_lista' %}">— Famílias</a>
-    <a href="{% url 'gestao:taxonomia_tipos_lista' %}">— Tipos</a>
-    <a href="{% url 'gestao:taxonomia_segmentos_lista' %}">— Segmentos</a>
-    <a href="{% url 'gestao:categorias_lista' %}">Categorias</a>
-    <a href="{% url 'gestao:subcategorias_lista' %}">Subcategorias</a>
-    <a href="{% url 'gestao:paises_lista' %}">Países</a>
-    <a href="{% url 'gestao:estados_lista' %}">Estados</a>
-    <a href="{% url 'gestao:cidades_lista' %}">Cidades</a>
-    <a href="{% url 'gestao:bairros_lista' %}">Bairros</a>
-    <a href="{% url 'gestao:contatos_lista' %}">Contatos</a>
-    <a href="{% url 'gestao:configuracoes_lista' %}">Configurações</a>
-    {% if request.user|is_master %}
-    <a href="{% url 'gestao:analytics_ga4' %}">Analytics GA4</a>
-    {% endif %}
-    <a href="{% url 'accounts:logout' %}">Sair</a>
+    {% for group in gestao_navigation %}
+      <details class="gestao-menu-group{% if group.active %} is-active{% endif %}" {% if group.active or forloop.first %}open{% endif %}>
+        <summary{% if group.active %} aria-current="true"{% endif %}><i class="bi {{ group.icon }}" aria-hidden="true"></i><span>{{ group.label }}</span><i class="bi bi-chevron-down gestao-menu-chevron" aria-hidden="true"></i></summary>
+        <div class="gestao-menu-items">
+          {% for item in group.items %}
+            <a href="{{ item.url }}"{% if item.active %} class="is-active" aria-current="page"{% endif %}><i class="bi {{ item.icon }}" aria-hidden="true"></i><span>{{ item.label }}</span></a>
+          {% endfor %}
+        </div>
+      </details>
+    {% endfor %}
+    <form class="gestao-logout" method="post" action="{% url 'accounts:logout' %}">{% csrf_token %}<button type="submit"><i class="bi bi-box-arrow-right" aria-hidden="true"></i><span>Sair da Gestão</span></button></form>
   </nav>
 </aside>
+<button class="gestao-sidebar-backdrop" type="button" data-sidebar-close aria-label="Fechar menu" tabindex="-1" aria-hidden="true"></button>

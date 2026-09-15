@@ -10,6 +10,8 @@ from config.settings import cast_debug
 
 
 class CsrfRequestTests(SimpleTestCase):
+    databases = {"default"}
+
     def setUp(self):
         self.client = Client(enforce_csrf_checks=True)
         self.login_url = reverse('accounts:login')

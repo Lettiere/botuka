@@ -4,6 +4,7 @@ from django.contrib.auth import get_user_model
 from django.core.exceptions import PermissionDenied
 from django.test import RequestFactory, TestCase
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.accounts.authorization import criar_verificador_permissoes
 from apps.core.models import Perfil, PerfilPermissao, Permissao
@@ -134,6 +135,7 @@ class ProductsAdministrativeIntegrationTests(TestCase):
         published = self.product(
             nome='Produto público empresa', titular_tipo=Produto.TitularTipo.EMPRESA,
             empresa_proprietaria=self.company, status=Produto.Status.PUBLICADO,
+            publicado_em=timezone.now(),
         )
         self.product(
             nome='Rascunho empresa', titular_tipo=Produto.TitularTipo.EMPRESA,

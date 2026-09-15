@@ -1,5 +1,8 @@
 {% if messages %}
   {% for message in messages %}
-    <div class="alert alert-{{ message.tags }}">{{ message }}</div>
+    <div class="alert alert-{{ message.tags|default:'info' }}" role="{% if message.tags == 'error' %}alert{% else %}status{% endif %}" data-auto-dismiss-alert>
+      <span>{{ message }}</span>
+      <button type="button" data-dismiss-alert aria-label="Fechar aviso"><i class="bi bi-x-lg" aria-hidden="true"></i></button>
+    </div>
   {% endfor %}
 {% endif %}

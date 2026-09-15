@@ -25,7 +25,7 @@ def _validar(ator, beneficiado, permissao):
         raise PermissionDenied('Usuário sem autoridade para administrar permissões.')
     if ator.pk == beneficiado.pk:
         raise PermissionDenied('Não é permitido alterar as próprias permissões.')
-    if beneficiado.tem_perfil('MASTER') and not usuario_e_master(ator):
+    if usuario_e_master(beneficiado) and not usuario_e_master(ator):
         raise PermissionDenied('Permissões de MASTER são protegidas.')
     if permissao.protegida and not usuario_e_master(ator):
         raise PermissionDenied('Apenas MASTER pode administrar esta permissão.')
@@ -108,11 +108,13 @@ def salvar_acesso_modulo(
     acesso.revogado_em = None
     acesso.revogado_por = None
     acesso.save()
-    if perfil and created:
-        iniciais = Permissao.objects.filter(
+    if perfil:
+        iniciais = list(Permissao.objects.filter(
             perfil_permissoes__perfil=perfil,
             perfil_permissoes__ativo=True, modulo=modulo,
-        )
+        ))
+        for permissao in iniciais:
+            _validar(ator, beneficiado, permissao)
         permissoes = list({*permissoes, *iniciais})
     selecionadas = {item.pk: item for item in permissoes}
     for concessao in acesso.concessoes.filter(revogada_em__isnull=True).exclude(permissao_id__in=selecionadas):
@@ -155,29 +157,61 @@ def salvar_acesso_modulo(
 @transaction.atomic
 def alterar_status_acesso(*, ator, acesso, status, justificativa, request=None):
     if not pode_administrar_permissoes(ator):
-        raise PermissionDenied
+        raise PermissionDenied('Usuário sem autoridade para administrar acessos.')
+    if ator.pk == acesso.usuario_id:
+        raise PermissionDenied('Não é permitido alterar os próprios acessos.')
+    if usuario_e_master(acesso.usuario) and not usuario_e_master(ator):
+        raise PermissionDenied('Acessos de MASTER são protegidos.')
     if status not in AcessoModulo.Status.values:
         raise ValidationError('Status de acesso inválido.')
     if not justificativa.strip():
         raise ValidationError('A justificativa é obrigatória.')
+    if acesso.status == AcessoModulo.Status.REVOGADO:
+        raise ValidationError(
+            'Um acesso revogado não pode ser reativado. Conceda um novo acesso ao módulo.'
+        )
+
+    concessoes_ativas = list(
+        acesso.concessoes
+        .filter(revogada_em__isnull=True)
+        .select_related('permissao')
+    )
+    for concessao in concessoes_ativas:
+        _validar(ator, acesso.usuario, concessao.permissao)
+
     anterior = acesso.status
     acesso.status = status
+
     if status == AcessoModulo.Status.REVOGADO:
         acesso.revogado_em = timezone.now()
         acesso.revogado_por = ator
-        for concessao in acesso.concessoes.filter(revogada_em__isnull=True):
-            revogar_permissao(ator=ator, concessao=concessao, justificativa=justificativa, request=request)
+        for concessao in concessoes_ativas:
+            revogar_permissao(
+                ator=ator,
+                concessao=concessao,
+                justificativa=justificativa,
+                request=request,
+            )
+
     acesso.save()
-    permissao_referencia = acesso.concessoes.select_related('permissao').first()
+
+    permissao_referencia = (
+        acesso.concessoes
+        .select_related('permissao')
+        .first()
+    )
     if permissao_referencia:
         AuditoriaPermissao.objects.create(
             usuario_beneficiado=acesso.usuario,
-            permissao=permissao_referencia.permissao, ator=ator,
-            acao=AuditoriaPermissao.Acao.ALTERAR, ip=_ip(request),
+            permissao=permissao_referencia.permissao,
+            ator=ator,
+            acao=AuditoriaPermissao.Acao.ALTERAR,
+            ip=_ip(request),
             justificativa=justificativa,
             estado_anterior={'modulo': acesso.modulo, 'status': anterior},
             estado_posterior={'modulo': acesso.modulo, 'status': status},
         )
+
     return acesso
 
 
