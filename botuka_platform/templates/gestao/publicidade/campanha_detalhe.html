@@ -1,0 +1,365 @@
+{% extends "gestao/base.html" %}
+
+{% block title %}{{ campanha.nome }} | Publicidade | Gestão BOTUKA{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb" aria-label="Navegação estrutural">
+  <a href="{% url 'gestao:dashboard' %}">Gestão</a>
+  <span aria-hidden="true">/</span>
+  <span>Publicidade</span>
+  <span aria-hidden="true">/</span>
+  <a href="{% url 'gestao:publicidade_campanhas' %}">Campanhas</a>
+  <span aria-hidden="true">/</span>
+  <span aria-current="page">{{ campanha.nome }}</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<style>
+  .campaign-summary{margin-bottom:16px}
+  .campaign-layout{
+    display:grid;
+    grid-template-columns:minmax(0,2fr) minmax(300px,1fr);
+    gap:16px;
+  }
+  .campaign-section{margin-bottom:16px}
+  .campaign-section h2{margin:0 0 14px;font-size:18px}
+  .detail-grid{
+    display:grid;
+    grid-template-columns:repeat(2,minmax(0,1fr));
+    gap:14px;
+  }
+  .detail-item{display:grid;gap:4px}
+  .detail-item span{font-size:12px;color:var(--muted)}
+  .detail-item strong{font-size:14px}
+  .campaign-table small{display:block;color:var(--muted);margin-top:3px}
+  .moderation-form{display:grid;gap:10px}
+  .moderation-form textarea{min-height:90px}
+  .audit-list{display:grid;gap:10px}
+  .audit-item{
+    padding:10px 0;
+    border-bottom:1px solid var(--line);
+  }
+  .audit-item:last-child{border-bottom:0}
+  .audit-item small{display:block;color:var(--muted);margin-top:3px}
+  @media(max-width:900px){
+    .campaign-layout,.detail-grid{grid-template-columns:1fr}
+    .campaign-table table{min-width:800px}
+  }
+</style>
+
+<div class="page-head">
+  <div>
+    <h1>{{ campanha.nome }}</h1>
+    <p>
+      {{ campanha.empresa }} · {{ campanha.plano }}
+    </p>
+  </div>
+
+  <div class="actions">
+    <a class="btn btn-muted" href="{% url 'gestao:publicidade_campanhas' %}">
+      Voltar às campanhas
+    </a>
+  </div>
+</div>
+
+<div class="grid-cards campaign-summary">
+  <div class="stat">
+    <span>Status operacional</span>
+    <strong style="font-size:18px">{{ campanha.get_status_display }}</strong>
+  </div>
+
+  <div class="stat">
+    <span>Status financeiro</span>
+    <strong style="font-size:18px">{{ campanha.status_financeiro }}</strong>
+  </div>
+
+  <div class="stat">
+    <span>Impressões</span>
+    <strong>{{ metricas.impressoes|default:0 }}</strong>
+  </div>
+
+  <div class="stat">
+    <span>Cliques</span>
+    <strong>{{ metricas.cliques|default:0 }}</strong>
+  </div>
+</div>
+
+<div class="campaign-layout">
+  <div>
+    <section class="panel panel-pad campaign-section">
+      <h2>Campanha</h2>
+
+      <div class="detail-grid">
+        <div class="detail-item">
+          <span>Empresa</span>
+          <strong>{{ campanha.empresa }}</strong>
+        </div>
+
+        <div class="detail-item">
+          <span>Plano</span>
+          <strong>{{ campanha.plano }}</strong>
+        </div>
+
+        <div class="detail-item">
+          <span>Início</span>
+          <strong>{{ campanha.inicio|date:"d/m/Y H:i" }}</strong>
+        </div>
+
+        <div class="detail-item">
+          <span>Fim</span>
+          <strong>{{ campanha.fim|date:"d/m/Y H:i" }}</strong>
+        </div>
+
+        <div class="detail-item">
+          <span>Criada por</span>
+          <strong>{{ campanha.criado_por }}</strong>
+        </div>
+
+        <div class="detail-item">
+          <span>Criada em</span>
+          <strong>{{ campanha.criado_em|date:"d/m/Y H:i" }}</strong>
+        </div>
+
+        <div class="detail-item">
+          <span>Aprovada por</span>
+          <strong>{{ campanha.aprovada_por|default:"—" }}</strong>
+        </div>
+
+        <div class="detail-item">
+          <span>Aprovada em</span>
+          <strong>{{ campanha.aprovada_em|date:"d/m/Y H:i"|default:"—" }}</strong>
+        </div>
+      </div>
+
+      {% if campanha.observacoes %}
+        <div style="margin-top:16px">
+          <strong>Observações</strong>
+          <p>{{ campanha.observacoes|linebreaksbr }}</p>
+        </div>
+      {% endif %}
+
+      {% if campanha.motivo_rejeicao %}
+        <div class="alert alert-error" style="margin-top:16px">
+          <div>
+            <strong>Motivo da rejeição</strong><br>
+            {{ campanha.motivo_rejeicao }}
+          </div>
+        </div>
+      {% endif %}
+    </section>
+
+    <section class="panel panel-pad campaign-section">
+      <h2>Posicionamentos</h2>
+
+      <div class="actions">
+        {% for posicao in campanha.posicionamentos.all %}
+          <span class="badge badge-success">{{ posicao.nome }}</span>
+        {% empty %}
+          <span>Nenhum posicionamento selecionado.</span>
+        {% endfor %}
+      </div>
+    </section>
+
+    <section class="panel campaign-section">
+      <div class="panel-pad">
+        <h2>Criativos</h2>
+      </div>
+
+      <div class="table-wrap campaign-table">
+        <table>
+          <thead>
+            <tr>
+              <th>Título</th>
+              <th>Tipo</th>
+              <th>Posicionamento</th>
+              <th>Ativo</th>
+              <th>Aprovado</th>
+              <th>Destino</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for criativo in campanha.criativos.all %}
+              <tr>
+                <td>{{ criativo.titulo }}</td>
+                <td>{{ criativo.get_tipo_display }}</td>
+                <td>{{ criativo.posicionamento }}</td>
+                <td>{{ criativo.ativo|yesno:"Sim,Não" }}</td>
+                <td>{{ criativo.aprovado|yesno:"Sim,Não" }}</td>
+                <td>
+                  <a href="{{ criativo.url_destino }}" target="_blank" rel="noopener noreferrer">
+                    Abrir destino
+                  </a>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6">Nenhum criativo cadastrado.</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel panel-pad campaign-section">
+      <h2>Segmentação</h2>
+
+      {% if segmentacao %}
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span>Categorias</span>
+            <strong>
+              {% for item in segmentacao.categorias.all %}
+                {{ item }}{% if not forloop.last %}, {% endif %}
+              {% empty %}—{% endfor %}
+            </strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Subcategorias</span>
+            <strong>
+              {% for item in segmentacao.subcategorias.all %}
+                {{ item }}{% if not forloop.last %}, {% endif %}
+              {% empty %}—{% endfor %}
+            </strong>
+          </div>
+
+          <div class="detail-item">
+            <span>CNAEs</span>
+            <strong>
+              {% for item in segmentacao.cnaes.all %}
+                {{ item }}{% if not forloop.last %}, {% endif %}
+              {% empty %}—{% endfor %}
+            </strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Termos</span>
+            <strong>
+              {% for termo in segmentacao.termos %}
+                {{ termo }}{% if not forloop.last %}, {% endif %}
+              {% empty %}—{% endfor %}
+            </strong>
+          </div>
+        </div>
+      {% else %}
+        <p>Nenhuma segmentação específica cadastrada.</p>
+      {% endif %}
+    </section>
+
+    <section class="panel panel-pad campaign-section">
+      <h2>Contratação e cobrança</h2>
+
+      {% if contratacao %}
+        <div class="detail-grid">
+          <div class="detail-item">
+            <span>Quantidade de dias</span>
+            <strong>{{ contratacao.quantidade_dias }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Valor diário</span>
+            <strong>R$ {{ contratacao.valor_diario|floatformat:2 }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Valor total</span>
+            <strong>R$ {{ contratacao.valor_total|floatformat:2 }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Status da cobrança</span>
+            <strong>{{ contratacao.cobranca.get_status_display }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Vencimento</span>
+            <strong>{{ contratacao.cobranca.vencimento|date:"d/m/Y H:i"|default:"—" }}</strong>
+          </div>
+
+          <div class="detail-item">
+            <span>Pagamento</span>
+            <strong>{{ campanha.status_financeiro }}</strong>
+          </div>
+        </div>
+      {% else %}
+        <p>A campanha ainda não possui contratação/cobrança.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <aside>
+    <section class="panel panel-pad campaign-section">
+      <h2>Moderação</h2>
+
+      {% if campanha.status == 'AGUARDANDO_APROVACAO' %}
+        <form
+          method="post"
+          action="{% url 'gestao:publicidade_campanha_aprovar' campanha.uuid %}"
+          data-confirm="Confirma a aprovação desta campanha?"
+        >
+          {% csrf_token %}
+          <button class="btn btn-primary" type="submit">Aprovar campanha</button>
+        </form>
+
+        <form
+          class="moderation-form"
+          method="post"
+          action="{% url 'gestao:publicidade_campanha_moderar' campanha.uuid 'REJEITAR' %}"
+          data-confirm="Confirma a rejeição desta campanha?"
+          style="margin-top:14px"
+        >
+          {% csrf_token %}
+          <label>
+            Motivo da rejeição
+            <textarea name="motivo" required maxlength="2000"></textarea>
+          </label>
+          <button class="btn btn-danger" type="submit">Rejeitar campanha</button>
+        </form>
+
+      {% elif campanha.status == 'ATIVA' %}
+        <form
+          method="post"
+          action="{% url 'gestao:publicidade_campanha_moderar' campanha.uuid 'PAUSAR' %}"
+          data-confirm="Confirma a pausa desta campanha?"
+        >
+          {% csrf_token %}
+          <button class="btn btn-danger" type="submit">Pausar campanha</button>
+        </form>
+
+      {% elif campanha.status == 'PAUSADA' %}
+        <form
+          method="post"
+          action="{% url 'gestao:publicidade_campanha_moderar' campanha.uuid 'REATIVAR' %}"
+          data-confirm="Confirma a reativação desta campanha?"
+        >
+          {% csrf_token %}
+          <button class="btn btn-primary" type="submit">Reativar campanha</button>
+        </form>
+
+      {% else %}
+        <p>Não há ação administrativa disponível para o estado atual.</p>
+      {% endif %}
+    </section>
+
+    <section class="panel panel-pad campaign-section">
+      <h2>Auditoria</h2>
+
+      <div class="audit-list">
+        {% for item in campanha.auditoria.all %}
+          <div class="audit-item">
+            <strong>{{ item.acao }}</strong>
+            <small>
+              {{ item.criado_em|date:"d/m/Y H:i" }}
+              {% if item.usuario %} · {{ item.usuario }}{% endif %}
+            </small>
+          </div>
+        {% empty %}
+          <p>Nenhum evento de auditoria registrado.</p>
+        {% endfor %}
+      </div>
+    </section>
+  </aside>
+</div>
+{% endblock %}

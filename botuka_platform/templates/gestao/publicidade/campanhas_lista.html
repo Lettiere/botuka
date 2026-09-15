@@ -1,0 +1,162 @@
+{% extends "gestao/base.html" %}
+
+{% block title %}Campanhas publicitárias | Gestão BOTUKA{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb" aria-label="Navegação estrutural">
+  <a href="{% url 'gestao:dashboard' %}">Gestão</a>
+  <span aria-hidden="true">/</span>
+  <span>Publicidade</span>
+  <span aria-hidden="true">/</span>
+  <span aria-current="page">Campanhas</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<style>
+  .advertising-stats{margin-bottom:18px}
+  .advertising-filters .form-grid{grid-template-columns:2fr 1fr 1fr}
+  .campaign-name{min-width:220px}
+  .campaign-company{min-width:190px}
+  .campaign-table small{display:block;margin-top:4px;color:var(--muted)}
+  @media(max-width:900px){
+    .advertising-filters .form-grid{grid-template-columns:1fr}
+    .campaign-table table{min-width:1100px}
+  }
+</style>
+
+<div class="page-head">
+  <div>
+    <h1>Campanhas publicitárias</h1>
+    <p>Visão administrativa das campanhas, aprovação, operação e situação financeira.</p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-muted" href="{% url 'gestao:central_lista' 'criativos' %}">
+      <i class="bi bi-image" aria-hidden="true"></i> Criativos
+    </a>
+    <a class="btn btn-muted" href="{% url 'gestao:central_lista' 'entregas' %}">
+      <i class="bi bi-bar-chart" aria-hidden="true"></i> Entregas
+    </a>
+  </div>
+</div>
+
+<div class="grid-cards advertising-stats">
+  <div class="stat"><span>Total</span><strong>{{ totais.total }}</strong></div>
+  <div class="stat"><span>Rascunhos</span><strong>{{ totais.rascunho }}</strong></div>
+  <div class="stat"><span>Aguardando aprovação</span><strong>{{ totais.aguardando }}</strong></div>
+  <div class="stat"><span>Ativas</span><strong>{{ totais.ativas }}</strong></div>
+  <div class="stat"><span>Pausadas</span><strong>{{ totais.pausadas }}</strong></div>
+</div>
+
+<form class="panel panel-pad advertising-filters" method="get" aria-label="Filtros de campanhas">
+  <div class="form-grid">
+    <label>
+      Busca
+      <input type="search" name="q" value="{{ query }}" placeholder="Campanha, empresa ou plano">
+    </label>
+
+    <label>
+      Status operacional
+      <select name="status">
+        <option value="">Todos</option>
+        {% for value,label in status_choices %}
+          <option value="{{ value }}" {% if status == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Status financeiro
+      <select name="financeiro">
+        <option value="">Todos</option>
+        {% for value,label in financeiro_choices %}
+          <option value="{{ value }}" {% if financeiro == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+  </div>
+
+  <div class="actions" style="margin-top:14px">
+    <button class="btn btn-primary" type="submit">
+      <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar filtros
+    </button>
+    <a class="btn btn-muted" href="{% url 'gestao:publicidade_campanhas' %}">Limpar</a>
+  </div>
+</form>
+
+<div class="panel table-wrap campaign-table" style="margin-top:16px">
+  <table>
+    <thead>
+      <tr>
+        <th>Campanha</th>
+        <th>Empresa</th>
+        <th>Plano / posições</th>
+        <th>Período</th>
+        <th>Criativos</th>
+        <th>Operacional</th>
+        <th>Financeiro</th>
+        <th>Atualização</th>
+        <th>Ação</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for campanha in page_obj %}
+      <tr>
+        <td class="campaign-name">
+          <strong>{{ campanha.nome }}</strong>
+          <small>{{ campanha.uuid }}</small>
+        </td>
+
+        <td class="campaign-company">
+          {{ campanha.empresa }}
+          <small>Criada por {{ campanha.criado_por|default:"Não registrado" }}</small>
+        </td>
+
+        <td>
+          {{ campanha.plano }}
+          <small>
+            {% for posicao in campanha.posicionamentos.all %}
+              {{ posicao.nome }}{% if not forloop.last %} · {% endif %}
+            {% empty %}
+              Sem posicionamento
+            {% endfor %}
+          </small>
+        </td>
+
+        <td>
+          {{ campanha.inicio|date:"d/m/Y H:i" }}
+          <small>até {{ campanha.fim|date:"d/m/Y H:i" }}</small>
+        </td>
+
+        <td>
+          {{ campanha.criativos_aprovados }}/{{ campanha.total_criativos }}
+          <small>aprovados / cadastrados</small>
+        </td>
+
+        <td>
+          <span class="badge {% if campanha.status == 'ATIVA' %}badge-success{% elif campanha.status == 'REJEITADA' or campanha.status == 'CANCELADA' %}badge-danger{% else %}badge-warning{% endif %}">
+            {{ campanha.get_status_display }}
+          </span>
+        </td>
+
+        <td>{{ campanha.status_financeiro }}</td>
+
+        <td>{{ campanha.atualizado_em|date:"d/m/Y H:i" }}</td>
+
+        <td>
+          <a class="btn btn-soft" href="{% url 'gestao:publicidade_campanha_detalhe' campanha.uuid %}">
+            Analisar
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9">Nenhuma campanha corresponde aos filtros informados.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "gestao/components/pagination.html" %}
+{% endblock %}

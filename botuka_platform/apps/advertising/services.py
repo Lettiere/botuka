@@ -41,25 +41,101 @@ def _conflitos(campanha, *, lock=False):
     return queryset
 
 
+def _validar_cobertura_criativos(campanha):
+    posicionamento_ids = set(
+        campanha.posicionamentos.values_list('pk', flat=True)
+    )
+
+    if not posicionamento_ids:
+        raise ValidationError(
+            'A campanha exige ao menos um posicionamento.'
+        )
+
+    posicionamentos_com_criativo = set(
+        campanha.criativos.filter(
+            posicionamento_id__in=posicionamento_ids,
+            ativo=True,
+        ).values_list('posicionamento_id', flat=True)
+    )
+
+    faltantes = posicionamento_ids - posicionamentos_com_criativo
+
+    if faltantes:
+        nomes = list(
+            Posicionamento.objects
+            .filter(pk__in=faltantes)
+            .order_by('nome')
+            .values_list('nome', flat=True)
+        )
+        raise ValidationError(
+            'Cada posicionamento da campanha exige ao menos um '
+            f'criativo ativo. Sem criativo: {", ".join(nomes)}.'
+        )
+
+    return True
+
+
 def validar_disponibilidade(campanha, *, lock=False):
-    if campanha.plano.nivel == campanha.plano.Nivel.ZERO and not campanha.posicionamentos.filter(aceita_takeover=True).exists():
+    posicionamentos = campanha.posicionamentos.all()
+
+    if lock:
+        posicionamento_ids = list(
+            posicionamentos.values_list('pk', flat=True)
+        )
+        list(
+            Posicionamento.objects.select_for_update()
+            .filter(pk__in=posicionamento_ids)
+            .order_by('pk')
+            .values_list('pk', flat=True)
+        )
+
+    if (
+        campanha.plano.nivel == campanha.plano.Nivel.ZERO
+        and not posicionamentos.filter(aceita_takeover=True).exists()
+    ):
         raise ValidationError('Takeover exige posicionamento compatível.')
+
     conflitos = _conflitos(campanha, lock=lock)
+
     if campanha.plano.exclusivo and conflitos.exists():
-        raise ValidationError('Já existe campanha no período de exclusividade solicitado.')
+        raise ValidationError(
+            'Já existe campanha no período de exclusividade solicitado.'
+        )
+
     if conflitos.filter(plano__exclusivo=True).exists():
-        raise ValidationError('O período está reservado por campanha exclusiva.')
-    if campanha.plano.limite_anunciantes:
-        empresas_ativas = conflitos.values('empresa_id').distinct().count()
-        if empresas_ativas >= campanha.plano.limite_anunciantes:
-            raise ValidationError('Limite de anunciantes do posicionamento atingido.')
+        raise ValidationError(
+            'O período está reservado por campanha exclusiva.'
+        )
+
+    limite = campanha.plano.limite_anunciantes
+    if limite:
+        for posicionamento in posicionamentos:
+            empresas = set(
+                conflitos
+                .filter(posicionamentos=posicionamento)
+                .values_list('empresa_id', flat=True)
+            )
+            empresas.add(campanha.empresa_id)
+
+            if len(empresas) > limite:
+                raise ValidationError(
+                    f'Limite de anunciantes do posicionamento '
+                    f'"{posicionamento.nome}" atingido.'
+                )
+
     return True
 
 
 def _ativar_se_elegivel(campanha, *, usuario=None):
     agora = timezone.now()
-    if (campanha.status == Campanha.Status.APROVADA and campanha.contratacao.esta_paga
-            and campanha.inicio <= agora < campanha.fim):
+    contratacao = getattr(campanha, 'contratacao', None)
+
+    if (
+        campanha.status == Campanha.Status.APROVADA
+        and contratacao is not None
+        and contratacao.esta_paga
+        and campanha.inicio <= agora < campanha.fim
+    ):
         anterior = campanha.status
         campanha.status = Campanha.Status.ATIVA
         campanha.save(update_fields=['status', 'atualizado_em'])
@@ -74,8 +150,8 @@ def contratar_campanha(*, campanha_id, usuario) -> ContratacaoPublicidade:
         raise PermissionDenied
     if campanha.status != Campanha.Status.RASCUNHO:
         raise ValidationError('A campanha já foi contratada ou não está disponível.')
-    if not campanha.posicionamentos.exists() or not campanha.criativos.exists():
-        raise ValidationError('A campanha exige posicionamento e criativo.')
+    _validar_cobertura_criativos(campanha)
+
     segmentacao = getattr(campanha, 'segmentacao', None)
     if (campanha.plano.nivel == campanha.plano.Nivel.TRES
             and not (segmentacao and (
@@ -121,8 +197,7 @@ def aprovar_campanha(*, campanha_id, usuario) -> Campanha:
     campanha = Campanha.objects.select_for_update().get(pk=campanha_id)
     if campanha.status != Campanha.Status.AGUARDANDO_APROVACAO:
         raise ValidationError('Campanha não está aguardando aprovação.')
-    if not campanha.criativos.filter(ativo=True).exists():
-        raise ValidationError('Campanha sem criativo ativo.')
+    _validar_cobertura_criativos(campanha)
     campanha.criativos.filter(ativo=True).update(aprovado=True)
     campanha.aprovada_em = timezone.now()
     campanha.aprovada_por = usuario

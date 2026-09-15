@@ -73,7 +73,17 @@ def gestao_navigation(request):
                 for item_label, item_icon, kind in specs
             ]})
         groups.insert(-1, {"label": "Publicidade", "icon": "bi-megaphone", "items": [
-            _item("Moderação de campanhas", "bi-shield-check", reverse("advertising:campanha_administracao"), names=("campanha_administracao", "campanha_moderar")),
+            _item(
+                "Moderação de campanhas",
+                "bi-shield-check",
+                reverse("gestao:publicidade_campanhas"),
+                names=(
+                    "publicidade_campanhas",
+                    "publicidade_campanha_detalhe",
+                    "publicidade_campanha_aprovar",
+                    "publicidade_campanha_moderar",
+                ),
+            ),
             _item("Planos e posições", "bi-sliders", reverse("advertising:configuracao_comercial"), names=("configuracao_comercial",)),
             _item("Criativos", "bi-image", reverse("gestao:central_lista", args=["criativos"]), names=("central_lista", "central_detalhe"), kind="criativos"),
             _item("Entregas", "bi-bar-chart", reverse("gestao:central_lista", args=["entregas"]), names=("central_lista", "central_detalhe"), kind="entregas"),

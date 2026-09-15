@@ -159,6 +159,179 @@ class AdvertisingFlowTests(TestCase):
         with self.assertRaises(ValidationError):
             contratar_campanha(campanha_id=candidate.pk, usuario=self.owner)
 
+    def test_limite_anunciantes_e_avaliado_por_posicionamento(self):
+        limited = PlanoPublicitario.objects.create(
+            nome='Plus por slot',
+            nivel=2,
+            preco_diario=Decimal('20'),
+            limite_anunciantes=2,
+        )
+
+        posicao_b = Posicionamento.objects.create(
+            codigo='sidebar-limite',
+            nome='Sidebar limite',
+            contexto='home',
+        )
+
+        # Empresa 1 ocupa somente a posição A.
+        campanha_a = self.campanha(limited)
+        contratar_campanha(campanha_id=campanha_a.pk, usuario=self.owner)
+
+        # Empresa 2 ocupa somente a posição B.
+        empresa_b = Empresa.objects.create(
+            nome_fantasia='Empresa B',
+            usuario_proprietario=self.owner,
+        )
+        campanha_b = self.campanha(limited)
+        campanha_b.empresa = empresa_b
+        campanha_b.save(update_fields=['empresa'])
+        campanha_b.posicionamentos.set([posicao_b])
+
+        criativo_b = campanha_b.criativos.first()
+        criativo_b.posicionamento = posicao_b
+        criativo_b.save()
+
+        contratar_campanha(campanha_id=campanha_b.pk, usuario=self.owner)
+
+        # Empresa 3 solicita A + B.
+        # Cada posição ficará com exatamente 2 anunciantes,
+        # portanto a contratação deve ser permitida.
+        empresa_c = Empresa.objects.create(
+            nome_fantasia='Empresa C',
+            usuario_proprietario=self.owner,
+        )
+        candidata = self.campanha(limited)
+        candidata.empresa = empresa_c
+        candidata.save(update_fields=['empresa'])
+        candidata.posicionamentos.set([self.posicao, posicao_b])
+
+        Criativo.objects.create(
+            campanha=candidata,
+            posicionamento=posicao_b,
+            tipo=Criativo.Tipo.TEXTO,
+            titulo='Oferta B',
+            texto='Compre agora',
+            url_destino='https://example.com',
+        )
+
+        contratacao = contratar_campanha(
+            campanha_id=candidata.pk,
+            usuario=self.owner,
+        )
+
+        self.assertEqual(contratacao.campanha, candidata)
+
+    def test_limite_anunciantes_bloqueia_terceira_empresa_no_mesmo_posicionamento(self):
+        limited = PlanoPublicitario.objects.create(
+            nome='Plus limite mesmo slot',
+            nivel=2,
+            preco_diario=Decimal('20'),
+            limite_anunciantes=2,
+        )
+
+        # Primeira empresa ocupa o slot.
+        primeira = self.campanha(limited)
+        contratar_campanha(campanha_id=primeira.pk, usuario=self.owner)
+
+        # Segunda empresa ocupa o mesmo slot.
+        empresa_b = Empresa.objects.create(
+            nome_fantasia='Empresa limite B',
+            usuario_proprietario=self.owner,
+        )
+        segunda = self.campanha(limited)
+        segunda.empresa = empresa_b
+        segunda.save(update_fields=['empresa'])
+        contratar_campanha(campanha_id=segunda.pk, usuario=self.owner)
+
+        # Terceira empresa deve ser bloqueada.
+        empresa_c = Empresa.objects.create(
+            nome_fantasia='Empresa limite C',
+            usuario_proprietario=self.owner,
+        )
+        terceira = self.campanha(limited)
+        terceira.empresa = empresa_c
+        terceira.save(update_fields=['empresa'])
+
+        with self.assertRaises(ValidationError) as contexto:
+            contratar_campanha(
+                campanha_id=terceira.pk,
+                usuario=self.owner,
+            )
+
+        self.assertIn(
+            'Limite de anunciantes do posicionamento',
+            str(contexto.exception),
+        )
+
+    def test_contratacao_exige_criativo_para_cada_posicionamento(self):
+        posicao_b = Posicionamento.objects.create(
+            codigo='slot-sem-criativo',
+            nome='Slot sem criativo',
+            contexto='home',
+        )
+
+        campanha = self.campanha()
+        campanha.posicionamentos.add(posicao_b)
+
+        # O helper criou criativo somente para self.posicao.
+        self.assertTrue(
+            campanha.criativos.filter(
+                posicionamento=self.posicao
+            ).exists()
+        )
+        self.assertFalse(
+            campanha.criativos.filter(
+                posicionamento=posicao_b
+            ).exists()
+        )
+
+        with self.assertRaises(ValidationError):
+            contratar_campanha(
+                campanha_id=campanha.pk,
+                usuario=self.owner,
+            )
+
+    def test_aprovacao_exige_criativo_ativo_para_cada_posicionamento(self):
+        posicao_b = Posicionamento.objects.create(
+            codigo='slot-aprovacao',
+            nome='Slot aprovação',
+            contexto='home',
+        )
+
+        campanha = self.campanha()
+        campanha.posicionamentos.add(posicao_b)
+
+        criativo_b = Criativo.objects.create(
+            campanha=campanha,
+            posicionamento=posicao_b,
+            tipo=Criativo.Tipo.TEXTO,
+            titulo='Oferta B',
+            texto='Compre agora',
+            url_destino='https://example.com',
+        )
+
+        # A contratação é válida: A e B possuem criativos ativos.
+        contratar_campanha(
+            campanha_id=campanha.pk,
+            usuario=self.owner,
+        )
+
+        # Antes da moderação, o criativo de B deixa de estar ativo.
+        criativo_b.ativo = False
+        criativo_b.save(update_fields=['ativo'])
+
+        with self.assertRaises(ValidationError):
+            aprovar_campanha(
+                campanha_id=campanha.pk,
+                usuario=self.master,
+            )
+
+        campanha.refresh_from_db()
+        self.assertEqual(
+            campanha.status,
+            Campanha.Status.AGUARDANDO_APROVACAO,
+        )
+
     def test_rejeicao_pausa_reativacao_cancelamento_e_auditoria(self):
         rejected = self.campanha()
         contratar_campanha(campanha_id=rejected.pk, usuario=self.owner)
@@ -470,6 +643,42 @@ class AdvertisingAuthorizationTests(TestCase):
         self.assertEqual(self.client.get(reverse('advertising:campanha_detalhe', args=[self.campaign.uuid])).status_code, 200)
         self.assertContains(self.client.get(reverse('advertising:campanha_lista')), 'Escopo')
 
+    def test_edicao_preserva_criador_original_da_campanha(self):
+        self.client.force_login(self.member)
+
+        response = self.client.post(
+            reverse(
+                'advertising:campanha_editar',
+                args=[self.campaign.uuid],
+            ),
+            {
+                'empresa': self.empresa.pk,
+                'plano': self.plan.pk,
+                'nome': 'Escopo editado',
+                'inicio': self.campaign.inicio.strftime(
+                    '%Y-%m-%dT%H:%M'
+                ),
+                'fim': self.campaign.fim.strftime(
+                    '%Y-%m-%dT%H:%M'
+                ),
+                'posicionamentos': [self.position.pk],
+                'observacoes': 'Editada por outro usuário autorizado.',
+            },
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        self.campaign.refresh_from_db()
+
+        self.assertEqual(
+            self.campaign.criado_por,
+            self.owner,
+        )
+        self.assertEqual(
+            self.campaign.nome,
+            'Escopo editado',
+        )
+
     def test_post_forjado_de_empresa_rejeitado_e_vinculo_aceito(self):
         now = timezone.now()
         data = {'empresa': self.other_company.pk, 'plano': self.plan.pk, 'nome': 'Forjada',
@@ -483,7 +692,10 @@ class AdvertisingAuthorizationTests(TestCase):
         data['empresa'] = self.empresa.pk
         response = self.client.post(reverse('advertising:campanha_criar'), data)
         self.assertEqual(response.status_code, 302)
-        self.assertEqual(Campanha.objects.get(nome='Forjada').empresa, self.empresa)
+
+        campanha = Campanha.objects.get(nome='Forjada')
+        self.assertEqual(campanha.empresa, self.empresa)
+        self.assertEqual(campanha.criado_por, self.member)
 
     def test_mutacoes_administrativas_rejeitam_get_e_exigem_csrf(self):
         self.client.force_login(self.master)

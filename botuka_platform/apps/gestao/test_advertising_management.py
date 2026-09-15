@@ -16,6 +16,8 @@ from apps.organizations.models import Empresa
 
 
 class AdvertisingManagementTests(TestCase):
+    databases = {'default', 'internal'}
+
     @classmethod
     def setUpTestData(cls):
         User = get_user_model()
@@ -75,3 +77,264 @@ class AdvertisingManagementTests(TestCase):
         for kind, (route, args, _capability) in _ADVERTISING_WORKFLOW_ROUTES.items():
             response = self.client.get(reverse('gestao:central_lista', args=[kind]))
             self.assertContains(response, reverse(route, args=args))
+
+
+class AdvertisingCampaignCentralTests(AdvertisingManagementTests):
+    def test_central_campanhas_e_exclusiva_master(self):
+        url = reverse('gestao:publicidade_campanhas')
+
+        self.client.force_login(self.outsider)
+        self.assertEqual(self.client.get(url).status_code, 403)
+
+        self.client.force_login(self.master)
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            'gestao/publicidade/campanhas_lista.html',
+        )
+        self.assertContains(response, 'Campanhas publicitárias')
+        self.assertContains(response, self.campaign.nome)
+        self.assertContains(response, self.company.nome_fantasia)
+
+    def test_central_campanhas_filtra_por_busca(self):
+        self.client.force_login(self.master)
+        url = reverse('gestao:publicidade_campanhas')
+
+        response = self.client.get(url, {'q': 'Campanha Gestão'})
+        self.assertContains(response, self.campaign.nome)
+
+        response = self.client.get(url, {'q': 'INEXISTENTE-XYZ'})
+        self.assertNotContains(response, self.campaign.nome)
+        self.assertContains(
+            response,
+            'Nenhuma campanha corresponde aos filtros informados.',
+        )
+
+    def test_central_campanhas_filtra_por_status(self):
+        self.client.force_login(self.master)
+        url = reverse('gestao:publicidade_campanhas')
+
+        response = self.client.get(
+            url,
+            {'status': Campanha.Status.RASCUNHO},
+        )
+        self.assertContains(response, self.campaign.nome)
+
+        response = self.client.get(
+            url,
+            {'status': Campanha.Status.ATIVA},
+        )
+        self.assertNotContains(response, self.campaign.nome)
+
+    def test_central_exibe_indicadores(self):
+        self.client.force_login(self.master)
+
+        response = self.client.get(
+            reverse('gestao:publicidade_campanhas')
+        )
+
+        self.assertEqual(response.context['totais']['total'], 1)
+        self.assertEqual(response.context['totais']['rascunho'], 1)
+        self.assertEqual(response.context['totais']['aguardando'], 0)
+        self.assertEqual(response.context['totais']['ativas'], 0)
+        self.assertEqual(response.context['totais']['pausadas'], 0)
+
+    def test_detalhe_campanha_e_exclusivo_master(self):
+        url = reverse(
+            'gestao:publicidade_campanha_detalhe',
+            args=[self.campaign.uuid],
+        )
+
+        self.client.force_login(self.outsider)
+        self.assertEqual(self.client.get(url).status_code, 403)
+
+        self.client.force_login(self.master)
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            'gestao/publicidade/campanha_detalhe.html',
+        )
+        self.assertContains(response, self.campaign.nome)
+        self.assertContains(response, self.company.nome_fantasia)
+        self.assertContains(response, self.plan.nome)
+
+    def test_acoes_de_moderacao_nao_aceitam_get(self):
+        self.client.force_login(self.master)
+
+        urls = [
+            reverse(
+                'gestao:publicidade_campanha_aprovar',
+                args=[self.campaign.uuid],
+            ),
+            reverse(
+                'gestao:publicidade_campanha_moderar',
+                args=[self.campaign.uuid, 'REJEITAR'],
+            ),
+        ]
+
+        for url in urls:
+            with self.subTest(url=url):
+                self.assertEqual(self.client.get(url).status_code, 405)
+
+    def test_rejeicao_exige_motivo(self):
+        self.campaign.status = Campanha.Status.AGUARDANDO_APROVACAO
+        self.campaign.save(update_fields=['status', 'atualizado_em'])
+
+        self.client.force_login(self.master)
+
+        response = self.client.post(
+            reverse(
+                'gestao:publicidade_campanha_moderar',
+                args=[self.campaign.uuid, 'REJEITAR'],
+            ),
+            {'motivo': ''},
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        self.campaign.refresh_from_db()
+        self.assertEqual(
+            self.campaign.status,
+            Campanha.Status.AGUARDANDO_APROVACAO,
+        )
+
+    def test_master_pode_rejeitar_campanha_com_motivo(self):
+        self.campaign.status = Campanha.Status.AGUARDANDO_APROVACAO
+        self.campaign.save(update_fields=['status', 'atualizado_em'])
+
+        self.client.force_login(self.master)
+
+        response = self.client.post(
+            reverse(
+                'gestao:publicidade_campanha_moderar',
+                args=[self.campaign.uuid, 'REJEITAR'],
+            ),
+            {'motivo': 'Criativo fora da política comercial.'},
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        self.campaign.refresh_from_db()
+        self.assertEqual(
+            self.campaign.status,
+            Campanha.Status.REJEITADA,
+        )
+        self.assertEqual(
+            self.campaign.motivo_rejeicao,
+            'Criativo fora da política comercial.',
+        )
+
+    def test_aprovacao_sem_cobertura_de_criativos_e_bloqueada(self):
+        self.campaign.status = Campanha.Status.AGUARDANDO_APROVACAO
+        self.campaign.save(update_fields=['status', 'atualizado_em'])
+
+        self.client.force_login(self.master)
+
+        response = self.client.post(
+            reverse(
+                'gestao:publicidade_campanha_aprovar',
+                args=[self.campaign.uuid],
+            ),
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        self.campaign.refresh_from_db()
+        self.assertEqual(
+            self.campaign.status,
+            Campanha.Status.AGUARDANDO_APROVACAO,
+        )
+        self.assertIsNone(self.campaign.aprovada_em)
+
+    def test_moderacao_post_e_exclusiva_master(self):
+        self.campaign.status = Campanha.Status.AGUARDANDO_APROVACAO
+        self.campaign.save(update_fields=['status', 'atualizado_em'])
+
+        self.client.force_login(self.outsider)
+
+        response = self.client.post(
+            reverse(
+                'gestao:publicidade_campanha_moderar',
+                args=[self.campaign.uuid, 'REJEITAR'],
+            ),
+            {'motivo': 'Tentativa não autorizada.'},
+        )
+
+        self.assertEqual(response.status_code, 403)
+
+        self.campaign.refresh_from_db()
+        self.assertEqual(
+            self.campaign.status,
+            Campanha.Status.AGUARDANDO_APROVACAO,
+        )
+
+    def test_acao_de_moderacao_invalida_nao_altera_campanha(self):
+        self.campaign.status = Campanha.Status.AGUARDANDO_APROVACAO
+        self.campaign.save(update_fields=['status', 'atualizado_em'])
+
+        self.client.force_login(self.master)
+
+        response = self.client.post(
+            reverse(
+                'gestao:publicidade_campanha_moderar',
+                args=[self.campaign.uuid, 'INVALIDA'],
+            ),
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        self.campaign.refresh_from_db()
+        self.assertEqual(
+            self.campaign.status,
+            Campanha.Status.AGUARDANDO_APROVACAO,
+        )
+
+    def test_master_pode_pausar_campanha_ativa(self):
+        self.campaign.status = Campanha.Status.ATIVA
+        self.campaign.save(update_fields=['status', 'atualizado_em'])
+
+        self.client.force_login(self.master)
+
+        response = self.client.post(
+            reverse(
+                'gestao:publicidade_campanha_moderar',
+                args=[self.campaign.uuid, 'PAUSAR'],
+            ),
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        self.campaign.refresh_from_db()
+        self.assertEqual(
+            self.campaign.status,
+            Campanha.Status.PAUSADA,
+        )
+
+    def test_master_pode_reativar_campanha_pausada(self):
+        self.campaign.status = Campanha.Status.PAUSADA
+        self.campaign.save(update_fields=['status', 'atualizado_em'])
+
+        self.client.force_login(self.master)
+
+        response = self.client.post(
+            reverse(
+                'gestao:publicidade_campanha_moderar',
+                args=[self.campaign.uuid, 'REATIVAR'],
+            ),
+        )
+
+        self.assertEqual(response.status_code, 302)
+
+        self.campaign.refresh_from_db()
+
+        self.assertIn(
+            self.campaign.status,
+            {
+                Campanha.Status.APROVADA,
+                Campanha.Status.ATIVA,
+            },
+        )

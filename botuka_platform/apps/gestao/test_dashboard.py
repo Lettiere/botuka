@@ -119,7 +119,7 @@ class GestaoDashboardTests(TestCase):
         items = response.context["pendencias"]
         self.assertTrue(all(item["url"].startswith("/") for item in items))
         self.assertEqual(items[0]["label"], "Campanhas aguardando aprovação")
-        self.assertContains(response, reverse("advertising:campanha_administracao"))
+        self.assertContains(response, reverse("gestao:publicidade_campanhas"))
         self.assertContains(
             response, reverse("gestao:central_lista", args=["pagamentos"]),
         )

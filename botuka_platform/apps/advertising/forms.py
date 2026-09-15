@@ -25,11 +25,16 @@ class CampanhaForm(forms.ModelForm):
 
     def save(self, commit=True):
         obj = super().save(commit=False)
-        obj.criado_por = self.usuario
+
+        if obj._state.adding:
+            obj.criado_por = self.usuario
+
         obj.full_clean()
+
         if commit:
             obj.save()
             self.save_m2m()
+
         return obj
 
 

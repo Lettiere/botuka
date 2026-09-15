@@ -9,6 +9,7 @@ from apps.gestao import (
     central_views,
     company_views,
     location_views,
+    advertising_views,
 )
 from apps.products import taxonomy_views
 
@@ -16,6 +17,26 @@ app_name = 'gestao'
 
 urlpatterns = [
     path('', views.dashboard, name='dashboard'),
+    path(
+        'publicidade/campanhas/',
+        advertising_views.campanha_lista,
+        name='publicidade_campanhas',
+    ),
+    path(
+        'publicidade/campanhas/<uuid:uuid>/',
+        advertising_views.campanha_detalhe,
+        name='publicidade_campanha_detalhe',
+    ),
+    path(
+        'publicidade/campanhas/<uuid:uuid>/aprovar/',
+        advertising_views.campanha_aprovar,
+        name='publicidade_campanha_aprovar',
+    ),
+    path(
+        'publicidade/campanhas/<uuid:uuid>/moderar/<str:acao>/',
+        advertising_views.campanha_moderar,
+        name='publicidade_campanha_moderar',
+    ),
     path('analytics/ga4/', analytics_views.ga4_dashboard, name='analytics_ga4'),
     path('empresas/', company_views.empresa_lista, name='empresas_lista'),
     path('empresas/nova/', company_views.empresa_form, name='empresa_nova'),
