@@ -61,7 +61,7 @@ def _models():
         'posicionamentos-publicitarios': (Posicionamento, 'Posicionamentos publicitários', 'Publicidade', ('nome', 'codigo', 'contexto'), ('nome', 'codigo', 'contexto', 'largura', 'altura', 'tamanho_maximo_bytes', 'aceita_takeover', 'ativo'), 'ativo'),
         'campanhas': (Campanha, 'Campanhas publicitárias', 'Publicidade', ('nome', 'empresa__nome_fantasia', 'plano__nome'), ('nome', 'empresa', 'plano', 'status', 'inicio', 'fim', 'atualizado_em'), 'status'),
         'segmentacoes': (CampanhaSegmentacao, 'Segmentações publicitárias', 'Publicidade', ('campanha__nome',), ('campanha', 'termos'), ''),
-        'criativos': (Criativo, 'Criativos publicitários', 'Publicidade', ('titulo', 'campanha__nome'), ('titulo', 'campanha', 'tipo', 'aprovado', 'ativo'), 'ativo'),
+        'criativos': (Criativo, 'Criativos publicitários', 'Publicidade', ('titulo', 'campanha__nome', 'posicionamento__nome'), ('titulo', 'campanha', 'posicionamento', 'tipo', 'aprovado', 'ativo'), 'ativo'),
         'contratacoes': (ContratacaoPublicidade, 'Contratações publicitárias', 'Publicidade', ('campanha__nome', 'cobranca__external_reference'), ('campanha', 'cobranca', 'quantidade_dias', 'valor_diario', 'valor_total', 'criado_em'), ''),
         'entregas': (EntregaPublicidade, 'Entregas publicitárias', 'Publicidade', ('campanha__nome', 'posicionamento__nome', 'contexto'), ('campanha', 'criativo', 'posicionamento', 'contexto', 'entregue_em', 'clicado_em'), ''),
         'auditoria-publicidade': (AuditoriaPublicidade, 'Auditoria de publicidade', 'Publicidade', ('acao', 'campanha__nome', 'usuario__username'), ('campanha', 'acao', 'usuario', 'criado_em'), 'acao'),

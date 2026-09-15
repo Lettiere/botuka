@@ -221,6 +221,7 @@ def entregar_publicidade(*, posicionamento_codigo, visitante_id, contexto, categ
         status=Campanha.Status.ATIVA, aprovada_em__isnull=False, inicio__lte=agora, fim__gt=agora,
         posicionamentos=posicionamento, contratacao__cobranca__status=Cobranca.Status.PAGA,
         criativos__ativo=True, criativos__aprovado=True,
+        criativos__posicionamento=posicionamento,
     ).filter(
         _segmentacao_q(
             categoria=categoria, subcategoria=subcategoria, cnae=cnae, termo=termo,
@@ -252,7 +253,9 @@ def entregar_publicidade(*, posicionamento_codigo, visitante_id, contexto, categ
         )
     )
     campanha = elegiveis[0]
-    criativo = campanha.criativos.filter(ativo=True, aprovado=True).annotate(total=Count('entregas')).order_by('total', 'pk').first()
+    criativo = campanha.criativos.filter(
+        ativo=True, aprovado=True, posicionamento=posicionamento,
+    ).annotate(total=Count('entregas')).order_by('total', 'pk').first()
     return EntregaPublicidade.objects.create(campanha=campanha, criativo=criativo, posicionamento=posicionamento, visitante_hash=visitante_hash, contexto=contexto)
 
 

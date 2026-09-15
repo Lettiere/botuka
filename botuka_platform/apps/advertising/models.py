@@ -209,17 +209,28 @@ class Criativo(models.Model):
         TEXTO = 'TEXTO', 'Texto'
 
     campanha = models.ForeignKey(Campanha, on_delete=models.CASCADE, related_name='criativos')
+    posicionamento = models.ForeignKey(
+        Posicionamento, on_delete=models.PROTECT, related_name='criativos',
+    )
     tipo = models.CharField(max_length=12, choices=Tipo.choices)
     titulo = models.CharField(max_length=120)
     texto = models.TextField(blank=True)
     imagem = models.ImageField(upload_to='advertising/criativos/', blank=True)
+    imagem_mobile = models.ImageField(upload_to='advertising/criativos/mobile/', blank=True)
     video = models.FileField(upload_to='advertising/criativos/videos/', blank=True)
+    video_mobile = models.FileField(upload_to='advertising/criativos/videos/mobile/', blank=True)
     url_destino = models.URLField()
     ativo = models.BooleanField(default=True)
     aprovado = models.BooleanField(default=False, editable=False)
 
     class Meta:
         db_table = '"advertising"."advertising_criativo_tb"'
+        indexes = [
+            models.Index(
+                fields=['campanha', 'posicionamento', 'ativo', 'aprovado'],
+                name='adv_criativo_slot_idx',
+            ),
+        ]
 
     def clean(self):
         if self.tipo == self.Tipo.IMAGEM and not self.imagem:
@@ -230,9 +241,12 @@ class Criativo(models.Model):
             raise ValidationError({'texto': 'Informe o conteúdo do criativo.'})
         if self.tipo == self.Tipo.TEXTO and strip_tags(self.texto) != self.texto:
             raise ValidationError({'texto': 'HTML não é permitido em criativos de texto.'})
-        if self.campanha_id:
-            for posicionamento in self.campanha.posicionamentos.all():
-                self._validar_posicionamento(posicionamento)
+        if self.campanha_id and self.posicionamento_id:
+            if not self.campanha.posicionamentos.filter(pk=self.posicionamento_id).exists():
+                raise ValidationError({
+                    'posicionamento': 'O posicionamento deve pertencer à campanha.',
+                })
+            self._validar_posicionamento(self.posicionamento)
 
     def _validar_posicionamento(self, posicionamento):
         permitidos = {
@@ -242,24 +256,59 @@ class Criativo(models.Model):
         }
         if not permitidos.get(self.tipo, False):
             raise ValidationError({'tipo': f'Tipo incompatível com {posicionamento.nome}.'})
-        arquivo = self.imagem if self.tipo == self.Tipo.IMAGEM else self.video if self.tipo == self.Tipo.VIDEO else None
+        if self.tipo == self.Tipo.TEXTO:
+            return
+        desktop = self.imagem if self.tipo == self.Tipo.IMAGEM else self.video
+        mobile = self.imagem_mobile if self.tipo == self.Tipo.IMAGEM else self.video_mobile
+        self._validar_arquivo(desktop, posicionamento, variante='desktop')
+        if mobile:
+            self._validar_arquivo(mobile, posicionamento, variante='mobile')
+
+    def _validar_arquivo(self, arquivo, posicionamento, *, variante):
         if not arquivo:
             return
         if arquivo.size > posicionamento.tamanho_maximo_bytes:
-            raise ValidationError('Arquivo excede o tamanho máximo do posicionamento.')
+            raise ValidationError({
+                self._campo_midia(variante):
+                    f'Arquivo {variante} excede o tamanho máximo do posicionamento.',
+            })
         extensao = arquivo.name.rsplit('.', 1)[-1].lower() if '.' in arquivo.name else ''
         formatos = posicionamento.formatos_permitidos
         if formatos and extensao not in formatos:
-            raise ValidationError('Formato de arquivo não permitido para o posicionamento.')
-        mime = getattr(arquivo.file, 'content_type', '') or mimetypes.guess_type(arquivo.name)[0] or ''
+            raise ValidationError({
+                self._campo_midia(variante):
+                    f'Formato do arquivo {variante} não permitido para o posicionamento.',
+            })
+        mime = (
+            getattr(arquivo, 'content_type', '')
+            or getattr(arquivo.file, 'content_type', '')
+            or mimetypes.guess_type(arquivo.name)[0]
+            or ''
+        )
         prefixo = 'image/' if self.tipo == self.Tipo.IMAGEM else 'video/'
         if not mime.startswith(prefixo):
-            raise ValidationError('MIME type incompatível com o tipo de criativo.')
+            raise ValidationError({
+                self._campo_midia(variante):
+                    f'MIME do arquivo {variante} incompatível com o tipo de criativo.',
+            })
         if self.tipo == self.Tipo.IMAGEM and posicionamento.dimensoes_obrigatorias:
-            if arquivo.width != posicionamento.largura or arquivo.height != posicionamento.altura:
-                raise ValidationError(
-                    f'Imagem deve ter {posicionamento.largura} × {posicionamento.altura} px.'
-                )
+            largura = posicionamento.largura if variante == 'desktop' else posicionamento.largura_mobile
+            altura = posicionamento.altura if variante == 'desktop' else posicionamento.altura_mobile
+            # A variante mobile é opcional; quando enviada e sem dimensões móveis
+            # configuradas, conserva a validação segura pelas regras gerais do slot.
+            if largura and altura and (arquivo.width != largura or arquivo.height != altura):
+                raise ValidationError({
+                    self._campo_midia(variante):
+                        f'Imagem {variante} deve ter {largura} × {altura} px.',
+                })
+
+    def _campo_midia(self, variante):
+        base = 'imagem' if self.tipo == self.Tipo.IMAGEM else 'video'
+        return f'{base}_mobile' if variante == 'mobile' else base
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
 
 class EntregaPublicidade(models.Model):
@@ -275,6 +324,22 @@ class EntregaPublicidade(models.Model):
     class Meta:
         db_table = '"advertising"."advertising_entrega_tb"'
         indexes = [models.Index(fields=['visitante_hash', 'entregue_em'], name='adv_entrega_visit_date_idx')]
+
+    def clean(self):
+        errors = {}
+        if self.criativo_id and self.campanha_id and self.criativo.campanha_id != self.campanha_id:
+            errors['criativo'] = 'O criativo deve pertencer à campanha da entrega.'
+        if (
+            self.criativo_id and self.posicionamento_id
+            and self.criativo.posicionamento_id != self.posicionamento_id
+        ):
+            errors['posicionamento'] = 'O criativo deve pertencer ao posicionamento da entrega.'
+        if errors:
+            raise ValidationError(errors)
+
+    def save(self, *args, **kwargs):
+        self.full_clean()
+        return super().save(*args, **kwargs)
 
 
 class AuditoriaPublicidade(models.Model):

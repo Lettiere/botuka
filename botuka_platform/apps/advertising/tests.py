@@ -49,7 +49,9 @@ class AdvertisingFlowTests(TestCase):
         now = timezone.now()
         campanha = Campanha.objects.create(empresa=self.empresa, plano=plano or self.plano, nome='Campanha', inicio=now - timedelta(hours=1), fim=now + timedelta(days=2), criado_por=self.owner)
         campanha.posicionamentos.add(self.posicao)
-        Criativo.objects.create(campanha=campanha, tipo=Criativo.Tipo.TEXTO, titulo='Oferta', texto='Compre agora', url_destino='https://example.com')
+        Criativo.objects.create(campanha=campanha, posicionamento=self.posicao,
+                                tipo=Criativo.Tipo.TEXTO, titulo='Oferta',
+                                texto='Compre agora', url_destino='https://example.com')
         segmentacao = CampanhaSegmentacao.objects.create(campanha=campanha)
         segmentacao.categorias.add(self.categoria)
         return campanha
@@ -186,12 +188,14 @@ class AdvertisingFlowTests(TestCase):
     def test_criativo_textual_rejeita_html_e_video_aceita_mp4_webm_configurados(self):
         campaign = self.campanha()
         self.assertFalse(CriativoForm(data={
+            'posicionamento': self.posicao.pk,
             'tipo': Criativo.Tipo.TEXTO, 'titulo': 'Texto',
             'texto': '<strong>Oferta</strong>',
             'url_destino': 'https://example.com', 'ativo': True,
         }, campanha=campaign).is_valid())
         for extension, content_type in (('mp4', 'video/mp4'), ('webm', 'video/webm')):
             form = CriativoForm(data={
+                'posicionamento': self.posicao.pk,
                 'tipo': Criativo.Tipo.VIDEO, 'titulo': f'Vídeo {extension}',
                 'url_destino': 'https://example.com', 'ativo': True,
             }, files={
@@ -266,6 +270,180 @@ class AdvertisingFlowTests(TestCase):
         self.assertEqual(AnalyticsEvent.objects.filter(event_name='ad_click').count(), 1)
         campanha.criativos.update(url_destino='javascript:alert(1)')
         self.assertEqual(self.client.get(url).status_code, 404)
+
+
+class CreativePositioningTests(AdvertisingFlowTests):
+    @staticmethod
+    def image_file(size=(1200, 300), *, name='creative.png', content_type='image/png'):
+        stream = BytesIO()
+        Image.new('RGB', size, 'blue').save(stream, format='PNG')
+        return SimpleUploadedFile(name, stream.getvalue(), content_type=content_type)
+
+    def strict_position(self, **overrides):
+        values = {
+            'codigo': f'strict-{Posicionamento.objects.count()}', 'nome': 'Topo',
+            'contexto': 'home', 'largura': 1200, 'altura': 300,
+            'largura_mobile': 720, 'altura_mobile': 360,
+            'dimensoes_obrigatorias': True, 'formatos_permitidos': ['png'],
+            'tamanho_maximo_bytes': 100000, 'permite_imagem': True,
+            'permite_video': False, 'permite_texto': True,
+        }
+        values.update(overrides)
+        return Posicionamento.objects.create(**values)
+
+    def test_criativo_exige_posicionamento_da_campanha(self):
+        campaign = self.campanha()
+        outside = self.strict_position()
+        creative = Criativo(
+            campanha=campaign, posicionamento=outside, tipo=Criativo.Tipo.TEXTO,
+            titulo='Fora', texto='Oferta', url_destino='https://example.com',
+        )
+        with self.assertRaises(ValidationError):
+            creative.save()
+
+    def test_topo_nunca_e_entregue_na_sidebar(self):
+        campaign = self.campanha()
+        sidebar = self.strict_position(
+            codigo='public-sidebar-test', nome='Sidebar', dimensoes_obrigatorias=False,
+        )
+        campaign.posicionamentos.add(sidebar)
+        sidebar_creative = Criativo.objects.create(
+            campanha=campaign, posicionamento=sidebar, tipo=Criativo.Tipo.TEXTO,
+            titulo='Sidebar', texto='Slot correto', url_destino='https://example.com',
+        )
+        self.ativar(campaign)
+        delivery = entregar_publicidade(
+            posicionamento_codigo=sidebar.codigo, visitante_id='sidebar-visitor',
+            contexto='home', categoria=self.categoria,
+        )
+        self.assertEqual(delivery.criativo, sidebar_creative)
+        self.assertEqual(delivery.posicionamento, sidebar)
+
+    def test_sidebar_rejeita_video_quando_tipo_nao_permitido(self):
+        campaign = self.campanha()
+        sidebar = self.strict_position(codigo='sidebar-no-video', nome='Sidebar')
+        campaign.posicionamentos.add(sidebar)
+        with self.assertRaises(ValidationError):
+            Criativo.objects.create(
+                campanha=campaign, posicionamento=sidebar, tipo=Criativo.Tipo.VIDEO,
+                titulo='Vídeo', video=SimpleUploadedFile(
+                    'creative.mp4', b'video', content_type='video/mp4'),
+                url_destino='https://example.com',
+            )
+
+    def test_variantes_desktop_mobile_dimensoes_formato_mime_e_fallback(self):
+        campaign = self.campanha()
+        position = self.strict_position()
+        campaign.posicionamentos.add(position)
+        base = {
+            'posicionamento': position.pk, 'tipo': Criativo.Tipo.IMAGEM,
+            'titulo': 'Responsivo', 'url_destino': 'https://example.com', 'ativo': True,
+        }
+        desktop_only = CriativoForm(
+            base, {'imagem': self.image_file()}, campanha=campaign,
+        )
+        self.assertTrue(desktop_only.is_valid(), desktop_only.errors)
+        responsive = CriativoForm(base, {
+            'imagem': self.image_file(),
+            'imagem_mobile': self.image_file((720, 360), name='mobile.png'),
+        }, campanha=campaign)
+        self.assertTrue(responsive.is_valid(), responsive.errors)
+        self.assertFalse(CriativoForm(base, {
+            'imagem': self.image_file((800, 200)),
+        }, campanha=campaign).is_valid())
+        self.assertFalse(CriativoForm(base, {
+            'imagem': self.image_file(),
+            'imagem_mobile': self.image_file((600, 300), name='mobile.png'),
+        }, campanha=campaign).is_valid())
+        self.assertFalse(CriativoForm(base, {
+            'imagem': self.image_file(name='creative.gif'),
+        }, campanha=campaign).is_valid())
+        self.assertFalse(CriativoForm(base, {
+            'imagem': self.image_file(content_type='text/plain'),
+        }, campanha=campaign).is_valid())
+
+    def test_entrega_rejeita_campanha_ou_posicionamento_incompativel(self):
+        campaign = self.campanha()
+        creative = campaign.criativos.get()
+        other_campaign = self.campanha(PlanoPublicitario.objects.create(
+            nome='Outro plano', nivel=4, preco_diario='1',
+        ))
+        other_position = self.strict_position()
+        with self.assertRaises(ValidationError):
+            EntregaPublicidade.objects.create(
+                campanha=other_campaign, criativo=creative,
+                posicionamento=creative.posicionamento,
+                visitante_hash='invalid-campaign', contexto='home',
+            )
+        with self.assertRaises(ValidationError):
+            EntregaPublicidade.objects.create(
+                campanha=campaign, criativo=creative, posicionamento=other_position,
+                visitante_hash='invalid-position', contexto='home',
+            )
+
+    def test_rotacao_restrita_ao_mesmo_posicionamento(self):
+        campaign = self.campanha()
+        first = campaign.criativos.get()
+        second = Criativo.objects.create(
+            campanha=campaign, posicionamento=self.posicao, tipo=Criativo.Tipo.TEXTO,
+            titulo='Segundo', texto='Oferta 2', url_destino='https://example.com',
+        )
+        other = self.strict_position(codigo='other-rotation', dimensoes_obrigatorias=False)
+        campaign.posicionamentos.add(other)
+        alien = Criativo.objects.create(
+            campanha=campaign, posicionamento=other, tipo=Criativo.Tipo.TEXTO,
+            titulo='Outro slot', texto='Nunca', url_destino='https://example.com',
+        )
+        self.ativar(campaign)
+        delivered = {
+            entregar_publicidade(
+                posicionamento_codigo=self.posicao.codigo, visitante_id=f'rotate-{index}',
+                contexto='home', categoria=self.categoria,
+            ).criativo_id
+            for index in range(2)
+        }
+        self.assertEqual(delivered, {first.pk, second.pk})
+        self.assertNotIn(alien.pk, delivered)
+
+    def test_formulario_limita_posicionamentos_e_expoe_regras_do_selecionado(self):
+        campaign = self.campanha()
+        selected = self.strict_position(codigo='selected-position', nome='Selecionado')
+        outside = self.strict_position(codigo='outside-position', nome='Fora')
+        campaign.posicionamentos.add(selected)
+        form = CriativoForm(
+            data={'posicionamento': selected.pk}, campanha=campaign,
+        )
+        self.assertQuerySetEqual(
+            form.fields['posicionamento'].queryset,
+            campaign.posicionamentos.filter(ativo=True).order_by('nome', 'codigo'),
+        )
+        self.assertNotIn(outside, form.fields['posicionamento'].queryset)
+        self.assertIn('1200 × 300', form.fields['imagem'].help_text)
+        self.assertIn('720 × 360', form.fields['imagem_mobile'].help_text)
+        self.assertIn('SELECIONADO', str(form.fields['posicionamento'].label_from_instance(selected)))
+
+    def test_renderizacao_picture_inclui_variante_mobile_uma_unica_vez(self):
+        campaign = self.campanha()
+        position = self.strict_position(codigo='render-position')
+        campaign.posicionamentos.add(position)
+        creative = Criativo.objects.create(
+            campanha=campaign, posicionamento=position, tipo=Criativo.Tipo.IMAGEM,
+            titulo='Banner', imagem=self.image_file(),
+            imagem_mobile=self.image_file((720, 360), name='mobile.png'),
+            url_destino='https://example.com',
+        )
+        delivery = EntregaPublicidade.objects.create(
+            campanha=campaign, criativo=creative, posicionamento=position,
+            visitante_hash='render', contexto='home',
+        )
+        rendered = Template(
+            "{% include 'advertising/components/creative.html' %}"
+        ).render(RequestContext(self._request(), {
+            'entrega': delivery, 'criativo': creative, 'campanha': campaign,
+        }))
+        self.assertIn('<picture>', rendered)
+        self.assertIn('media="(max-width: 600px)"', rendered)
+        self.assertEqual(rendered.count(str(delivery.uuid)), 1)
 
 
 class AdvertisingAuthorizationTests(TestCase):
@@ -388,7 +566,8 @@ class AdvertisingCommercialConfigurationTests(TestCase):
             empresa=self.company, plano=plan, nome='Histórica', criado_por=self.regular,
             inicio=now, fim=now + timedelta(days=2))
         campaign.posicionamentos.add(position)
-        Criativo.objects.create(campanha=campaign, tipo='TEXTO', titulo='Texto',
+        Criativo.objects.create(campanha=campaign, posicionamento=position,
+                                tipo='TEXTO', titulo='Texto',
                                 texto='Oferta', url_destino='https://example.com')
         contract = contratar_campanha(campanha_id=campaign.pk, usuario=self.regular)
         old_total = contract.valor_total
@@ -413,7 +592,7 @@ class AdvertisingCommercialConfigurationTests(TestCase):
             empresa=self.company, plano=plan, nome='Upload', criado_por=self.regular,
             inicio=now, fim=now + timedelta(days=1))
         campaign.posicionamentos.add(position)
-        base = {'tipo': 'IMAGEM', 'titulo': 'Banner', 'url_destino': 'https://example.com', 'ativo': True}
+        base = {'posicionamento': position.pk, 'tipo': 'IMAGEM', 'titulo': 'Banner', 'url_destino': 'https://example.com', 'ativo': True}
         self.assertFalse(CriativoForm(base, {'imagem': self.image_file((800, 200))}, campanha=campaign).is_valid())
         self.assertFalse(CriativoForm(base, {'imagem': self.image_file(format='GIF', name='creative.gif')}, campanha=campaign).is_valid())
         position.tamanho_maximo_bytes = 10

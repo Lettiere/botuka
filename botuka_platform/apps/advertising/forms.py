@@ -36,26 +36,74 @@ class CampanhaForm(forms.ModelForm):
 class CriativoForm(forms.ModelForm):
     class Meta:
         model = Criativo
-        fields = ('tipo', 'titulo', 'texto', 'imagem', 'video', 'url_destino', 'ativo')
+        fields = (
+            'posicionamento', 'tipo', 'titulo', 'texto', 'imagem', 'imagem_mobile',
+            'video', 'video_mobile', 'url_destino', 'ativo',
+        )
 
     def __init__(self, *args, campanha=None, **kwargs):
+        uploads = kwargs.get('files')
+        if uploads is None and len(args) > 1:
+            uploads = args[1]
+        self._upload_content_types = {
+            name: getattr(upload, 'content_type', '')
+            for name, upload in (uploads or {}).items()
+        }
         super().__init__(*args, **kwargs)
+        self.fields['imagem'].label = 'Imagem desktop'
+        self.fields['video'].label = 'Vídeo desktop'
+        self.fields['imagem_mobile'].label = 'Imagem mobile (opcional)'
+        self.fields['video_mobile'].label = 'Vídeo mobile (opcional)'
         if campanha is not None:
             self.instance.campanha = campanha
-            regras = []
-            for posicao in campanha.posicionamentos.all():
-                dimensao = (
-                    f'{posicao.largura} × {posicao.altura} px'
-                    if posicao.largura and posicao.altura else 'dimensões livres'
-                )
-                regras.append(
-                    f'{posicao.nome}: formato recomendado {dimensao}; '
-                    f'formatos {", ".join(posicao.formatos_permitidos) or "não configurados"}; '
-                    f'máximo {posicao.tamanho_maximo_bytes} bytes.'
-                )
-            ajuda = ' '.join(regras)
-            self.fields['imagem'].help_text = ajuda
-            self.fields['video'].help_text = ajuda
+            posicoes = campanha.posicionamentos.filter(ativo=True).order_by('nome', 'codigo')
+            self.fields['posicionamento'].queryset = posicoes
+            self.fields['posicionamento'].label_from_instance = (
+                lambda posicao: f'{posicao.nome.upper()} — {posicao.codigo}'
+            )
+            posicionamento_id = self.data.get('posicionamento') or self.initial.get('posicionamento')
+            if not posicionamento_id and self.instance.pk:
+                posicionamento_id = self.instance.posicionamento_id
+            try:
+                selecionado = posicoes.get(pk=posicionamento_id)
+            except (Posicionamento.DoesNotExist, TypeError, ValueError):
+                selecionado = None
+            if selecionado:
+                self._configurar_ajuda_midia(selecionado)
+
+    def _configurar_ajuda_midia(self, posicao):
+        formatos = ', '.join(posicao.formatos_permitidos) or 'não configurados'
+        limite = f'{posicao.tamanho_maximo_bytes / (1024 * 1024):g} MB'
+        desktop = self._dimensoes(posicao.largura, posicao.altura)
+        mobile = self._dimensoes(posicao.largura_mobile, posicao.altura_mobile)
+        comuns = f'Formatos permitidos: {formatos}. Tamanho máximo: {limite} por arquivo.'
+        for campo in ('imagem', 'video'):
+            self.fields[campo].help_text = f'Desktop — {desktop}. {comuns}'
+        for campo in ('imagem_mobile', 'video_mobile'):
+            self.fields[campo].help_text = (
+                f'Mobile — {mobile}. Opcional; sem arquivo, usa a mídia desktop. {comuns}'
+            )
+
+    def clean(self):
+        cleaned = super().clean()
+        tipo = cleaned.get('tipo')
+        prefix = 'image/' if tipo == Criativo.Tipo.IMAGEM else (
+            'video/' if tipo == Criativo.Tipo.VIDEO else None
+        )
+        if prefix:
+            for field_name in ('imagem', 'imagem_mobile', 'video', 'video_mobile'):
+                upload = self.files.get(field_name)
+                content_type = self._upload_content_types.get(field_name, '')
+                if upload and content_type and not content_type.startswith(prefix):
+                    self.add_error(
+                        field_name,
+                        'MIME do arquivo incompatível com o tipo de criativo.',
+                    )
+        return cleaned
+
+    @staticmethod
+    def _dimensoes(largura, altura):
+        return f'{largura} × {altura} px recomendado' if largura and altura else 'dimensões livres'
 
 
 class SegmentacaoForm(forms.ModelForm):

@@ -55,7 +55,7 @@ class GestaoDashboardTests(TestCase):
         )
         cls.campaign.posicionamentos.add(position)
         creative = Criativo.objects.create(
-            campanha=cls.campaign, tipo=Criativo.Tipo.TEXTO,
+            campanha=cls.campaign, posicionamento=position, tipo=Criativo.Tipo.TEXTO,
             titulo="Criativo pendente", texto="Oferta",
             url_destino="https://example.com", ativo=True, aprovado=False,
         )
