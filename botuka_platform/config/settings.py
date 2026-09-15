@@ -67,6 +67,19 @@ CNPJ_API_TOKEN = config('CNPJ_API_TOKEN', default='')
 CNPJ_API_TIMEOUT = config('CNPJ_API_TIMEOUT', default=10, cast=int)
 CNPJ_API_CACHE_HOURS = config('CNPJ_API_CACHE_HOURS', default=24, cast=int)
 
+# BOTUKA Pay. Segredos permanecem exclusivamente no ambiente.
+PAYMENTS_USE_FAKE_GATEWAYS = config(
+    'PAYMENTS_USE_FAKE_GATEWAYS', default=DEBUG, cast=cast_debug,
+)
+MERCADO_PAGO_ACCESS_TOKEN = config('MERCADO_PAGO_ACCESS_TOKEN', default='')
+MERCADO_PAGO_WEBHOOK_SECRET = config('MERCADO_PAGO_WEBHOOK_SECRET', default='')
+C6_API_BASE_URL = config('C6_API_BASE_URL', default='')
+C6_CLIENT_ID = config('C6_CLIENT_ID', default='')
+C6_CLIENT_SECRET = config('C6_CLIENT_SECRET', default='')
+C6_CERTIFICATE_PATH = config('C6_CERTIFICATE_PATH', default='')
+C6_CERTIFICATE_KEY_PATH = config('C6_CERTIFICATE_KEY_PATH', default='')
+C6_WEBHOOK_SECRET = config('C6_WEBHOOK_SECRET', default='')
+
 
 default_allowed_hosts = ['127.0.0.1', 'localhost']
 if IS_PRODUCTION:
@@ -177,6 +190,8 @@ INSTALLED_APPS = [
     'apps.gestao.apps.GestaoConfig',
     'apps.painel.apps.PainelConfig',
     'apps.analytics.apps.AnalyticsConfig',
+    'apps.payments.apps.PaymentsConfig',
+    'apps.advertising.apps.AdvertisingConfig',
     'apps.social.apps.SocialConfig',
     'apps.comunicacao.apps.ComunicacaoConfig',
 ]
@@ -192,6 +207,7 @@ MIDDLEWARE = [
     'apps.core.db_middleware.DatabaseExecutorMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
+    'apps.payments.middleware.PaymentWebhookCsrfBypassMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'apps.core.rls_middleware.RLSUserContextMiddleware',
@@ -222,6 +238,7 @@ TEMPLATES = [
                 'django.contrib.messages.context_processors.messages',
                 'apps.gestao.context_processors.public_urls',
                 'apps.gestao.context_processors.publicar_options',
+                'apps.gestao.navigation.gestao_navigation',
                 'apps.painel.navigation.painel_navigation',
                 'apps.social.context_processors.runtime_urls',
                 'apps.core.context_processors.seo.seo_context',

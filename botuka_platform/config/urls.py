@@ -38,6 +38,10 @@ urlpatterns = [
     path("offline/", offline, name="offline"),
     path("conta/", include("apps.accounts.urls")),
     path("painel/", include("apps.painel.urls")),
+    path("painel/pay/", include("apps.payments.urls")),
+    path("api/payments/", include("apps.payments.urls", namespace="payments_api")),
+    path("painel/publicidade/", include("apps.advertising.urls")),
+    path("publicidade/", include("apps.advertising.public_urls")),
     path("gestao/", include("apps.gestao.urls")),
     path("admin/", admin.site.urls),
 ]
