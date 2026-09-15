@@ -451,6 +451,13 @@
         </strong>
 
         <p>Próximos atendimentos.</p>
+        <p>{{ painel_empresa.agenda.servicos }} Serviços vinculados</p>
+        <div class="card-actions">
+          <a class="company-btn primary"
+             href="{% url 'painel:empresa_agenda' empresa.uuid %}">
+            Gerenciar Agenda
+          </a>
+        </div>
       </article>
 
 
