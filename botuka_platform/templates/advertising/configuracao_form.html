@@ -1,0 +1,1 @@
+{% extends "painel/base.html" %}{% block painel_content %}<div class="card"><div class="card-body"><h1>{{ titulo }}</h1><form method="post">{% csrf_token %}{{ form.as_p }}<button class="btn btn-warning" type="submit">Salvar</button> <a href="{% url 'advertising:configuracao_comercial' %}">Cancelar</a></form></div></div>{% endblock %}
