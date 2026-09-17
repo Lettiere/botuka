@@ -181,7 +181,11 @@
           <tbody>
             {% for criativo in campanha.criativos.all %}
               <tr>
-                <td>{{ criativo.titulo }}</td>
+                <td>
+                  <a href="{% url 'gestao:publicidade_criativo_detalhe' criativo.pk %}">
+                    {{ criativo.titulo|default:"Sem título" }}
+                  </a>
+                </td>
                 <td>{{ criativo.get_tipo_display }}</td>
                 <td>{{ criativo.posicionamento }}</td>
                 <td>{{ criativo.ativo|yesno:"Sim,Não" }}</td>

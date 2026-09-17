@@ -6,7 +6,13 @@ from django.test import TestCase
 from django.urls import reverse
 from django.utils import timezone
 
-from apps.advertising.models import Campanha, PlanoPublicitario, Posicionamento
+from apps.advertising.models import (
+    Campanha,
+    Criativo,
+    EntregaPublicidade,
+    PlanoPublicitario,
+    Posicionamento,
+)
 from apps.gestao.central_views import (
     ADVERTISING_KINDS,
     _ADVERTISING_WORKFLOW_ROUTES,
@@ -573,3 +579,178 @@ class AdvertisingCommercialConfigurationTests(AdvertisingManagementTests):
             with self.subTest(url=url):
                 self.assertEqual(self.client.get(url).status_code, 403)
                 self.assertEqual(self.client.post(url, {}).status_code, 403)
+
+
+class AdvertisingCreativeDeliveryTests(AdvertisingManagementTests):
+    @classmethod
+    def setUpTestData(cls):
+        super().setUpTestData()
+
+        cls.creative = Criativo.objects.create(
+            campanha=cls.campaign,
+            posicionamento=cls.position,
+            tipo=Criativo.Tipo.TEXTO,
+            titulo='Criativo Gestão Principal',
+            texto='Conteúdo publicitário de teste.',
+            url_destino='https://example.com/campanha',
+            ativo=True,
+        )
+
+        cls.other_creative = Criativo.objects.create(
+            campanha=cls.campaign,
+            posicionamento=cls.position,
+            tipo=Criativo.Tipo.TEXTO,
+            titulo='Criativo Gestão Secundário',
+            texto='Segundo conteúdo publicitário.',
+            url_destino='https://example.com/secundario',
+            ativo=False,
+        )
+
+        cls.delivery_clicked = EntregaPublicidade.objects.create(
+            campanha=cls.campaign,
+            criativo=cls.creative,
+            posicionamento=cls.position,
+            visitante_hash='visitante-gestao-1',
+            contexto='home',
+        )
+        cls.delivery_clicked.clicado_em = timezone.now()
+        cls.delivery_clicked.save(update_fields=['clicado_em'])
+
+        cls.delivery_not_clicked = EntregaPublicidade.objects.create(
+            campanha=cls.campaign,
+            criativo=cls.creative,
+            posicionamento=cls.position,
+            visitante_hash='visitante-gestao-2',
+            contexto='home',
+        )
+
+    def test_criativos_sao_exclusivos_master(self):
+        list_url = reverse('gestao:publicidade_criativos')
+        detail_url = reverse(
+            'gestao:publicidade_criativo_detalhe',
+            args=[self.creative.pk],
+        )
+
+        self.client.force_login(self.outsider)
+        self.assertEqual(self.client.get(list_url).status_code, 403)
+        self.assertEqual(self.client.get(detail_url).status_code, 403)
+
+        self.client.force_login(self.master)
+
+        response = self.client.get(list_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            'gestao/publicidade/criativos_lista.html',
+        )
+        self.assertContains(response, self.creative.titulo)
+
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            'gestao/publicidade/criativo_detalhe.html',
+        )
+        self.assertContains(response, self.creative.titulo)
+        self.assertContains(response, self.campaign.nome)
+
+    def test_criativos_filtram_busca_tipo_ativo_e_posicionamento(self):
+        self.client.force_login(self.master)
+        url = reverse('gestao:publicidade_criativos')
+
+        response = self.client.get(url, {
+            'q': 'Principal',
+            'tipo': Criativo.Tipo.TEXTO,
+            'ativo': '1',
+            'posicionamento': str(self.position.pk),
+        })
+
+        self.assertContains(response, self.creative.titulo)
+        self.assertNotContains(response, self.other_creative.titulo)
+
+        response = self.client.get(url, {'ativo': '0'})
+        self.assertContains(response, self.other_creative.titulo)
+        self.assertNotContains(response, self.creative.titulo)
+
+    def test_criativo_exibe_metricas_reais(self):
+        self.client.force_login(self.master)
+
+        response = self.client.get(
+            reverse(
+                'gestao:publicidade_criativo_detalhe',
+                args=[self.creative.pk],
+            )
+        )
+
+        self.assertEqual(response.context['criativo'].impressoes, 2)
+        self.assertEqual(response.context['criativo'].cliques, 1)
+
+    def test_entregas_sao_exclusivas_master_e_read_only(self):
+        url = reverse('gestao:publicidade_entregas')
+
+        self.client.force_login(self.outsider)
+        self.assertEqual(self.client.get(url).status_code, 403)
+
+        self.client.force_login(self.master)
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTemplateUsed(
+            response,
+            'gestao/publicidade/entregas_lista.html',
+        )
+        self.assertEqual(response.context['metricas']['impressoes'], 2)
+        self.assertEqual(response.context['metricas']['cliques'], 1)
+        self.assertEqual(response.context['metricas']['ctr'], 50.0)
+
+        before = EntregaPublicidade.objects.count()
+        post_response = self.client.post(url, {})
+        self.assertEqual(post_response.status_code, 200)
+        self.assertEqual(EntregaPublicidade.objects.count(), before)
+
+    def test_entregas_filtram_clique_e_posicionamento(self):
+        self.client.force_login(self.master)
+        url = reverse('gestao:publicidade_entregas')
+
+        response = self.client.get(url, {
+            'clique': '1',
+            'posicionamento': str(self.position.pk),
+        })
+
+        self.assertEqual(response.context['metricas']['impressoes'], 1)
+        self.assertEqual(response.context['metricas']['cliques'], 1)
+        self.assertEqual(response.context['metricas']['ctr'], 100.0)
+        self.assertEqual(
+            list(response.context['page_obj'].object_list),
+            [self.delivery_clicked],
+        )
+
+        response = self.client.get(url, {'clique': '0'})
+
+        self.assertEqual(response.context['metricas']['impressoes'], 1)
+        self.assertEqual(response.context['metricas']['cliques'], 0)
+        self.assertEqual(response.context['metricas']['ctr'], 0)
+        self.assertEqual(
+            list(response.context['page_obj'].object_list),
+            [self.delivery_not_clicked],
+        )
+
+    def test_entregas_filtram_por_busca(self):
+        self.client.force_login(self.master)
+        url = reverse('gestao:publicidade_entregas')
+
+        response = self.client.get(
+            url,
+            {'q': self.creative.titulo},
+        )
+
+        self.assertEqual(response.context['metricas']['impressoes'], 2)
+        self.assertContains(response, self.creative.titulo)
+
+        response = self.client.get(
+            url,
+            {'q': 'INEXISTENTE-ENTREGA-XYZ'},
+        )
+
+        self.assertEqual(response.context['metricas']['impressoes'], 0)
+        self.assertEqual(response.context['metricas']['cliques'], 0)

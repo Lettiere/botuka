@@ -96,8 +96,8 @@ def gestao_navigation(request):
                     "publicidade_posicionamento_editar",
                 ),
             ),
-            _item("Criativos", "bi-image", reverse("gestao:central_lista", args=["criativos"]), names=("central_lista", "central_detalhe"), kind="criativos"),
-            _item("Entregas", "bi-bar-chart", reverse("gestao:central_lista", args=["entregas"]), names=("central_lista", "central_detalhe"), kind="entregas"),
+            _item("Criativos", "bi-image", reverse("gestao:publicidade_criativos"), names=("publicidade_criativos", "publicidade_criativo_detalhe")),
+            _item("Entregas", "bi-bar-chart", reverse("gestao:publicidade_entregas"), names=("publicidade_entregas",)),
         ]})
         groups.append({"label": "Inteligência", "icon": "bi-graph-up", "items": [
             _item("Analytics GA4", "bi-google", reverse("gestao:analytics_ga4"), names=("analytics_ga4",)),

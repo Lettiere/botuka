@@ -62,6 +62,21 @@ urlpatterns = [
         advertising_views.campanha_moderar,
         name='publicidade_campanha_moderar',
     ),
+    path(
+        'publicidade/criativos/',
+        advertising_views.criativo_lista,
+        name='publicidade_criativos',
+    ),
+    path(
+        'publicidade/criativos/<int:pk>/',
+        advertising_views.criativo_detalhe,
+        name='publicidade_criativo_detalhe',
+    ),
+    path(
+        'publicidade/entregas/',
+        advertising_views.entrega_lista,
+        name='publicidade_entregas',
+    ),
     path('analytics/ga4/', analytics_views.ga4_dashboard, name='analytics_ga4'),
     path('empresas/', company_views.empresa_lista, name='empresas_lista'),
     path('empresas/nova/', company_views.empresa_form, name='empresa_nova'),

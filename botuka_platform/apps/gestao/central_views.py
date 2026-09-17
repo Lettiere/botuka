@@ -157,6 +157,8 @@ _ADVERTISING_WORKFLOW_ROUTES = {
     'planos-publicitarios': ('gestao:publicidade_configuracao', (), 'Configuração comercial MASTER'),
     'posicionamentos-publicitarios': ('gestao:publicidade_configuracao', (), 'Configuração comercial MASTER'),
     'campanhas': ('gestao:publicidade_campanhas', (), 'Moderação auditada MASTER'),
+    'criativos': ('gestao:publicidade_criativos', (), 'Inspeção de criativos MASTER'),
+    'entregas': ('gestao:publicidade_entregas', (), 'Monitoramento de entregas MASTER'),
 }
 
 

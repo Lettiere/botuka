@@ -1,0 +1,135 @@
+{% extends "gestao/base.html" %}
+
+{% block title %}Entregas publicitárias | Gestão BOTUKA{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb" aria-label="Navegação estrutural">
+  <a href="{% url 'gestao:dashboard' %}">Gestão</a>
+  <span aria-hidden="true">/</span>
+  <span>Publicidade</span>
+  <span aria-hidden="true">/</span>
+  <span aria-current="page">Entregas</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<style>
+  .delivery-stats{margin-bottom:18px}
+  .delivery-filters .form-grid{grid-template-columns:2fr 1fr 1fr}
+  .delivery-table small{display:block;margin-top:4px;color:var(--muted)}
+  @media(max-width:900px){
+    .delivery-filters .form-grid{grid-template-columns:1fr}
+    .delivery-table table{min-width:1100px}
+  }
+</style>
+
+<div class="page-head">
+  <div>
+    <h1>Entregas publicitárias</h1>
+    <p>Registro operacional de impressões, cliques e desempenho da publicidade.</p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-muted" href="{% url 'gestao:publicidade_campanhas' %}">
+      <i class="bi bi-megaphone" aria-hidden="true"></i> Campanhas
+    </a>
+    <a class="btn btn-muted" href="{% url 'gestao:publicidade_criativos' %}">
+      <i class="bi bi-image" aria-hidden="true"></i> Criativos
+    </a>
+  </div>
+</div>
+
+<div class="grid-cards delivery-stats">
+  <div class="stat"><span>Impressões</span><strong>{{ metricas.impressoes|default:0 }}</strong></div>
+  <div class="stat"><span>Cliques</span><strong>{{ metricas.cliques|default:0 }}</strong></div>
+  <div class="stat"><span>CTR</span><strong>{{ metricas.ctr|floatformat:2 }}%</strong></div>
+</div>
+
+<form class="panel panel-pad delivery-filters" method="get" aria-label="Filtros de entregas">
+  <div class="form-grid">
+    <label>
+      Busca
+      <input type="search" name="q" value="{{ query }}" placeholder="Campanha, empresa, criativo ou contexto">
+    </label>
+
+    <label>
+      Posicionamento
+      <select name="posicionamento">
+        <option value="">Todos</option>
+        {% for item in posicionamentos %}
+          <option value="{{ item.pk }}" {% if posicionamento == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.nome }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Clique
+      <select name="clique">
+        <option value="">Todos</option>
+        <option value="1" {% if clique == '1' %}selected{% endif %}>Com clique</option>
+        <option value="0" {% if clique == '0' %}selected{% endif %}>Sem clique</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="actions" style="margin-top:14px">
+    <button class="btn btn-primary" type="submit">
+      <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar filtros
+    </button>
+    <a class="btn btn-muted" href="{% url 'gestao:publicidade_entregas' %}">Limpar</a>
+  </div>
+</form>
+
+<div class="panel table-wrap delivery-table" style="margin-top:16px">
+  <table>
+    <thead>
+      <tr>
+        <th>Entrega</th>
+        <th>Campanha / empresa</th>
+        <th>Criativo</th>
+        <th>Posicionamento</th>
+        <th>Contexto</th>
+        <th>Entregue em</th>
+        <th>Clique</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for entrega in page_obj %}
+      <tr>
+        <td>
+          <strong>{{ entrega.uuid }}</strong>
+          <small>{{ entrega.visitante_hash|default:"Visitante não identificado" }}</small>
+        </td>
+        <td>
+          <a href="{% url 'gestao:publicidade_campanha_detalhe' entrega.campanha.uuid %}">
+            {{ entrega.campanha.nome }}
+          </a>
+          <small>{{ entrega.campanha.empresa }}</small>
+        </td>
+        <td>
+          <a href="{% url 'gestao:publicidade_criativo_detalhe' entrega.criativo.pk %}">
+            {{ entrega.criativo.titulo|default:"Sem título" }}
+          </a>
+        </td>
+        <td>{{ entrega.posicionamento }}</td>
+        <td>{{ entrega.contexto|default:"—" }}</td>
+        <td>{{ entrega.entregue_em|date:"d/m/Y H:i:s" }}</td>
+        <td>
+          {% if entrega.clicado_em %}
+            <span class="badge badge-success">Sim</span>
+            <small>{{ entrega.clicado_em|date:"d/m/Y H:i:s" }}</small>
+          {% else %}
+            <span class="badge badge-warning">Não</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="7">Nenhuma entrega corresponde aos filtros informados.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "gestao/components/pagination.html" %}
+{% endblock %}

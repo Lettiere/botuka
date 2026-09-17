@@ -6,7 +6,13 @@ from django.shortcuts import get_object_or_404, redirect, render
 from django.views.decorators.http import require_POST
 
 from apps.advertising.forms import PlanoPublicitarioForm, PosicionamentoForm
-from apps.advertising.models import Campanha, PlanoPublicitario, Posicionamento
+from apps.advertising.models import (
+    Campanha,
+    Criativo,
+    EntregaPublicidade,
+    PlanoPublicitario,
+    Posicionamento,
+)
 from apps.advertising.services import aprovar_campanha, moderar_campanha
 from apps.gestao.decorators import master_required
 
@@ -312,5 +318,224 @@ def posicionamento_form(request, pk=None):
             ),
             'tipo': 'posicionamento',
             'objeto': posicionamento,
+        },
+    )
+
+
+@master_required
+def criativo_lista(request):
+    query = request.GET.get('q', '').strip()[:120]
+    tipo = request.GET.get('tipo', '').strip()[:20]
+    aprovado = request.GET.get('aprovado', '').strip()[:10]
+    ativo = request.GET.get('ativo', '').strip()[:10]
+    posicionamento = request.GET.get('posicionamento', '').strip()[:20]
+
+    tipos_validos = {value for value, _label in Criativo.Tipo.choices}
+    if tipo not in tipos_validos:
+        tipo = ''
+
+    if aprovado not in {'0', '1'}:
+        aprovado = ''
+
+    if ativo not in {'0', '1'}:
+        ativo = ''
+
+    try:
+        posicionamento_id = int(posicionamento) if posicionamento else None
+    except ValueError:
+        posicionamento_id = None
+        posicionamento = ''
+
+    criativos = (
+        Criativo.objects
+        .select_related(
+            'campanha',
+            'campanha__empresa',
+            'posicionamento',
+        )
+        .annotate(
+            impressoes=Count('entregas', distinct=True),
+            cliques=Count(
+                'entregas',
+                filter=Q(entregas__clicado_em__isnull=False),
+                distinct=True,
+            ),
+        )
+    )
+
+    if query:
+        criativos = criativos.filter(
+            Q(titulo__icontains=query)
+            | Q(campanha__nome__icontains=query)
+            | Q(campanha__empresa__nome_fantasia__icontains=query)
+            | Q(posicionamento__nome__icontains=query)
+        )
+
+    if tipo:
+        criativos = criativos.filter(tipo=tipo)
+
+    if aprovado:
+        criativos = criativos.filter(aprovado=(aprovado == '1'))
+
+    if ativo:
+        criativos = criativos.filter(ativo=(ativo == '1'))
+
+    if posicionamento_id:
+        criativos = criativos.filter(
+            posicionamento_id=posicionamento_id
+        )
+
+    criativos = criativos.order_by(
+        '-campanha__atualizado_em',
+        '-pk',
+    )
+
+    page_obj = Paginator(criativos, 25).get_page(
+        request.GET.get('page')
+    )
+
+    extras = []
+    if tipo:
+        extras.append(f'tipo={tipo}')
+    if aprovado:
+        extras.append(f'aprovado={aprovado}')
+    if ativo:
+        extras.append(f'ativo={ativo}')
+    if posicionamento:
+        extras.append(f'posicionamento={posicionamento}')
+
+    return render(
+        request,
+        'gestao/publicidade/criativos_lista.html',
+        {
+            'section': 'Publicidade',
+            'page_obj': page_obj,
+            'is_paginated': page_obj.paginator.num_pages > 1,
+            'query': query,
+            'tipo': tipo,
+            'aprovado': aprovado,
+            'ativo': ativo,
+            'posicionamento': posicionamento,
+            'tipo_choices': Criativo.Tipo.choices,
+            'posicionamentos': Posicionamento.objects.order_by(
+                'contexto',
+                'nome',
+            ),
+            'pagination_extra_query': '&'.join(extras),
+        },
+    )
+
+
+@master_required
+def criativo_detalhe(request, pk):
+    criativo = get_object_or_404(
+        Criativo.objects.select_related(
+            'campanha',
+            'campanha__empresa',
+            'campanha__plano',
+            'posicionamento',
+        ).annotate(
+            impressoes=Count('entregas', distinct=True),
+            cliques=Count(
+                'entregas',
+                filter=Q(entregas__clicado_em__isnull=False),
+                distinct=True,
+            ),
+        ),
+        pk=pk,
+    )
+
+    return render(
+        request,
+        'gestao/publicidade/criativo_detalhe.html',
+        {
+            'section': 'Publicidade',
+            'criativo': criativo,
+        },
+    )
+
+
+@master_required
+def entrega_lista(request):
+    query = request.GET.get('q', '').strip()[:120]
+    posicionamento = request.GET.get('posicionamento', '').strip()[:20]
+    clique = request.GET.get('clique', '').strip()[:10]
+
+    if clique not in {'0', '1'}:
+        clique = ''
+
+    try:
+        posicionamento_id = int(posicionamento) if posicionamento else None
+    except ValueError:
+        posicionamento_id = None
+        posicionamento = ''
+
+    entregas = EntregaPublicidade.objects.select_related(
+        'campanha',
+        'campanha__empresa',
+        'criativo',
+        'posicionamento',
+    )
+
+    if query:
+        entregas = entregas.filter(
+            Q(campanha__nome__icontains=query)
+            | Q(campanha__empresa__nome_fantasia__icontains=query)
+            | Q(criativo__titulo__icontains=query)
+            | Q(contexto__icontains=query)
+        )
+
+    if posicionamento_id:
+        entregas = entregas.filter(
+            posicionamento_id=posicionamento_id
+        )
+
+    if clique == '1':
+        entregas = entregas.filter(clicado_em__isnull=False)
+    elif clique == '0':
+        entregas = entregas.filter(clicado_em__isnull=True)
+
+    metricas = entregas.aggregate(
+        impressoes=Count('pk'),
+        cliques=Count(
+            'pk',
+            filter=Q(clicado_em__isnull=False),
+        ),
+    )
+    impressoes = metricas['impressoes'] or 0
+    cliques = metricas['cliques'] or 0
+    metricas['ctr'] = (
+        (cliques / impressoes) * 100
+        if impressoes else 0
+    )
+
+    entregas = entregas.order_by('-entregue_em', '-pk')
+
+    page_obj = Paginator(entregas, 50).get_page(
+        request.GET.get('page')
+    )
+
+    extras = []
+    if posicionamento:
+        extras.append(f'posicionamento={posicionamento}')
+    if clique:
+        extras.append(f'clique={clique}')
+
+    return render(
+        request,
+        'gestao/publicidade/entregas_lista.html',
+        {
+            'section': 'Publicidade',
+            'page_obj': page_obj,
+            'is_paginated': page_obj.paginator.num_pages > 1,
+            'query': query,
+            'posicionamento': posicionamento,
+            'clique': clique,
+            'posicionamentos': Posicionamento.objects.order_by(
+                'contexto',
+                'nome',
+            ),
+            'metricas': metricas,
+            'pagination_extra_query': '&'.join(extras),
         },
     )

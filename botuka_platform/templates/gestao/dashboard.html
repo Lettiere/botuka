@@ -26,7 +26,7 @@
   <div class="exec-split">
     <section class="exec-section"><div class="exec-head"><div><h2>Operação comercial</h2><p>Publicidade e BOTUKA Pay — dados exclusivos para MASTER.</p></div></div><div class="exec-grid exec-grid--two">
       <a class="exec-card" href="{% url 'gestao:publicidade_campanhas' %}"><span>Campanhas ativas</span><strong>{{ operational.advertising.active }}</strong><small>{{ operational.advertising.total }} campanhas</small></a>
-      <a class="exec-card" href="{% url 'gestao:central_lista' 'entregas' %}"><span>Impressões / cliques</span><strong>{{ operational.advertising.impressions }} / {{ operational.advertising.clicks }}</strong><small>CTR acumulado: {{ operational.advertising.ctr }}%</small></a>
+      <a class="exec-card" href="{% url 'gestao:publicidade_entregas' %}"><span>Impressões / cliques</span><strong>{{ operational.advertising.impressions }} / {{ operational.advertising.clicks }}</strong><small>CTR acumulado: {{ operational.advertising.ctr }}%</small></a>
       <a class="exec-card" href="{% url 'gestao:central_lista' 'cobrancas' %}"><span>Cobranças pagas</span><strong>{{ operational.payments.paid }}</strong><small>R$ {{ operational.payments.paid_total|floatformat:2 }}</small></a>
       <a class="exec-card" href="{% url 'gestao:central_lista' 'cobrancas' %}?status=PENDENTE"><span>Cobranças pendentes</span><strong>{{ operational.payments.pending }}</strong><small>R$ {{ operational.payments.pending_total|floatformat:2 }}</small></a>
     </div></section>

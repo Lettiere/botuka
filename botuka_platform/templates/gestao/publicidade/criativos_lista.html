@@ -1,0 +1,147 @@
+{% extends "gestao/base.html" %}
+
+{% block title %}Criativos publicitários | Gestão BOTUKA{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb" aria-label="Navegação estrutural">
+  <a href="{% url 'gestao:dashboard' %}">Gestão</a>
+  <span aria-hidden="true">/</span>
+  <span>Publicidade</span>
+  <span aria-hidden="true">/</span>
+  <span aria-current="page">Criativos</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<style>
+  .creative-filters .form-grid{grid-template-columns:2fr 1fr 1fr 1fr 1fr}
+  .creative-table small{display:block;margin-top:4px;color:var(--muted)}
+  @media(max-width:1000px){
+    .creative-filters .form-grid{grid-template-columns:1fr 1fr}
+    .creative-table table{min-width:1050px}
+  }
+  @media(max-width:650px){
+    .creative-filters .form-grid{grid-template-columns:1fr}
+  }
+</style>
+
+<div class="page-head">
+  <div>
+    <h1>Criativos publicitários</h1>
+    <p>Inspeção dos materiais vinculados às campanhas e seus resultados.</p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-muted" href="{% url 'gestao:publicidade_campanhas' %}">
+      <i class="bi bi-megaphone" aria-hidden="true"></i> Campanhas
+    </a>
+    <a class="btn btn-muted" href="{% url 'gestao:publicidade_entregas' %}">
+      <i class="bi bi-bar-chart" aria-hidden="true"></i> Entregas
+    </a>
+  </div>
+</div>
+
+<form class="panel panel-pad creative-filters" method="get" aria-label="Filtros de criativos">
+  <div class="form-grid">
+    <label>
+      Busca
+      <input type="search" name="q" value="{{ query }}" placeholder="Criativo, campanha, empresa ou posição">
+    </label>
+
+    <label>
+      Tipo
+      <select name="tipo">
+        <option value="">Todos</option>
+        {% for value,label in tipo_choices %}
+          <option value="{{ value }}" {% if tipo == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Posicionamento
+      <select name="posicionamento">
+        <option value="">Todos</option>
+        {% for item in posicionamentos %}
+          <option value="{{ item.pk }}" {% if posicionamento == item.pk|stringformat:"s" %}selected{% endif %}>{{ item.nome }}</option>
+        {% endfor %}
+      </select>
+    </label>
+
+    <label>
+      Ativo
+      <select name="ativo">
+        <option value="">Todos</option>
+        <option value="1" {% if ativo == '1' %}selected{% endif %}>Sim</option>
+        <option value="0" {% if ativo == '0' %}selected{% endif %}>Não</option>
+      </select>
+    </label>
+
+    <label>
+      Aprovado
+      <select name="aprovado">
+        <option value="">Todos</option>
+        <option value="1" {% if aprovado == '1' %}selected{% endif %}>Sim</option>
+        <option value="0" {% if aprovado == '0' %}selected{% endif %}>Não</option>
+      </select>
+    </label>
+  </div>
+
+  <div class="actions" style="margin-top:14px">
+    <button class="btn btn-primary" type="submit">
+      <i class="bi bi-funnel" aria-hidden="true"></i> Aplicar filtros
+    </button>
+    <a class="btn btn-muted" href="{% url 'gestao:publicidade_criativos' %}">Limpar</a>
+  </div>
+</form>
+
+<div class="panel table-wrap creative-table" style="margin-top:16px">
+  <table>
+    <thead>
+      <tr>
+        <th>Criativo</th>
+        <th>Campanha / empresa</th>
+        <th>Tipo</th>
+        <th>Posicionamento</th>
+        <th>Ativo</th>
+        <th>Aprovado</th>
+        <th>Impressões</th>
+        <th>Cliques</th>
+        <th>Ação</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for criativo in page_obj %}
+      <tr>
+        <td>
+          <strong>{{ criativo.titulo|default:"Sem título" }}</strong>
+          <small>#{{ criativo.pk }}</small>
+        </td>
+        <td>
+          <a href="{% url 'gestao:publicidade_campanha_detalhe' criativo.campanha.uuid %}">
+            {{ criativo.campanha.nome }}
+          </a>
+          <small>{{ criativo.campanha.empresa }}</small>
+        </td>
+        <td>{{ criativo.get_tipo_display }}</td>
+        <td>{{ criativo.posicionamento }}</td>
+        <td>{{ criativo.ativo|yesno:"Sim,Não" }}</td>
+        <td>{{ criativo.aprovado|yesno:"Sim,Não" }}</td>
+        <td>{{ criativo.impressoes|default:0 }}</td>
+        <td>{{ criativo.cliques|default:0 }}</td>
+        <td>
+          <a class="btn btn-soft" href="{% url 'gestao:publicidade_criativo_detalhe' criativo.pk %}">
+            Analisar
+          </a>
+        </td>
+      </tr>
+      {% empty %}
+      <tr>
+        <td colspan="9">Nenhum criativo corresponde aos filtros informados.</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% include "gestao/components/pagination.html" %}
+{% endblock %}

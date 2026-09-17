@@ -1,0 +1,152 @@
+{% extends "gestao/base.html" %}
+
+{% block title %}{{ criativo.titulo|default:"Criativo" }} | Publicidade | Gestão BOTUKA{% endblock %}
+
+{% block breadcrumbs %}
+<nav class="breadcrumb" aria-label="Navegação estrutural">
+  <a href="{% url 'gestao:dashboard' %}">Gestão</a>
+  <span aria-hidden="true">/</span>
+  <span>Publicidade</span>
+  <span aria-hidden="true">/</span>
+  <a href="{% url 'gestao:publicidade_criativos' %}">Criativos</a>
+  <span aria-hidden="true">/</span>
+  <span aria-current="page">{{ criativo.titulo|default:"Criativo" }}</span>
+</nav>
+{% endblock %}
+
+{% block content %}
+<style>
+  .creative-summary{margin-bottom:16px}
+  .creative-layout{display:grid;grid-template-columns:minmax(0,2fr) minmax(280px,1fr);gap:16px}
+  .creative-section{margin-bottom:16px}
+  .creative-section h2{margin:0 0 14px;font-size:18px}
+  .detail-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+  .detail-item{display:grid;gap:4px}
+  .detail-item span{font-size:12px;color:var(--muted)}
+  .creative-media img,.creative-media video{display:block;max-width:100%;height:auto;border-radius:8px}
+  .creative-media-block{margin-top:16px}
+  @media(max-width:900px){
+    .creative-layout,.detail-grid{grid-template-columns:1fr}
+  }
+</style>
+
+<div class="page-head">
+  <div>
+    <h1>{{ criativo.titulo|default:"Criativo sem título" }}</h1>
+    <p>{{ criativo.campanha.nome }} · {{ criativo.campanha.empresa }}</p>
+  </div>
+  <div class="actions">
+    <a class="btn btn-muted" href="{% url 'gestao:publicidade_criativos' %}">Voltar aos criativos</a>
+    <a class="btn btn-soft" href="{% url 'gestao:publicidade_campanha_detalhe' criativo.campanha.uuid %}">
+      Ver campanha
+    </a>
+  </div>
+</div>
+
+<div class="grid-cards creative-summary">
+  <div class="stat"><span>Tipo</span><strong style="font-size:18px">{{ criativo.get_tipo_display }}</strong></div>
+  <div class="stat"><span>Posicionamento</span><strong style="font-size:18px">{{ criativo.posicionamento }}</strong></div>
+  <div class="stat"><span>Impressões</span><strong>{{ criativo.impressoes|default:0 }}</strong></div>
+  <div class="stat"><span>Cliques</span><strong>{{ criativo.cliques|default:0 }}</strong></div>
+</div>
+
+<div class="creative-layout">
+  <div>
+    <section class="panel panel-pad creative-section">
+      <h2>Dados do criativo</h2>
+      <div class="detail-grid">
+        <div class="detail-item"><span>Campanha</span><strong>{{ criativo.campanha.nome }}</strong></div>
+        <div class="detail-item"><span>Empresa</span><strong>{{ criativo.campanha.empresa }}</strong></div>
+        <div class="detail-item"><span>Plano</span><strong>{{ criativo.campanha.plano }}</strong></div>
+        <div class="detail-item"><span>Posicionamento</span><strong>{{ criativo.posicionamento }}</strong></div>
+        <div class="detail-item"><span>Ativo</span><strong>{{ criativo.ativo|yesno:"Sim,Não" }}</strong></div>
+        <div class="detail-item"><span>Aprovado</span><strong>{{ criativo.aprovado|yesno:"Sim,Não" }}</strong></div>
+      </div>
+
+      {% if criativo.texto %}
+        <div style="margin-top:16px">
+          <strong>Texto</strong>
+          <p>{{ criativo.texto|linebreaksbr }}</p>
+        </div>
+      {% endif %}
+
+      <div style="margin-top:16px">
+        <strong>URL de destino</strong>
+        <p>
+          <a href="{{ criativo.url_destino }}" target="_blank" rel="noopener noreferrer">
+            {{ criativo.url_destino }}
+          </a>
+        </p>
+      </div>
+    </section>
+
+    <section class="panel panel-pad creative-section creative-media">
+      <h2>Pré-visualização</h2>
+
+      {% if criativo.imagem %}
+        <div class="creative-media-block">
+          <strong>Imagem desktop</strong>
+          <img src="{{ criativo.imagem.url }}" alt="{{ criativo.titulo|default:'Criativo publicitário' }}">
+        </div>
+      {% endif %}
+
+      {% if criativo.imagem_mobile %}
+        <div class="creative-media-block">
+          <strong>Imagem mobile</strong>
+          <img src="{{ criativo.imagem_mobile.url }}" alt="{{ criativo.titulo|default:'Criativo publicitário' }} — mobile">
+        </div>
+      {% endif %}
+
+      {% if criativo.video %}
+        <div class="creative-media-block">
+          <strong>Vídeo desktop</strong>
+          <video controls preload="metadata">
+            <source src="{{ criativo.video.url }}">
+          </video>
+        </div>
+      {% endif %}
+
+      {% if criativo.video_mobile %}
+        <div class="creative-media-block">
+          <strong>Vídeo mobile</strong>
+          <video controls preload="metadata">
+            <source src="{{ criativo.video_mobile.url }}">
+          </video>
+        </div>
+      {% endif %}
+
+      {% if not criativo.imagem and not criativo.imagem_mobile and not criativo.video and not criativo.video_mobile %}
+        {% if criativo.texto %}
+          <p>{{ criativo.texto|linebreaksbr }}</p>
+        {% else %}
+          <p>Este criativo não possui mídia para pré-visualização.</p>
+        {% endif %}
+      {% endif %}
+    </section>
+  </div>
+
+  <aside>
+    <section class="panel panel-pad creative-section">
+      <h2>Moderação</h2>
+      <p>
+        A aprovação deste criativo acompanha a aprovação da campanha.
+        Não existe aprovação individual independente neste fluxo.
+      </p>
+
+      <div class="actions">
+        {% if criativo.aprovado %}
+          <span class="badge badge-success">Aprovado</span>
+        {% else %}
+          <span class="badge badge-warning">Não aprovado</span>
+        {% endif %}
+
+        {% if criativo.ativo %}
+          <span class="badge badge-success">Ativo</span>
+        {% else %}
+          <span class="badge badge-danger">Inativo</span>
+        {% endif %}
+      </div>
+    </section>
+  </aside>
+</div>
+{% endblock %}
